@@ -1,0 +1,121 @@
+/**
+ * Back-end plugin implementating synchronous file writer for the <logger>
+ * class.
+ *-----------------------------------------------------------------------------
+ * Copyright (c) 2009 Serge Aleynikov <serge@aleynikov.org>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *-----------------------------------------------------------------------------
+ * Created: 2009-11-25
+ * $Id$
+ */
+#include <stdio.h>
+#include <time.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <util/logger/logger_impl_file.hpp>
+#include <boost/thread.hpp>
+
+namespace util {
+
+static boost::function< logger_impl* (void) > f = &logger_impl_file::create;
+static logger_impl_mgr::registrar reg("file", f);
+
+bool logger_impl_file::init(const boost::property_tree::ptree& a_config)
+    throw(badarg_error) 
+{
+    BOOST_ASSERT(this->m_log_mgr);
+    finalize();
+    new (this) logger_impl_file();
+
+    try {
+        m_filename = a_config.get<std::string>("logger.file.filename");
+    } catch (boost::property_tree::ptree_bad_data&) {
+        throw badarg_error("logger.file.filename not specified");
+    }
+
+    m_append        = a_config.get<bool>("logger.file.append", m_append);
+    // See comments in the beginning of the logger_impl_file.hpp on
+    // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
+    // Use the "use_mutex=false" option to inhibit this behavior if your
+    // platform has thread-safe write(2) call.
+    m_use_mutex     = m_append ? false : a_config.get<bool>("logger.file.use_mutex", true);
+    m_mode          = a_config.get<int> ("logger.file.mode", 0644);
+    m_levels        = logger::parse_log_levels(
+        a_config.get<std::string>("logger.file.levels", logger::default_log_levels));
+    m_show_location = a_config.get<bool>("logger.file.show_location", this->m_log_mgr->show_location());
+    m_show_ident    = a_config.get<bool>("logger.file.show_ident",    this->m_log_mgr->show_ident());
+
+    if (m_levels != NOLOGGING) {
+        m_fd = open(m_filename.c_str(),
+                    O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE | (m_append ? O_APPEND : 0),
+                    m_mode);
+        if (m_fd < 0)
+            throw io_error(errno, "Error opening file", m_filename);
+
+        // Install log_msg callbacks from appropriate levels
+        for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
+            log_level level = logger::signal_slot_to_level(lvl);
+            if ((m_levels & static_cast<int>(level)) != 0)
+                this->m_log_mgr->add_msg_logger(level, msg_binder[lvl],
+                    on_msg_delegate_t::from_method<logger_impl_file, &logger_impl_file::log_msg>(this));
+        }
+        // Install log_bin callback
+        this->m_log_mgr->add_bin_logger(
+            bin_binder,
+            on_bin_delegate_t::from_method<logger_impl_file, &logger_impl_file::log_bin>(this));
+    }
+    return true;
+}
+
+class guard {
+    boost::mutex& m;
+    bool use_mutex;
+public:
+    guard(boost::mutex& a_m, bool a_use_mutex) : m(a_m), use_mutex(a_use_mutex) {
+        if (use_mutex) m.lock();
+    }
+    ~guard() { 
+        if (use_mutex) m.unlock();
+    }
+};
+
+void logger_impl_file::log_msg(
+    const log_msg_info& info, const timestamp& a_tv, const char* fmt, va_list args)
+    throw(io_error) 
+{
+    // See begining-of-file comment on thread-safety of the concurrent write(2) call.
+    // Note that since the use of mutex is conditional, we can't use the
+    // boost::lock_guard<boost::mutex> guard and roll out our own.
+    guard g(m_mutex, m_use_mutex);
+
+    char buf[logger::MAX_MESSAGE_SIZE];
+    int len = logger_impl::format_message(buf, sizeof(buf), true, 
+                m_show_ident, m_show_location, a_tv, info, fmt, args);
+    if (write(m_fd, buf, len) < 0)
+        io_error("Error writing to file:", m_filename, ' ',
+            (info.has_src_location() ? info.src_location() : ""));
+}
+
+void logger_impl_file::log_bin(const char* msg, size_t size) throw(io_error) 
+{
+    guard g(m_mutex, m_use_mutex);
+
+    if (write(m_fd, msg, size) < 0)
+        throw io_error(errno, "Error writing to file:", m_filename);
+}
+
+} // namespace util

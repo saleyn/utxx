@@ -1,0 +1,10 @@
+FastDelegate: 
+  Licensed under "The Code Project Open License (CPOL) 1.02"
+  see http://www.codeproject.com/info/cpol10.aspx
+
+delegate.hpp:
+event.hpp:
+flex_binder.hpp:
+  Licensed under "The MIT License"
+  see http://www.codeproject.com/KB/cpp/ImpossiblyFastCppDelegate.aspx
+
