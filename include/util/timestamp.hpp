@@ -193,7 +193,7 @@ public:
     static std::string to_string(
         const time_val& a_tv, stamp_type a_tp=TIME_WITH_USEC)
     {
-        return to_string(reinterpret_cast<const struct timeval*>(&a_tv), a_tp);
+        return to_string(&a_tv.timeval(), a_tp);
     }
 
     static std::string to_string(const struct timeval* a_tv,

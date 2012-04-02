@@ -137,9 +137,10 @@ void logger::init(const ptree& config)
         std::string ts  = config.get<std::string>("logger.timestamp",     "time_with_usec");
         boost::to_upper(ts);
         static const char* types[] = {
-            "NO_TIMESTAMP", "TIME", "TIME_WITH_USEC",
-            "DATE_TIME", "DATE_TIME_WITH_USEC"
+            "NO_TIMESTAMP", "TIME", "TIME_WITH_MSEC", "TIME_WITH_USEC",
+            "DATE_TIME", "DATE_TIME_WITH_MSEC", "DATE_TIME_WITH_USEC"
         };
+        BOOST_STATIC_ASSERT(sizeof(types)/sizeof(types[0]) == DATE_TIME_WITH_USEC + 1);
         m_timestamp_type = find_index<stamp_type>(types, ts);
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
