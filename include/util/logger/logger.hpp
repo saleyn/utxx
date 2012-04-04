@@ -52,30 +52,41 @@ namespace util {
 
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
 /// the <printf> function: <(const char* fmt, ...)>
-#ifndef HPCL_SKIP_LOG_MACROS
+#ifndef UTIL_SKIP_LOG_MACROS
 typedef util::log_msg_info _lim;
 #define LOG_TRACE5(FmtArgs)  do { \
-    _lim(logger::instance(), LEVEL_TRACE5 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_TRACE5 , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_TRACE4(FmtArgs)  do { \
-    _lim(logger::instance(), LEVEL_TRACE4 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_TRACE4 , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_TRACE3(FmtArgs)  do { \
-    _lim(logger::instance(), LEVEL_TRACE3 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_TRACE3 , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_TRACE2(FmtArgs)  do { \
-    _lim(logger::instance(), LEVEL_TRACE2 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_TRACE2 , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_TRACE1(FmtArgs)  do { \
-    _lim(logger::instance(), LEVEL_TRACE1 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_TRACE1 , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_DEBUG(FmtArgs)   do { \
-    _lim(logger::instance(), LEVEL_DEBUG  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_DEBUG  , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_INFO(FmtArgs)    do { \
-    _lim(logger::instance(), LEVEL_INFO   , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_INFO   , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_WARNING(FmtArgs) do { \
-    _lim(logger::instance(), LEVEL_WARNING, __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_WARNING, \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_ERROR(FmtArgs)   do { \
-    _lim(logger::instance(), LEVEL_ERROR  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_ERROR  , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_FATAL(FmtArgs)   do { \
-    _lim(logger::instance(), LEVEL_FATAL  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_FATAL  , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_ALERT(FmtArgs)   do { \
-    _lim(logger::instance(), LEVEL_ALERT  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    util::_lim(util::logger::instance(), util::LEVEL_ALERT  , \
+        __FILE__, __LINE__).log FmtArgs; } while(0)
 #endif
 
 /// Logging class that supports pluggable back-ends responsible for handling

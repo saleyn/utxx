@@ -125,12 +125,16 @@ protected:
         reserve(max_size() + n - got);
     }
 
+    /// Address of internal data buffer
+    const char* address()   const { return m_begin; }
     /// Max number of bytes the buffer can hold.
     size_t      max_size()  const { return m_end    - m_begin;  }
     /// Current number of bytes available to read.
     size_t      size()      const { return m_wr_ptr - m_rd_ptr; }
     /// Current number of bytes available to write.
     size_t      capacity()  const { return m_end    - m_wr_ptr; }
+    /// Returns true if there's no data in the buffer
+    bool        empty()     const { return m_rd_ptr == m_wr_ptr; } 
     /// Get the low memory watermark indicating when the buffer should be 
     /// automatically crunched by the read() call.
     size_t      wr_lwm()    const { return m_wr_lwm; }

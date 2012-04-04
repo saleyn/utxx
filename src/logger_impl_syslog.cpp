@@ -25,7 +25,7 @@
 #include <syslog.h>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
-#define HPCL_SKIP_LOG_MACROS
+#define UTIL_SKIP_LOG_MACROS
 #include <util/logger/logger_impl_syslog.hpp>
 
 namespace util {
