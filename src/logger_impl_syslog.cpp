@@ -25,12 +25,17 @@
 #include <syslog.h>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
-#define UTIL_SKIP_LOG_MACROS
+#ifndef UTIL_SKIP_LOG_MACROS
+#   define __UTIL_TEMP_SET_UTIL_SKIP_LOG_MACROS__
+#   define UTIL_SKIP_LOG_MACROS
+#endif
 #include <util/logger/logger_impl_syslog.hpp>
-
+#ifdef __UTIL_TEMP_SET_UTIL_SKIP_LOG_MACROS__
+#   undef UTIL_SKIP_LOG_MACROS
+#endif
 namespace util {
 
-static boost::function< logger_impl* (void) > f = &logger_impl_syslog::create;
+static logger_impl_mgr::impl_callback_t f = &logger_impl_syslog::create;
 static logger_impl_mgr::registrar reg("syslog", f);
 
 static int parse_syslog_facility(const std::string& facility) 
@@ -63,26 +68,35 @@ static int get_priority(log_level level) {
     }
 }
 
-bool logger_impl_syslog::init(const boost::property_tree::ptree& a_config)
+std::ostream& logger_impl_syslog::dump(std::ostream& out,
+    const std::string& a_prefix) const
+{
+    out << a_prefix << "logger." << name() << '\n'
+        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
+        << a_prefix << "    facility       = " << m_facility << '\n'
+        << a_prefix << "    show_pid       = " << (m_show_pid ? "true" : "false") << '\n';
+    return out;
+}
+
+bool logger_impl_syslog::init(const variant_tree& a_config)
     throw(badarg_error, io_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);
     finalize();
-    new (this) logger_impl_syslog();
 
     int facility;
-    bool show_pid;
 
     m_levels = logger::parse_log_levels(
         a_config.get<std::string>("logger.syslog.levels", logger::default_log_levels))
         & ~(LEVEL_TRACE | LEVEL_TRACE1 | LEVEL_TRACE2 |
             LEVEL_TRACE3 | LEVEL_TRACE4 | LEVEL_TRACE5 | LEVEL_LOG);
-    facility = parse_syslog_facility(
-        a_config.get<std::string>("logger.syslog.facility", "log_local6"));
-    show_pid = a_config.get<bool>("logger.syslog.show_pid", true);
+    m_facility = 
+        a_config.get<std::string>("logger.syslog.facility", "log_local6");
+    facility   = parse_syslog_facility(m_facility);
+    m_show_pid = a_config.get<bool>("logger.syslog.show_pid", true);
 
     if (m_levels != NOLOGGING) {
-        openlog(this->m_log_mgr->ident().c_str(), (show_pid ? LOG_PID : 0), facility);
+        openlog(this->m_log_mgr->ident().c_str(), (m_show_pid ? LOG_PID : 0), facility);
 
         // Install log_msg callbacks from appropriate levels
         for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {

@@ -32,7 +32,7 @@
 
 namespace util {
 
-static boost::function< logger_impl* (void) > f = &logger_impl_async_file::create;
+static logger_impl_mgr::impl_callback_t f = &logger_impl_async_file::create;
 static logger_impl_mgr::registrar reg("async_file", f);
 
 void logger_impl_async_file::finalize()
@@ -49,7 +49,22 @@ void logger_impl_async_file::finalize()
     close(m_fd);
 }
 
-bool logger_impl_async_file::init(const boost::property_tree::ptree& a_config)
+std::ostream& logger_impl_async_file::dump(std::ostream& out,
+        const std::string& a_prefix) const
+{
+    out << a_prefix << "logger." << name() << '\n'
+        << a_prefix << "    filename       = " << m_filename << '\n'
+        << a_prefix << "    append         = " << (m_append ? "true" : "false") << '\n'
+        << a_prefix << "    mode           = " << m_mode << '\n'
+        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
+        << a_prefix << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_prefix << "    show_indent    = " << (m_show_ident    ? "true" : "false") << '\n' 
+        << a_prefix << "    timeout        = " << m_timeout.tv_sec << '.'
+                                               << (1.0 / 1000000000.0 * m_timeout.tv_nsec) << '\n';
+    return out;
+}
+
+bool logger_impl_async_file::init(const variant_tree& a_config)
     throw(badarg_error,io_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);

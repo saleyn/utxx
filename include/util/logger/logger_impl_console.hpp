@@ -29,29 +29,36 @@
 namespace util { 
 
 class logger_impl_console: public logger_impl {
-    int  m_stdout_levels;
-    int  m_stderr_levels;
-    bool m_show_location;
-    bool m_show_ident;
+    std::string  m_name;
+    int          m_stdout_levels;
+    int          m_stderr_levels;
+    bool         m_show_location;
+    bool         m_show_ident;
 
     static const int s_def_stdout_levels = LEVEL_INFO | LEVEL_WARNING;
     static const int s_def_stderr_levels = LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT;
 
-    logger_impl_console()
-        : m_stdout_levels(s_def_stdout_levels)
+    logger_impl_console(const char* a_name)
+        : m_name(a_name)
+        , m_stdout_levels(s_def_stdout_levels)
         , m_stderr_levels(s_def_stderr_levels)
         , m_show_location(true)
         , m_show_ident(false)
     {}
 
 public:
-    static logger_impl_console* create() {
-        return new logger_impl_console();
+    static logger_impl_console* create(const char* a_name) {
+        return new logger_impl_console(a_name);
     }
 
     virtual ~logger_impl_console() {}
 
-    bool init(const boost::property_tree::ptree& a_config)
+    const std::string& name() const { return m_name; }
+
+    /// Dump all settings to stream
+    std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
+
+    bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
     void log_msg(const log_msg_info& info, const timestamp& a_tv,

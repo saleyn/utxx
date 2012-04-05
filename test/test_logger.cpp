@@ -22,11 +22,11 @@ using namespace util;
 
 BOOST_AUTO_TEST_CASE( test_logger1 )
 {
-    ptree pt;
+    variant_tree pt;
 
-    pt.put("logger.timestamp", "time_with_usec");
-    pt.put("logger.console.stdout_levels", "debug|info|warning|error|fatal|alert");
-    pt.put("logger.show_ident", true);
+    pt.put("logger.timestamp", variant("time_with_usec"));
+    pt.put("logger.console.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.show_ident", variant(true));
 
     if (util::verbosity::level() != util::VERBOSE_NONE)
         write_info(std::cout, pt);

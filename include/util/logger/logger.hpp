@@ -53,7 +53,7 @@ namespace util {
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
 /// the <printf> function: <(const char* fmt, ...)>
 #ifndef UTIL_SKIP_LOG_MACROS
-typedef util::log_msg_info _lim;
+typedef log_msg_info _lim;
 #define LOG_TRACE5(FmtArgs)  do { \
     util::_lim(util::logger::instance(), util::LEVEL_TRACE5 , \
         __FILE__, __LINE__).log FmtArgs; } while(0)
@@ -95,11 +95,13 @@ typedef util::log_msg_info _lim;
 class logger : boost::noncopyable {
 public:
     static const char* log_level_to_str(log_level level);
+    static std::string log_levels_to_str(int a_levels);
     /// Convert a <level> to the slot number in the <m_sig_msg> array
     static int         level_to_signal_slot(log_level level) throw(badarg_error);
     /// Convert a <level> to the slot number in the <m_sig_msg> array
     static log_level   signal_slot_to_level(int slot) throw(badarg_error);
 
+    typedef std::vector<logger_impl*>      implementations_vector;
 
     typedef logger_impl::on_msg_delegate_t on_msg_delegate_t;
     typedef logger_impl::on_bin_delegate_t on_bin_delegate_t;
@@ -108,7 +110,7 @@ private:
     event_source<on_msg_delegate_t> m_sig_msg[logger_impl::NLEVELS];
     event_source<on_bin_delegate_t> m_sig_bin;
     unsigned int                    m_level_filter;
-    std::vector<logger_impl*>       m_implementations;
+    implementations_vector          m_implementations;
     stamp_type                      m_timestamp_type;
     char                            m_src_location[256];
     bool                            m_show_location;
@@ -148,7 +150,7 @@ public:
     void init(const char* filename, init_file_type type = INFO_FILE);
 
     /// Call to initialize the logger from a configuration container.
-    void init(const boost::property_tree::ptree& config);
+    void init(const variant_tree& config);
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();
@@ -158,7 +160,11 @@ public:
 
     /// Set filter mask to allow only selected log_levels to be included
     /// in the log.
-    void set_level_filter(unsigned int level);
+    void set_level_filter(log_level a_level);
+
+    /// Set filter mask to allow log_levels above or equal to \a a_level
+    /// to be included in the log.
+    void set_min_level_filter(log_level a_level);
 
     /// Set an error handler delegate to fire when there is an error
     /// instead of throwing run-time exceptions.  Note that the handler
@@ -197,6 +203,12 @@ public:
     /// parsing.
     static const char* default_log_levels; 
 
+    /// @return vector of active back-end logging implementations
+    const implementations_vector&  implementations() const;
+
+    /// Dump internal settings
+    std::ostream& dump(std::ostream& out) const;
+
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level.
@@ -219,7 +231,7 @@ public:
     /// @param fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
     void log(const log_msg_info& info, const char* fmt, va_list args) {
-        if (likely(is_enabled(info.level())))
+        if (is_enabled(info.level()))
             try {
                 timestamp l_ts;
                 l_ts.update();
@@ -237,7 +249,7 @@ public:
     /// @param buf is message buffer.
     /// @param size is the size of the message.
     void log(const char* buf, size_t size) {
-        if (likely(is_enabled(LEVEL_LOG))) {
+        if (likely(is_enabled(LEVEL_LOG)))
             try {
                 m_sig_bin(on_bin_delegate_t::invoker_type(buf, size));
             } catch (std::runtime_error& e) {
@@ -246,7 +258,6 @@ public:
                 else
                     throw;
             }
-        }
     }
 };
 

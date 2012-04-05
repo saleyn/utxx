@@ -33,7 +33,7 @@ test_util_SOURCES  	= test_alloc_fixed_page.cpp \
 					  test_variant.cpp
 
 generated/test_config_validator.generated.hpp: test_config_validator.xml \
-		$(srcdir)/../src/config_validator.xsl generated
+		$(srcdir)/../include/@PACKAGE@/config_validator.xsl generated
 	$(XSLTPROC) --stringparam author \
 		"$(shell awk -F: '$$1 == u { print $$5 }' u=$(USER) /etc/passwd)" \
 		--stringparam file "$(notdir $@)" \

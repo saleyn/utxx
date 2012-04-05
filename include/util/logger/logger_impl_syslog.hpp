@@ -51,10 +51,13 @@
 namespace util {
 
 class logger_impl_syslog: public logger_impl {
-    int m_levels;
+    std::string m_name;
+    int         m_levels;
+    std::string m_facility;
+    bool        m_show_pid;
 
-    logger_impl_syslog()
-        : m_levels(LEVEL_NO_DEBUG & ~LEVEL_LOG)
+    logger_impl_syslog(const char* a_name)
+        : m_name(a_name), m_levels(LEVEL_NO_DEBUG & ~LEVEL_LOG)
     {}
 
     void finalize() {
@@ -62,15 +65,20 @@ class logger_impl_syslog: public logger_impl {
             ::closelog();
     }
 public:
-    static logger_impl_syslog* create() {
-        return new logger_impl_syslog();
+    static logger_impl_syslog* create(const char* a_name) {
+        return new logger_impl_syslog(a_name);
     }
 
     virtual ~logger_impl_syslog() {
         finalize();
     }
 
-    bool init(const boost::property_tree::ptree& a_config)
+    const std::string& name() const { return m_name; }
+
+    /// Dump all settings to stream
+    std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
+
+    bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
     void log_msg(const log_msg_info& info, const timestamp& a_tv,

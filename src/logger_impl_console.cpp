@@ -28,22 +28,32 @@
 
 namespace util {
 
-static boost::function< logger_impl* (void) > f = &logger_impl_console::create;
+static logger_impl_mgr::impl_callback_t f = &logger_impl_console::create;
 static logger_impl_mgr::registrar reg("console", f);
 
-bool logger_impl_console::init(const boost::property_tree::ptree& a_config)
+std::ostream& logger_impl_console::dump(std::ostream& out,
+    const std::string& a_prefix) const
+{
+    out << a_prefix << "logger." << name() << '\n'
+        << a_prefix << "    stdout_levels  = " << logger::log_levels_to_str(m_stdout_levels) << '\n'
+        << a_prefix << "    stderr_levels  = " << logger::log_levels_to_str(m_stderr_levels) << '\n'
+        << a_prefix << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_prefix << "    show_indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+    return out;
+}
+
+bool logger_impl_console::init(const variant_tree& a_config)
     throw(badarg_error, io_error)
 {
     using boost::property_tree::ptree;
     BOOST_ASSERT(this->m_log_mgr);
 
     ptree::const_assoc_iterator it;
-    boost::optional<std::string> s =
-        a_config.get_optional<std::string>("logger.console.stdout_levels");
-    m_stdout_levels = s ? logger::parse_log_levels(*s) : s_def_stdout_levels;
+    std::string s = a_config.get("logger.console.stdout_levels", "");
+    m_stdout_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stdout_levels;
 
-    s = a_config.get_optional<std::string>("logger.console.stderr_levels");
-    m_stderr_levels = s ? logger::parse_log_levels(*s) : s_def_stderr_levels;
+    s = a_config.get("logger.console.stderr_levels", "");
+    m_stderr_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stderr_levels;
 
     m_show_location =
         a_config.get<bool>("logger.console.show_location", this->m_log_mgr->show_location());

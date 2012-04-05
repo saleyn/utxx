@@ -8,10 +8,10 @@ using namespace util;
 
 BOOST_AUTO_TEST_CASE( test_logger_syslog )
 {
-    ptree pt;
+    variant_tree pt;
 
-    pt.put("logger.syslog.levels", "debug|info|warning|error|fatal|alert");
-    pt.put("logger.syslog.facility", "log_local3");
+    pt.put("logger.syslog.levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.syslog.facility", variant("log_local3"));
 
     logger& log = logger::instance();
 

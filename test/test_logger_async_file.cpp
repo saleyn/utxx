@@ -15,16 +15,16 @@ using namespace util;
 
 BOOST_AUTO_TEST_CASE( test_async_logger )
 {
-    ptree pt;
+    variant_tree pt;
     const char* filename = "/tmp/logger.async.file.log";
     const int iterations = 1000;
 
-    pt.put("logger.timestamp",    "no_timestamp");
-    pt.put("logger.show_ident",   false);
-    pt.put("logger.show_location",false);
-    pt.put("logger.async_file.stdout_levels", "debug|info|warning|error|fatal|alert");
-    pt.put("logger.async_file.filename",  filename);
-    pt.put("logger.async_file.append", false);
+    pt.put("logger.timestamp",    variant("no_timestamp"));
+    pt.put("logger.show_ident",   variant(false));
+    pt.put("logger.show_location",variant(false));
+    pt.put("logger.async_file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.async_file.filename",  variant(filename));
+    pt.put("logger.async_file.append", variant(false));
 
     if (util::verbosity::level() > util::VERBOSE_NONE)
         write_info(std::cout, pt);
@@ -168,16 +168,16 @@ struct worker {
 
 BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
 {
-    ptree pt;
+    variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
     const int iterations = 100000;
 
-    pt.put("logger.timestamp",    "date_time_with_usec");
-    pt.put("logger.show_ident",   false);
-    pt.put("logger.show_location",false);
-    pt.put("logger.async_file.stdout_levels", "debug|info|warning|error|fatal|alert");
-    pt.put("logger.async_file.filename",  filename);
-    pt.put("logger.async_file.append", false);
+    pt.put("logger.timestamp",    variant("date_time_with_usec"));
+    pt.put("logger.show_ident",   variant(false));
+    pt.put("logger.show_location",variant(false));
+    pt.put("logger.async_file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.async_file.filename",  variant(filename));
+    pt.put("logger.async_file.append", variant(false));
 
     BOOST_REQUIRE(pt.get_child_optional("logger.async_file"));
 
@@ -255,18 +255,18 @@ enum open_mode {
 
 void run_test(const char* config_type, open_mode mode, int def_threads)
 {
-    ptree pt;
+    variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
     const int iterations = 1000000;
 
     ::unlink(filename);
 
-    pt.put("logger.timestamp",    "date_time_with_usec");
-    pt.put("logger.show_ident",   false);
-    pt.put("logger.show_location",false);
+    pt.put("logger.timestamp",    variant("date_time_with_usec"));
+    pt.put("logger.show_ident",   variant(false));
+    pt.put("logger.show_location",variant(false));
 
     std::string s("logger."); s += config_type;
-    pt.put(s + ".stdout_levels", "debug|info|warning|error|fatal|alert");
+    pt.put(s + ".stdout_levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put(s + ".filename",  filename);
     pt.put(s + ".append",    mode == MODE_APPEND);
     pt.put(s + ".use_mutex", mode == MODE_OVERWRITE);

@@ -40,10 +40,12 @@ namespace <xsl:value-of select="@namespace"/> {
     using namespace util::config;
     using util::variant;
     using util::config::option;
-    typedef option_vector ovec;
-    typedef string_set    sset;
-    typedef variant_set   vset;
-    
+    namespace {
+        typedef option_vector ovec;
+        typedef string_set    sset;
+        typedef variant_set   vset;
+    }
+
     struct <xsl:value-of select="@name"/> : public validator {
         <xsl:value-of select="@name"/>() { init(); }
         
