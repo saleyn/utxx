@@ -61,6 +61,18 @@ public:
     static const size_t value = s_pow == N ? N : s_pow*Base;
 };
 
+/// Given the size N and alignment size get the number of padding and aligned 
+/// space needed to hold the structure of N bytes.
+template<int N, int Size>                                                       
+class align {                                                                    
+    static const int multiplier = Size / N;                                     
+    static const int remainder  = Size % N;                                     
+public:                                                                          
+    static const int size       = remainder > 0 ? (multiplier+1) * N : Size;    
+    static const int padding    = size - Size;                                  
+};                                                                               
+                                                                                     
+
 } // namespace util
 
 #endif // _UTIL_META_HPP_

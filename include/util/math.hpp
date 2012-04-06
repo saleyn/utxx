@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/assert.hpp>
 #include <boost/cstdint.hpp>
 #include <util/error.hpp>
+#include <util/bits.hpp>
 
 namespace util {
 namespace math {
@@ -51,7 +52,18 @@ T inline power(T a, size_t b) {
 /// Calculate logarithm of \a n using \a base.
 /// If n is 0 or is less than base, the function returns 0.
 int inline log(unsigned long n, uint8_t base = 2) {
-    return n <= 1 ? 0 : 1+log(n/base, base);
+    // return n <= 1 ? 0 : 1+log(n/base, base);   // This won't inline
+    if (n <= 1) return 0;
+    int k;
+    for (k = 0; n > 1; k++, n /= base);
+    return k;
+}
+
+/// Calculate logarithm of \a n using \a base.
+/// If n is 0 or is less than base, the function returns 0.
+int inline log2(unsigned long n) {
+    BOOST_ASSERT(!(n & (n-1)));
+    return bits::bit_scan_forward(n);
 }
 
 /// Calculate logarithm of \a n using \a base.
@@ -63,8 +75,7 @@ int inline upper_log(size_t n) {
 }
 
 int inline upper_log2(size_t n) {
-    int k = log(n, 2);
-    return (n & (n-1)) == 0 ? k : k+1;
+    return (n & (n-1)) == 0 ? log2(n) : log(n,2)+1;
 }
 
 /// Returns power of \a base equal or greater than number \a n.

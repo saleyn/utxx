@@ -55,6 +55,17 @@ BOOST_AUTO_TEST_CASE( test_math_log )
     BOOST_REQUIRE_EQUAL(2,      math::log(9,  3));
     BOOST_REQUIRE_EQUAL(2,      math::log(11, 3));
     BOOST_REQUIRE_EQUAL(1,      math::log(2, 2));
+    BOOST_REQUIRE_EQUAL(0,      math::log(1, 2));
+    BOOST_REQUIRE_EQUAL(0,      math::log(0, 2));
+
+    BOOST_REQUIRE_EQUAL(63,     math::log2(1lu << 63));
+    BOOST_REQUIRE_EQUAL(32,     math::log2(1lu << 32));
+    BOOST_REQUIRE_EQUAL(10,     math::log2(1024));
+    BOOST_REQUIRE_EQUAL(4,      math::log2(16));
+    BOOST_REQUIRE_EQUAL(3,      math::log2(8));
+    BOOST_REQUIRE_EQUAL(1,      math::log2(2));
+    BOOST_REQUIRE_EQUAL(0,      math::log2(1));
+    BOOST_REQUIRE_EQUAL(0,      math::log2(0));
 }
 
 BOOST_AUTO_TEST_CASE( test_math_upper_power )

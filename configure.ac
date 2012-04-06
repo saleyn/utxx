@@ -33,7 +33,7 @@ AC_ARG_ENABLE(debug,
 AC_ARG_ENABLE(optimize,
      AC_HELP_STRING([--enable-optimize],[enable code optimization [[default=no]]]),
      [ if test "x$enable_optimize" = "xyes" ; then
-           CXXFLAGS="${CXXFLAGS% } -O3"
+           CXXFLAGS="${CXXFLAGS% } -O3 -g"
        fi
      ],
 )

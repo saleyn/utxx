@@ -291,6 +291,24 @@ static inline unsigned long bit_scan_reverse(unsigned long v) {
 	return bits::bit_scan_reverse(v);
 }
 
+/// Holds cacheline size.
+// Compile with "gcc -DCL_SIZE=$(getconf LEVEL1_DCACHE_LINESIZE)"
+// for acurate value reading.  Defaults to 64.                                   
+struct cacheline {
+    enum { size =
+        #ifdef CL_SIZE
+        CL_SIZE
+        #else                                                                    
+        64                                                                       
+        #endif                                                                   
+     };                                                                          
+                                                                                 
+     template<int N>                                                             
+     struct pad {                                                                
+         enum { space = align<size, N>::padding };                               
+     };                                                                          
+};                                                                               
+
 } // namespace atomic
 } // namespace util
 

@@ -71,7 +71,7 @@ class futex {
     static const int FUTEX_PASSED = -(1 << 30);
 
     /// @return -1 - fail, 0 - wakeup, 1 - pass, 2 - didn't sleep
-    int wait_slow(int val, struct timespec *rel = NULL);
+    int wait_slow(int val, const struct timespec *rel = NULL);
     int signal_slow(int count = 1);
 
     /// Atomic dec of internal counter.
@@ -177,7 +177,7 @@ public:
     /// @return 0           - woken up or value changed before sleep
     ///         -ETIMEDOUT  - timed out
     ///         -N          - some other error occured
-    int wait(struct timespec *timeout = NULL, int* old_val = NULL);
+    int wait(const struct timespec *timeout = NULL, int* old_val = NULL);
 };
 
 // Use this event when futex is not available.

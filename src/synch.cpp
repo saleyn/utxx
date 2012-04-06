@@ -63,7 +63,7 @@ futex::futex(bool initialize) {
     #endif
 }
 
-int futex::wait(struct timespec *timeout, int* old_val) {
+int futex::wait(const struct timespec *timeout, int* old_val) {
     int  val, res;
 
 	while ((val = wait_fast(old_val)) != 0) { 
@@ -89,12 +89,12 @@ int futex::wait(struct timespec *timeout, int* old_val) {
 ///           1 if someone signalled the futex by passing FUTEX_PASSED token
 ///           2 if value changed before futex_wait call
 ///          -1 if timed out or some other error
-int futex::wait_slow(int val, struct timespec *rel) {
+int futex::wait_slow(int val, const struct timespec *rel) {
     #ifdef PERF_STATS
     ++m_wait_count;
     #endif
     int res;
-    while ((res = futex_wait(&m_count, val, rel)) == -EINTR);
+    while ((res = futex_wait(&m_count, val, const_cast<struct timespec*>(rel))) == -EINTR);
     if (res == 0) {
         // <= in case someone else decremented it
         if (m_count <= FUTEX_PASSED) {

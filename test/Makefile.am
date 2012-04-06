@@ -13,6 +13,7 @@ test_util_SOURCES  	= test_alloc_fixed_page.cpp \
 					  test_concurrent_update.cpp \
 					  test_config_validator.cpp \
 					  test_convert.cpp \
+					  test_async_file_logger.cpp \
 					  test_high_res_timer.cpp \
 					  test_iovec.cpp \
 					  test_iovector.cpp \
@@ -23,6 +24,7 @@ test_util_SOURCES  	= test_alloc_fixed_page.cpp \
 					  test_nchar.cpp \
 					  test_path.cpp \
 					  test_pcap.cpp \
+					  test_persist_blob.cpp \
 					  test_pidfile.cpp \
 					  test_running_stat.cpp \
 					  test_string.cpp \
