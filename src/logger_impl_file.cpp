@@ -31,15 +31,27 @@
 
 namespace util {
 
-static boost::function< logger_impl* (void) > f = &logger_impl_file::create;
+static logger_impl_mgr::impl_callback_t f = &logger_impl_file::create;
 static logger_impl_mgr::registrar reg("file", f);
 
-bool logger_impl_file::init(const boost::property_tree::ptree& a_config)
+std::ostream& logger_impl_file::dump(std::ostream& out,
+    const std::string& a_prefix) const
+{
+    out << a_prefix << "logger." << name() << '\n'
+        << a_prefix << "    filename       = " << m_filename << '\n'
+        << a_prefix << "    append         = " << (m_append ? "true" : "false") << '\n'
+        << a_prefix << "    mode           = " << m_mode << '\n'
+        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
+        << a_prefix << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_prefix << "    show_indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+    return out;
+}
+
+bool logger_impl_file::init(const variant_tree& a_config)
     throw(badarg_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);
     finalize();
-    new (this) logger_impl_file();
 
     try {
         m_filename = a_config.get<std::string>("logger.file.filename");
@@ -47,7 +59,7 @@ bool logger_impl_file::init(const boost::property_tree::ptree& a_config)
         throw badarg_error("logger.file.filename not specified");
     }
 
-    m_append        = a_config.get<bool>("logger.file.append", m_append);
+    m_append        = a_config.get<bool>("logger.file.append", true);
     // See comments in the beginning of the logger_impl_file.hpp on
     // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
     // Use the "use_mutex=false" option to inhibit this behavior if your

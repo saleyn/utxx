@@ -51,6 +51,7 @@
 namespace util {
 
 class logger_impl_file: public logger_impl {
+    std::string  m_name;
     std::string  m_filename;
     bool         m_append;
     bool         m_use_mutex;
@@ -62,26 +63,31 @@ class logger_impl_file: public logger_impl {
     bool         m_show_ident;
     boost::mutex m_mutex;
 
-    logger_impl_file()
-        : m_append(true), m_use_mutex(false)
+    logger_impl_file(const char* a_name)
+        : m_name(a_name), m_append(true), m_use_mutex(false)
         , m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
         , m_mode(0644), m_fd(-1)
         , m_show_location(true), m_show_ident(false)
     {}
 
     void finalize() {
-        if (m_fd > -1) close(m_fd);
+        if (m_fd > -1) { close(m_fd); m_fd = -1; }
     }
 public:
-    static logger_impl_file* create() {
-        return new logger_impl_file();
+    static logger_impl_file* create(const char* a_name) {
+        return new logger_impl_file(a_name);
     }
 
     virtual ~logger_impl_file() {
         finalize();
     }
 
-    bool init(const boost::property_tree::ptree& a_config)
+    const std::string& name() const { return m_name; }
+
+    /// Dump all settings to stream
+    std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
+
+    bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
     void log_msg(const log_msg_info& info, const timestamp& a_tv,

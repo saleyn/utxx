@@ -344,9 +344,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     uint64_t expect_utc_sec_since_midnight =
         1000000ll * (now.sec() % 86400) + now.usec();
 
-    time_t ssm = timestamp::utc_midnight_seconds();
-
-    BOOST_REQUIRE(ssm < 86400);
+    //time_t ssm = timestamp::utc_midnight_seconds();
 
     int64_t got = timestamp::utc_usec_since_midnight(now);
 

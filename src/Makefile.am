@@ -24,19 +24,27 @@ util_headers = epoll.hpp nchar.hpp config_validator.hpp alloc_fixed_pool.hpp \
 			   concurrent_alloc_fixed_page.hpp rate_throttler.hpp \
 			   compiler_hints.hpp pcap.hpp delegate.hpp
 
-libutil_includedir		= $(includedir)/@PACKAGE@
-libutil_include_HEADERS = $(util_headers:%=../include/@PACKAGE@/%)
-
-libutil_la_SOURCES  = timestamp.cpp path.cpp high_res_timer.cpp logger.cpp \
-					  logger_impl_console.cpp logger_impl.cpp \
-					  logger_impl_async_file.cpp logger_impl_syslog.cpp synch.cpp \
-					  convert.cpp url.cpp config_validator.cpp logger_impl_file.cpp
-libutil_la_LTADD    = -version-info 0:1 -shared
+libutil_la_SOURCES = \
+	timestamp.cpp \
+	path.cpp \
+	high_res_timer.cpp \
+	logger.cpp \
+	logger_impl.cpp \
+	logger_impl_console.cpp \
+	logger_impl_async_file.cpp \
+	logger_impl_syslog.cpp \
+	synch.cpp \
+	convert.cpp \
+	url.cpp \
+	config_validator.cpp \
+	logger_impl_file.cpp
+libutil_la_LTADD    = -version-info 1:0:0 -shared
 libutil_la_LIBS     = $(BOOST_THREAD_LIBS)
 libutil_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
 #libutil_la_LDFLAGS  = -shared
 
-libutil_la_includedir=$(includedir)/@PACKAGE@-@PACKAGE_VERSION@/@PACKAGE@
+#libutil_la_includedir=$(includedir)/@PACKAGE@-@PACKAGE_VERSION@/@PACKAGE@
+libutil_la_includedir=$(includedir)/@PACKAGE@
 libutil_la_include_HEADERS = $(util_headers:%=../include/@PACKAGE@/%)
 
 #If you have multiple architectures, install config.h in architecture-specific location:

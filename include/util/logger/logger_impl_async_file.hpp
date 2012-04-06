@@ -47,6 +47,7 @@
 namespace util {
 
 class logger_impl_async_file: public logger_impl {
+    std::string m_name;
     std::string m_filename;
     bool        m_append;
     bool        m_timestamp;
@@ -65,8 +66,8 @@ class logger_impl_async_file: public logger_impl {
     boost::thread*                  m_thread;
     memory::cached_allocator<char>  m_allocator;
 
-    logger_impl_async_file()
-        : m_append(true), m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
+    logger_impl_async_file(const char* a_name)
+        : m_name(a_name), m_append(true), m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
         , m_mode(0644), m_fd(-1), m_show_location(true), m_show_ident(false)
         , m_terminated(false), m_barrier(NULL), m_thread(NULL)
     {
@@ -90,13 +91,18 @@ class logger_impl_async_file: public logger_impl {
     int  write_data(async_data* p);
     void finalize();
 public:
-    static logger_impl_async_file* create() {
-        return new logger_impl_async_file();
+    static logger_impl_async_file* create(const char* a_name) {
+        return new logger_impl_async_file(a_name);
     }
 
     virtual ~logger_impl_async_file() { finalize(); }
 
-    bool init(const boost::property_tree::ptree& a_config)
+    const std::string& name() const { return m_name; }
+
+    /// Dump all settings to stream
+    std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
+
+    bool init(const variant_tree& a_config)
         throw (badarg_error, io_error);
 
     void log_msg(const log_msg_info& info, const timestamp& a_tv,

@@ -35,6 +35,7 @@
 #include <util/singleton.hpp>
 #include <util/logger.hpp>
 #include <util/path.hpp>
+#include <util/variant_tree.hpp>
 #include <vector>
 
 namespace util { 
@@ -43,8 +44,8 @@ namespace util {
 class log_msg_info {
     logger&         m_logger;
     log_level       m_level;
-    char            m_src_location[128];
     size_t          m_src_location_len;
+    char            m_src_location[40];
 public:
 
     template <int N>
@@ -70,24 +71,30 @@ struct logger_impl {
     logger_impl() : m_log_mgr(NULL) {}
     virtual ~logger_impl() {}
 
-    virtual bool init(const boost::property_tree::ptree& a_config)
+    /// Name of the logger
+    virtual const std::string& name() const = 0;
+
+    virtual bool init(const variant_tree& a_config)
         throw(badarg_error, io_error) = 0;
+
+    /// Dump all settings to stream
+    virtual std::ostream& dump(std::ostream& out, const std::string& a_prefix) const = 0;
 
     /// Called by logger upon reading initialization from configuration
     void set_log_mgr(logger* a_log_mgr) { m_log_mgr = a_log_mgr; }
 
     /// on_msg_delegate calls this function which performs content formatting
-    /// @param <buf> is the buffer that will contain formatted message content
-    /// @param <size> is the buffer size
-    /// @param <add_new_line> if true '\n' will be added at the end of the output.
-    /// @param <a_show_ident> if true <a_logger.ident()> will be included in the output.
-    /// @param <a_show_location> if true <info.src_location> will be included in
-    ///                          the output.
-    /// @param <timestamp> current timestamp value
-    /// @param <a_logger> the logger object calling on_message callback.
-    /// @param <info> msg log level and source line details
-    /// @param <fmt> format string
-    /// @param <args> formatting arguments.
+    /// @param buf is the buffer that will contain formatted message content
+    /// @param size is the buffer size
+    /// @param add_new_line if true '\n' will be added at the end of the output.
+    /// @param a_show_ident if true <a_logger.ident()> will be included in the output.
+    /// @param a_show_location if true <info.src_location> will be included in
+    ///                        the output.
+    /// @param timestamp current timestamp value
+    /// @param a_logger the logger object calling on_message callback.
+    /// @param info msg log level and source line details
+    /// @param fmt format string
+    /// @param args formatting arguments.
     int format_message(
         char* buf, size_t size, bool add_new_line,
         bool a_show_ident, bool a_show_location,
@@ -117,10 +124,11 @@ protected:
 
 /// Log implementation manager. It handles registration of
 /// logging back-ends, so that they can be instantiated automatically
-/// based on configuration information.
+/// based on configuration information. The manager contains a list
+/// of logger backend creation functions mapped by name.
 struct logger_impl_mgr {
-    typedef boost::function<logger_impl*(void)>    impl_callback_t;
-    typedef std::map<std::string, impl_callback_t> impl_map_t;
+    typedef boost::function<logger_impl*(const char*)>  impl_callback_t;
+    typedef std::map<std::string, impl_callback_t>      impl_map_t;
 
     static logger_impl_mgr& instance() { 
         return singleton<logger_impl_mgr>::instance();

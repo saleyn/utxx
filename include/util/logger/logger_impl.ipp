@@ -26,7 +26,8 @@
 namespace util {
 
 template <int N>
-log_msg_info::log_msg_info(logger& a_logger, log_level lv, const char (&filename)[N], size_t ln)
+inline log_msg_info::log_msg_info(
+    logger& a_logger, log_level lv, const char (&filename)[N], size_t ln)
     : m_logger(a_logger)
     , m_level(lv)
     , m_src_location_len(
@@ -42,31 +43,6 @@ inline void log_msg_info::log(const char* fmt, ...) {
     va_list args; va_start(args, fmt);
     BOOST_SCOPE_EXIT( (&args) ) { va_end(args); } BOOST_SCOPE_EXIT_END;
     m_logger.log(*this, fmt, args);
-}
-
-inline int logger_impl::format_message(
-    char* buf, size_t size, bool add_new_line,
-    bool a_show_ident, bool a_show_location,
-    const timestamp& a_tv,
-    const log_msg_info& info, const char* fmt, va_list args
-) throw (badarg_error)
-{
-    int len = a_tv.write(m_log_mgr->timestamp_type(), buf, size);
-    len += sprintf(buf+len, "|%-7s|", logger::log_level_to_str(info.level()));
-    if (a_show_ident)
-        len += sprintf(buf+len, "%s|", info.get_logger().ident().c_str());
-    int n = vsnprintf(buf+len, size-len-2, fmt, args);
-
-    if (n < 0)
-        throw badarg_error("Error formatting string:", fmt, ' ',
-            (info.has_src_location() ? info.src_location() : ""));
-    len += n;
-
-    if (info.has_src_location() && a_show_location)
-        len += snprintf(buf+len, size-len-1, (add_new_line ? "%s\n" : "%s"), info.src_location());
-    else if (add_new_line)
-        buf[len++] = '\n';
-    return len;
 }
 
 } // namespace util
