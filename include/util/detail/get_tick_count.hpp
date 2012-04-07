@@ -65,7 +65,7 @@ namespace detail {
             : "r6");
         return t.ll;
     }
-    #elif (defined(_CPU_IA32) || defined(_CPU_IA64) || defined(__x86_64))
+    #elif (defined(_CPU_IA32) || defined(_CPU_IA64) || defined(__i386__) || defined(__x86_64))
     /* Tick count code for IA-32 architecture (Intel and AMD x86, and 64-bit 
      * versions). */
     static inline hrtime_t get_tick_count() {
