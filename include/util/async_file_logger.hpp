@@ -95,7 +95,7 @@ struct async_logger_traits {
 
 /// Asynchronous logger of text messages.
 template<typename traits = async_logger_traits>
-class async_logger {
+class basic_async_logger {
 protected:
     class cons: public traits::msg_type {
         typedef typename traits::msg_type  base;
@@ -135,12 +135,12 @@ protected:
     void print_error(int, const char* what, int line);
 
 public:
-    explicit async_logger(const allocator& alloc = allocator())
-        : m_allocator(alloc), m_head(NULL), m_cancel(false)
-        , m_max_queue_size(0), m_file(NULL)
+    explicit basic_async_logger(const allocator& alloc = allocator())
+        : m_allocator(alloc), m_file(NULL), m_head(NULL), m_cancel(false)
+        , m_max_queue_size(0)
     {}
 
-    ~async_logger() {
+    ~basic_async_logger() {
         if (m_file)
             stop();
     }
@@ -167,8 +167,8 @@ public:
 
 /// Asynchronous text logger
 template <class Traits = async_logger_traits>
-struct text_file_logger: public async_logger<Traits> {
-    typedef async_logger<Traits>        base;
+struct text_file_logger: public basic_async_logger<Traits> {
+    typedef basic_async_logger<Traits>  base;
     typedef typename base::log_msg_type log_msg_type;
     typedef typename base::allocator    allocator;
 
@@ -187,14 +187,14 @@ struct text_file_logger: public async_logger<Traits> {
     /// Write string to file
     int write(const char* s) {
         return (!this->m_file || this->m_cancel)
-            ? -1 : this->internal_write(new log_msg_type(this->m_allocator, s));
+            ? -1 : this->internal_write(new log_msg_type(s, this->m_allocator));
     }
 
     /// Write \a s to file asynchronously
     template<typename T>
     int write(const T& s) {
         return (!this->m_file || this->m_cancel)
-            ? -1 : this->internal_write(new log_msg_type(this->m_allocator, s));
+            ? -1 : this->internal_write(new log_msg_type(s, this->m_allocator));
     }
 
     /// Formatted write with argumets
@@ -213,7 +213,7 @@ struct text_file_logger: public async_logger<Traits> {
 //-----------------------------------------------------------------------------
 
 template<typename traits>
-int async_logger<traits>::start(const std::string& filename)
+int basic_async_logger<traits>::start(const std::string& filename)
 {
     if (m_file)
         return -1;
@@ -233,14 +233,14 @@ int async_logger<traits>::start(const std::string& filename)
 
     m_thread = boost::shared_ptr<boost::thread>(
         new boost::thread(
-            boost::bind(&async_logger<traits>::run, this, &l_synch)));
+            boost::bind(&basic_async_logger<traits>::run, this, &l_synch)));
 
     l_synch.wait();
     return 0;
 }
 
 template<typename traits>
-void async_logger<traits>::stop()
+void basic_async_logger<traits>::stop()
 {
     if (!m_file)
         return;
@@ -253,7 +253,7 @@ void async_logger<traits>::stop()
 }
 
 template<typename traits>
-void async_logger<traits>::run(boost::barrier* a_barrier)
+void basic_async_logger<traits>::run(boost::barrier* a_barrier)
 {
     // Wait until the caller is ready
     a_barrier->wait();
@@ -279,7 +279,7 @@ void async_logger<traits>::run(boost::barrier* a_barrier)
 }
 
 template<typename traits>
-int async_logger<traits>::commit(const struct timespec* tsp)
+int basic_async_logger<traits>::commit(const struct timespec* tsp)
 {
     ASYNC_TRACE(("Committing head: %p\n", m_head));
 
@@ -300,7 +300,7 @@ int async_logger<traits>::commit(const struct timespec* tsp)
         l_cur_head = const_cast<const log_msg_type*>( m_head );
     } while( !atomic::cas(&m_head, l_cur_head, l_new_head) );
 
-    ASYNC_TRACE(( "---> Cur head: %p, new head: %p\n", l_cur_head, m_head));
+    ASYNC_TRACE(( " --> cur head: %p, new head: %p\n", l_cur_head, m_head));
 
     BOOST_ASSERT(l_cur_head);
 
@@ -308,9 +308,9 @@ int async_logger<traits>::commit(const struct timespec* tsp)
     const log_msg_type* l_last = NULL;
     const log_msg_type* l_next = l_cur_head;
 
-    // Reverse the section of this list from current head down
+    // Reverse the section of this list
     for(const log_msg_type* p = l_cur_head; l_next; count++, p = l_next) {
-        ASYNC_TRACE(("  Set last[%p] -> next[%p]\n", l_next, l_last));
+        ASYNC_TRACE(("Set last[%p] -> next[%p]\n", l_next, l_last));
         l_next = p->next();
         p->next(l_last);
         l_last = p;
@@ -330,7 +330,8 @@ int async_logger<traits>::commit(const struct timespec* tsp)
             return -1;
         l_next = p->next();
         p->next(NULL);
-        ASYNC_TRACE(("Wrote (%d bytes): %p (next: %p): %s\n", p->size(), p, l_next, p->c_str()));
+        ASYNC_TRACE(("Wrote (%d bytes): %p (next: %p): %s\n",
+            p->size(), p, l_next, p->c_str()));
         delete p;
     }
 
@@ -348,7 +349,7 @@ int async_logger<traits>::commit(const struct timespec* tsp)
 }
 
 template<typename traits>
-int async_logger<traits>::internal_write(const log_msg_type* msg) {
+int basic_async_logger<traits>::internal_write(const log_msg_type* msg) {
     if (!msg)
         return -9;
 
@@ -371,7 +372,7 @@ int async_logger<traits>::internal_write(const log_msg_type* msg) {
 
 //-----------------------------------------------------------------------------
 template<typename traits>
-void async_logger<traits>::print_error(int a_errno, const char* a_what, int a_line) {
+void basic_async_logger<traits>::print_error(int a_errno, const char* a_what, int a_line) {
     if (on_error)
         on_error(a_errno, a_what);
     else

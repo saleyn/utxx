@@ -36,13 +36,13 @@ namespace synch {
 //-----------------------------------------------------------------------------
 
 futex::futex(bool initialize) {
-	int pagesize = sysconf(_SC_PAGESIZE);
+    int pagesize = sysconf(_SC_PAGESIZE);
 
-	// Align pointer to previous start of page
-	void* area = (void *)((unsigned long)this / pagesize * pagesize);
+    // Align pointer to previous start of page
+    void* area = (void *)((unsigned long)this / pagesize * pagesize);
 
-	// Round size up to page size
-	size_t size = (sizeof(futex) + pagesize - 1) / pagesize * pagesize;
+    // Round size up to page size
+    size_t size = (sizeof(futex) + pagesize - 1) / pagesize * pagesize;
 
     #ifndef PROT_SEM
     static const int PROT_SEM = 0x08;
@@ -52,7 +52,7 @@ futex::futex(bool initialize) {
     // explicitely pinning the page owning this futex to memory, which
     // strictly speaking is unnecessary because futex calls do this
     // implicitely anyway.
-	mprotect(area, size, PROT_READ|PROT_WRITE|PROT_SEM);
+    mprotect(area, size, PROT_READ|PROT_WRITE|PROT_SEM);
 
     if (initialize)
         commit(1);
@@ -66,11 +66,11 @@ futex::futex(bool initialize) {
 int futex::wait(const struct timespec *timeout, int* old_val) {
     int  val, res;
 
-	while ((val = wait_fast(old_val)) != 0) { 
-		switch (res = wait_slow(val, timeout)) {
+    while ((val = wait_fast(old_val)) != 0) { 
+        switch (res = wait_slow(val, timeout)) {
             case -1: return -1;          // error
-    		case  1: return  0;          // passed
-    		case  0:                     // slept
+            case  1: return  0;          // passed
+            case  0:                     // slept
                 // If we were woken, someone else might be sleeping too
                 // set the count to wake them up
                 m_count = -1;
@@ -78,11 +78,11 @@ int futex::wait(const struct timespec *timeout, int* old_val) {
         }
         if (old_val)
             *old_val = val;
-	}
-	#ifdef PERF_STATS
-	++m_wait_fast_count;
-	#endif
-	return 0;
+    }
+    #ifdef PERF_STATS
+    ++m_wait_fast_count;
+    #endif
+    return 0;
 }
 
 /// @returns  0 if the process was woken by a FUTEX_WAKE call.
@@ -107,7 +107,7 @@ int futex::wait_slow(int val, const struct timespec *rel) {
 }
 
 int futex::signal_slow(int count) {
-	commit(1);
+    commit(1);
     #ifdef PERF_STATS
     ++m_wake_count;
     #endif
@@ -117,7 +117,7 @@ int futex::signal_slow(int count) {
 int futex::signal_fair() {
     // Is anyone waiting?
     if (!signal_fast()) {
-    	commit(FUTEX_PASSED);
+        commit(FUTEX_PASSED);
         #ifdef PERF_STATS
         ++m_wake_count;
         #endif

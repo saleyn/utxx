@@ -205,7 +205,7 @@ public:
         return -1;
     }
 
-    int  dequeue(T& item, struct timespec* timeout = NULL) {
+    int  dequeue(T& item, const struct timespec* timeout = NULL) {
         if (m_terminated)
             return -2;
         int sync_val = m_not_empty_condition.value();

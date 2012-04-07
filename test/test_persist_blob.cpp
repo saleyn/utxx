@@ -120,7 +120,7 @@ public:
             test_blob o(i, i<<1);
             m_logger.set(o);
             if (i % 1000 == 0) {
-                long v[2];
+                uint32_t v[2];
                 m_logger.vsn(v[0], v[1]);
                 std::cerr << "producer" << m_instance << " - " << i 
                           << "(v1=" << v[0] << ", v2=" << v[1] << ") contentions: r="

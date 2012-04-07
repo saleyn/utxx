@@ -98,7 +98,7 @@ class futex {
             :"=m" (m_count), "=qm" (eqz)
             :"m"  (m_count) : "memory");
 
-        return eqz == 0 ? 0 : -1;
+        return eqz ? 0 : -1;
     }
 
     /// Atomic inc

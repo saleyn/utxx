@@ -50,9 +50,11 @@ class persist_blob
 {
 private:
     struct blob_t {
-        long vsn1;
-        long vsn2;
-        T    data;
+        static const uint32_t s_version = 0xFEAB0001;
+        long       vsn1;
+        long       vsn2;
+        uint32_t   version;
+        T          data;
     } __attribute((aligned( (atomic::cacheline::size) )));
     
     BOOST_STATIC_ASSERT(sizeof(blob_t) % atomic::cacheline::size == 0);
@@ -73,15 +75,35 @@ public:
 
     int  init(const char* a_file, const T* a_init_val = NULL,
         int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
-    
+
+    bool is_open() const { return m_blob; }
+
+    void close();
+
     void reset();
 
     /// Flush buffered changes to disk
     int  sync()                     { return m_fd ? ::fsync(m_fd) : -1; }
 
     // Use the following get/set functions for concurrent access
-    T get();
+    T    get();
     void set(const T& src);
+
+    uint32_t begin_update() {
+        return atomic::add(&m_blob->vsn1, 1)+1;
+    }
+
+    bool end_update(uint32_t a_vsn) {
+        if (m_blob->vsn1 != a_vsn)
+            return false;
+        if (m_blob->vsn2 < a_vsn-1)
+            m_blob->vsn2 = a_vsn;
+        else if (m_blob->vsn2 >= a_vsn)
+            return false;
+        m_blob->vsn2 = a_vsn;
+        atomic::memory_barrier();
+        return true;
+    }
 
     // Use the following get/set functions for non-concurrent "dirty" access
     T&   dirty_get()                { BOOST_ASSERT(m_blob); return m_blob->data; }
@@ -92,10 +114,8 @@ public:
 
     unsigned long read_contentions()    { return m_read_contentions;  }
     unsigned long write_contentions()   { return m_write_contentions; }
-    void          vsn(long& v1, long& v2) { v1 = m_blob->vsn1; v2 = m_blob->vsn2; }
+    void          vsn(uint32_t& v1, uint32_t& v2) { v1 = m_blob->vsn1; v2 = m_blob->vsn2; }
 
-private:
-    void close();
 };
 
 template<typename T>
@@ -140,6 +160,11 @@ int persist_blob<T>::init(const char* a_file, const T* a_init_val, int a_mode) {
             m_blob->data = *a_init_val;
         } else
             bzero(m_blob, sizeof(T));
+        m_blob->version = blob_t::s_version;
+    } else if (blob_t::s_version != m_blob->version) {
+        // Wrong software version
+        close();
+        return -3;
     }
 
     return 0;
@@ -147,12 +172,12 @@ int persist_blob<T>::init(const char* a_file, const T* a_init_val, int a_mode) {
 
 template<typename T>
 void persist_blob<T>::close() {
-    if( m_blob ) {
-        munmap( reinterpret_cast<char *>( m_blob ), sizeof(T) );
+    if (m_blob) {
+        ::munmap( reinterpret_cast<char *>(m_blob), sizeof(T) );
         m_blob = NULL;
     }
     if( m_fd > -1 ) {
-        ::close( m_fd );
+        ::close(m_fd);
         m_fd = -1;
     }
 }
@@ -173,7 +198,7 @@ T persist_blob<T>::get() {
         data = m_blob->data;
         v1   = m_blob->vsn1;
         atomic::memory_barrier();
-    } while (v1 != v2);
+    } while (v1 != v2 || v2 != m_blob->vsn2);
 
     return data;
 }
@@ -187,7 +212,7 @@ void persist_blob<T>::set(const T& src) {
         if (i++ > 0)
             ++m_write_contentions;
 
-        v = ++m_blob->vsn1;
+        v = atomic::add(&m_blob->vsn1, 1) + 1;
         m_blob->data = src;
     } while (!atomic::cas(&m_blob->vsn2, v-1, v));
 }
@@ -200,6 +225,7 @@ void persist_blob<T>::reset() {
     m_blob->vsn2  = 0;
     m_read_contentions  = 0;
     m_write_contentions = 0;
+    atomic::memory_barrier();
 }
 
 } // namespace util

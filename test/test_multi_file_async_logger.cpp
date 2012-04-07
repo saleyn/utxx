@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
-/// \file  test_async_file_logger.cpp
+/// \file  test_multi_file_async_logger.cpp
 //----------------------------------------------------------------------------
-/// \brief This is a test file for validating async_file_logger functionality.
+/// \brief This is a test file for validating multi_file_async_logger.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2012-03-21
@@ -34,71 +34,90 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <iomanip>
 #include <unistd.h>
 
-//#define BOOST_TEST_MAIN
+// #define DEBUG_ASYNC_LOGGER
+#define DEBUG_USE_BOOST_POOL_ALLOC
+
 #include <boost/test/unit_test.hpp>
-#include <util/async_file_logger.hpp>
+#include <boost/pool/pool_alloc.hpp>
+#include <util/multi_file_async_logger.hpp>
 #include <util/perf_histogram.hpp>
 #include <util/verbosity.hpp>
 
-const char* s_filename = "/tmp/test_async_file_logger.log";
-const char* s_str1     = "This is a const char* string line:%d\n";
-const char* s_str2     = "This is an stl std::string line:";
-const char* s_str3     = "This is another const char* string without line\n";
-
-static const int32_t ITERATIONS =
-    getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 100000u;
+static const size_t s_file_num  = 2;
+static const char* s_filename[] = { "/tmp/test_multi_file_async_logger1.log",
+                                    "/tmp/test_multi_file_async_logger2.log" };
+static const char s_str1[]      = "This is a const char* string line:%d\n";
+static const char s_str2[]      = "This is an stl std::string line:";
+static const char s_str3[]      = "This is another const char* string without line\n";
 
 using namespace boost::unit_test;
 using namespace util;
 
-struct T {
-    void on_error(int, const char* s) {
-        if (verbosity::level() > VERBOSE_NONE)
-            std::cerr << "This error is supposed to happen: " << s << std::endl;
-    }
-};
+namespace {
+#ifdef DEBUG_USE_BOOST_POOL_ALLOC
+    struct test_traits : public multi_file_async_logger_traits {
+        typedef boost::pool_allocator<void> allocator;
+    };
+#else
+    typedef multi_file_async_logger_traits test_traits;
+#endif
+} // namespace
 
-void on_error(int, const char*) {} 
+typedef basic_multi_file_async_logger<test_traits> logger_t;
 
-BOOST_AUTO_TEST_CASE( test_async_logger_err_handler )
-{
-    text_file_logger<> l_logger;
-    l_logger.on_error = &on_error;
-
-    T t;
-
-    l_logger.on_error = boost::bind(&T::on_error, &t, _1, _2);
-    BOOST_REQUIRE_EQUAL(-1, l_logger.start("/proc/xxxx/yyyy"));
-    l_logger.stop();
+void unlink() {
+    for (size_t i = 0; i < s_file_num; i++)
+        ::unlink(s_filename[i]);
 }
 
-BOOST_AUTO_TEST_CASE( test_async_logger_perf )
+BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 {
-    enum { ITERATIONS = 500000 };
+    static const int32_t ITERATIONS =
+        getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 250000u;
+
+    unlink();
+
+    typename logger_t::file_id l_fds[s_file_num];
     
-    {
-        unlink(s_filename);
+    logger_t l_logger;
 
-        text_file_logger<> l_logger;
-
-        int ok = l_logger.start(s_filename);
-
-        BOOST_REQUIRE ( ok == 0 );
-
-        perf_histogram perf("Async logger latency");
-
-        for (int i = 0; i < ITERATIONS; i++) {
-            perf.start();
-            int n = l_logger.fwrite(s_str1, i);
-            perf.stop();
-            BOOST_REQUIRE( 0 == n );
-        }
-
-        perf.dump(std::cout);
+    for (size_t i = 0; i < s_file_num; i++) {
+        l_fds[i] = l_logger.open_file(s_filename[i], false);
+        BOOST_REQUIRE(l_fds[i].fd() >= 0);
     }
+
+    int ok = l_logger.start();
+
+    BOOST_REQUIRE_EQUAL(0, ok);
+
+    perf_histogram perf("Async logger latency");
+
+    for (int i = 0; i < ITERATIONS; i++) {
+        char* p = l_logger.allocate(sizeof(s_str1));
+        char* q = l_logger.allocate(sizeof(s_str3));
+        strncpy(p, s_str1, sizeof(s_str1));
+        strncpy(q, s_str3, sizeof(s_str3));
+        perf.start();
+        int n = l_logger.write(l_fds[0].fd(), p, sizeof(s_str1));
+        perf.stop();
+        BOOST_REQUIRE_EQUAL(0, n);
+        perf.start();
+        int m = l_logger.write(l_fds[1].fd(), q, sizeof(s_str3));
+        perf.stop();
+        BOOST_REQUIRE_EQUAL(0, m);
+    }
+
+    if (verbosity::level() != VERBOSE_NONE) {
+        perf.dump(std::cout);
+        printf("Max queue size = %d\n", l_logger.max_queue_size());
+    }
+
+    l_logger.stop();
+    unlink();
 }
 
 //-----------------------------------------------------------------------------
+/*
 BOOST_AUTO_TEST_CASE( test_async_logger_append )
 {
     enum { ITERATIONS = 10 };
@@ -242,3 +261,5 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
 
     ::unlink(s_filename);
 }
+
+*/
