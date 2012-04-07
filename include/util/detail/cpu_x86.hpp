@@ -51,8 +51,17 @@ namespace detail {
 template <typename T, typename U>
 inline void static cpuid(T in, U& a, U& b, U& c, U& d) {
 //#define cpuid( in, a, b, c, d )                 
-    __asm__ ( "cpuid"
-        : "=a" (a), "=b" (b), "=c" (c), "=d" (d)
+    __asm__ __volatile__ (
+#if defined(__i386__) && defined(__PIC__)
+        "movl %%ebx, %%edi;"
+        "cpuid;"
+        "xchgl %%ebx, %%edi;"
+        : "=a" (a), "=D" (b)
+#else
+        "cpuid"
+        : "=a" (a), "=b" (b)
+#endif
+        , "=c" (c), "=d" (d)
         : "a" (in) )
     ;
 }
@@ -61,8 +70,17 @@ inline void static cpuid(T in, U& a, U& b, U& c, U& d) {
 template <typename T, typename U>
 inline void static cpuid(T in1, T in2, U& a, U& b, U& c, U& d) {
 //#define cpuid2( in1, in2, a, b, c, d )
-    __asm__ ( "cpuid"
-        : "=a" (a), "=b" (b), "=c" (c), "=d" (d)
+    __asm__ __volatile__ (
+#if defined(__i386__) && defined(__PIC__)
+        "movl %%ebx, %%edi;"
+        "cpuid;"
+        "xchgl %%ebx, %%edi;"
+        : "=a" (a), "=D" (b)
+#else
+        "cpuid"
+        : "=a" (a), "=b" (b)
+#endif
+        , "=c" (c), "=d" (d)
         : "a" (in1), "c" (in2) )
     ;
 }
