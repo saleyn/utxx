@@ -160,9 +160,9 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
         "}";
     std::stringstream s; s << s_data;
     variant_tree tree;
-    boost::property_tree::info_parser::read_info(s, tree);
+    variant_tree::read_info(s, tree);
     if (verbosity::level() > VERBOSE_NONE)
-        boost::property_tree::info_parser::write_info(std::cout, tree);
+        variant_tree::write_info(std::cout, tree);
     {
         std::string str = tree.get<std::string>("test.verbose");
         BOOST_REQUIRE_EQUAL("debug", str);
@@ -282,17 +282,12 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
 
     {
         variant_tree tree;
-        std::stringstream s; s << data1;
-        //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(s.str(), tree, std::string(), 0);
-    }
-    {
-        variant_tree tree;
         std::stringstream s; s << data2;
         boost::property_tree::ptree pt;
-        boost::property_tree::info_parser::read_info_internal(
-            s, tree, std::string(), 0);
+        //boost::property_tree::info_parser::read_info_internal(
+        //    s, tree, std::string(), 0);
         //boost::property_tree::ptree pt;
-        //boost::property_tree::info_parser::read_info(s.str(), pt);
+        variant_tree::read_info(s, tree);
         //tree.swap(pt);
         //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(s.str(), tree, std::string(), 0);
     }

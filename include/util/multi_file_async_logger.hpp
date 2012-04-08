@@ -93,6 +93,8 @@ struct basic_multi_file_async_logger {
         bool operator== (const file_id& a) {
             return m_fd == a.m_fd && m_version == a.m_version;
         }
+
+        operator bool() const { return m_fd >= 0; }
     };
 
 private:
@@ -204,6 +206,13 @@ public:
     /// previously allocated using the allocate() function.
     /// The logger will implicitely assume deallocation responsibility.
     int write(size_t a_fd, void* a_data, size_t a_sz);
+
+    int write(const file_id& a_file, void* a_data, size_t a_sz) {
+        return write(a_file.id(), a_data, a_sz);
+    }
+
+    /// Write a copy of the string a_data to a file.
+    int write(const file_id& a_file, const std::string& a_data);
 
     /// @return max size of the commit queue
     const int max_queue_size()  const { return m_max_queue_size; }
@@ -320,6 +329,24 @@ write(size_t a_fd, void* a_data, size_t a_sz) {
     p->args.msg.size = a_sz;
     return internal_enqueue(p);
 }
+
+template<typename traits>
+int basic_multi_file_async_logger<traits>::
+write(const file_id& a_file, const std::string& a_data) {
+    BOOST_ASSERT(a_file.id() >= 0 && a_file.fd() < m_files.size());
+    if (m_cancel || unlikely(m_files[a_file.fd()].error || m_files[a_file.fd()].fd < 0))
+        return -1;
+
+    command_t* p = m_cmd_allocator.allocate(1);
+    new (p) command_t(command_t::msg, a_file.fd());
+
+    char* q = m_msg_allocator.allocate(a_data.size());
+    memcpy(q, a_data.c_str(), a_data.size());
+    p->args.msg.data = q;
+    p->args.msg.size = a_data.size();
+    return internal_enqueue(p);
+}
+
 
 template<typename traits>
 typename basic_multi_file_async_logger<traits>::file_id

@@ -176,7 +176,9 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
 
         bool cancel = false, error = false;
         {
-            static const int s_prod = 2, s_cons = 2;
+            int n = getenv("PROD_THREADS") ? atoi(getenv("PROD_THREADS")) : 2;
+            int m = getenv("CONS_THREADS") ? atoi(getenv("CONS_THREADS")) : 2;
+            static const int s_prod = n, s_cons = m;
 
             boost::shared_ptr<boost::thread> l_prod_th[s_prod];
             boost::shared_ptr<boost::thread> l_cons_th[s_cons];

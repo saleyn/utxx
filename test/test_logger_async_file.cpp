@@ -319,9 +319,9 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
             else if (i == 18)
                 printf("  [<%3dus] = %9d (%6.2f%% / %6.2f%%)\n", 500, time_stats[i], pcnt, tot_pcnt);
             else if (i == 19)
-                printf("  [<   1s] = %9d (%6.2f%% / %6.2f%%)\n", time_stats[i], pcnt, tot_pcnt);
+                printf("  [<  1ms] = %9d (%6.2f%% / %6.2f%%)\n", time_stats[i], pcnt, tot_pcnt);
             else
-                printf("  [>   1s] = %9d (%6.2f%% / %6.2f%%)\n", time_stats[i], pcnt, tot_pcnt);
+                printf("  [>  1ms] = %9d (%6.2f%% / %6.2f%%)\n", time_stats[i], pcnt, tot_pcnt);
         }
     }
 
