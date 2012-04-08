@@ -153,7 +153,7 @@ public:
     io_error(const std::string& a_str) { *this << a_str; }
 
     io_error(int a_errno) {
-        *this << errno_string(errno);
+        *this << errno_string(a_errno);
     }
 
     io_error(int a_errno, const char* a_prefix) {
