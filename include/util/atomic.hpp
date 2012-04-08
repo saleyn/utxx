@@ -65,6 +65,7 @@ namespace atomic {
             return prev == vold;
         }
 
+#if defined(__x86_64__)
         template<> __inline__ bool cas<8, unsigned long>(
             volatile void* ptr, unsigned long vold, unsigned long vnew)
         {
@@ -77,6 +78,7 @@ namespace atomic {
                     );
             return prev == vold;
         }
+#endif
 
         template<int N, typename T> unsigned long cmpxchg(
             volatile void* ptr, T vold, T vnew);
@@ -94,6 +96,7 @@ namespace atomic {
             return prev;
         }
 
+#if defined(__x86_64__)
         template<> __inline__ unsigned long cmpxchg<8, unsigned long>(
             volatile void* ptr, unsigned long vold, unsigned long vnew)
         {
@@ -106,6 +109,7 @@ namespace atomic {
             );
             return prev;
         }
+#endif
 
         template<int N, typename T> bool dcas(
             volatile void* ptr, T* vold, T* vnew);
@@ -124,6 +128,7 @@ namespace atomic {
             return r;
         }
 
+#if defined(__x86_64__)
         template<> __inline__ bool dcas<16, unsigned long>(
             volatile void* ptr, unsigned long* vold, unsigned long* vnew)
         {
@@ -137,6 +142,7 @@ namespace atomic {
                 : "cc");
             return r;
         }
+#endif
 
     }
 
