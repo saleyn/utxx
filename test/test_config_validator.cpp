@@ -141,7 +141,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator1 )
         << "    { address \"2.3.4.5\" }\n"
         << "  }\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         test::cfg_validator l_validator;
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
     std::stringstream l_stream;
     l_stream << "address \"yahoo\"\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     test::cfg_validator l_validator;
     try {
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
     std::stringstream l_stream;
     l_stream << "duration 10\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     test::cfg_validator l_validator;
     try {
@@ -192,7 +192,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
     l_stream.clear();
     l_stream << "country US { ARCA connection { address abc } }\nduration 10\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -205,7 +205,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
     l_stream.clear();
     l_stream << "country US { }\nduration 10\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator4 )
     std::stringstream l_stream;
     l_stream << "country US { ARCA connection { address abc } }\nduration 5\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     test::cfg_validator l_validator;
     try {
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator5 )
     std::stringstream l_stream;
     l_stream << "country US { ARCA connection { address abc } }\nduration 61\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     test::cfg_validator l_validator;
     try {
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator6 )
     l_stream << "duration 10\n"
              << "country \"ER\" { ARCA connection { address abc } }\n";
 
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     test::cfg_validator l_validator;
     try {
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
 
     l_stream << "duration 10\n"
              << "country \"US\"\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_stream << "duration 10\n"
              << "country \"US\"\n"
              << "{\"ARCA\" example }\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -309,7 +309,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_stream << "duration 10\n"
              << "country \"ER\" { ARCA connection { address abc } }\n"
              << "abc test\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_stream << "duration 10\n"
              << "country \"US\" { ARCA connection { address abc } }\n"
              << "abc test\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -337,7 +337,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_config.clear();
     l_stream.clear();
     l_stream << "duration 10\n country \"US\"\n { \"\" example }\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -350,7 +350,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_config.clear();
     l_stream.clear();
     l_stream << "address abc\n address bcd\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -369,7 +369,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
 
     l_stream << "address 10\nduration 15\n"
              << "country \"US\" { ARCA connection { address abc } }\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     l_stream.clear();
     l_stream << "duration abc\n"
              << "country \"US\" { ARCA connection { address abc } }\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -398,7 +398,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     l_stream << "enabled 1\n"
              << "duration 10\n"
              << "country \"US\" { ARCA connection { address abc } }\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);
@@ -413,7 +413,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     l_stream << "cost 1\n"
              << "duration 10\n"
              << "country \"US\" { ARCA connection { address abc } }\n";
-    boost::property_tree::info_parser::read_info(l_stream, l_config);
+    variant_tree::read_info(l_stream, l_config);
 
     try {
         l_validator.validate(l_config);

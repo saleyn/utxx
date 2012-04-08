@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger_err_handler )
     T t;
 
     l_logger.on_error = boost::bind(&T::on_error, &t, _1, _2);
-    BOOST_REQUIRE_EQUAL(-1, l_logger.start("/proc/xxxx/yyyy"));
+    BOOST_REQUIRE_EQUAL(-2, l_logger.start("/proc/xxxx/yyyy"));
     l_logger.stop();
 }
 

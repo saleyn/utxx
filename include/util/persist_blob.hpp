@@ -83,7 +83,10 @@ public:
     void reset();
 
     /// Flush buffered changes to disk
-    int  sync()                     { return m_fd ? ::fsync(m_fd) : -1; }
+    int  sync()                         { return m_fd ? ::fsync(m_fd) : -1; }
+
+    /// Name of the underlying memory mapped file
+    const std::string& filename() const { return m_filename; }
 
     // Use the following get/set functions for concurrent access
     T    get();
@@ -120,7 +123,7 @@ public:
 
 template<typename T>
 int persist_blob<T>::init(const char* a_file, const T* a_init_val, int a_mode) {
-    if( !a_file )
+    if (!a_file)
         return -1;
 
     close();
