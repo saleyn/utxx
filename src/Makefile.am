@@ -41,14 +41,9 @@ libutil_la_SOURCES = \
 libutil_la_LTADD    = -version-info 1:0:0 -shared
 libutil_la_LIBS     = $(BOOST_THREAD_LIBS)
 libutil_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
-#libutil_la_LDFLAGS  = -shared
 
-#libutil_la_includedir=$(includedir)/@PACKAGE@-@PACKAGE_VERSION@/@PACKAGE@
-libutil_la_includedir=$(includedir)/@PACKAGE@
-libutil_la_include_HEADERS = $(util_headers:%=../include/@PACKAGE@/%)
+nobase_include_HEADERS = $(util_headers:%=../include/@PACKAGE@/%)
 
-#If you have multiple architectures, install config.h in architecture-specific location:
-libutil_la_libincludedir = $(libdir)/@PACKAGE@
-nodist_libutil_la_libinclude_HEADERS = ../config.h
+nodist_libutil_la_SOURCES = ../config.h
 
 EXTRA_DIST = config_validator.xsl
