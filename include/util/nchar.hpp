@@ -10,7 +10,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file may be included in several open-source projects.
+This file is part of the util open-source project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 

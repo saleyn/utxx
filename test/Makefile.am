@@ -22,6 +22,7 @@ test_util_SOURCES  	= test_alloc_fixed_page.cpp \
 					  test_logger_syslog.cpp \
 					  test_math.cpp \
 					  test_multi_file_async_logger.cpp \
+					  test_name.cpp \
 					  test_nchar.cpp \
 					  test_path.cpp \
 					  test_pcap.cpp \

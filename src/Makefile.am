@@ -1,43 +1,107 @@
 util_LTLIBRARIES = libutil.la
 
-util_headers = epoll.hpp nchar.hpp config_validator.hpp alloc_fixed_pool.hpp \
-			   typeinfo.hpp math.hpp timestamp.hpp delegate/flex_binder.hpp \
-			   delegate/event.hpp delegate/detail/delegate_template.hpp \
-			   delegate/detail/delegate_list.hpp delegate/FastDelegateBind.hpp \
-			   delegate/FastDelegate.hpp delegate/delegate.hpp verbosity.hpp \
-			   path.hpp hashmap.hpp time_val.hpp alloc_fixed_page.hpp \
-			   event.hpp convert.hpp variant_tree.hpp detail/get_tick_count.hpp \
-			   detail/gettimeofday.hpp detail/bit_count.hpp \
-			   detail/handler_traits.hpp detail/cpu_x86.hpp \
-			   detail/mean_variance.hpp pidfile.hpp iovector.hpp synch.hpp \
-			   test_helper.hpp cpu.hpp logger.hpp allocator.hpp alloc_cached.hpp \
-			   container/detail/base_fifo.hpp container/detail/base_allocator.hpp \
-			   container/concurrent_array.hpp container/concurrent_fifo.hpp \
-			   container/concurrent_priority_queue.hpp \
-			   container/concurrent_stack.hpp url.hpp high_res_timer.hpp \
-			   singleton.hpp bits.hpp buffer.hpp variant.hpp bitmap.hpp \
-			   mt_queue.hpp running_stat.hpp atomic.hpp error.hpp endian.hpp \
-			   meta.hpp signal_block.hpp logger/logger.hpp logger/logger_impl.hpp \
-			   logger/logger_impl_syslog.hpp logger/logger_impl_file.hpp \
-			   logger/logger_impl.ipp logger/logger_impl_console.hpp \
-			   logger/logger_impl_async_file.hpp string.hpp iovec.hpp \
-			   concurrent_alloc_fixed_page.hpp rate_throttler.hpp \
-			   compiler_hints.hpp pcap.hpp delegate.hpp
+util_headers = \
+		allocator.hpp \
+		alloc_cached.hpp \
+		alloc_fixed_page.hpp \
+		alloc_fixed_pool.hpp \
+		async_file_logger.hpp \
+		atomic.hpp \
+		bitmap.hpp \
+		bits.hpp \
+		buffer.hpp \
+		compiler_hints.hpp \
+		concurrent_alloc_fixed_page.hpp \
+		config_validator.hpp \
+		config_validator.xsl \
+		container \
+		container/concurrent_array.hpp \
+		container/concurrent_fifo.hpp \
+		container/concurrent_priority_queue.hpp \
+		container/concurrent_stack.hpp \
+		container/detail \
+		container/detail/base_allocator.hpp \
+		container/detail/base_fifo.hpp \
+		convert.hpp \
+		cpu.hpp \
+		delegate \
+		delegate/delegate.hpp \
+		delegate/detail \
+		delegate/detail/delegate_list.hpp \
+		delegate/detail/delegate_template.hpp \
+		delegate/detail/make_delegates.pl \
+		delegate/event.hpp \
+		delegate/FastDelegateBind.hpp \
+		delegate/FastDelegate.hpp \
+		delegate/flex_binder.hpp \
+		delegate.hpp \
+		delegate/LICENSE \
+		detail \
+		detail/bit_count.hpp \
+		detail/cpu_x86.hpp \
+		detail/get_tick_count.hpp \
+		detail/gettimeofday.hpp \
+		detail/handler_traits.hpp \
+		detail/mean_variance.hpp \
+		endian.hpp \
+		epoll.hpp \
+		error.hpp \
+		event.hpp \
+		hashmap.hpp \
+		high_res_timer.hpp \
+		iovec.hpp \
+		iovector.hpp \
+		logger \
+		logger.hpp \
+		logger/logger.hpp \
+		logger/logger_impl_async_file.hpp \
+		logger/logger_impl_console.hpp \
+		logger/logger_impl_file.hpp \
+		logger/logger_impl.hpp \
+		logger/logger_impl.ipp \
+		logger/logger_impl_syslog.hpp \
+		math.hpp \
+		meta.hpp \
+		mt_queue.hpp \
+		multi_file_async_logger.hpp \
+		name.hpp \
+		nchar.hpp \
+		path.hpp \
+		pcap.hpp \
+		perf_histogram.hpp \
+		persist_blob.hpp \
+		pidfile.hpp \
+		rate_throttler.hpp \
+		running_stat.hpp \
+		signal_block.hpp \
+		singleton.hpp \
+		string.hpp \
+		synch.hpp \
+		test_helper.hpp \
+		timestamp.hpp \
+		time_val.hpp \
+		typeinfo.hpp \
+		url.hpp \
+		variant.hpp \
+		variant_tree.hpp \
+		verbosity.hpp
 
 libutil_la_SOURCES = \
-	timestamp.cpp \
-	path.cpp \
-	high_res_timer.cpp \
-	logger.cpp \
-	logger_impl.cpp \
-	logger_impl_console.cpp \
-	logger_impl_async_file.cpp \
-	logger_impl_syslog.cpp \
-	synch.cpp \
-	convert.cpp \
-	url.cpp \
-	config_validator.cpp \
-	logger_impl_file.cpp
+		config_validator.cpp \
+		convert.cpp \
+		high_res_timer.cpp \
+		logger.cpp \
+		logger_impl_async_file.cpp \
+		logger_impl_console.cpp \
+		logger_impl.cpp \
+		logger_impl_file.cpp \
+		logger_impl_syslog.cpp \
+		name.cpp \
+		path.cpp \
+		synch.cpp \
+		timestamp.cpp \
+		url.cpp
+
 libutil_la_LTADD    = -version-info 1:0:0 -shared
 libutil_la_LIBS     = $(BOOST_THREAD_LIBS)
 libutil_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
