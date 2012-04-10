@@ -127,8 +127,12 @@ class variant_tree : public detail::basic_variant_tree
     typedef variant_tree self_type;
 public:
     typedef boost::property_tree::ptree_bad_path bad_path;
+    typedef std::pair<std::string, variant_tree> value_type;
 
     variant_tree() {}
+    variant_tree(const detail::basic_variant_tree& a_rhs)
+        : detail::basic_variant_tree(a_rhs)
+    {}
 
     template <typename Source>
     static void read_info(Source& src, variant_tree& tree) {
