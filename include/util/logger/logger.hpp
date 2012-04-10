@@ -44,11 +44,29 @@
 //#include <util/singleton.hpp>
 #include <boost/thread/mutex.hpp>
 #include <util/logger/logger_impl.hpp>
-#include <util/synch.hpp>
-#include <util/high_res_timer.hpp>
-#include <util/timestamp.hpp>
+#ifndef _MSC_VER
+#   include <util/synch.hpp>
+#   include <util/high_res_timer.hpp>
+#   include <util/timestamp.hpp>
+#endif
 
 namespace util { 
+
+#ifdef _MSC_VER
+
+#define LOG_TRACE5(FmtArgs)  
+#define LOG_TRACE4(FmtArgs)
+#define LOG_TRACE3(FmtArgs)
+#define LOG_TRACE2(FmtArgs)
+#define LOG_TRACE1(FmtArgs)
+#define LOG_DEBUG(FmtArgs)      printf FmtArgs;
+#define LOG_INFO(FmtArgs)       printf FmtArgs;    
+#define LOG_WARNING(FmtArgs)    printf FmtArgs;
+#define LOG_ERROR(FmtArgs)      printf FmtArgs;
+#define LOG_FATAL(FmtArgs)      printf FmtArgs;
+#define LOG_ALERT(FmtArgs)      printf FmtArgs;
+
+#else
 
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
 /// the <printf> function: <(const char* fmt, ...)>
@@ -87,6 +105,8 @@ typedef log_msg_info _lim;
 #define LOG_ALERT(FmtArgs)   do { \
     util::_lim(util::logger::instance(), util::LEVEL_ALERT  , \
         __FILE__, __LINE__).log FmtArgs; } while(0)
+#endif
+
 #endif
 
 /// Logging class that supports pluggable back-ends responsible for handling
@@ -137,7 +157,6 @@ public:
 
     logger() 
         : m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
-        //, m_last_seconds(0), m_midnight_seconds(0), m_utc_offset(0), m_last_hrtime(0)
         , m_show_location(true), m_show_ident(false)
     {}
     ~logger() { finalize(); }

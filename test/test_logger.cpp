@@ -41,11 +41,16 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     s << "test_logger." << getpid();
     log.set_ident(s.str().c_str());
 
+    if (verbosity::level() > VERBOSE_NONE)
+        log.dump(std::cout);
+
     for (int i = 0; i < 3; i++) {
         LOG_ERROR  (("This is an error #%d", 123));
         LOG_WARNING(("This is a %s", "warning"));
         LOG_FATAL  (("This is a %s", "fatal error"));
     }
+
+    BOOST_REQUIRE(true); // to remove run-time warning
 }
 
 //BOOST_AUTO_TEST_SUITE_END()
