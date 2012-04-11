@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/detail/info_parser_read.hpp>
 #include <boost/property_tree/detail/info_parser_write.hpp>
+#include <boost/foreach.hpp>
 #include <iostream>
 
 using namespace util;
@@ -161,8 +162,13 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
     std::stringstream s; s << s_data;
     variant_tree tree;
     variant_tree::read_info(s, tree);
-    if (verbosity::level() > VERBOSE_NONE)
+    if (verbosity::level() > VERBOSE_NONE) {
         variant_tree::write_info(std::cout, tree);
+        BOOST_FOREACH(const variant_tree::value_type& vt, tree.get_child("test"))
+            std::cout << "  test." << vt.first
+                << " = (" << vt.second.data().type_str() << ") "
+                << vt.second.data().to_string() << std::endl;
+    }
     {
         std::string str = tree.get<std::string>("test.verbose");
         BOOST_REQUIRE_EQUAL("debug", str);
@@ -212,66 +218,6 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
 {
-    // Sample data 1
-    const char *data1 = 
-        "\n"
-        "key1 3\n"
-        "{\n"
-        "\tkey \"test\"\n"
-        "}\n"
-        "key2 \"text\" {\n"
-        "\tkey true\n"
-        "}\n"
-        "key3 \"data\"\n"
-        "\t \"3\" {\n"
-        "\tkey data\n"
-        "}\n"
-        "\n"
-        "\"key4\" data4\n"
-        "{\n"
-        "\tkey data\n"
-        "}\n"
-        "\"key.5\" \"data.5\" { \n"
-        "\tkey data \n"
-        "}\n"
-        "\"key6\" \"data\"\n"
-        "\t   \"6\" {\n"
-        "\tkey data\n"
-        "}\n"
-        "   \n"
-        "key1 data1\n"
-        "{\n"
-        "\tkey data\n"
-        "}\n"
-        "key2 \"data2  \" {\n"
-        "\tkey data\n"
-        "}\n"
-        "key3 \"data\"\n"
-        "\t \"3\" {\n"
-        "\tkey data\n"
-        "}\n"
-        "\n"
-        "\"key4\" data4\n"
-        "{\n"
-        "\tkey data\n"
-        "}\n"
-        "\"key.5\" \"data.5\" {\n"
-        "\tkey data\n"
-        "}\n"
-        "\"key6\" \"data\"\n"
-        "\t   \"6\" {\n"
-        "\tkey data\n"
-        "}\n"
-        "\\\\key\\t7 data7\\n\\\"data7\\\"\n"
-        "{\n"
-        "\tkey data\n"
-        "}\n"
-        "\"\\\\key\\t8\" \"data8\\n\\\"data8\\\"\"\n"
-        "{\n"
-        "\tkey data\n"
-        "}\n"
-        "\n";
-
     // Sample data 2
     const char *data2 = 
         "key1 1\n"

@@ -3,6 +3,9 @@
 /* Defined if the requested minimum BOOST version is satisfied */
 #undef HAVE_BOOST
 
+/* Define to 1 if you have <boost/date_time/posix_time/posix_time.hpp> */
+#undef HAVE_BOOST_DATE_TIME_POSIX_TIME_POSIX_TIME_HPP
+
 /* Define to 1 if you have <boost/property_tree/ptree.hpp> */
 #undef HAVE_BOOST_PROPERTY_TREE_PTREE_HPP
 

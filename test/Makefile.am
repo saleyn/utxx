@@ -2,39 +2,44 @@ bindir			   	= ${exec_prefix}/test
 #datadir			 	= ${exec_prefix}/test
 test_utildir        = ${exec_prefix}/test
 
-bin_PROGRAMS       	= test_util
+bin_PROGRAMS       	= test_util \
+					  example_repeating_timer
 
-test_util_SOURCES  	= test_alloc_fixed_page.cpp \
-					  test_atomic.cpp \
-					  test_bitmap.cpp \
-					  test_buffer.cpp \
-					  test_concurrent_fifo.cpp \
-					  test_concurrent_stack.cpp \
-					  test_concurrent_update.cpp \
-					  test_config_validator.cpp \
-					  test_convert.cpp \
-					  test_async_file_logger.cpp \
-					  test_high_res_timer.cpp \
-					  test_iovec.cpp \
-					  test_iovector.cpp \
-					  test_logger_async_file.cpp \
-					  test_logger.cpp \
-					  test_logger_syslog.cpp \
-					  test_math.cpp \
-					  test_multi_file_async_logger.cpp \
-					  test_name.cpp \
-					  test_nchar.cpp \
-					  test_path.cpp \
-					  test_pcap.cpp \
-					  test_persist_blob.cpp \
-					  test_pidfile.cpp \
-					  test_running_stat.cpp \
-					  test_string.cpp \
-					  test_throttler.cpp \
-					  test_timestamp.cpp \
-					  test_url.cpp \
-					  test_util.cpp \
-					  test_variant.cpp
+test_util_SOURCES  	= \
+	test_alloc_fixed_page.cpp \
+	test_atomic.cpp \
+	test_bitmap.cpp \
+	test_buffer.cpp \
+	test_concurrent_fifo.cpp \
+	test_concurrent_stack.cpp \
+	test_concurrent_update.cpp \
+	test_config_validator.cpp \
+	test_convert.cpp \
+	test_async_file_logger.cpp \
+	test_high_res_timer.cpp \
+	test_iovec.cpp \
+	test_iovector.cpp \
+	test_logger_async_file.cpp \
+	test_logger.cpp \
+	test_logger_syslog.cpp \
+	test_math.cpp \
+	test_multi_file_async_logger.cpp \
+	test_name.cpp \
+	test_nchar.cpp \
+	test_path.cpp \
+	test_pcap.cpp \
+	test_persist_blob.cpp \
+	test_pidfile.cpp \
+	test_running_stat.cpp \
+	test_string.cpp \
+	test_throttler.cpp \
+	test_timestamp.cpp \
+	test_url.cpp \
+	test_util.cpp \
+	test_variant.cpp
+
+example_repeating_timer_SOURCES = \
+	example_repeating_timer.cpp
 
 generated/test_config_validator.generated.hpp: test_config_validator.xml \
 		$(srcdir)/../include/@PACKAGE@/config_validator.xsl generated
@@ -56,4 +61,10 @@ test_util_LDADD    	= $(srcdir)/../src/.libs/libutil.la \
 					  $(BOOST_UNIT_TEST_FRAMEWORK_LIBS) -lrt
 test_util_DATA 		= test_config_validator.xml
 
+
+example_repeating_timer_CPPFLAGS = -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+example_repeating_timer_LDFLAGS  = $(BOOST_SYSTEM_LDFLAGS) $(BOOST_DATE_TIME_LDFLAGS)
+example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutil.la \
+								   $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) \
+								   $(BOOST_DATE_TIME_LIBS)
 EXTRA_DIST = test_config_validator.xml

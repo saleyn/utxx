@@ -9,6 +9,7 @@ util_headers = \
 		atomic.hpp \
 		bitmap.hpp \
 		bits.hpp \
+		boost/repeating_timer.hpp \
 		buffer.hpp \
 		compiler_hints.hpp \
 		concurrent_alloc_fixed_page.hpp \

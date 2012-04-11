@@ -142,7 +142,12 @@ public:
     void clear() { *(base*)this = null(); }
 
     /// Returns true if the value is null.
-    bool is_null() const { return type() == TYPE_NULL; }
+    bool is_null()      const { return type() == TYPE_NULL; }
+    bool is_bool()      const { return type() == TYPE_BOOL; }
+    bool is_int()       const { return type() == TYPE_INT;  }
+    bool is_double()    const { return type() == TYPE_DOUBLE; }
+    bool is_string()    const { return type() == TYPE_STRING; }
+
 
     bool                to_bool()   const { return boost::get<bool>(*this); }
     long                to_int()    const { return boost::get<long>(*this); }

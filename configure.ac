@@ -64,6 +64,7 @@ BOOST_FIND_HEADER([boost/property_tree/ptree.hpp])
 BOOST_SYSTEM
 BOOST_THREADS
 BOOST_TEST
+BOOST_DATE_TIME
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h sys/time.h])
