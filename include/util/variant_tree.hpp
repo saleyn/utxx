@@ -127,7 +127,7 @@ class variant_tree : public detail::basic_variant_tree
     typedef variant_tree self_type;
 public:
     typedef boost::property_tree::ptree_bad_path bad_path;
-    typedef std::pair<std::string, variant_tree> value_type;
+    typedef std::pair<const std::string, base> value_type;
 
     variant_tree() {}
     variant_tree(const detail::basic_variant_tree& a_rhs)
@@ -136,17 +136,17 @@ public:
 
     template <typename Source>
     static void read_info(Source& src, variant_tree& tree) {
-        boost::property_tree::info_parser::read_info(src, tree);
+        boost::property_tree::info_parser::read_info(src, static_cast<base&>(tree));
     }
 
     template <typename Target>
     static void write_info(Target& tar, variant_tree& tree) {
-        boost::property_tree::info_parser::write_info(tar, tree);
+        boost::property_tree::info_parser::write_info(tar, static_cast<base&>(tree));
     }
 
     template <typename Target, typename Settings>
     static void write_info(Target& tar, variant_tree& tree, const Settings& tt) {
-        boost::property_tree::info_parser::write_info(tar, tree, tt);
+        boost::property_tree::info_parser::write_info(tar, static_cast<base&>(tree), tt);
     }
 
     template <class T>
@@ -225,7 +225,7 @@ public:
     }
 
     void swap(variant_tree& rhs) {
-        base::swap(rhs);
+        base::swap(static_cast<base&>(rhs));
     }
     void swap(boost::property_tree::basic_ptree<
         std::string, variant, std::less<std::string> >& rhs) {
