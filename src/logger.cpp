@@ -161,7 +161,7 @@ void logger::init(const char* filename, init_file_type type)
 {
     variant_tree pt;
     switch (type) {
-        case INFO_FILE: read_info(filename, pt); break;
+        case INFO_FILE: variant_tree::read_info(filename, pt); break;
         case JSON_FILE: throw std::runtime_error("JSON config not implemented!"); break;
                         //read_json(filename, pt); break;
         case XML_FILE:  throw std::runtime_error("XML config not implemented!"); break;
