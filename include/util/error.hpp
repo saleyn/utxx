@@ -227,7 +227,9 @@ public:
     /// This streaming operator allows throwing exceptions in the form:
     /// <tt>throw io_error("Test") << ' ' << 10 << " failed";
     template <class T>
-    io_error& operator<< (T a) { *this << a; return *this; }
+    io_error& operator<< (T a) {
+        *static_cast<detail::streamed_exception*>(this) << a; return *this;
+    }
 };
 
 typedef io_error gen_error;         ///< General error

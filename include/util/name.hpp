@@ -125,6 +125,13 @@ namespace util {
             return begin;
         }
 
+        void set_and_check(const char* a_buf, size_t a_size) throw (badarg_error) {
+            int rc = set(a_buf, a_size);
+            if (rc)
+                throw badarg_error("Invalid character at position ",
+                    -rc, " in '", std::string(a_buf, a_size), "'");
+        }
+
         bool valid_char(char ch) { return s_fwd_name_lookup_table[static_cast<int>(ch)]; }
     public:
         /// Number of characters needed to store the value.
@@ -133,12 +140,13 @@ namespace util {
         size_t size() const { return SIZE; }
 
         template <int N>
-        void set(const char (&a_buf)[N]) {
+        void set(const char (&a_buf)[N]) throw (badarg_error) {
             BOOST_STATIC_ASSERT(N == Size);
-            int rc = set(a_buf, N);
-            if (rc)
-                throw badarg_error("Invalid character at position ",
-                    -rc, " in '", std::string(a_buf, N), "'");
+            set_and_check(a_buf, N);
+        }
+
+        void set(const std::string& a_val) throw (badarg_error) {
+            set_and_check(a_val.c_str(), a_val.size());
         }
 
         template <int N>
@@ -216,15 +224,15 @@ namespace util {
         typedef basic_short_name<10u> base;
     public:
         name_t()                                { m_value = 0u; }
-        explicit name_t(const std::string& a)   { set(a.c_str(), a.size()); }
+        explicit name_t(const std::string& a)   { this->set(a); }
         explicit name_t(uint64_t a_symbol) {
             BOOST_ASSERT((a_symbol & s_val_mask >> s_len_shift) < s_size);
             m_value = a_symbol;
         }
-        name_t(const char* a_buf, size_t a_sz)  { set(a_buf, a_sz); }
+        name_t(const char* a_buf, size_t a_sz)  { this->set_and_check(a_buf, a_sz); }
 
         template <int N>
-        name_t (const char (&a_buf)[N])         { set(a_buf, N); }
+        name_t (const char (&a_buf)[N])         { this->set_and_check(a_buf, N); }
     };
 
 } // namespace util

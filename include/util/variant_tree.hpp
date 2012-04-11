@@ -133,6 +133,9 @@ public:
     variant_tree(const detail::basic_variant_tree& a_rhs)
         : detail::basic_variant_tree(a_rhs)
     {}
+    variant_tree(const variant_tree& a_rhs)
+        : detail::basic_variant_tree(a_rhs)
+    {}
 
     template <typename Source>
     static void read_info(Source& src, variant_tree& tree) {
