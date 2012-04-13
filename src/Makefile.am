@@ -15,19 +15,15 @@ util_headers = \
 		concurrent_alloc_fixed_page.hpp \
 		config_validator.hpp \
 		config_validator.xsl \
-		container \
 		container/concurrent_array.hpp \
 		container/concurrent_fifo.hpp \
 		container/concurrent_priority_queue.hpp \
 		container/concurrent_stack.hpp \
-		container/detail \
 		container/detail/base_allocator.hpp \
 		container/detail/base_fifo.hpp \
 		convert.hpp \
 		cpu.hpp \
-		delegate \
 		delegate/delegate.hpp \
-		delegate/detail \
 		delegate/detail/delegate_list.hpp \
 		delegate/detail/delegate_template.hpp \
 		delegate/detail/make_delegates.pl \
@@ -37,7 +33,6 @@ util_headers = \
 		delegate/flex_binder.hpp \
 		delegate.hpp \
 		delegate/LICENSE \
-		detail \
 		detail/bit_count.hpp \
 		detail/cpu_x86.hpp \
 		detail/get_tick_count.hpp \
@@ -52,7 +47,6 @@ util_headers = \
 		high_res_timer.hpp \
 		iovec.hpp \
 		iovector.hpp \
-		logger \
 		logger.hpp \
 		logger/logger.hpp \
 		logger/logger_impl_async_file.hpp \
