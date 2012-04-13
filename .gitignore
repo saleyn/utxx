@@ -9,6 +9,8 @@ src/libutil.la
 src/libutil_la*
 test/test_util-*
 test/test_util
+test/example_repeating_timer-*
+test/example_repeating_timer
 test/generated
 autom4te.cache
 aclocal.m4

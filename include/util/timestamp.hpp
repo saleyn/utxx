@@ -37,6 +37,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/thread.hpp>
 #include <time.h>
 
+#ifdef DEBUG_TIMESTAMP
+#include <util/atomic.hpp>
+#endif
+
 namespace util {
 
 enum stamp_type {
@@ -58,22 +62,18 @@ protected:
     static __thread time_t          s_utc_offset;
     static __thread char            s_timestamp[16];
 
-    time_val m_tv;
-
     #ifdef DEBUG_TIMESTAMP
-    size_t m_hrcalls;
-    size_t m_syscalls;
+    static volatile long s_hrcalls;
+    static volatile long s_syscalls;
     #endif
 
     static void update_midnight_seconds(const time_val& a_now);
 
+    static void update_slow();
+
 public:
     /// Suggested buffer space type needed for format() calls.
     typedef char buf_type[32];
-
-    #ifdef DEBUG_TIMESTAMP
-    timestamp() : m_hrcalls(0), m_syscalls(0) {}
-    #endif
 
     inline static void write_timestamp(
         char* timestamp, time_t seconds, size_t eos_pos = 8)
@@ -95,13 +95,13 @@ public:
     }
 
     /// Update internal timestamp by calling gettimeofday().
-    void now() {
-        m_tv.now();
-        m_tv.copy_to(s_last_time);  // thread safe - we use TLV storage 
-    }
+    static const time_val& now();
 
     /// Return last timestamp obtained by calling update() or now().
-    const time_val& last_time() const       { return m_tv; }
+    static const time_val& last_time() { return time_val_cast(s_last_time); }
+
+    /// Equivalent to calling update() and last_time()
+    static const time_val& cached_time()     { update(); return last_time(); }
 
     /// Return the number of seconds from epoch to midnight 
     /// in UTC.
@@ -149,18 +149,33 @@ public:
     }
 
     #ifdef DEBUG_TIMESTAMP
-    size_t hrcalls()  const { return m_hrcalls; }
-    size_t syscalls() const { return m_syscalls; }
+    static long hrcalls()  { return s_hrcalls; }
+    static long syscalls() { return s_syscalls; }
     #endif
 
     /// Implementation of this function tries to reduce the overhead of calling
     /// time clock functions by cacheing old results and using high-resolution
     /// timer to determine a need for gettimeofday call.
-    void update();
+    static void update() {
+        hrtime_t l_hr_now = high_res_timer::gettime();
+        hrtime_t l_hrtime_diff = l_hr_now - s_last_hrtime;
 
-    int update_and_write(stamp_type a_tp, char* a_buf, size_t a_sz) {
+        // We allow up to N usec to rely on HR timer readings between
+        // successive calls to gettimeofday.
+        if ((l_hrtime_diff <= high_res_timer::global_scale_factor() << 2) &&
+                (l_hr_now >= s_last_hrtime)) {
+            #ifdef DEBUG_TIMESTAMP
+            atomic::inc(&s_hrcalls);
+            #endif
+        } else {
+            //std::cout << l_hrtime_diff << std::endl;
+            update_slow();
+        }
+    }
+
+    static int update_and_write(stamp_type a_tp, char* a_buf, size_t a_sz) {
         update();
-        return format(a_tp, &m_tv, a_buf, a_sz);
+        return format(a_tp, &last_time().timeval(), a_buf, a_sz);
     }
 
     /// Write formatted timestamp string to the given \a a_buf buffer.
@@ -168,14 +183,14 @@ public:
     /// position.
     /// @param a_sz is the size of a_buf buffer and must be greater than 26.
     /// @return number of bytes written or -1 if \a a_tp is not known.
-    int write(stamp_type a_tp, char* a_buf, size_t a_sz) const {
-        return format(a_tp, m_tv, a_buf, a_sz);
+    static int write(stamp_type a_tp, char* a_buf, size_t a_sz) {
+        return format(a_tp, last_time(), a_buf, a_sz);
     }
 
     /// Write a timeval structure to \a a_buf.
     inline static int format(stamp_type a_tp,
         const time_val& tv, char* a_buf, size_t a_sz) {
-        return format(a_tp, reinterpret_cast<const struct timeval*>(&tv), a_buf, a_sz);
+        return format(a_tp, &tv.timeval(), a_buf, a_sz);
     }
 
     template <int N>
@@ -186,19 +201,17 @@ public:
     static int format(stamp_type a_tp,
         const struct timeval* tv, char* a_buf, size_t a_sz);
 
-    std::string to_string(stamp_type a_tp = TIME_WITH_USEC) const {
-        return to_string(m_tv, a_tp);
+    static std::string to_string(stamp_type a_tp = TIME_WITH_USEC) {
+        return to_string(cached_time(), a_tp);
     }
 
     static std::string to_string(
-        const time_val& a_tv, stamp_type a_tp=TIME_WITH_USEC)
-    {
+            const time_val& a_tv, stamp_type a_tp=TIME_WITH_USEC) {
         return to_string(&a_tv.timeval(), a_tp);
     }
 
     static std::string to_string(const struct timeval* a_tv,
-        stamp_type a_tp=TIME_WITH_USEC)
-    {
+            stamp_type a_tp=TIME_WITH_USEC) {
         char buf[32]; format(a_tp, a_tv, buf, sizeof(buf));
         return std::string(buf);
     }
@@ -214,8 +227,7 @@ struct test_timestamp : public timestamp {
     /// to times different from now.  Otherwise in production code
     /// always use update() instead.
     void update(const time_val& a_now, hrtime_t a_hrnow) {
-        m_tv = a_now;
-        m_tv.copy_to(s_last_time);
+        s_last_time = a_now.timeval();
 
         if (unlikely(s_midnight_seconds == 0 || a_now.sec() > s_midnight_seconds)) {
             update_midnight_seconds(a_now);
@@ -238,5 +250,8 @@ private:
 
 } // namespace util
 
+#ifdef DEBUG_TIMESTAMP
+#include <util/../../src/timestamp.cpp>
+#endif
 
 #endif // _UTIL_TIMESTAMP_HPP_

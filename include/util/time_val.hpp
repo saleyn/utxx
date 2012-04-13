@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------------
 /// \brief Modified implementation of ACE TimeVal to represent timeval
 /// structure.
-/// The original version is included in 
+/// The original version is included in
 /// (http://www.cs.wustl.edu/~schmidt/ACE.html).
 //----------------------------------------------------------------------------
 // ACE Library Copyright (c) 1993-2009 Douglas C. Schmidt
@@ -45,6 +45,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/time.h>
 
 namespace util {
+    class time_val;
+
     /// Indication of use of absolute time
     struct abs_time {
         long sec, usec;
@@ -58,7 +60,7 @@ namespace util {
 
     /// A helper class for dealing with 'struct timeval' structure. This class adds ability
     /// to perform arithmetic with the structure leaving the same footprint.
-    class time_val 
+    class time_val
     {
         static const long   N10e6 = 1000000;
         static const size_t N10e9 = 1000000000u;
@@ -73,11 +75,11 @@ namespace util {
                 while (m_tv.tv_usec <= -N10e6);
 
             if (m_tv.tv_sec >= 1 && m_tv.tv_usec < 0)
-                { --m_tv.tv_sec; m_tv.tv_usec += N10e6; } 
+                { --m_tv.tv_sec; m_tv.tv_usec += N10e6; }
             else if (m_tv.tv_sec <  0 && m_tv.tv_usec > 0)
                 { ++m_tv.tv_sec; m_tv.tv_usec -= N10e6; }
         }
-        
+
         void setd(int64_t val, int64_t divisor) {
             int64_t n = val / divisor;
             m_tv.tv_sec  = n;
@@ -127,7 +129,7 @@ namespace util {
         void clear()                { m_tv.tv_sec = 0; m_tv.tv_usec = 0; }
 
         void set(const time_val& tv, long _s=0, long _us=0) {
-            m_tv.tv_sec = tv.sec() + _s; m_tv.tv_usec = tv.usec() + _us; normalize(); 
+            m_tv.tv_sec = tv.sec() + _s; m_tv.tv_usec = tv.usec() + _us; normalize();
         }
 
         void set(const struct timeval& tv, long _s=0, long _us=0) {
@@ -141,7 +143,7 @@ namespace util {
         double diff(const time_val& t) {
             time_val tv(this->timeval());
             tv -= t;
-            return (double)tv.sec() + (double)tv.usec() / N10e6; 
+            return (double)tv.sec() + (double)tv.usec() / N10e6;
         }
 
         void add(long _sec, long _us) {
@@ -155,7 +157,7 @@ namespace util {
             time_val tv; ::gettimeofday(&tv, 0); return tv;
         }
 
-        time_val& now(long addS, long addUS=0) { 
+        time_val& now(long addS, long addUS=0) {
             ::gettimeofday(&m_tv, 0); add(addS, addUS);
             return *this;
         }
@@ -188,10 +190,10 @@ namespace util {
             m_tv.tv_sec += tv.sec(); m_tv.tv_usec += tv.usec(); normalize();
         }
         void operator+= (int32_t _sec)      { m_tv.tv_sec += _sec; }
-        void operator+= (int64_t _microsec) { 
+        void operator+= (int64_t _microsec) {
             int64_t n = _microsec / N10e6;
             m_tv.tv_sec  += n;
-            m_tv.tv_usec += (_microsec - (n * N10e6)); 
+            m_tv.tv_usec += (_microsec - (n * N10e6));
             normalize();
         }
         void operator= (const time_val& t) {
@@ -205,20 +207,20 @@ namespace util {
             return sec() == tv.sec() && usec() == tv.usec();
         }
         bool operator!= (const time_val& tv) const { return !operator== (tv); }
-        bool operator>  (const time_val& tv) const { 
-            return sec() > tv.sec() || (sec() == tv.sec() && usec() > tv.usec()); 
+        bool operator>  (const time_val& tv) const {
+            return sec() > tv.sec() || (sec() == tv.sec() && usec() > tv.usec());
         }
-        bool operator>= (const time_val& tv) const { 
-            return sec() > tv.sec() || (sec() == tv.sec() && usec() >= tv.usec()); 
+        bool operator>= (const time_val& tv) const {
+            return sec() > tv.sec() || (sec() == tv.sec() && usec() >= tv.usec());
         }
-        bool operator<  (const time_val& tv) const { 
-            return sec() < tv.sec() || (sec() == tv.sec() && usec() < tv.usec()); 
+        bool operator<  (const time_val& tv) const {
+            return sec() < tv.sec() || (sec() == tv.sec() && usec() < tv.usec());
         }
-        bool operator<= (const time_val& tv) const { 
-            return sec() < tv.sec() || (sec() == tv.sec() && usec() <= tv.usec()); 
+        bool operator<= (const time_val& tv) const {
+            return sec() < tv.sec() || (sec() == tv.sec() && usec() <= tv.usec());
         }
     };
-    
+
     template <typename T>
     time_val& time_val_cast(T& tv) {
         BOOST_STATIC_ASSERT(sizeof(T) == sizeof(struct timeval));

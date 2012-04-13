@@ -12,6 +12,11 @@ __thread time_t         timestamp::s_midnight_seconds = 0;
 __thread time_t         timestamp::s_utc_offset = 0;
 __thread char           timestamp::s_timestamp[16];
 
+#ifdef DEBUG_TIMESTAMP
+volatile long timestamp::s_hrcalls;
+volatile long timestamp::s_syscalls;
+#endif
+
 void timestamp::update_midnight_seconds(const time_val& a_now)
 {
     // FIXME: it doesn't seem like the mutex is needed here at all
@@ -20,6 +25,7 @@ void timestamp::update_midnight_seconds(const time_val& a_now)
     struct tm tm;
     ::localtime_r(&a_now.timeval().tv_sec, &tm);
 
+    // FIXME: use strftime()
     sprintf(s_timestamp, "%4d-%02d-%02d ",
             tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
 
@@ -27,42 +33,26 @@ void timestamp::update_midnight_seconds(const time_val& a_now)
     s_midnight_seconds  = a_now.sec() - a_now.sec() % 86400;
 }
 
-/// Implementation of this function tries to reduce the overhead of calling
-/// time clock functions by caching old results and using high-resolution
-/// timer to determine a need for gettimeofday call.
-void timestamp::update()
-{
-    hrtime_t hr_now = high_res_timer::gettime();
-    int64_t l_hrtime_diff = 
-        std::llabs(high_res_timer::elapsed_hrtime(hr_now, s_last_hrtime));
+const time_val& timestamp::now() {
+    // thread safe - we use TLV storage
+    s_last_time   = time_val::universal_time().timeval();
+    s_last_hrtime = high_res_timer::gettime();
+    return last_time();
+}
 
-    if (l_hrtime_diff <= high_res_timer::global_scale_factor()) {
-        m_tv = s_last_time;
-        #ifdef DEBUG_TIMESTAMP
-        m_hrcalls++;
-        #endif
-    //} else if (l_hrtime_diff <= (high_res_timer::global_scale_factor() << 2)) {
-        // We allow up to 32 usec to rely on HR timer readings between
-        // successive calls to gettimeofday.
-    //    m_tv = time_val_cast(s_last_time)
-    //         + high_res_timer::hrtime_to_tv(l_hrtime_diff);
-    //    #ifdef DEBUG_TIMESTAMP
-    //    m_hrcalls++;
-    //    #endif
-    } else {
-        
-        now();
-        s_last_hrtime = hr_now;
-        #ifdef DEBUG_TIMESTAMP
-        m_syscalls++;
-        #endif
-    }
+void timestamp::update_slow()
+{
+    now();
+    #ifdef DEBUG_TIMESTAMP
+    atomic::inc(&s_syscalls);
+    #endif
 
     // FIXME: the method below will produce incorrect time stamps during
     // switch to/from daylight savings time because of the unaccounted
     // utc_offset change.
-    if (unlikely(s_midnight_seconds == 0 || m_tv.sec() > s_midnight_seconds)) {
-        update_midnight_seconds(m_tv);
+    if (unlikely(s_midnight_seconds == 0 ||
+                 last_time().sec() > s_midnight_seconds)) {
+        update_midnight_seconds(last_time());
     }
 }
 
@@ -121,4 +111,3 @@ int timestamp::format(stamp_type a_tp,
 }
 
 } // namespace util
-

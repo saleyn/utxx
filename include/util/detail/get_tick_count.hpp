@@ -49,39 +49,35 @@ namespace util {
 
 namespace detail {
 
+    static inline hrtime_t get_tick_count() {
     // Tick count code for PowerPC (Apple G3, G4, G5)
     #ifdef _CPU_POWERPC
-    static inline hrtime_t get_tick_count() {
         tick_t t;
-        __asm__ __volatile__ ( 
-        "1:\n\t" 
-            "mftbu %0\n\t" 
-            "mftb %1\n\t" 
-            "mftbu r6\n\t" 
-            "cmpw r6,%0\n\t" 
-            "bne 1b" 
-            : "=r" (t.l.hi), "=r" (t.l.lo) 
-            : 
+        __asm__ __volatile__ (
+        "1:\n\t"
+            "mftbu %0\n\t"
+            "mftb %1\n\t"
+            "mftbu r6\n\t"
+            "cmpw r6,%0\n\t"
+            "bne 1b"
+            : "=r" (t.l.hi), "=r" (t.l.lo)
+            :
             : "r6");
         return t.ll;
-    }
     #elif (defined(_CPU_IA32) || defined(_CPU_IA64) || defined(__i386__) || defined(__x86_64))
-    /* Tick count code for IA-32 architecture (Intel and AMD x86, and 64-bit 
+    /* Tick count code for IA-32 architecture (Intel and AMD x86, and 64-bit
      * versions). */
-    static inline hrtime_t get_tick_count() {
         tick_t t;
         __asm__ __volatile__ ("rdtsc" : "=a" (t.l.hi), "=d" (t.l.lo));
         return t.ll;
-    }
     #elif defined(_CPU_SPARC_V8PLUS)
     // Tick count code for SPARC architecture
-    static inline hrtime_t get_tick_count() {
         tick_t t;
         __asm__ __volatile__ ("rd %%tick, %0" : "=r" (t->ll));
         return t.ll;
-    }
+    #elif (defined _MSC_VER && (defined _M_IX86 || defined _M_X64))
+        return __rdtsc ();
     #elif defined(_WIN32)
-    static inline hrtime_t get_tick_count() {
         tick_t t;
         // Use RDTSC instruction to get clocks count
         __asm push EAX
@@ -92,8 +88,8 @@ namespace detail {
         __asm pop EDX
         __asm pop EAX
         return t.ll;
-    }
     #endif
+    }
 
 } // namespace detail
 } // namespace util

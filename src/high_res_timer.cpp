@@ -43,8 +43,8 @@ namespace util {
 
 size_t   high_res_timer::s_global_scale_factor = high_res_timer::cpu_frequency();
 uint64_t high_res_timer::s_usec_global_scale_factor = 
-    high_res_timer::s_global_scale_factor * (uint64_t)USECS_IN_SEC;
-bool high_res_timer::s_calibrated;
+            high_res_timer::s_global_scale_factor * (uint64_t)USECS_IN_SEC;
+bool     high_res_timer::s_calibrated;
 
 unsigned int high_res_timer::high_res_timer::get_cpu_frequency() {
     unsigned int scale_factor = 1;
@@ -76,8 +76,8 @@ size_t high_res_timer::calibrate(uint32_t usec, uint32_t iterations) {
     unsigned long long actual_sleeps = 0;
 
     for (size_t i = 0; i < iterations; ++i) {
-        time_val t1, t2;
-        ::gettimeofday(&t1.timeval(), NULL);
+        time_val t1;
+        t1.now();
         int cpu1 = detail::apic_id();
         const hrtime_t start = detail::get_tick_count();
         ::usleep(sleep_time.microseconds());

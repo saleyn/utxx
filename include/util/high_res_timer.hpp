@@ -58,9 +58,8 @@ public:
     * s_global_scale_factor is set to @a gsf.  All high_res_timers use
     * s_global_scale_factor.  This allows applications to set the scale
     * factor just once for all high_res_timers.
-    * Depending on the platform its units are 1/microsecond or
-    * 1/millisecond. Use <USECS_IN_SEC> inside calculations
-    * instead a hardcoded value.
+    * Depending on the platform its units are number of ticks per
+    * microsecond. Use ticks / global_scale_factor() to get the number of usec.
     */
     /// Returns the global_scale_factor.
     static unsigned int global_scale_factor() {
@@ -207,5 +206,9 @@ private:
 //-----------------------------------------------------------------------------
 
 } // namespace util
+
+#ifdef DEBUG_TIMESTAMP
+#include <util/../../src/high_res_timer.cpp>
+#endif
 
 #endif
