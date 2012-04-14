@@ -140,6 +140,15 @@ public:
     template <typename Source>
     static void read_info(Source& src, variant_tree& tree) {
         boost::property_tree::info_parser::read_info(src, static_cast<base&>(tree));
+        boost::property_tree::translator_between<util::variant, std::string> tr;
+        translate_data(tr, tree);
+    }
+
+    template <typename T>
+    static void translate_data(T& tr, base& tree) {
+        for (variant_tree::iterator it=tree.begin(); it != tree.end(); it++)
+            translate_data(tr, it->second);
+        tree.data() = *tr.put_value(tree.get_value<std::string>());
     }
 
     template <typename Target>
