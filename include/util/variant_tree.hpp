@@ -144,13 +144,6 @@ public:
         translate_data(tr, tree);
     }
 
-    template <typename T>
-    static void translate_data(T& tr, base& tree) {
-        for (variant_tree::iterator it=tree.begin(); it != tree.end(); it++)
-            translate_data(tr, it->second);
-        tree.data() = *tr.put_value(tree.get_value<std::string>());
-    }
-
     template <typename Target>
     static void write_info(Target& tar, variant_tree& tree) {
         boost::property_tree::info_parser::write_info(tar, static_cast<base&>(tree));
@@ -283,6 +276,14 @@ public:
 
     self_type &put_child(const path_type &path, const self_type &value) {
         return static_cast<self_type&>(base::put_child(path, value));
+    }
+
+protected:
+    template <typename T>
+    static void translate_data(T& tr, base& tree) {
+        for (variant_tree::iterator it=tree.begin(); it != tree.end(); it++)
+            translate_data(tr, it->second);
+        tree.data() = *tr.put_value(tree.get_value<std::string>());
     }
 };
 
