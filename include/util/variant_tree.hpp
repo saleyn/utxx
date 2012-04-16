@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/lexical_cast.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/throw_exception.hpp>
+#include <boost/foreach.hpp>
 
 namespace boost {
 namespace property_tree {
@@ -276,6 +277,24 @@ public:
 
     self_type &put_child(const path_type &path, const self_type &value) {
         return static_cast<self_type&>(base::put_child(path, value));
+    }
+
+    std::ostream& dump(std::ostream& out, size_t a_level=0, size_t a_tab_width=2) const {
+        size_t l_max = 0;
+        BOOST_FOREACH(const util::variant_tree::value_type& v, *this) {
+            size_t n = v.first.size() + strlen(v.second.data().type_str()) + 3;
+            l_max = std::max(n, l_max);
+        }
+        BOOST_FOREACH(const util::variant_tree::value_type& v, *this) {
+            out << std::string(a_level*a_tab_width, ' ')
+                << v.first << " (" << v.second.data().type_str() << ") "
+                << std::string(
+                    l_max - v.first.size() - strlen(v.second.data().type_str()), ' ')
+                << v.second.data().to_string() << std::endl;
+            if (v.second.size())
+                static_cast<const util::variant_tree&>(v.second).dump(out, a_level+1);
+        }
+        return out;
     }
 
 protected:

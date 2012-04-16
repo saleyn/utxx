@@ -58,6 +58,7 @@ test_util_CPPFLAGS 	= -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 test_util_LDFLAGS  	= $(BOOST_SYSTEM_LDFLAGS) $(BOOST_UNIT_TEST_FRAMEWORK_LDFLAGS)
 test_util_LDADD    	= $(srcdir)/../src/.libs/libutil.la \
 					  $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) \
+					  $(BOOST_DATE_TIME_LIBS) \
 					  $(BOOST_UNIT_TEST_FRAMEWORK_LIBS) -lrt
 test_util_DATA 		= test_config_validator.xml
 

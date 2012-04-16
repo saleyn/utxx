@@ -162,13 +162,8 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
     std::stringstream s; s << s_data;
     variant_tree tree;
     variant_tree::read_info(s, tree);
-    if (verbosity::level() > VERBOSE_NONE) {
-        variant_tree::write_info(std::cout, tree);
-        BOOST_FOREACH(const variant_tree::value_type& vt, tree.get_child("test"))
-            std::cout << "  test." << vt.first
-                << " = (" << vt.second.data().type_str() << ") "
-                << vt.second.data().to_string() << std::endl;
-    }
+    if (verbosity::level() > VERBOSE_NONE)
+        tree.dump(std::cout);
     {
         std::string str = tree.get<std::string>("test.verbose");
         BOOST_REQUIRE_EQUAL("debug", str);
