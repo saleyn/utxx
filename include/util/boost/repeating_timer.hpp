@@ -72,21 +72,10 @@ namespace asio {
                 stop();
             }
 
-            /// Start a timer given the repeat interval
-            template <typename WaitHandler>
-            void start( int id, const duration_type& repeat_interval, 
-                WaitHandler handler )
-            {
-                start( id, 
-                    time_type(),
-                    time_type(),
-                    repeat_interval, handler );
-            }
-
             /// Start a timer given the repeat interval and its window of operation
             template <typename WaitHandler>
-            bool start( int id, 
-                WaitHandler handler, const duration_type& repeat_interval, 
+            bool start( int id, const duration_type& repeat_interval, 
+                WaitHandler handler,
                 const time_type& start_at = time_type(),
                 const time_type& stop_at  = time_type())
             {
@@ -184,7 +173,7 @@ namespace asio {
                     time_type const & stop_at = time_type())
                 {
                     internal_timer_ptr timer( new internal_timer( io_service ) );
-                    bool rc = timer->start( id, start_at, stop_at, repeat_interval, handler );
+                    bool rc = timer->start( id, repeat_interval, handler, start_at, stop_at );
                     if (!rc)
                         timer.reset();
                     return timer;
@@ -218,20 +207,11 @@ namespace asio {
                 {
                 }
 
-                void start( int id,
-                            duration_type const & repeat_interval,
-                            boost::shared_ptr<handler_base> const & handler )
-                {
-                    start( id, time_type(),
-                           time_type(),
-                           repeat_interval, handler);
-                }
-
                 bool start( int id,
-                            time_type const & start_at,
-                            time_type const & stop_at,
                             duration_type const & repeat_interval, 
-                            boost::shared_ptr<handler_base> const & handler )
+                            boost::shared_ptr<handler_base> const & handler,
+                            time_type const & start_at,
+                            time_type const & stop_at )
                 {
                     // only EVER called once, via create
                     id_         = id;

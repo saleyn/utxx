@@ -59,8 +59,8 @@ int main(int argc, char* argv[])
             << boost::posix_time::seconds(i+1) << std::endl;
 
         bool res = timers[i].start( i, 
-                         strand.wrap(&handle_timeout),
                          boost::posix_time::seconds(i+1),
+                         strand.wrap(&handle_timeout),
                          start_time, stop_time);
         if (!res)
             std::cout << "Couldn't start timer " << i << std::endl;            
