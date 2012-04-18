@@ -110,6 +110,7 @@ public:
 
     // Use the following get/set functions for non-concurrent "dirty" access
     T&   dirty_get()                { BOOST_ASSERT(m_blob); return m_blob->data; }
+    const T& dirty_get() const      { BOOST_ASSERT(m_blob); return m_blob->data; }
     void dirty_set(const T& src)    { BOOST_ASSERT(m_blob); m_blob->data = src;  }
 
     T*   operator& ()               { BOOST_ASSERT(m_blob); return &m_blob->data; }
