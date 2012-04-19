@@ -377,7 +377,7 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 close_file(const file_id& a_id, bool a_immediate) {
-    if (a_id.fd >= m_files.size())
+    if (a_id.fd() >= m_files.size())
         return -1;
     if (m_files[a_id.fd()].version != a_id.version())
         return -2;
