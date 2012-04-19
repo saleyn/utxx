@@ -38,8 +38,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <util/path.hpp>
 #include <util/error.hpp>
 
-#if defined(_WIN32) || defined (_WIN64)
+#if defined(_WIN32) || defined (_WIN64) || defined(_MSC_VER)
 #include <boost/smart_ptr/scoped_ptr.hpp>
+#include <fstream>
+#else
+#include <sys/stat.h>
 #endif
 
 namespace util {
@@ -72,6 +75,31 @@ const char* basename(const char* begin, const char* end) {
             return ++end;
     return begin;
 }
+
+bool file_exists(const char* a_path) {
+    #ifdef _MSC_VER
+    std::ifstream l_stream;
+    l_stream.open(a_path, std::ios_base::in);
+    if(l_stream.is_open()) {
+        l_stream.close();
+        return true;
+    }
+    #else
+    struct stat buf;
+    if (::stat(a_path, &buf) != -1)
+        return true;
+    #endif
+    return false;
+}
+
+void file_unlink(const char* a_path) {
+    #ifdef _MSC_VER
+    ::_unlink(a_path);
+    #else
+    ::unlink(a_path);
+    #endif
+}
+
 
 std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
 {

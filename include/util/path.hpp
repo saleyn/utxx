@@ -56,6 +56,16 @@ static inline char slash() {
 const char* basename(const char* begin, const char* end);
 
 /**
+ * Checks if a file exists
+ */
+bool file_exists(const char* a_path);
+
+/**
+ * Removes a file
+ */
+void file_unlink(const char* a_path);
+
+/**
  * \brief Substitute all environment variables and day-time
  * formatting symbols (see strptime(3)) in a given filename.
  * The variables can be represented by "%VARNAME%" notation
@@ -76,7 +86,7 @@ std::string replace_env_vars(
  * The backup name is optionally prefixes with a \a
  * a_backup_dir directory and suffixed with \a a_backup_suffix.
  * If the later is not provided the "@YYYY-MM-DD.hhmmss"
- * string will be inserted between the base of the 
+ * string will be inserted between the base of the
  * filename and file extension.
  * @param a_filename is the name of the name of the file
  *          with substitution formatting macros.
@@ -100,7 +110,7 @@ extern "C" {
 }
 
 /**
- * Return the short name, full name, or full pathname of 
+ * Return the short name, full name, or full pathname of
  * current executable program.
  */
 class program {

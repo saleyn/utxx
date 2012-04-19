@@ -35,14 +35,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#include <boost/timer/timer.hpp>
 #include <util/persist_blob.hpp>
+#include <util/string.hpp>
+#include <util/verbosity.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 using namespace boost::unit_test;
 using namespace util;
 
-static const char* filename = "/tmp/persist_blob.bin";
+static const char* s_filename = "/tmp/persist_blob.bin";
 
 enum { ITERATIONS = 100000 };
 
@@ -58,15 +61,12 @@ struct test_blob {
 //-----------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
 {
-    ::unlink(filename);
+    ::unlink(s_filename);
     {
         persist_blob<test_blob> o;
         test_blob orig(1, 2);
 
-        int res = o.init(filename, &orig);
-        if (res < 0)
-            std::cerr << "Initialization error: " << errno << std::endl;
-        BOOST_REQUIRE(res >= 0);
+        BOOST_REQUIRE_NO_THROW(o.init(s_filename, &orig, false));
 
         {
             test_blob& val = o.dirty_get();
@@ -99,85 +99,94 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
             BOOST_REQUIRE_EQUAL( val.i2, 6 );
         }
     }
-    unlink(filename);
+    unlink(s_filename);
 }
 
-class producer {
-    int m_instance;
-    int m_iterations;
-    persist_blob<test_blob>& m_logger;
-public:
-    producer(persist_blob<test_blob>& logger, int n, int iter) 
-        : m_instance(n), m_iterations(iter), m_logger(logger)
-    {}
+namespace {
+    class producer {
+        int  m_instance;
+        long m_iterations;
+        persist_blob<test_blob>& m_logger;
+    public:
+        producer(persist_blob<test_blob>& logger, int n, long iter) 
+            : m_instance(n), m_iterations(iter), m_logger(logger)
+        {}
 
-    producer(const producer& a_rhs) : m_instance(a_rhs.m_instance),
-        m_iterations(a_rhs.m_iterations), m_logger(a_rhs.m_logger)
-    {}
+        producer(const producer& a_rhs) : m_instance(a_rhs.m_instance),
+            m_iterations(a_rhs.m_iterations), m_logger(a_rhs.m_logger)
+        {}
 
-    void operator() () {
-        for (int i = 0; i < m_iterations; i++) {
-            test_blob o(i, i<<1);
-            m_logger.set(o);
-            if (i % 1000 == 0) {
-                uint32_t v[2];
-                m_logger.vsn(v[0], v[1]);
-                std::cerr << "producer" << m_instance << " - " << i 
-                          << "(v1=" << v[0] << ", v2=" << v[1] << ") contentions: r="
-                          << m_logger.read_contentions()
-                          << ", w=" << m_logger.write_contentions() << std::endl;
+        void operator() () {
+            for (long i = 0; i < m_iterations; i++) {
+                test_blob o(i, i<<1);
+                m_logger.set(o);
+                if (i % 5000 == 0) {
+                    std::cerr << 
+                        (to_string("producer", m_instance, " - ", i) + 
+                         to_string(" (o1=", o.i1, ", o2=", o.i2, ")\n"));
+                }
+                sched_yield();
             }
-            sched_yield();
+            if (verbosity::level() > VERBOSE_NONE)
+                std::cout << to_string("Producer", m_instance, " finished!\n");
         }
-    }
-};
+    };
 
-class consumer {
-    int   m_instance;
-    bool* m_cancel;
-    bool* m_has_error;
-    persist_blob<test_blob>& m_logger;
-public:
-    consumer(persist_blob<test_blob>& logger, int n, bool& cancel, bool& error) 
-        : m_instance(n), m_cancel(&cancel), m_has_error(&error), m_logger(logger)
-    {}
+    class consumer {
+        int   m_instance;
+        bool* m_cancel;
+        int* m_has_error;
+        persist_blob<test_blob>& m_logger;
+    public:
+        consumer(persist_blob<test_blob>& logger, int n, bool& cancel, int& error) 
+            : m_instance(n), m_cancel(&cancel), m_has_error(&error), m_logger(logger)
+        {}
 
-    consumer(const consumer& a_rhs) : m_instance(a_rhs.m_instance),
-        m_cancel(a_rhs.m_cancel), m_has_error(a_rhs.m_has_error),
-        m_logger(a_rhs.m_logger)
-    {}
+        consumer(const consumer& a_rhs) : m_instance(a_rhs.m_instance),
+            m_cancel(a_rhs.m_cancel), m_has_error(a_rhs.m_has_error),
+            m_logger(a_rhs.m_logger)
+        {}
 
-    void operator() () {
-        while (!*m_cancel) {
-            test_blob o = m_logger.get();
-            
-            if (o.i2 != o.i1 << 1) {
-                *m_has_error = true;
-                std::cerr << "Thread" << m_instance 
-                          << " detected error: {" << o.i1 << ", " << o.i2 << "}" << std::endl;
-                break;
+        void operator() () {
+            while (!*m_cancel) {
+                test_blob o = m_logger.get();
+                
+                if (o.i2 != o.i1 << 1) {
+                    *m_has_error = true;
+                    std::cerr <<
+                        to_string("Consumer", m_instance,
+                            " detected error: {", o.i1, ", ", o.i2, "}\n");
+                    m_has_error++;
+                }
+                sched_yield();
             }
-            sched_yield();
+            if (verbosity::level() > VERBOSE_NONE)
+                std::cout << to_string("Consumer", m_instance, " finished!\n");
         }
-    }
-};
+    };
+}
 
 BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
 {
-    enum { ITERATIONS = 100000 };
+    using boost::timer::cpu_timer;
+    using boost::timer::cpu_times;
+    using boost::timer::nanosecond_type;
+    const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 10000;
 
-    ::unlink(filename);
+    ::unlink(s_filename);
     {
         persist_blob<test_blob> l_blob;
         
-        int ok = l_blob.init(filename);
+        BOOST_REQUIRE_NO_THROW(l_blob.init(s_filename, NULL, false));
 
-        BOOST_REQUIRE ( ok == 0 );
+        bool cancel = false;
+        int  error  = 0;
 
-        bool cancel = false, error = false;
+        int n = getenv("PROD_THREADS") ? atoi(getenv("PROD_THREADS")) : 1;
+        int m = getenv("CONS_THREADS") ? atoi(getenv("CONS_THREADS")) : 1;
+
+        cpu_timer t;
         {
-            int n = getenv("PROD_THREADS") ? atoi(getenv("PROD_THREADS")) : 2;
-            int m = getenv("CONS_THREADS") ? atoi(getenv("CONS_THREADS")) : 2;
             static const int s_prod = n, s_cons = m;
 
             boost::shared_ptr<boost::thread> l_prod_th[s_prod];
@@ -196,12 +205,17 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
             for (int i = 0; i < s_prod; i++)
                 l_cons_th[i]->join();
         }
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        std::cerr << "    Iterations : " << ITERATIONS << std::endl;
-        std::cerr << "    Contentions: rd=" << l_blob.read_contentions() << 
-                     ", wt=" << l_blob.write_contentions() << std::endl;
+        if (util::verbosity::level() > util::VERBOSE_NONE) {
+            printf("Persist storage iterations: %ld\n", ITERATIONS);
+            printf("Persist storage time      : %.3fs (%.3fus/call)\n",
+                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
+            printf("Errors: %d\n", error);
+        }
         BOOST_REQUIRE(!error);
     }
-    ::unlink(filename);
+    ::unlink(s_filename);
 }
 

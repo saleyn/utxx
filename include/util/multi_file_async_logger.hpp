@@ -85,11 +85,12 @@ struct basic_multi_file_async_logger {
         int m_fd;
         int m_version;
     public:
-        file_id() : m_fd(-1), m_version(0) {}
+        file_id() { reset(); }
         file_id(int a_fd, int a_vsn) : m_fd(a_fd), m_version(a_vsn) {}
         bool invalid()  const { return m_fd < 0; }
         int  version()  const { return m_version; }
         int  fd()       const { return m_fd; }
+        void reset()          { m_fd = -1; m_version = 0; }
         bool operator== (const file_id& a) {
             return m_fd == a.m_fd && m_version == a.m_version;
         }

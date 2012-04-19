@@ -33,48 +33,96 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTIL_PERSIST_BLOB_HPP_
 #define _UTIL_PERSIST_BLOB_HPP_
 
+#include <boost/interprocess/file_mapping.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <boost/scope_exit.hpp>
+#include <boost/assert.hpp>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/unistd.h>
+//#include <sys/mman.h>
 #include <string>
 #include <string.h>
-#include <boost/assert.hpp>
 #include <util/atomic.hpp>
 #include <util/meta.hpp>
+#include <util/path.hpp>
+#include <util/error.hpp>
+#include <util/robust_mutex.hpp>
 
 namespace util {
 
+    namespace {
+        namespace bip = boost::interprocess;
+
+        struct robust_lock : public robust_mutex {
+            struct lock_data {
+                pthread_mutex_t mutex;
+            };
+            explicit robust_lock(bool a_destroy_on_exit = false)
+                : robust_mutex(a_destroy_on_exit) {}
+            void init(lock_data& a_data) { robust_mutex::init(a_data.mutex); }
+            void set(lock_data& a_data)  { robust_mutex::set(a_data.mutex);  }
+        };
+
+        struct null_lock {
+            typedef robust_mutex::make_consistent_functor make_consistent_functor;
+            typedef void* native_handle_type;
+            typedef boost::unique_lock<null_lock> scoped_lock;
+            typedef boost::detail::try_lock_wrapper<null_lock> scoped_try_lock;
+
+            struct lock_data {};
+
+            explicit null_lock(bool a_destroy_on_exit = false) {}
+            void init(lock_data&) {}
+            void set(lock_data&) {}
+            void lock() {}
+            void unlock() {}
+            bool try_lock() { return true; }
+            int  make_consistent() { return 0; }
+            void destroy() {}
+            native_handle_type native_handle() { return NULL; }
+            robust_mutex::make_consistent_functor on_make_consistent;
+        };
+    }
+
 /// Persistent blob of type T stored in memory mapped file.
-template<typename T>
+template<typename T, typename Lock = robust_lock>
 class persist_blob
 {
 private:
     struct blob_t {
         static const uint32_t s_version = 0xFEAB0001;
-        long       vsn1;
-        long       vsn2;
-        uint32_t   version;
-        T          data;
+        typename Lock::lock_data lock_data;
+        uint32_t version;
+        T        data;
     } __attribute((aligned( (atomic::cacheline::size) )));
-    
+
     BOOST_STATIC_ASSERT(sizeof(blob_t) % atomic::cacheline::size == 0);
 
-    int             m_fd;
-    blob_t*         m_blob;
-    std::string     m_filename;
-    unsigned long   m_read_contentions;
-    unsigned long   m_write_contentions;
-    
+    blob_t*             m_blob;
+    bip::file_mapping   m_file;
+    bip::mapped_region  m_region;
+
+    std::string         m_filename;
+    Lock                m_lock;
+
 public:
-    persist_blob() 
-        : m_fd(-1), m_blob(NULL)
-        , m_read_contentions(0), m_write_contentions(0) 
+    typedef T                               value_type;
+    typedef typename Lock::scoped_lock      scoped_lock;
+    typedef typename Lock::scoped_try_lock  scoped_try_lock;
+
+    persist_blob()
+        : m_blob(NULL)
+        , m_lock(false)
     {}
 
     ~persist_blob() { close(); }
 
-    int  init(const char* a_file, const T* a_init_val = NULL,
-        int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
+    /// @return true if file didn't exist and was created.
+    bool init(const char* a_file, const T* a_init_val = NULL,
+        bool a_read_only = true, int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
+        throw (io_error);
 
     bool is_open() const { return m_blob; }
 
@@ -82,8 +130,7 @@ public:
 
     void reset();
 
-    /// Flush buffered changes to disk
-    int  sync()                         { return m_fd ? ::fsync(m_fd) : -1; }
+    int  sync()  { return m_blob && m_region.flush() ? 0 : -1; }
 
     /// Name of the underlying memory mapped file
     const std::string& filename() const { return m_filename; }
@@ -92,146 +139,133 @@ public:
     T    get();
     void set(const T& src);
 
-    uint32_t begin_update() {
-        return atomic::add(&m_blob->vsn1, 1)+1;
-    }
-
-    bool end_update(uint32_t a_vsn) {
-        if (m_blob->vsn1 != a_vsn)
-            return false;
-        if (m_blob->vsn2 < a_vsn-1)
-            m_blob->vsn2 = a_vsn;
-        else if (m_blob->vsn2 >= a_vsn)
-            return false;
-        m_blob->vsn2 = a_vsn;
-        atomic::memory_barrier();
-        return true;
-    }
+    Lock& get_lock() { return m_lock; }
 
     // Use the following get/set functions for non-concurrent "dirty" access
-    T&   dirty_get()                { BOOST_ASSERT(m_blob); return m_blob->data; }
-    const T& dirty_get() const      { BOOST_ASSERT(m_blob); return m_blob->data; }
-    void dirty_set(const T& src)    { BOOST_ASSERT(m_blob); m_blob->data = src;  }
+    T&       dirty_get()                { BOOST_ASSERT(m_blob); return m_blob->data; }
+    const T& dirty_get() const          { BOOST_ASSERT(m_blob); return m_blob->data; }
+    void     dirty_set(const T& src)    { BOOST_ASSERT(m_blob); m_blob->data = src;  }
 
-    T*   operator& ()               { BOOST_ASSERT(m_blob); return &m_blob->data; }
-    T*   operator->()               { return this->operator&(); }
-
-    unsigned long read_contentions()    { return m_read_contentions;  }
-    unsigned long write_contentions()   { return m_write_contentions; }
-    void          vsn(uint32_t& v1, uint32_t& v2) { v1 = m_blob->vsn1; v2 = m_blob->vsn2; }
+    T*       operator->()               { return dirty_get(); }
+    const T* operator->()       const   { return dirty_get(); }
 
 };
 
-template<typename T>
-int persist_blob<T>::init(const char* a_file, const T* a_init_val, int a_mode) {
-    if (!a_file)
-        return -1;
+template<typename T, typename L>
+bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
+    bool a_read_only, int a_mode) throw (io_error)
+{
+    BOOST_ASSERT(a_file);
 
     close();
 
-    if ((m_fd = ::open( a_file, O_CREAT|O_RDWR, a_mode ) ) < 0)
-        return -1;
+    bool l_created     = !path::file_exists(a_file);
+    bool l_initialized = false;
+    {
+        int  l_fd;
 
-    struct stat buf;
-    if (::fstat( m_fd, &buf) < 0)
-        return -1;
+        if ((l_fd = ::open( a_file, a_read_only ? O_RDONLY : O_CREAT|O_RDWR, a_mode ) ) < 0)
+            throw io_error(errno, "Cannot open file ", a_file, " for ",
+                a_read_only ? "reading" : "writing");
 
-    bool initialize = false;
+        BOOST_SCOPE_EXIT_TPL( (&l_fd) ) {
+            ::close(l_fd);
+        } BOOST_SCOPE_EXIT_END;
 
-    if (buf.st_size == 0) {
-        if (::ftruncate(m_fd, sizeof(blob_t)) < 0) {
+        struct stat buf;
+        if (::fstat(l_fd, &buf) < 0)
+            throw io_error(errno, "Cannot check file size of ", a_file);
+
+        if (buf.st_size == 0) {
+            if (::ftruncate(l_fd, sizeof(blob_t)) < 0) {
+                int ec = errno;
+                close();
+                throw io_error(ec, "Cannot set size of file ",
+                    a_file, " to ", sizeof(blob_t));
+            }
+            l_initialized = true;
+        } else if (buf.st_size != sizeof(blob_t)) {
+            // Something is wrong - blob size on disk must match the blob size.
             close();
-            return -1;
+            throw io_error("Size of file ", a_file, " has wrong size - likely old version."
+                " Delete it and try again!");
         }
-        initialize = true;
-    } else if (buf.st_size != sizeof(blob_t)) {
-        // Something is wrong - blob size on disk must match the blob size.
-        close();
-        return -2;
+
     }
 
-    m_blob = reinterpret_cast<blob_t*>( 
+    bip::file_mapping  l_shmf(a_file,   a_read_only ? bip::read_only : bip::read_write);
+    bip::mapped_region l_region(l_shmf, a_read_only ? bip::read_only : bip::read_write);
+
+    m_blob = reinterpret_cast<blob_t*>(l_region.get_address());
+
+    m_file.swap(l_shmf);
+    m_region.swap(l_region);
+
+    /*
+    m_blob = reinterpret_cast<blob_t*>(
         ::mmap(0, sizeof(blob_t),
             PROT_READ|PROT_WRITE, MAP_SHARED, m_fd, 0));
 
     if (m_blob == MAP_FAILED) {
+        int ec = errno;
         close();
-        return -1;
-    } else if (initialize) {
+        throw io_error(ec, "Error mapping file ", a_file, " to memory");
+    }
+    */
+    if (l_initialized) {
         if (a_init_val) {
-            m_blob->vsn1 = 0;
-            m_blob->vsn2 = 0;
             m_blob->data = *a_init_val;
         } else
             bzero(m_blob, sizeof(T));
         m_blob->version = blob_t::s_version;
+        m_lock.init(m_blob->lock_data);
     } else if (blob_t::s_version != m_blob->version) {
         // Wrong software version
         close();
-        return -3;
+        throw io_error("Wrong version of data in the file ", a_file,
+            " (expected: ", blob_t::s_version, ", got: ", m_blob->version, ')');
+    } else {
+        m_lock.set(m_blob->lock_data);
     }
 
-    return 0;
+    return l_created;
 }
 
-template<typename T>
-void persist_blob<T>::close() {
+template<typename T, typename L>
+void persist_blob<T,L>::close() {
     if (m_blob) {
-        ::munmap( reinterpret_cast<char *>(m_blob), sizeof(T) );
+        //::munmap( reinterpret_cast<char *>(m_blob), sizeof(T) );
         m_blob = NULL;
+        //m_lock.destroy();
+        bip::file_mapping  l_fm;
+        bip::mapped_region l_reg;
+        m_file.swap(l_fm);
+        m_region.swap(l_reg);
     }
-    if( m_fd > -1 ) {
-        ::close(m_fd);
-        m_fd = -1;
-    }
 }
 
-template<typename T>
-T persist_blob<T>::get() {
+template<typename T, typename L>
+T persist_blob<T,L>::get() {
     BOOST_ASSERT(m_blob);
-    long v1, v2;
-    T    data;
-    
-    int i = 0;
-    do {
-        if (i++ > 0)
-            ++m_read_contentions;
-            
-        v2   = m_blob->vsn2;
-        atomic::memory_barrier();
-        data = m_blob->data;
-        v1   = m_blob->vsn1;
-        atomic::memory_barrier();
-    } while (v1 != v2 || v2 != m_blob->vsn2);
 
-    return data;
+    scoped_lock g(m_lock);
+    return m_blob->data;
 }
 
-template<typename T>
-void persist_blob<T>::set(const T& src) {
+template<typename T, typename L>
+void persist_blob<T,L>::set(const T& src) {
     BOOST_ASSERT(m_blob);
-    int  i = 0;
-    long v;
-    do {
-        if (i++ > 0)
-            ++m_write_contentions;
-
-        v = atomic::add(&m_blob->vsn1, 1) + 1;
-        m_blob->data = src;
-    } while (!atomic::cas(&m_blob->vsn2, v-1, v));
+    scoped_lock g(m_lock);
+    m_blob->data = src;
 }
 
-template<typename T>
-void persist_blob<T>::reset() {
+template<typename T, typename L>
+void persist_blob<T,L>::reset() {
     BOOST_ASSERT(m_blob);
+    scoped_lock g(m_lock);
     bzero(m_blob->data, sizeof(T));
-    m_blob->vsn1  = 0;
-    m_blob->vsn2  = 0;
-    m_read_contentions  = 0;
-    m_write_contentions = 0;
-    atomic::memory_barrier();
 }
 
 } // namespace util
 
-#endif 
+#endif

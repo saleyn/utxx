@@ -34,12 +34,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <util/path.hpp>
 #include <util/verbosity.hpp>
 #include <iostream>
+#include <fstream>
 
 using namespace util;
 
 BOOST_AUTO_TEST_CASE( test_path_slash )
 {
-#if defined(__windows__) || defined(_WIN32) || defined(_WIN64)
+#if defined(__windows__) || defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER)
     BOOST_REQUIRE_EQUAL('\\', path::slash());
 #else
     BOOST_REQUIRE_EQUAL('/', path::slash());
@@ -108,3 +109,29 @@ BOOST_AUTO_TEST_CASE( test_path_program )
         std::cout << "  Absolute path: " << abs_path << std::endl;
     }
 }
+
+BOOST_AUTO_TEST_CASE( test_path_file_exists )
+{
+    static const char s_filename[] =
+        #ifdef _MSC_VER
+        path::replace_env_vars("%TEMP%/test_file_123.qqq");
+        #else
+        "/tmp/test_file_123.qqq";
+        #endif
+
+    BOOST_REQUIRE(!path::file_exists(s_filename));
+
+    std::fstream file;
+    file.open(s_filename, std::ios_base::out); // create the file
+    BOOST_REQUIRE(file.is_open());
+    file.close();
+
+    BOOST_REQUIRE(path::file_exists(s_filename));
+
+    path::file_unlink(s_filename);
+
+    file.open(s_filename, std::ios_base::in); // won't create the file
+    BOOST_REQUIRE(!file.is_open());
+    file.close();
+}
+
