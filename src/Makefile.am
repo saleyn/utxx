@@ -67,6 +67,7 @@ util_headers = \
 		persist_blob.hpp \
 		pidfile.hpp \
 		rate_throttler.hpp \
+		robust_mutex.hpp \
 		running_stat.hpp \
 		signal_block.hpp \
 		singleton.hpp \

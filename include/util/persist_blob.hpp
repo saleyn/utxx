@@ -130,7 +130,7 @@ public:
 
     void reset();
 
-    int  sync()  { return m_blob && m_region.flush() ? 0 : -1; }
+    int  flush()  { return m_blob && m_region.flush() ? 0 : -1; }
 
     /// Name of the underlying memory mapped file
     const std::string& filename() const { return m_filename; }

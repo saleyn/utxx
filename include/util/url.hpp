@@ -51,12 +51,26 @@ namespace util {
         std::string port;
         std::string path;
 
+        addr_info() : m_is_ipv4(false) {}
+        addr_info(const std::string& a_url) { parse(a_url); }
+
+        bool parse(const std::string& a_url);
+
+        bool is_ipv4() const { return m_is_ipv4; }
+
         std::string to_string() const;
+    private:
+        bool m_is_ipv4;
     };
+
+    /// @return true if \a a_addr is in NNN.NNN.NNN.NNN format.
+    bool is_ipv4_addr(const std::string& a_addr);
 
     /// URL Parsing
     /// @param a_url string in the form <tt>tcp://host:port</tt>
-    bool parse_url(const std::string& a_url, addr_info& a_info);
+    inline bool parse_url(const std::string& a_url, addr_info& a_info) {
+        return a_info.parse(a_url);
+    }
 
 } // namespace util
 
