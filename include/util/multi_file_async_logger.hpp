@@ -334,7 +334,7 @@ write(size_t a_fd, void* a_data, size_t a_sz) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 write(const file_id& a_file, const std::string& a_data) {
-    BOOST_ASSERT(a_file.id() >= 0 && a_file.fd() < m_files.size());
+    BOOST_ASSERT(a_file.fd() >= 0 && a_file.fd() < m_files.size());
     if (m_cancel || unlikely(m_files[a_file.fd()].error || m_files[a_file.fd()].fd < 0))
         return -1;
 
