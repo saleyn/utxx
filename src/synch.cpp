@@ -68,7 +68,7 @@ int futex::wait(const struct timespec *timeout, int* old_val) {
 
     while ((val = wait_fast(old_val)) != 0) { 
         switch (res = wait_slow(val, timeout)) {
-            case -1: return -1;          // error
+            case -1: return -1;          // error or timeout
             case  1: return  0;          // passed
             case  0:                     // slept
                 // If we were woken, someone else might be sleeping too

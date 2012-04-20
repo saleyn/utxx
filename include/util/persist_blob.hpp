@@ -54,6 +54,9 @@ namespace util {
 
     namespace {
         namespace bip = boost::interprocess;
+    }
+
+    namespace detail {
 
         struct robust_lock : public robust_mutex {
             struct lock_data {
@@ -87,7 +90,7 @@ namespace util {
     }
 
 /// Persistent blob of type T stored in memory mapped file.
-template<typename T, typename Lock = robust_lock>
+template<typename T, typename Lock = detail::robust_lock>
 class persist_blob
 {
 private:

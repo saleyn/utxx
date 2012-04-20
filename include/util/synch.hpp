@@ -175,8 +175,9 @@ public:
     /// @param <old_val> - pointer to the old <value()> of futex
     ///         known just before calling <wait()> function.
     /// @return 0           - woken up or value changed before sleep
-    ///         -ETIMEDOUT  - timed out
-    ///         -N          - some other error occured
+    ///         -1          - timeout or some other error occured
+    ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
+    ///                                  being returned)
     int wait(const struct timespec *timeout = NULL, int* old_val = NULL);
 };
 
@@ -207,11 +208,11 @@ public:
 
     int signal() {
         pthread_mutex_lock(&m);
-        m_count++;
+        m_count = (m_count + 1) & 0xEFFFFFFF;
         pthread_mutex_unlock(&m);
         // Note: sending signal outside of a critical section
         // is ok by POSIX and likely more efficient (though may
-        // lead to unpredictable scheduling (see diagram below)
+        // lead to unpredictable scheduling
         pthread_cond_signal(&c);
         return 0;
     }
@@ -222,12 +223,8 @@ public:
             return 0;
 
         pthread_mutex_lock(&m);
-        if (old_val && *old_val == m_count)
-            while (m_count < 0) {
-                m_count--;
-                val = timeout ? pthread_cond_timedwait(&c, &m, timeout)
-                              : pthread_cond_wait(&c, &m);
-            }
+        val = timeout ? pthread_cond_timedwait(&c, &m, timeout)
+                      : pthread_cond_wait(&c, &m);
         pthread_mutex_unlock(&m);
         return val;
     }

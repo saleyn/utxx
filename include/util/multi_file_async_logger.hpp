@@ -64,6 +64,7 @@ namespace util {
 struct multi_file_async_logger_traits {
     typedef std::allocator<void>    allocator;
     typedef synch::futex            event_type;
+    typedef boost::function<void (const char*& a_data, size_t& a_sz)> msg_formatter;
 
     enum {
           commit_timeout    = 2000  // commit this number of usec
@@ -74,11 +75,19 @@ struct multi_file_async_logger_traits {
 /// Asynchronous logger of text messages.
 template<typename traits = multi_file_async_logger_traits>
 struct basic_multi_file_async_logger {
+    typedef typename traits::event_type             event_type;
+    typedef typename traits::msg_formatter          msg_format_callback;
+    typedef synch::posix_event                      close_event_type;
+    typedef boost::shared_ptr<close_event_type>     close_event_type_ptr;
+    typedef typename traits::allocator::template
+        rebind<char>::other                         msg_allocator;
+
     struct file_info {
-        std::string name;
-        int         fd;
-        int         error;
-        int         version;  // Version number assigned when file is opened.
+        std::string          name;
+        int                  fd;
+        int                  error;
+        int                  version;  // Version number assigned when file is opened.
+        close_event_type_ptr on_close; // Event to signal on close
     };
 
     class file_id {
@@ -99,28 +108,25 @@ struct basic_multi_file_async_logger {
     };
 
 private:
+    typedef std::vector<file_info>                          file_info_vec;
+
     struct command_t {
         enum type_t { msg, close } type;
         int fd;
         union {
-            struct { void* data; size_t size; } msg;
-            struct { bool immediate;          } close;
+            struct { void* data; size_t size;   } msg;
+            struct { bool immediate;            } close;
         } args;
         command_t* next;
 
-        command_t(type_t a_type, int a_fd) : type(a_type), fd(a_fd), next(NULL) {}
+        command_t(type_t a_type, int a_fd)
+            : type(a_type), fd(a_fd), next(NULL)
+        {}
     };
 
-
     typedef typename traits::allocator::template
-        rebind<char>::other                 msg_allocator;
-    typedef typename traits::allocator::template
-        rebind<command_t>::other            cmd_allocator;
-
-    typedef std::vector<file_info>          file_info_vec;
-    typedef std::map<uint32_t, command_t*>  pending_cmds_map;
-
-    typedef typename traits::event_type event_type;
+        rebind<command_t>::other                    cmd_allocator;
+    typedef std::map<uint32_t, command_t*>          pending_cmds_map;
 
     boost::mutex                        m_mutex;
     boost::condition_variable           m_stop_condition;
@@ -131,7 +137,7 @@ private:
     bool                                m_cancel;
     int                                 m_max_queue_size;
     event_type                          m_event;
-    int                                 m_active_count;
+    long                                m_active_count;
     file_info_vec                       m_files;
     int                                 m_last_version;
 
@@ -143,6 +149,7 @@ private:
     int  internal_enqueue(command_t* msg);
 
     void close();
+    void close(int a_fd, int a_errno = 0);
 
     void deallocate_commands(command_t** a_cmds, size_t a_sz) {
         for (size_t i = 0; i < a_sz; i++)
@@ -154,6 +161,7 @@ private:
     int do_writev_and_free(int a_fd, command_t* a_cmds[],
         const struct iovec* a_iov, size_t a_sz);
 
+    bool check_range(int a_fd) const { return a_fd >= 0 && (size_t)a_fd < m_files.size(); }
 public:
     explicit basic_multi_file_async_logger(
         size_t a_max_files = 1024,
@@ -192,7 +200,21 @@ public:
                       int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
 
     /// Close one log file
-    int close_file(const file_id& a_id, bool a_immediate = false);
+    /// @param a_id identifier of the file to be closed
+    /// @param a_immediate indicates whether to close file immediately or
+    ///             first to write all pending data in the file descriptor's
+    ///             queue prior to closing it
+    /// @param a_notify_when_closed is the event that, if not NULL, will be
+    ///             signaled when the file descriptor is eventually closed.
+    /// @param a_wait_secs is the number of seconds to wait until the file is
+    ///             closed. -1 means indefinite.
+    int close_file(const file_id& a_id, bool a_immediate = false,
+                   int a_wait_secs = -1);
+
+    /// @return last error of a given file
+    int last_error(const file_id& a_id) const {
+        return check_range(a_id) ? m_files[a_id].error : -1;
+    }
 
     template <class T>
     T* allocate() {
@@ -218,6 +240,8 @@ public:
     /// @return max size of the commit queue
     const int max_queue_size()  const { return m_max_queue_size; }
 
+    const int open_files_count() const { return m_active_count; }
+
 };
 
 //-----------------------------------------------------------------------------
@@ -225,8 +249,8 @@ public:
 //-----------------------------------------------------------------------------
 
 template<typename traits>
-int basic_multi_file_async_logger<traits>::start()
-{
+int basic_multi_file_async_logger<traits>::
+start() {
     if (m_thread)
         return -1;
 
@@ -246,8 +270,8 @@ int basic_multi_file_async_logger<traits>::start()
 }
 
 template<typename traits>
-void basic_multi_file_async_logger<traits>::stop()
-{
+void basic_multi_file_async_logger<traits>::
+stop() {
     if (!m_thread || m_cancel)
         return;
     m_cancel = true;
@@ -260,8 +284,8 @@ void basic_multi_file_async_logger<traits>::stop()
 }
 
 template<typename traits>
-void basic_multi_file_async_logger<traits>::run(boost::barrier* a_barrier)
-{
+void basic_multi_file_async_logger<traits>::
+run(boost::barrier* a_barrier) {
     // Wait until the caller is ready
     a_barrier->wait();
 
@@ -286,13 +310,37 @@ void basic_multi_file_async_logger<traits>::run(boost::barrier* a_barrier)
 }
 
 template<typename traits>
-void basic_multi_file_async_logger<traits>::close() {
+void basic_multi_file_async_logger<traits>::
+close() {
     for (typename file_info_vec::iterator it=m_files.begin(), e=m_files.end();
             it != e; ++it)
-        if (it->fd >= 0) {
-            ::close(it->fd);
-            it->error = errno;
-        }
+        close(it->fd);
+}
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+close(int a_fd, int a_errno) {
+    if (unlikely(!check_range(a_fd)))
+        return;
+    file_info& fi = m_files[a_fd];
+    if (fi.fd < 0)
+        return;
+
+    fi.fd = -1;
+    ::close(a_fd);
+    if (a_errno)
+        fi.error = a_errno;
+    fi.name.clear();
+    atomic::dec(&m_active_count);
+    close_event_type_ptr l_on_close = fi.on_close;
+    ASYNC_TRACE(("close(%d, %d) %s (use_count=%ld)\n",
+            a_fd, fi.error,
+            l_on_close ? "notifying caller" : "will NOT notify caller",
+            l_on_close.use_count()));
+    if (l_on_close) {
+        l_on_close->signal();
+        fi.on_close.reset();
+    }
 }
 
 template<typename traits>
@@ -320,8 +368,9 @@ internal_enqueue(command_t* a_msg) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 write(size_t a_fd, void* a_data, size_t a_sz) {
-    BOOST_ASSERT(a_fd < m_files.size());
-    if (m_cancel || unlikely(m_files[a_fd].error || m_files[a_fd].fd < 0))
+    BOOST_ASSERT(check_range(a_fd));
+    file_info& l_fi = m_files[a_fd];
+    if (m_cancel || unlikely(l_fi.error || l_fi.fd < 0))
         return -1;
 
     command_t* p = m_cmd_allocator.allocate(1);
@@ -334,8 +383,9 @@ write(size_t a_fd, void* a_data, size_t a_sz) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 write(const file_id& a_file, const std::string& a_data) {
-    BOOST_ASSERT(a_file.fd() >= 0 && a_file.fd() < m_files.size());
-    if (m_cancel || unlikely(m_files[a_file.fd()].error || m_files[a_file.fd()].fd < 0))
+    BOOST_ASSERT(check_range(a_file.fd()));
+    file_info& l_fi = m_files[a_file.fd()];
+    if (m_cancel || unlikely(l_fi.error || l_fi.fd < 0))
         return -1;
 
     command_t* p = m_cmd_allocator.allocate(1);
@@ -360,7 +410,7 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
                 a_mode);
     if (n < 0)
         return file_id(n, 0);
-    if ((size_t)n > m_files.size()) {
+    if (!check_range(n)) {
         ::close(n);
         return file_id(-2, 0);
     }
@@ -369,24 +419,48 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
     f.fd    = n;
     f.error = 0;
     f.version++;
-    m_active_count++;
+    atomic::inc(&m_active_count);
     m_last_version++;
     return file_id(n, m_last_version);
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-close_file(const file_id& a_id, bool a_immediate) {
-    if (a_id.fd() >= m_files.size())
+close_file(const file_id& a_id, bool a_immediate, int a_wait_secs) {
+    if (unlikely(!check_range(a_id.fd())))
         return -1;
-    if (m_files[a_id.fd()].version != a_id.version())
+    file_info& l_fi = m_files[a_id.fd()];
+    if (unlikely(l_fi.version != a_id.version()))
         return -2;
-    if (m_files[a_id.fd()].fd < 0)
+    if (unlikely(l_fi.fd < 0))
         return 0;
+
+    if (!l_fi.on_close)
+        l_fi.on_close.reset(new close_event_type());
+    close_event_type_ptr l_event = l_fi.on_close;
+
+    int l_event_val = l_event ? l_event->value() : 0;
+    
     command_t* l_cmd = m_cmd_allocator.allocate(1);
     new (l_cmd) command_t(command_t::close, a_id.fd());
     l_cmd->args.close.immediate = a_immediate;
-    return 0;
+    int n = internal_enqueue(l_cmd);
+
+    if (!n && l_event) {
+        ASYNC_TRACE(( "close_file(%d) is waiting for ack\n", a_id.fd()));
+        int rc = 1;
+        while (m_thread && l_fi.fd >= 0 && rc) {
+            time_val tv(abs_time(a_wait_secs, 0));
+            struct timespec l_timeout = {tv.sec(), tv.usec() * 1000};
+            rc = l_event->wait(a_wait_secs > -1 ? &l_timeout : NULL, &l_event_val);
+            ASYNC_TRACE(( "close_file(%d) ack received %d (err=%d)\n",
+                    a_id.fd(), rc, l_fi.error));
+        }
+    } else {
+        ASYNC_TRACE(( "close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
+                a_id.fd(), n, (l_event ? "true" : "false")));
+    }
+    return n;
 }
 
 template<typename traits>
@@ -466,8 +540,10 @@ commit(const struct timespec* tsp)
 
     for(typename pending_cmds_map::iterator it = l_queue.begin(), e = l_queue.end();
             it != e; ++it) {
-        int l_fd     = it->first;
-        command_t* p = it->second;
+        int l_fd                        = it->first;
+        command_t* p                    = it->second;
+        bool l_fd_close_immediate       = false;
+        bool l_fd_pending_close         = false;
 
         ASYNC_TRACE(("Processing commands for fd=%d\n", l_fd));
 
@@ -485,7 +561,8 @@ commit(const struct timespec* tsp)
                     iov[n].iov_base = p->args.msg.data;
                     iov[n].iov_len  = k;
                     cmds[n]         = p;
-                    ASYNC_TRACE(("Command %lu address %p\n", n, cmds[n]));
+                    ASYNC_TRACE(("FD=%d, Command %lu address %p (write)\n",
+                            l_fd, n, cmds[n]));
                     sz += k;
                     if (++n == IOV_MAX || p == NULL) {
                         k = do_writev_and_free(l_fd, cmds, iov, n);
@@ -496,16 +573,18 @@ commit(const struct timespec* tsp)
                     break;
                 }
                 case command_t::close: {
-                    bool l_immediate = p->args.close.immediate;
+                    l_fd_close_immediate    = p->args.close.immediate;
+                    l_fd_pending_close      = !l_fd_close_immediate;
+                    ASYNC_TRACE(("FD=%d, Command %lu address %p (close)\n", l_fd, n, p));
                     deallocate_command(p);
-                    if (l_immediate && (n > 0 || l_next)) {
-                        LOG_WARNING((
-                            "Requested to close file '%s' immediately "
-                            "while unwritten data still exists in memory!",
-                            m_files[l_fd].name.c_str()));
-                        ::close(l_fd);
+                    if (l_fd_close_immediate) {
+                        if (n > 0 || l_next)
+                            LOG_WARNING((
+                                "Requested to close file '%s' immediately "
+                                "while unwritten data still exists in memory!",
+                                m_files[l_fd].name.c_str()));
+                        close(l_fd, ECANCELED);
                     }
-                    m_files[l_fd].error = ECANCELED;
                     break;
                 }
                 default:
@@ -513,17 +592,28 @@ commit(const struct timespec* tsp)
                     break;
             }        
             p = l_next;
-        } while (p);
+        } while (p && !l_fd_close_immediate);
 
-        if (!m_files[l_fd].error) {
+        if (!m_files[l_fd].error || l_fd_pending_close) {
+            int ec;
             if (n > 0) {
                 n = do_writev_and_free(l_fd, cmds, iov, n);
                 ASYNC_TRACE(("Written %lu bytes to (fd=%d) %s (total = %lu)\n", n,
                        l_fd, m_files[l_fd].name.c_str(), sz)); 
+                ec = n < 0 ? m_files[l_fd].error : 0;
             } else {
+                ec = 0;
                 ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n", sz,
                        l_fd, m_files[l_fd].name.c_str())); 
             }
+
+            if (l_fd_pending_close) {
+                ASYNC_TRACE(("FD=%d, processing pending close\n", l_fd));
+                ec = ECANCELED;
+            }
+
+            if (ec)
+                close(l_fd, ec);
 
             //fsync(l_fd);
         } else
