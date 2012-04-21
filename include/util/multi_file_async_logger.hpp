@@ -64,7 +64,7 @@ namespace util {
 struct multi_file_async_logger_traits {
     typedef std::allocator<void>    allocator;
     typedef synch::futex            event_type;
-    typedef boost::function<void (const char*& a_data, size_t& a_sz)> msg_formatter;
+    typedef boost::function<void (char*& a_data, size_t& a_sz)> msg_formatter;
 
     enum {
           commit_timeout    = 2000  // commit this number of usec
@@ -76,7 +76,7 @@ struct multi_file_async_logger_traits {
 template<typename traits = multi_file_async_logger_traits>
 struct basic_multi_file_async_logger {
     typedef typename traits::event_type             event_type;
-    typedef typename traits::msg_formatter          msg_format_callback;
+    typedef typename traits::msg_formatter          msg_formatter;
     typedef synch::posix_event                      close_event_type;
     typedef boost::shared_ptr<close_event_type>     close_event_type_ptr;
     typedef typename traits::allocator::template
@@ -88,6 +88,9 @@ struct basic_multi_file_async_logger {
         int                  error;
         int                  version;  // Version number assigned when file is opened.
         close_event_type_ptr on_close; // Event to signal on close
+        msg_formatter        on_format;
+
+        file_info() : fd(-1), error(0), version(0) {}
     };
 
     class file_id {
@@ -151,6 +154,12 @@ private:
     void close();
     void close(int a_fd, int a_errno = 0);
 
+    command_t* allocate_command(typename command_t::type_t a_tp, int a_fd) {
+        command_t* p = m_cmd_allocator.allocate(1);
+        new (p) command_t(a_tp, a_fd);
+        return p;
+    }
+
     void deallocate_commands(command_t** a_cmds, size_t a_sz) {
         for (size_t i = 0; i < a_sz; i++)
             deallocate_command(a_cmds[i]);
@@ -161,7 +170,18 @@ private:
     int do_writev_and_free(int a_fd, command_t* a_cmds[],
         const struct iovec* a_iov, size_t a_sz);
 
-    bool check_range(int a_fd) const { return a_fd >= 0 && (size_t)a_fd < m_files.size(); }
+    bool check_range(int a_fd) const {
+        return likely(a_fd >= 0 && (size_t)a_fd < m_files.size());
+    }
+    bool check_range(const file_id& a_file) const {
+        return check_range(a_file.fd())
+            && a_file.version() == m_files[a_file.fd()].version;
+    }
+    file_info* get_info(const file_id& a_file) {
+        BOOST_ASSERT(check_range(a_file));
+        file_info* l_fi = &m_files[a_file.fd()];
+        return (unlikely(m_cancel || l_fi->error || l_fi->fd < 0)) ? NULL : l_fi;
+    }
 public:
     explicit basic_multi_file_async_logger(
         size_t a_max_files = 1024,
@@ -171,17 +191,10 @@ public:
         , m_active_count(0)
         , m_files(a_max_files)
         , m_last_version(0)
-    {
-        for (size_t i = 0; i < m_files.size(); i++) {
-            m_files[i].fd      = -1;
-            m_files[i].error   = 0;
-            m_files[i].version = 0;
-        }
-    }
+    {}
 
     ~basic_multi_file_async_logger() {
-        if (m_thread)
-            stop();
+        stop();
     }
 
     /// Initialize and start asynchronous file writer
@@ -198,6 +211,15 @@ public:
     /// Start a new log file
     file_id open_file(const std::string& a_filename, bool a_append = true,
                       int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
+
+    /// This callback will be called from within the logger's thread
+    /// to format a message prior to writing it to a log file. The formatting
+    /// function can modify the content of \a a_data and if needed can reallocate
+    /// and rewrite \a a_data and \a a_size to point to some other memory. Use
+    /// the allocate() and deallocate() functions for this purpose. You should
+    /// call this function immediately after calling open_file() and before
+    /// writing any messages to it.
+    void set_formatter(const file_id& a_id, const msg_formatter& a_formatter);
 
     /// Close one log file
     /// @param a_id identifier of the file to be closed
@@ -218,21 +240,26 @@ public:
 
     template <class T>
     T* allocate() {
-        return reinterpret_cast<T*>(m_msg_allocator.allocate(sizeof(T)));
+        T* p = reinterpret_cast<T*>(m_msg_allocator.allocate(sizeof(T)));
+        ASYNC_TRACE(("+allocate<T>(%lu) -> %p\n", sizeof(T), p));
+        return p;
     }
 
     char* allocate(size_t a_sz) {
-        return m_msg_allocator.allocate(a_sz);
+        char* p = m_msg_allocator.allocate(a_sz);
+        ASYNC_TRACE(("+allocate(%lu) -> %p\n", a_sz, p));
+        return p;
+    }
+
+    void deallocate(char* a_data, size_t a_size) {
+        ASYNC_TRACE(("-Deallocating msg(%p, %lu)\n", a_data, a_size));
+        m_msg_allocator.deallocate(a_data, a_size);
     }
 
     /// Formatted write with argumets.  The a_data must have been
     /// previously allocated using the allocate() function.
     /// The logger will implicitely assume deallocation responsibility.
-    int write(size_t a_fd, void* a_data, size_t a_sz);
-
-    int write(const file_id& a_file, void* a_data, size_t a_sz) {
-        return write(a_file.id(), a_data, a_sz);
-    }
+    int write(const file_id& a_file, void* a_data, size_t a_sz);
 
     /// Write a copy of the string a_data to a file.
     int write(const file_id& a_file, const std::string& a_data);
@@ -305,13 +332,17 @@ run(boost::barrier* a_barrier) {
             break;
     }
 
+    ASYNC_TRACE(("Logger loop finished - calling close()\n"));
     close();
+    ASYNC_TRACE(("Logger notifying all of exiting\n"));
     m_stop_condition.notify_all();
 }
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 close() {
+    ASYNC_TRACE(("Logger is closing\n"));
+    boost::mutex::scoped_lock lock(m_mutex);
     for (typename file_info_vec::iterator it=m_files.begin(), e=m_files.end();
             it != e; ++it)
         close(it->fd);
@@ -338,9 +369,17 @@ close(int a_fd, int a_errno) {
             l_on_close ? "notifying caller" : "will NOT notify caller",
             l_on_close.use_count()));
     if (l_on_close) {
+        ASYNC_TRACE(("Signaling on_close(%d) event\n", fi.fd));
         l_on_close->signal();
         fi.on_close.reset();
     }
+}
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+set_formatter(const file_id& a_id, const msg_formatter& a_formatter) {
+    BOOST_ASSERT(check_range(a_id));
+    m_files[a_id.fd()].on_format = a_formatter;
 }
 
 template<typename traits>
@@ -367,14 +406,12 @@ internal_enqueue(command_t* a_msg) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-write(size_t a_fd, void* a_data, size_t a_sz) {
-    BOOST_ASSERT(check_range(a_fd));
-    file_info& l_fi = m_files[a_fd];
-    if (m_cancel || unlikely(l_fi.error || l_fi.fd < 0))
+write(const file_id& a_file, void* a_data, size_t a_sz) {
+    if (unlikely(!get_info(a_file)))
         return -1;
 
-    command_t* p = m_cmd_allocator.allocate(1);
-    new (p) command_t(command_t::msg, a_fd);
+    command_t* p = allocate_command(command_t::msg, a_file.fd());
+    ASYNC_TRACE(("->write(%p, %lu) - no copy\n", a_data, a_sz));
     p->args.msg.data = a_data;
     p->args.msg.size = a_sz;
     return internal_enqueue(p);
@@ -383,18 +420,16 @@ write(size_t a_fd, void* a_data, size_t a_sz) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 write(const file_id& a_file, const std::string& a_data) {
-    BOOST_ASSERT(check_range(a_file.fd()));
-    file_info& l_fi = m_files[a_file.fd()];
-    if (m_cancel || unlikely(l_fi.error || l_fi.fd < 0))
+    if (unlikely(!get_info(a_file)))
         return -1;
 
-    command_t* p = m_cmd_allocator.allocate(1);
-    new (p) command_t(command_t::msg, a_file.fd());
+    command_t* p = allocate_command(command_t::msg, a_file.fd());
 
-    char* q = m_msg_allocator.allocate(a_data.size());
+    char* q = allocate(a_data.size());
     memcpy(q, a_data.c_str(), a_data.size());
     p->args.msg.data = q;
     p->args.msg.size = a_data.size();
+    ASYNC_TRACE(("->write(%p, %lu) - allocated copy\n", q, a_data.size()));
     return internal_enqueue(p);
 }
 
@@ -427,34 +462,29 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 close_file(const file_id& a_id, bool a_immediate, int a_wait_secs) {
-    if (unlikely(!check_range(a_id.fd())))
-        return -1;
-    file_info& l_fi = m_files[a_id.fd()];
-    if (unlikely(l_fi.version != a_id.version()))
-        return -2;
-    if (unlikely(l_fi.fd < 0))
+    file_info* l_fi = get_info(a_id);
+    if (unlikely(!l_fi))
         return 0;
 
-    if (!l_fi.on_close)
-        l_fi.on_close.reset(new close_event_type());
-    close_event_type_ptr l_event = l_fi.on_close;
+    if (!l_fi->on_close)
+        l_fi->on_close.reset(new close_event_type());
+    close_event_type_ptr l_event = l_fi->on_close;
 
     int l_event_val = l_event ? l_event->value() : 0;
-    
-    command_t* l_cmd = m_cmd_allocator.allocate(1);
-    new (l_cmd) command_t(command_t::close, a_id.fd());
+
+    command_t* l_cmd = allocate_command(command_t::close, a_id.fd());
     l_cmd->args.close.immediate = a_immediate;
     int n = internal_enqueue(l_cmd);
 
     if (!n && l_event) {
-        ASYNC_TRACE(( "close_file(%d) is waiting for ack\n", a_id.fd()));
+        ASYNC_TRACE(( "close_file(%d) is waiting for ack (%d)\n", a_id.fd(), a_wait_secs));
         int rc = 1;
-        while (m_thread && l_fi.fd >= 0 && rc) {
+        while (m_thread && l_fi->fd >= 0 && rc) {
             time_val tv(abs_time(a_wait_secs, 0));
             struct timespec l_timeout = {tv.sec(), tv.usec() * 1000};
             rc = l_event->wait(a_wait_secs > -1 ? &l_timeout : NULL, &l_event_val);
             ASYNC_TRACE(( "close_file(%d) ack received %d (err=%d)\n",
-                    a_id.fd(), rc, l_fi.error));
+                    a_id.fd(), rc, l_fi->error));
         }
     } else {
         ASYNC_TRACE(( "close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
@@ -481,12 +511,14 @@ void basic_multi_file_async_logger<traits>::
 deallocate_command(command_t* a_cmd) {
     switch (a_cmd->type) {
         case command_t::msg:
-            m_msg_allocator.deallocate(
+            deallocate(
                 static_cast<char*>(a_cmd->args.msg.data), a_cmd->args.msg.size);
             break;
         default:
-            return;
+            break;
     }
+    a_cmd->~command_t();
+    m_cmd_allocator.deallocate(a_cmd, 1);
 }
 
 template<typename traits>
@@ -531,7 +563,7 @@ commit(const struct timespec* tsp)
         res.first->second = p;
         ASYNC_TRACE(("Set fd[%d].head(%p)->next(%p)\n", p->fd, p, p->next));
     }
- 
+
     // Process each fd's command queue
     ASYNC_TRACE(("Total (%d).\n", l_count));
 
@@ -540,10 +572,11 @@ commit(const struct timespec* tsp)
 
     for(typename pending_cmds_map::iterator it = l_queue.begin(), e = l_queue.end();
             it != e; ++it) {
-        int l_fd                        = it->first;
-        command_t* p                    = it->second;
-        bool l_fd_close_immediate       = false;
-        bool l_fd_pending_close         = false;
+        int l_fd                    = it->first;
+        command_t* p                = it->second;
+        bool l_fd_close_immediate   = false;
+        bool l_fd_pending_close     = false;
+        msg_formatter& l_on_fmt     = m_files[l_fd].on_format;
 
         ASYNC_TRACE(("Processing commands for fd=%d\n", l_fd));
 
@@ -557,17 +590,20 @@ commit(const struct timespec* tsp)
             command_t* l_next = p->next;
             switch (p->type) {
                 case command_t::msg: {
-                    size_t k = p->args.msg.size;
-                    iov[n].iov_base = p->args.msg.data;
+                    size_t& k = p->args.msg.size;
+                    char*&  q = reinterpret_cast<char*&>(p->args.msg.data);
+                    if (l_on_fmt)
+                        l_on_fmt(q, k);
+                    iov[n].iov_base = q;
                     iov[n].iov_len  = k;
                     cmds[n]         = p;
-                    ASYNC_TRACE(("FD=%d, Command %lu address %p (write)\n",
-                            l_fd, n, cmds[n]));
+                    ASYNC_TRACE(("FD=%d, Command %lu address %p write(%p, %lu)\n",
+                            l_fd, n, cmds[n], q, k));
                     sz += k;
                     if (++n == IOV_MAX || p == NULL) {
                         k = do_writev_and_free(l_fd, cmds, iov, n);
                         ASYNC_TRACE(("Written %lu bytes to %s\n", k,
-                               m_files[l_fd].name.c_str())); 
+                               m_files[l_fd].name.c_str()));
                         n = 0;
                     }
                     break;
@@ -590,7 +626,7 @@ commit(const struct timespec* tsp)
                 default:
                     BOOST_ASSERT(false);
                     break;
-            }        
+            }
             p = l_next;
         } while (p && !l_fd_close_immediate);
 
@@ -599,12 +635,12 @@ commit(const struct timespec* tsp)
             if (n > 0) {
                 n = do_writev_and_free(l_fd, cmds, iov, n);
                 ASYNC_TRACE(("Written %lu bytes to (fd=%d) %s (total = %lu)\n", n,
-                       l_fd, m_files[l_fd].name.c_str(), sz)); 
+                       l_fd, m_files[l_fd].name.c_str(), sz));
                 ec = n < 0 ? m_files[l_fd].error : 0;
             } else {
                 ec = 0;
                 ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n", sz,
-                       l_fd, m_files[l_fd].name.c_str())); 
+                       l_fd, m_files[l_fd].name.c_str()));
             }
 
             if (l_fd_pending_close) {

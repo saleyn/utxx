@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <iomanip>
 #include <unistd.h>
 
-// #define DEBUG_ASYNC_LOGGER
+//#define DEBUG_ASYNC_LOGGER
 #define DEBUG_USE_BOOST_POOL_ALLOC
 
 #include <boost/test/unit_test.hpp>
@@ -98,11 +98,11 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         strncpy(p, s_str1, sizeof(s_str1));
         strncpy(q, s_str3, sizeof(s_str3));
         perf.start();
-        int n = l_logger.write(l_fds[0].fd(), p, sizeof(s_str1));
+        int n = l_logger.write(l_fds[0], p, sizeof(s_str1));
         perf.stop();
         BOOST_REQUIRE_EQUAL(0, n);
         perf.start();
-        int m = l_logger.write(l_fds[1].fd(), q, sizeof(s_str3));
+        int m = l_logger.write(l_fds[1], q, sizeof(s_str3));
         perf.stop();
         BOOST_REQUIRE_EQUAL(0, m);
     }
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
         int n = snprintf(buf, sizeof(buf), s_str1, i);
         char* p = l_logger.allocate(n);
         strncpy(p, buf, n);
-        n = l_logger.write(l_fd.fd(), p, n);
+        n = l_logger.write(l_fd, p, n);
         BOOST_REQUIRE_EQUAL(0, n);
     }
 
@@ -148,6 +148,84 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
 
     l_logger.stop();
     ::unlink(s_filename[0]);
+}
+
+namespace {
+    class formatter {
+        logger_t& m_logger;
+        std::string m_prefix;
+    public:
+        formatter(logger_t& a_logger)
+            : m_logger(a_logger), m_prefix("ABCDEFG")
+        {}
+
+        const std::string& prefix() const { return m_prefix; }
+
+        void operator() (char*& a_data, size_t& a_size) {
+            size_t n = a_size + m_prefix.size();
+            char* p = m_logger.allocate(n);
+            memcpy(p, m_prefix.c_str(), m_prefix.size());
+            memcpy(p + m_prefix.size(), a_data, a_size);
+            m_logger.deallocate(a_data, a_size);
+            ASYNC_TRACE(("  rewritten msg(%p, %lu) -> msg(%p, %lu)\n",
+                    a_data, a_size, p, n));
+            a_size = n;
+            a_data = p;
+        }
+    };
+}
+
+BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
+{
+    static const int32_t ITERATIONS = 3;
+
+    ::unlink(s_filename[0]);
+
+    logger_t l_logger;
+
+    typename logger_t::file_id l_fd =
+        l_logger.open_file(s_filename[0], false);
+    BOOST_REQUIRE(l_fd.fd() >= 0);
+
+    formatter l_formatter(l_logger);
+    l_logger.set_formatter(l_fd, l_formatter);
+
+    int ok = l_logger.start();
+
+    BOOST_REQUIRE_EQUAL(0, ok);
+
+    std::string s = std::string(s_str2) + '\n';
+
+    for (int i = 0; i < ITERATIONS; i++) {
+        int n = l_logger.write(l_fd, s);
+        BOOST_REQUIRE_EQUAL(0, n);
+    }
+
+    l_logger.close_file(l_fd, false);
+
+    BOOST_REQUIRE_EQUAL(0, l_logger.open_files_count());
+    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+
+    l_logger.stop();
+
+    {
+        std::string st = l_formatter.prefix() + s_str2;
+
+        std::ifstream file(s_filename[0], std::ios::in);
+        for (int i = 0; i < ITERATIONS; i++) {
+            std::string sg;
+            std::getline(file, sg);
+            BOOST_REQUIRE( !file.fail() );
+            BOOST_REQUIRE_EQUAL( st, sg );
+        }
+        
+        std::getline(file, st);
+        BOOST_REQUIRE(file.fail());
+        BOOST_REQUIRE(file.eof());
+        file.close();
+
+        ::unlink(s_filename[0]);
+    }
 }
 
 //-----------------------------------------------------------------------------
