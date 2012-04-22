@@ -124,8 +124,10 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
 
     logger_t l_logger;
 
-    typename logger_t::file_id l_fd =
-        l_logger.open_file(s_filename[0], false);
+    typename logger_t::file_id l_fd;
+    BOOST_REQUIRE_EQUAL(0, l_logger.close_file(l_fd));
+
+    l_fd = l_logger.open_file(s_filename[0], false);
     BOOST_REQUIRE(l_fd.fd() >= 0);
 
     int ok = l_logger.start();

@@ -462,6 +462,7 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 close_file(const file_id& a_id, bool a_immediate, int a_wait_secs) {
+    if (a_id.fd() < 0) return 0;
     file_info* l_fi = get_info(a_id);
     if (unlikely(!l_fi))
         return 0;
