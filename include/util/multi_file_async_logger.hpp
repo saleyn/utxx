@@ -453,10 +453,9 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
     f.name  = a_filename;
     f.fd    = n;
     f.error = 0;
-    f.version++;
+    f.version = ++m_last_version;
     atomic::inc(&m_active_count);
-    m_last_version++;
-    return file_id(n, m_last_version);
+    return file_id(n, f.version);
 }
 
 template<typename traits>

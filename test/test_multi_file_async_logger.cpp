@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
 
 //-----------------------------------------------------------------------------
 /*
-BOOST_AUTO_TEST_CASE( test_async_logger_append )
+BOOST_AUTO_TEST_CASE( test_multi_file_logger_append )
 {
     enum { ITERATIONS = 10 };
     
@@ -303,7 +303,7 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
+BOOST_AUTO_TEST_CASE( test_multi_file_logger_concurrent )
 {
     const int threads = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 2;
 
