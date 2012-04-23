@@ -118,17 +118,20 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 
 BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
 {
-    static const int32_t ITERATIONS = 50;
+    static const int32_t ITERATIONS =
+        getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 50;
 
     ::unlink(s_filename[0]);
 
     logger_t l_logger;
 
     typename logger_t::file_id l_fd;
+    BOOST_REQUIRE(!l_fd);
     BOOST_REQUIRE_EQUAL(0, l_logger.close_file(l_fd));
 
     l_fd = l_logger.open_file(s_filename[0], false);
     BOOST_REQUIRE(l_fd.fd() >= 0);
+    BOOST_REQUIRE(l_fd);
 
     int ok = l_logger.start();
 
@@ -143,10 +146,12 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
         BOOST_REQUIRE_EQUAL(0, n);
     }
 
+    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+
     l_logger.close_file(l_fd, false);
 
-    BOOST_REQUIRE_EQUAL(0, l_logger.open_files_count());
-    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+    BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
+    BOOST_REQUIRE_EQUAL(-1, l_logger.last_error(l_fd));
 
     l_logger.stop();
     ::unlink(s_filename[0]);
@@ -163,16 +168,21 @@ namespace {
 
         const std::string& prefix() const { return m_prefix; }
 
-        void operator() (char*& a_data, size_t& a_size) {
-            size_t n = a_size + m_prefix.size();
+        iovec operator() (iovec& a_msg) {
+            size_t n = a_msg.iov_len + m_prefix.size();
             char* p = m_logger.allocate(n);
             memcpy(p, m_prefix.c_str(), m_prefix.size());
-            memcpy(p + m_prefix.size(), a_data, a_size);
-            m_logger.deallocate(a_data, a_size);
+            memcpy(p + m_prefix.size(), a_msg.iov_base, a_msg.iov_len);
+            m_logger.deallocate(static_cast<char*>(a_msg.iov_base), a_msg.iov_len);
             ASYNC_TRACE(("  rewritten msg(%p, %lu) -> msg(%p, %lu)\n",
-                    a_data, a_size, p, n));
-            a_size = n;
-            a_data = p;
+                    a_msg.iov_base, a_msg.iov_len, p, n));
+            a_msg.iov_base = p;
+            a_msg.iov_len  = n;
+            // In this case we instructuct the caller to write the same
+            // content as it will free.  However, we could return some other
+            // pointer if we wanted to write less data than what's available
+            // in the a_msg
+            return a_msg;
         }
     };
 }
@@ -203,10 +213,12 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
         BOOST_REQUIRE_EQUAL(0, n);
     }
 
+    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+
     l_logger.close_file(l_fd, false);
 
-    BOOST_REQUIRE_EQUAL(0, l_logger.open_files_count());
-    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+    BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
+    BOOST_REQUIRE_EQUAL(-1, l_logger.last_error(l_fd));
 
     l_logger.stop();
 
@@ -232,7 +244,8 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
 
 //-----------------------------------------------------------------------------
 /*
-BOOST_AUTO_TEST_CASE( test_multi_file_logger_append )
+BOOST_AUTO_TEST_CASE( 
+    test_multi_file_logger_append )
 {
     enum { ITERATIONS = 10 };
     
@@ -303,7 +316,8 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_multi_file_logger_concurrent )
+BOOST_AUTO_TEST_CASE( 
+    test_multi_file_logger_concurrent )
 {
     const int threads = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 2;
 

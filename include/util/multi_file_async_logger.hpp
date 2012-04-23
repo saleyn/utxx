@@ -64,7 +64,11 @@ namespace util {
 struct multi_file_async_logger_traits {
     typedef std::allocator<void>    allocator;
     typedef synch::futex            event_type;
-    typedef boost::function<void (char*& a_data, size_t& a_sz)> msg_formatter;
+    /// Callback called before writing data to disk. It gives the last opportunity
+    /// to rewrite the content written to disk and if necessary to reallocate the
+    /// message buffer in a_msg using logger's allocate() and deallocate()
+    /// functions.  The returned iovec will be used as the content written to disk.
+    typedef boost::function<iovec (iovec& a_msg)> msg_formatter;
 
     enum {
           commit_timeout    = 2000  // commit this number of usec
@@ -117,8 +121,8 @@ private:
         enum type_t { msg, close } type;
         int fd;
         union {
-            struct { void* data; size_t size;   } msg;
-            struct { bool immediate;            } close;
+            struct iovec                msg;
+            struct { bool immediate; }  close;
         } args;
         command_t* next;
 
@@ -152,13 +156,15 @@ private:
     int  internal_enqueue(command_t* msg);
 
     void close();
-    void close(int a_fd, int a_errno = 0);
+    void close(file_info* p, int a_errno = 0);
 
     command_t* allocate_command(typename command_t::type_t a_tp, int a_fd) {
         command_t* p = m_cmd_allocator.allocate(1);
         new (p) command_t(a_tp, a_fd);
         return p;
     }
+
+    void deallocate_command_list(int a_fd, command_t* p);
 
     void deallocate_commands(command_t** a_cmds, size_t a_sz) {
         for (size_t i = 0; i < a_sz; i++)
@@ -167,8 +173,8 @@ private:
 
     void deallocate_command(command_t* a_cmd);
 
-    int do_writev_and_free(int a_fd, command_t* a_cmds[],
-        const struct iovec* a_iov, size_t a_sz);
+    int do_writev_and_free(file_info& a_fi, command_t* a_cmds[],
+        const iovec* a_wr_iov, size_t a_sz);
 
     bool check_range(int a_fd) const {
         return likely(a_fd >= 0 && (size_t)a_fd < m_files.size());
@@ -222,7 +228,8 @@ public:
     void set_formatter(const file_id& a_id, const msg_formatter& a_formatter);
 
     /// Close one log file
-    /// @param a_id identifier of the file to be closed
+    /// @param a_id identifier of the file to be closed. After return the value
+    ///             will be reset.
     /// @param a_immediate indicates whether to close file immediately or
     ///             first to write all pending data in the file descriptor's
     ///             queue prior to closing it
@@ -230,7 +237,7 @@ public:
     ///             signaled when the file descriptor is eventually closed.
     /// @param a_wait_secs is the number of seconds to wait until the file is
     ///             closed. -1 means indefinite.
-    int close_file(const file_id& a_id, bool a_immediate = false,
+    int close_file(file_id& a_id, bool a_immediate = false,
                    int a_wait_secs = -1);
 
     /// @return last error of a given file
@@ -306,6 +313,8 @@ stop() {
     m_event.signal();
     if (m_thread) {
         boost::mutex::scoped_lock lock(m_mutex);
+        if (!m_thread)
+            return;
         m_stop_condition.wait(lock);
     }
 }
@@ -323,18 +332,20 @@ run(boost::barrier* a_barrier) {
         {traits::commit_timeout / 1000, (traits::commit_timeout % 1000) * 1000000 };
 
     while (1) {
-        int n = commit(&ts);
+        int rc = commit(&ts);
 
         ASYNC_TRACE(( "Async thread commit result: %d (head: %p, cancel=%s)\n",
-            n, m_head, m_cancel ? "true" : "false" ));
+            rc, m_head, m_cancel ? "true" : "false" ));
 
-        if (n || (!m_head && m_cancel))
+        if (rc || (!m_head && m_cancel))
             break;
     }
 
     ASYNC_TRACE(("Logger loop finished - calling close()\n"));
     close();
     ASYNC_TRACE(("Logger notifying all of exiting\n"));
+
+    boost::mutex::scoped_lock lock(m_mutex);
     m_stop_condition.notify_all();
 }
 
@@ -345,33 +356,30 @@ close() {
     boost::mutex::scoped_lock lock(m_mutex);
     for (typename file_info_vec::iterator it=m_files.begin(), e=m_files.end();
             it != e; ++it)
-        close(it->fd);
+        close(&*it);
 }
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
-close(int a_fd, int a_errno) {
-    if (unlikely(!check_range(a_fd)))
-        return;
-    file_info& fi = m_files[a_fd];
-    if (fi.fd < 0)
+close(file_info* a_fi, int a_errno) {
+    if (!a_fi || a_fi->fd < 0)
         return;
 
-    fi.fd = -1;
-    ::close(a_fd);
+    a_fi->fd = -1;
+    ::close(a_fi->fd);
     if (a_errno)
-        fi.error = a_errno;
-    fi.name.clear();
+        a_fi->error = a_errno;
+    a_fi->name.clear();
     atomic::dec(&m_active_count);
-    close_event_type_ptr l_on_close = fi.on_close;
+    close_event_type_ptr l_on_close = a_fi->on_close;
     ASYNC_TRACE(("close(%d, %d) %s (use_count=%ld)\n",
-            a_fd, fi.error,
+            a_fi->fd, a_fi->error,
             l_on_close ? "notifying caller" : "will NOT notify caller",
             l_on_close.use_count()));
     if (l_on_close) {
-        ASYNC_TRACE(("Signaling on_close(%d) event\n", fi.fd));
+        ASYNC_TRACE(("Signaling on_close(%d) event\n", a_fi->fd));
         l_on_close->signal();
-        fi.on_close.reset();
+        a_fi->on_close.reset();
     }
 }
 
@@ -407,28 +415,28 @@ internal_enqueue(command_t* a_msg) {
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 write(const file_id& a_file, void* a_data, size_t a_sz) {
-    if (unlikely(!get_info(a_file)))
+    if (unlikely(!get_info(a_file) || m_cancel))
         return -1;
 
     command_t* p = allocate_command(command_t::msg, a_file.fd());
     ASYNC_TRACE(("->write(%p, %lu) - no copy\n", a_data, a_sz));
-    p->args.msg.data = a_data;
-    p->args.msg.size = a_sz;
+    p->args.msg.iov_base = a_data;
+    p->args.msg.iov_len  = a_sz;
     return internal_enqueue(p);
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
 write(const file_id& a_file, const std::string& a_data) {
-    if (unlikely(!get_info(a_file)))
+    if (unlikely(!get_info(a_file) || m_cancel))
         return -1;
 
     command_t* p = allocate_command(command_t::msg, a_file.fd());
 
     char* q = allocate(a_data.size());
     memcpy(q, a_data.c_str(), a_data.size());
-    p->args.msg.data = q;
-    p->args.msg.size = a_data.size();
+    p->args.msg.iov_base = q;
+    p->args.msg.iov_len  = a_data.size();
     ASYNC_TRACE(("->write(%p, %lu) - allocated copy\n", q, a_data.size()));
     return internal_enqueue(p);
 }
@@ -446,7 +454,9 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
     if (n < 0)
         return file_id(n, 0);
     if (!check_range(n)) {
+        int e = errno;
         ::close(n);
+        errno = e;
         return file_id(-2, 0);
     }
     file_info& f = m_files[n];
@@ -460,11 +470,19 @@ open_file(const std::string& a_filename, bool a_append, int a_mode) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-close_file(const file_id& a_id, bool a_immediate, int a_wait_secs) {
+close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
     if (a_id.fd() < 0) return 0;
     file_info* l_fi = get_info(a_id);
-    if (unlikely(!l_fi))
+    if (unlikely(!l_fi || l_fi->fd < 0)) {
+        a_id.reset();
         return 0;
+    }
+
+    if (!m_thread) {
+        close(l_fi, 0);
+        a_id.reset();
+        return 0;
+    }
 
     if (!l_fi->on_close)
         l_fi->on_close.reset(new close_event_type());
@@ -490,17 +508,19 @@ close_file(const file_id& a_id, bool a_immediate, int a_wait_secs) {
         ASYNC_TRACE(( "close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
                 a_id.fd(), n, (l_event ? "true" : "false")));
     }
+    a_id.reset();
     return n;
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-do_writev_and_free(int a_fd, command_t* a_cmds[], const iovec* a_iov, size_t a_sz) {
-    int n = ::writev(a_fd, a_iov, a_sz);
+do_writev_and_free(file_info& a_fi, command_t* a_cmds[], const iovec* a_wr_iov, size_t a_sz)
+{
+    int n = ::writev(a_fi.fd, a_wr_iov, a_sz);
     if (n < 0) {
-        m_files[a_fd].error = errno;
+        a_fi.error = errno;
         LOG_ERROR(("Error writing data to file %s: (%d) %s\n",
-            m_files[a_fd].name.c_str(), n, strerror(m_files[a_fd].error)));
+            a_fi.name.c_str(), n, strerror(a_fi.error)));
     }
     deallocate_commands(a_cmds, a_sz);
     return n;
@@ -512,13 +532,23 @@ deallocate_command(command_t* a_cmd) {
     switch (a_cmd->type) {
         case command_t::msg:
             deallocate(
-                static_cast<char*>(a_cmd->args.msg.data), a_cmd->args.msg.size);
+                static_cast<char*>(a_cmd->args.msg.iov_base), a_cmd->args.msg.iov_len);
             break;
         default:
             break;
     }
     a_cmd->~command_t();
     m_cmd_allocator.deallocate(a_cmd, 1);
+}
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+deallocate_command_list(int a_fd, command_t* p) {
+    if (!p) return;
+    for (command_t* next = p->next; p; p = next) {
+        ASYNC_TRACE(("FD=%d, deallocating unprocessed message %p\n", a_fd, p));
+        deallocate_command(p);
+    }
 }
 
 template<typename traits>
@@ -576,11 +606,18 @@ commit(const struct timespec* tsp)
         command_t* p                = it->second;
         bool l_fd_close_immediate   = false;
         bool l_fd_pending_close     = false;
-        msg_formatter& l_on_fmt     = m_files[l_fd].on_format;
+
+        if (!check_range(l_fd)) {
+            deallocate_command_list(l_fd, p);
+            continue;
+        }
+
+        file_info* l_fi             = &m_files[l_fd];
+        msg_formatter& l_on_fmt     = l_fi->on_format;
 
         ASYNC_TRACE(("Processing commands for fd=%d\n", l_fd));
 
-        struct iovec      iov [IOV_MAX];
+        struct iovec      iov[IOV_MAX];  // Contains pointers to write
         struct command_t* cmds[IOV_MAX];
         size_t n = 0, sz = 0;
 
@@ -590,20 +627,20 @@ commit(const struct timespec* tsp)
             command_t* l_next = p->next;
             switch (p->type) {
                 case command_t::msg: {
-                    size_t& k = p->args.msg.size;
-                    char*&  q = reinterpret_cast<char*&>(p->args.msg.data);
-                    if (l_on_fmt)
-                        l_on_fmt(q, k);
-                    iov[n].iov_base = q;
-                    iov[n].iov_len  = k;
-                    cmds[n]         = p;
-                    ASYNC_TRACE(("FD=%d, Command %lu address %p write(%p, %lu)\n",
-                            l_fd, n, cmds[n], q, k));
-                    sz += k;
+                    iov[n]  = l_on_fmt  ? l_on_fmt(p->args.msg)
+                                        : p->args.msg;
+                    cmds[n] = p;
+                    ASYNC_TRACE(("FD=%d, Command %lu address %p write(%p, %lu) free(%p, %lu)\n",
+                            l_fd, n, cmds[n], iov[n].iov_base, iov[n].iov_len,
+                            p->args.msg.iov_base, p->args.msg.iov_len));
+                    sz += iov[n].iov_len;
                     if (++n == IOV_MAX || p == NULL) {
-                        k = do_writev_and_free(l_fd, cmds, iov, n);
-                        ASYNC_TRACE(("Written %lu bytes to %s\n", k,
-                               m_files[l_fd].name.c_str()));
+                        #ifdef DEBUG_ASYNC_LOGGER
+                        int k = 
+                        #endif
+                        do_writev_and_free(*l_fi, cmds, iov, n);
+                        ASYNC_TRACE(("Written %d bytes to %s\n", k,
+                               l_fi->name.c_str()));
                         n = 0;
                     }
                     break;
@@ -618,8 +655,8 @@ commit(const struct timespec* tsp)
                             LOG_WARNING((
                                 "Requested to close file '%s' immediately "
                                 "while unwritten data still exists in memory!",
-                                m_files[l_fd].name.c_str()));
-                        close(l_fd, ECANCELED);
+                                l_fi->name.c_str()));
+                        close(l_fi, ECANCELED);
                     }
                     break;
                 }
@@ -628,19 +665,19 @@ commit(const struct timespec* tsp)
                     break;
             }
             p = l_next;
-        } while (p && !l_fd_close_immediate);
+        } while (p && !l_fd_close_immediate && !l_fi->error);
 
-        if (!m_files[l_fd].error || l_fd_pending_close) {
+        if (!l_fi->error || l_fd_pending_close) {
             int ec;
             if (n > 0) {
-                n = do_writev_and_free(l_fd, cmds, iov, n);
-                ASYNC_TRACE(("Written %lu bytes to (fd=%d) %s (total = %lu)\n", n,
-                       l_fd, m_files[l_fd].name.c_str(), sz));
-                ec = n < 0 ? m_files[l_fd].error : 0;
+                int k = do_writev_and_free(*l_fi, cmds, iov, n);
+                ASYNC_TRACE(("Written %d bytes to (fd=%d) %s (total = %lu)\n", k,
+                       l_fd, l_fi->name.c_str(), sz));
+                ec = k < 0 ? l_fi->error : 0;
             } else {
                 ec = 0;
                 ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n", sz,
-                       l_fd, m_files[l_fd].name.c_str()));
+                       l_fd, l_fi->name.c_str()));
             }
 
             if (l_fd_pending_close) {
@@ -649,11 +686,16 @@ commit(const struct timespec* tsp)
             }
 
             if (ec)
-                close(l_fd, ec);
+                close(l_fi, ec);
 
             //fsync(l_fd);
         } else
             deallocate_commands(cmds, n);
+
+        if (p) {
+            BOOST_ASSERT(l_fd_close_immediate || l_fi->error);
+            deallocate_command_list(l_fd, p);
+        }
     }
     return 0;
 }

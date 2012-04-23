@@ -190,6 +190,22 @@ namespace util {
         return s.str();
     }
 
+    template <class T1, class T2, class T3, class T4,
+              class T5, class T6, class T7, class T8, class T9>
+    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4,
+                                 T5 a5, T6 a6, T7 a7, T8 a8, T9 a9) {
+        std::stringstream s; s << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
+        return s.str();
+    }
+
+    template <class T1, class T2, class T3, class T4,
+              class T5, class T6, class T7, class T8, class T9, class T10>
+    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4,
+                                 T5 a5, T6 a6, T7 a7, T8 a8, T9 a9, T10 a10) {
+        std::stringstream s; s << a1 << a2 << a3 << a4
+                               << a5 << a6 << a7 << a8 << a9 << a10;
+        return s.str();
+    }
 
 } // namespace util
 
