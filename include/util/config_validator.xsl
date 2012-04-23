@@ -75,28 +75,30 @@ namespace <xsl:value-of select="@namespace"/> {
         name="pad"><xsl:with-param name="n"><xsl:value-of
             select="$level+1"/></xsl:with-param></xsl:call-template></xsl:variable>
 
-    <xsl:for-each select="option">
-        <xsl:value-of select="$ws"/>{
-            <xsl:value-of select="$ws"/>  ovec l_children<xsl:value-of
-            select="$level"/>; sset l_names; vset l_values;
+    <xsl:for-each select="option | include">
+        <xsl:choose>
+            <xsl:when test="option">
+                <xsl:value-of select="$ws"/>{
+                <xsl:value-of select="$ws"/>ovec l_children<xsl:value-of select="$level"/><xsl:text>; sset l_names; vset l_values;
+              </xsl:text>
             <xsl:call-template name="process_options">
-                <xsl:with-param name="level"><xsl:value-of select="$level+1"/></xsl:with-param>
-                <xsl:with-param name="arg">l_children<xsl:value-of select="$level"/></xsl:with-param>
+                <xsl:with-param name="level" select="$level+1"/>
+                <xsl:with-param name="arg" select="concat('l_children',$level)"/>
             </xsl:call-template>
             
             <xsl:for-each select="values/name">
-            <xsl:value-of select="$ws2"/>l_names.insert("<xsl:value-of select="@val"/>");
+                <xsl:value-of select="$ws2"/>l_names.insert("<xsl:value-of select="@val"/>");
             </xsl:for-each>
 
             <xsl:for-each select="values/value">
-            <xsl:value-of select="$ws2"/>l_values.insert(variant(<xsl:call-template name="value-to-string">
+                <xsl:value-of select="$ws2"/>l_values.insert(variant(<xsl:call-template name="value-to-string">
                 <xsl:with-param name="value"><xsl:value-of select="@val"/></xsl:with-param>
                 <xsl:with-param name="type"><xsl:value-of select="../../@val_type"/></xsl:with-param>
                 </xsl:call-template>));
             </xsl:for-each>
 
-              <xsl:value-of select="$ws2"/><xsl:value-of select="$arg"/>.push_back(
-            <xsl:value-of select="$ws2"/>  option("<xsl:value-of select="@name"/>", <xsl:choose>
+            <xsl:value-of select="$ws2"/><xsl:value-of select="$arg"/><xsl:text>.push_back(
+            </xsl:text><xsl:value-of select="$ws2"/>    option("<xsl:value-of select="@name"/>", <xsl:choose>
                         <xsl:when test="@type"><xsl:call-template name="string-to-type">
                                 <xsl:with-param name="type"><xsl:value-of select="@type"/></xsl:with-param>
                             </xsl:call-template>
@@ -121,7 +123,21 @@ namespace <xsl:value-of select="@namespace"/> {
                             <xsl:otherwise>variant()</xsl:otherwise>
                         </xsl:choose>, l_names, l_values, l_children<xsl:value-of select="$level"/>));
             <xsl:value-of select="$ws"/>}
-            </xsl:for-each>
+            </xsl:when>
+            <xsl:when test="include">
+                <xsl:variable name="inc" select="document(@file)"/>
+                <xsl:for-each select="$inc">
+                    <xsl:value-of select="$ws"/>{
+                    <xsl:value-of select="$ws"/>  ovec l_children<xsl:value-of
+                    select="$level"/>; sset l_names; vset l_values;
+                    <xsl:call-template name="process_options">
+                        <xsl:with-param name="level" select="$level+1"/>
+                        <xsl:with-param name="arg" select="concat('l_children',$level)"/>
+                    </xsl:call-template>
+                </xsl:for-each>
+            </xsl:when>
+        </xsl:choose>
+    </xsl:for-each>
 </xsl:template>
 
 <xsl:template name="value-to-string">

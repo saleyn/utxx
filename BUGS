@@ -1,3 +1,5 @@
 1. timestamp.cpp
   format() function prints a wrong date using cached s_timestamp when a small 
   number of seconds is passed as tv->sec.
+2. Add test cases for testing "include" options file feature in config_validator.
+3. Add test cases for testing concurrent multi_async_file_logger.

@@ -107,7 +107,7 @@ namespace detail {
             boost::is_same<
                 boost::mpl::end<valid_types>::type,
                 boost::mpl::find<variant::valid_types, T>
-            >, 
+            >,
             internal_type>::type
         put_value(T value) const {
             return variant(value);
@@ -297,12 +297,38 @@ public:
         return out;
     }
 
+    /// Merge current tree with \a a_tree by calling \a a_on_update function
+    /// for every node in the \a a_tree.  The function accepts two parameters:
+    /// and has the following signature:
+    ///        variant (const variant_tree::path_type& a_path, const variant& a_data)
+    template <typename T>
+    void merge(const variant_tree& a_tree, const T& a_on_update) {
+        merge(*this, "", a_tree, a_on_update);
+    }
+
 protected:
     template <typename T>
     static void translate_data(T& tr, base& tree) {
         for (variant_tree::iterator it=tree.begin(); it != tree.end(); it++)
             translate_data(tr, it->second);
         tree.data() = *tr.put_value(tree.get_value<std::string>());
+    }
+
+    /// This recursive function will call a_method for every node in the tree
+    template<typename T>
+    static void merge(
+        variant_tree& a_parent,
+        const variant_tree::path_type& a_child_path,
+        const variant_tree& a_child,
+        const T& a_on_update)
+    {
+        a_parent.put(a_child_path, a_on_update(a_child_path, a_child.data()));
+        for(variant_tree::const_iterator
+                it = a_child.begin(), end = a_child.end(); it != end; ++it) {
+            variant_tree::path_type l_path =
+                a_child_path / variant_tree::path_type(it->first);
+            merge(a_parent, l_path, it->second, a_on_update);
+        }
     }
 };
 

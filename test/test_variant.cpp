@@ -229,7 +229,42 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         //    s, tree, std::string(), 0);
         //boost::property_tree::ptree pt;
         variant_tree::read_info(s, tree);
+        BOOST_REQUIRE_EQUAL(1, tree.get<int>("key1"));
+        BOOST_REQUIRE_EQUAL(true, tree.get<bool>("key2"));
+        BOOST_REQUIRE_EQUAL(10.0, tree.get<double>("key3"));
+        BOOST_REQUIRE_EQUAL(2, tree.count("key4"));
+
         //tree.swap(pt);
         //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(s.str(), tree, std::string(), 0);
     }
 }
+
+namespace {
+    static variant update(const variant_tree::path_type& s, const variant& d) { return d; }
+}
+
+BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
+{
+    variant_tree tree, tree2;
+    tree.put("first.n",  1);
+    tree.put("second.n", 2);
+    tree.put("third",    3);
+
+    tree2.put("third", variant("abc"));
+    tree2.put("fourth.b", 12);
+    tree2.put("first.n",  10);
+
+    tree.merge(tree2, &update);
+    std::stringstream out;
+    tree.dump(out);
+    const char expect[] =
+        "first (null)      <NULL>\n"
+        "  n (int)    10\n"
+        "second (null)     <NULL>\n"
+        "  n (int)    2\n"
+        "third (string)    abc\n"
+        "fourth (null)     <NULL>\n"
+        "  b (int)    12\n";
+    BOOST_REQUIRE_EQUAL(expect, out.str());
+}
+
