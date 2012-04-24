@@ -126,18 +126,21 @@ std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
     }
     #endif
 
-    struct tm  tm;
-    const struct tm* ptm = &tm;
     if (a_now != NULL) {
-        ptm = a_now;
-    } else {
-        ptime now = second_clock::local_time();
-        tm = boost::posix_time::to_tm(now);
+        char buf[384];
+        if (strftime(buf, sizeof(buf), x.c_str(), a_now) == 0)
+            throw badarg_error("Invalid time specification!");
+        return buf;
     }
-    char buf[384];
+    /*
+    struct tm tm;
+    const struct tm* ptm = &tm;
+    ptime now = second_clock::local_time();
+    tm = boost::posix_time::to_tm(now);
     if (strftime(buf, sizeof(buf), x.c_str(), ptm) == 0)
         throw badarg_error("Invalid time specification!");
-    return buf;
+    */
+    return x;
 }
 
 std::pair<std::string, std::string>

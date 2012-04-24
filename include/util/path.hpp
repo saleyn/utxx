@@ -74,6 +74,8 @@ void file_unlink(const char* a_path);
  * "$VARNAME", replaces leading '~' with value of "$HOME" directory
  * and replaces special variable "${EXEPATH}" with the
  * absolute path to the executable program.
+ * If \a a_now is not null will also substitute time in the a_path
+ * using strftime(3).
  */
 std::string replace_env_vars(
     const std::string& a_path, const struct tm* a_now = NULL);

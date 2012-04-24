@@ -66,6 +66,20 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
 
     s = path::replace_env_vars("~/path/to/exe");
     BOOST_REQUIRE_EQUAL(home+"/path/to/exe", s);
+
+    
+    s = path::replace_env_vars("/tmp/file%Y-%m-%d::%T.txt");
+    BOOST_REQUIRE_EQUAL("/tmp/file%Y-%m-%d::%T.txt", s);
+
+    struct tm tm;
+    tm.tm_year = 100;
+    tm.tm_mon  = 0;
+    tm.tm_mday = 2;
+    tm.tm_hour = 5;
+    tm.tm_min  = 4;
+    tm.tm_sec  = 3;
+    s = path::replace_env_vars("/tmp/file%Y-%m-%d::%T.txt", &tm);
+    BOOST_REQUIRE_EQUAL("/tmp/file2000-01-02::05:04:03.txt", s);
 }
 
 
