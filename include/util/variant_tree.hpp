@@ -306,6 +306,8 @@ public:
         merge(*this, "", a_tree, a_on_update);
     }
 
+    void merge(const variant_tree& a_tree) { merge(*this, "", a_tree, &dummy_update); }
+
 protected:
     template <typename T>
     static void translate_data(T& tr, base& tree) {
@@ -330,6 +332,10 @@ protected:
             merge(a_parent, l_path, it->second, a_on_update);
         }
     }
+
+private:
+    static const variant& dummy_update(
+        const variant_tree::path_type& a, const variant& v) { return v; }
 };
 
 } // namespace util
