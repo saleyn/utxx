@@ -95,7 +95,7 @@ namespace <xsl:value-of select="@namespace"/> {
 
     <xsl:for-each select="option | include">
         <xsl:choose>
-            <xsl:when test="option">
+            <xsl:when test="self::node()[self::option]">
                 <xsl:value-of select="$ws"/><xsl:text>{
 </xsl:text>
                 <xsl:value-of select="$ws2"/>ovec l_children<xsl:value-of select="$level"/><xsl:text>; sset l_names; vset l_values;
@@ -179,15 +179,12 @@ namespace <xsl:value-of select="@namespace"/> {
 </xsl:text>     <xsl:value-of select="$ws"/><xsl:text>}
 </xsl:text>
             </xsl:when>
-            <xsl:when test="include">
+            <xsl:when test="self::node()[self::include]">
                 <xsl:variable name="inc" select="document(@file)"/>
                 <xsl:for-each select="$inc">
-                    <xsl:value-of select="$ws"/><xsl:text>{
-</xsl:text>         <xsl:value-of select="$ws2"/><xsl:text>ovec l_children</xsl:text>
-                    <xsl:value-of select="$level"/><xsl:text>; sset l_names; vset l_values;
-</xsl:text>         <xsl:call-template name="process_options">
-                        <xsl:with-param name="level" select="$level+1"/>
-                        <xsl:with-param name="arg" select="concat('l_children',$level)"/>
+                    <xsl:call-template name="process_options">
+                        <xsl:with-param name="level" select="$level"/>
+                        <xsl:with-param name="arg" select="concat('l_children',$level - 1)"/>
                     </xsl:call-template>
                 </xsl:for-each>
             </xsl:when>
