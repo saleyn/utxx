@@ -74,6 +74,8 @@ int timestamp::format(stamp_type a_tp,
     // If small time is given, it's a relative value.
     if (tv->tv_sec < 86400) sec = tv->tv_sec;
 
+    long l_usec = tv->tv_usec;
+
     switch (a_tp) {
         case TIME:
             write_timestamp(a_buf, sec, 8);
@@ -81,12 +83,12 @@ int timestamp::format(stamp_type a_tp,
         case TIME_WITH_USEC:
             write_timestamp(a_buf, sec, 15);
             a_buf[8] = '.';
-            itoa(a_buf+9, 6, tv->tv_usec, '0');
+            itoa(a_buf+9, 6, l_usec, '0');
             return 15;
         case TIME_WITH_MSEC:
             write_timestamp(a_buf, sec, 12);
             a_buf[8] = '.';
-            itoa(a_buf+9, 3, tv->tv_usec / 1000, '0');
+            itoa(a_buf+9, 3, l_usec / 1000, '0');
             return 12;
         case DATE_TIME:
             strncpy(a_buf, s_timestamp, 12);
@@ -96,13 +98,13 @@ int timestamp::format(stamp_type a_tp,
             strncpy(a_buf, s_timestamp, 12);
             write_timestamp(a_buf+11, sec, 15);
             a_buf[19] = '.';
-            itoa(a_buf+20, 6, tv->tv_usec, '0');
+            itoa(a_buf+20, 6, l_usec, '0');
             return 26;
         case DATE_TIME_WITH_MSEC:
             strncpy(a_buf, s_timestamp, 12);
             write_timestamp(a_buf+11, sec, 12);
             a_buf[19] = '.';
-            itoa(a_buf+20, 3, tv->tv_usec / 1000, '0');
+            itoa(a_buf+20, 3, l_usec / 1000, '0');
             return 23;
         default:
             strcpy(a_buf, "UNDEFINED");
