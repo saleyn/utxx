@@ -300,36 +300,57 @@ public:
     /// Merge current tree with \a a_tree by calling \a a_on_update function
     /// for every node in the \a a_tree.  The function accepts two parameters:
     /// and has the following signature:
-    ///        variant (const variant_tree::path_type& a_path, const variant& a_data)
+    ///     variant (const variant_tree::path_type& a_path, const variant& a_data)
     template <typename T>
     void merge(const variant_tree& a_tree, const T& a_on_update) {
-        merge(*this, "", a_tree, a_on_update);
+        merge("", a_tree, a_on_update);
     }
 
-    void merge(const variant_tree& a_tree) { merge(*this, "", a_tree, &dummy_update); }
+    void merge(const variant_tree& a_tree) { merge("", a_tree, &dummy_update); }
 
+    /// Execute \a a_on_update function for every node in the tree. The function
+    /// should have the following signature:
+    ///        void (const variant_tree::path_type& a_path, variant& a_data)
+    template <typename T>
+    void update(const T& a_on_update) {
+        update("", *this, a_on_update);
+    }
 protected:
     template <typename T>
-    static void translate_data(T& tr, base& tree) {
-        for (variant_tree::iterator it=tree.begin(); it != tree.end(); it++)
-            translate_data(tr, it->second);
-        tree.data() = *tr.put_value(tree.get_value<std::string>());
+    static void translate_data(T& a_tr, base& a_tree) {
+        for (variant_tree::iterator it = a_tree.begin(); it != a_tree.end(); it++)
+            translate_data(a_tr, it->second);
+        a_tree.data() = *a_tr.put_value(a_tree.get_value<std::string>());
     }
 
     /// This recursive function will call a_method for every node in the tree
     template<typename T>
-    static void merge(
-        variant_tree& a_parent,
-        const variant_tree::path_type& a_child_path,
-        const variant_tree& a_child,
+    void merge(
+        const variant_tree::path_type& a_path,
+        const variant_tree& a_tree,
         const T& a_on_update)
     {
-        a_parent.put(a_child_path, a_on_update(a_child_path, a_child.data()));
-        for(variant_tree::const_iterator
-                it = a_child.begin(), end = a_child.end(); it != end; ++it) {
+        put(a_path, a_on_update(a_path, a_tree.data()));
+        BOOST_FOREACH(const util::variant_tree::value_type& v, a_tree) {
             variant_tree::path_type l_path =
-                a_child_path / variant_tree::path_type(it->first);
-            merge(a_parent, l_path, it->second, a_on_update);
+                a_path / variant_tree::path_type(v.first);
+            merge(l_path, v.second, a_on_update);
+        }
+    }
+
+    /// This recursive function will call a_method for every node in the tree
+    template<typename T>
+    static void update(
+        const variant_tree::path_type& a_path,
+        variant_tree& a_tree,
+        const T& a_on_update)
+    {
+        variant& v = a_tree.data();
+        a_on_update(a_path, v);
+        BOOST_FOREACH(util::variant_tree::value_type& vt, a_tree) {
+            variant_tree::path_type l_path =
+                a_path / variant_tree::path_type(vt.first);
+            update(l_path, static_cast<variant_tree&>(vt.second), a_on_update);
         }
     }
 

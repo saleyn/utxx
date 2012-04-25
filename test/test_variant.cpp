@@ -240,7 +240,12 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
 }
 
 namespace {
-    static variant update(const variant_tree::path_type& s, const variant& d) { return d; }
+    static variant merge(const variant_tree::path_type& s, const variant& d) { return d; }
+    static void update(const variant_tree::path_type& s, variant& d) {
+        if (d.is_null()) return;
+        else if (d.is_string()) d = d.to_str() + "x";
+        else d = d.to_int()+1;
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
@@ -254,17 +259,31 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
     tree2.put("fourth.b", 12);
     tree2.put("first.n",  10);
 
-    tree.merge(tree2, &update);
-    std::stringstream out;
-    tree.dump(out);
-    const char expect[] =
-        "first (null)      <NULL>\n"
-        "  n (int)    10\n"
-        "second (null)     <NULL>\n"
-        "  n (int)    2\n"
-        "third (string)    abc\n"
-        "fourth (null)     <NULL>\n"
-        "  b (int)    12\n";
-    BOOST_REQUIRE_EQUAL(expect, out.str());
+    {
+        tree.merge(tree2, &merge);
+        std::stringstream out;
+        tree.dump(out);
+        const char expect[] =
+            "first (null)      <NULL>\n"
+            "  n (int)    10\n"
+            "second (null)     <NULL>\n"
+            "  n (int)    2\n"
+            "third (string)    abc\n"
+            "fourth (null)     <NULL>\n"
+            "  b (int)    12\n";
+        BOOST_REQUIRE_EQUAL(expect, out.str());
+    }
+    {
+        tree2.update(&update);
+        std::stringstream out;
+        tree2.dump(out);
+        const char expect[] =
+            "third (string)    abcx\n"
+            "fourth (null)     <NULL>\n"
+            "  b (int)    13\n"
+            "first (null)      <NULL>\n"
+            "  n (int)    11\n";
+        BOOST_REQUIRE_EQUAL(expect, out.str());
+    }
 }
 
