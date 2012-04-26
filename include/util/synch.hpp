@@ -37,10 +37,14 @@
 #include <sys/syscall.h>
 #include <linux/futex.h>
 #include <util/atomic.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/condition_variable.hpp>
 
 //-----------------------------------------------------------------------------
 
 namespace util {
+
+#ifdef __linux__
 
 #if defined(SYS_futex)
 inline int futex_wait(volatile void* futex, int val, struct timespec* timeout = NULL) {
@@ -53,8 +57,11 @@ inline int futex_wake(volatile void* futex, int val, struct timespec* timeout = 
 #  error "Missing SYS_futex definition!"
 #endif
 
+#endif
 
 namespace synch {
+
+#ifdef __linux__
 
 /** Fast futex-based concurrent notification primitive.
  * Supports signal/wait semantics.
@@ -169,7 +176,7 @@ public:
     	return wait_fast(old_val) == 0 ? 0 : -1;
     }
 
-    /// Wait for signaled condition up to <timeout>. Note that
+    /// Wait for signaled condition up to \a timeout. Note that
     /// the call ignores spurious wakeups.
     /// @param <timeout> - max time to wait (NULL means infinity)
     /// @param <old_val> - pointer to the old <value()> of futex
@@ -179,56 +186,76 @@ public:
     ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
     ///                                  being returned)
     int wait(const struct timespec *timeout = NULL, int* old_val = NULL);
+
+    /// Wait for signaled condition until \a wait_until_abs_time.
+    /// \copydetails wait()
+    int wait(const boost::system_time& wait_until_abs_time, int* old_val = NULL) {
+        struct timespec ts = boost::detail::get_timespec(wait_until_abs_time);
+        return wait(&ts, old_val);
+    }
 };
+
+#endif
 
 // Use this event when futex is not available.
 class posix_event {
     volatile int m_count;
-    pthread_mutex_t m;
-    pthread_cond_t  c;
+    boost::mutex m_lock;
+    boost::condition_variable m_cond;
+    typedef boost::mutex::scoped_lock scoped_lock;
 public:
     posix_event(bool initialize=true) {
-        pthread_mutex_init(&m, NULL);
-        pthread_cond_init(&c, NULL);
         if (initialize)
             m_count = 1;
-    }
-    ~posix_event() {
-        pthread_mutex_destroy(&m);
-        pthread_cond_destroy(&c);
     }
 
     int  value() const { return m_count; }
 
     void reset(int val = 1) {
-        pthread_mutex_lock(&m);
+        scoped_lock g(m_lock);
         m_count = val;
-        pthread_mutex_unlock(&m);
     }
 
     int signal() {
-        pthread_mutex_lock(&m);
+        scoped_lock g(m_lock);
         m_count = (m_count + 1) & 0xEFFFFFFF;
-        pthread_mutex_unlock(&m);
-        // Note: sending signal outside of a critical section
-        // is ok by POSIX and likely more efficient (though may
-        // lead to unpredictable scheduling
-        pthread_cond_signal(&c);
+        m_cond.notify_one();
         return 0;
     }
 
-    int wait(struct timespec *timeout = NULL, int* old_val = NULL) {
-        int val = 0;
+    int signal_all() {
+        scoped_lock g(m_lock);
+        m_count = (m_count + 1) & 0xEFFFFFFF;
+        m_cond.notify_all();
+        return 0;
+    }
+
+    int wait(int* old_val = NULL) {
+        #if 0
         if (old_val && *old_val != m_count)
             return 0;
+        #endif
+        scoped_lock g(m_lock);
+        try { m_cond.wait(g); } catch(...) { return -1; }
+        return 0;
+    }
 
-        pthread_mutex_lock(&m);
-        val = timeout ? pthread_cond_timedwait(&c, &m, timeout)
-                      : pthread_cond_wait(&c, &m);
-        pthread_mutex_unlock(&m);
-        return val;
+
+    int wait(const boost::system_time& wait_until_abs_time, int* old_val = NULL) {
+        #if 0
+        if (old_val && *old_val != m_count)
+            return 0;
+        #endif
+        scoped_lock g(m_lock);
+        try {
+            return m_cond.timed_wait(g, wait_until_abs_time) ? 0 : ETIMEDOUT;
+        } catch (std::exception&) {
+            return -1;
+        }
     }
 };
+
+#ifdef __linux__
 
 /// Futex based read-write lock.  This is a 
 /// C++ implementation of Rusty Russell's furwock.
@@ -314,6 +341,8 @@ public:
     }
 };
 
+#endif
+
 //-----------------------------------------------------------------------------
 
 enum lock_state { UNLOCKED = 0, LOCKED = 1 };
@@ -386,45 +415,14 @@ public:
     }
 };
 
-class mutex_lock {
-    pthread_mutex_t m;
-public:
-    mutex_lock()    { pthread_mutex_init(&m, NULL); }
-    ~mutex_lock()   { pthread_mutex_destroy(&m); }
-    void lock()     { pthread_mutex_lock(&m); }
-    int  try_lock() { return pthread_mutex_trylock(&m); }
-    void unlock()   { pthread_mutex_unlock(&m); }
-};
+typedef boost::mutex mutex_lock;
 
 struct null_lock {
+    typedef boost::lock_guard<null_lock> scoped_lock;
+    typedef boost::detail::try_lock_wrapper<null_lock> scoped_try_lock;
     void lock()     {}
     int  try_lock() { return 0; }
     void unlock()   {}
-};
-
-//-----------------------------------------------------------------------------
-
-template <typename Lock>
-class lock_guard {
-    Lock* m_lock;
-public:
-    lock_guard(Lock& lock) : m_lock(&lock) {
-        m_lock->lock();
-    }
-
-    lock_guard(lock_guard<Lock>& guard): m_lock(guard.m_lock) { 
-        guard.m_lock = NULL; 
-    }
-
-    void operator= (lock_guard<Lock>& guard) {
-        m_lock = guard.m_lock;
-        guard.m_lock = NULL;
-    }
-
-    ~lock_guard() {
-        if (m_lock)
-            m_lock->unlock();
-    }
 };
 
 }   // namespace sync

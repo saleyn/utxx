@@ -372,10 +372,10 @@ close(file_info* a_fi, int a_errno) {
     a_fi->name.clear();
     atomic::dec(&m_active_count);
     close_event_type_ptr l_on_close = a_fi->on_close;
-    ASYNC_TRACE(("close(%d, %d) %s (use_count=%ld)\n",
+    ASYNC_TRACE(("close(%d, %d) %s (use_count=%ld) active=%ld\n",
             a_fi->fd, a_fi->error,
             l_on_close ? "notifying caller" : "will NOT notify caller",
-            l_on_close.use_count()));
+            l_on_close.use_count(), m_active_count));
     if (l_on_close) {
         ASYNC_TRACE(("Signaling on_close(%d) event\n", a_fi->fd));
         l_on_close->signal();
@@ -496,13 +496,17 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
 
     if (!n && l_event) {
         ASYNC_TRACE(( "close_file(%d) is waiting for ack (%d)\n", a_id.fd(), a_wait_secs));
-        int rc = 1;
-        while (m_thread && l_fi->fd >= 0 && rc) {
-            time_val tv(abs_time(a_wait_secs, 0));
-            struct timespec l_timeout = {tv.sec(), tv.usec() * 1000};
-            rc = l_event->wait(a_wait_secs > -1 ? &l_timeout : NULL, &l_event_val);
+        if (m_thread && l_fi->fd >= 0) {
+            if (a_wait_secs) {
+                boost::posix_time::ptime l_now(
+                    boost::posix_time::microsec_clock::universal_time() +
+                    boost::posix_time::seconds(a_wait_secs));
+                n = l_event->wait(l_now, &l_event_val);
+            } else {
+                n = l_event->wait(&l_event_val);
+            }
             ASYNC_TRACE(( "close_file(%d) ack received %d (err=%d)\n",
-                    a_id.fd(), rc, l_fi->error));
+                    a_id.fd(), n, l_fi->error));
         }
     } else {
         ASYNC_TRACE(( "close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",

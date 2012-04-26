@@ -107,6 +107,13 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         BOOST_REQUIRE_EQUAL(0, m);
     }
 
+    for (size_t i = 0; i < s_file_num; i++) {
+        l_logger.close_file(l_fds[i], false);
+        BOOST_REQUIRE(l_fds[i].fd() < 0);
+    }
+
+    BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
+
     if (verbosity::level() != VERBOSE_NONE) {
         perf.dump(std::cout);
         printf("Max queue size = %d\n", l_logger.max_queue_size());
