@@ -113,6 +113,7 @@ public:
     explicit variant(const std::string& a) : base(a) {}
     variant(value_type v, const std::string& a) { from_string(v, a); }
 
+    void operator= (bool        a)  { variant b(a); *this = b; }
     void operator= (int16_t     a)  { *(base*)this = (long)a; }
     void operator= (int         a)  { *(base*)this = (long)a; }
     void operator= (int64_t     a)  { *(base*)this = (long)a; }
@@ -120,6 +121,7 @@ public:
     void operator= (uint32_t    a)  { *(base*)this = (long)a; }
     void operator= (uint64_t    a)  { *(base*)this = (long)a; }
     void operator= (const char* a)  { *(base*)this = std::string(a); }
+    void operator= (const std::string& a) { *(base*)this = a; }
 
     template <typename T>
     void operator= (T a) {

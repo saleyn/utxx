@@ -59,7 +59,7 @@ void timestamp::update_slow()
 int timestamp::format(stamp_type a_tp,
     const struct timeval* tv, char* a_buf, size_t a_sz)
 {
-    BOOST_ASSERT(a_sz > 26);
+    BOOST_ASSERT((a_tp < DATE_TIME && a_sz > 14) || a_sz > 26);
 
     if (unlikely(a_tp == NO_TIMESTAMP)) {
         a_buf[0] = '\0';

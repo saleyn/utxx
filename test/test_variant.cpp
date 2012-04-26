@@ -111,6 +111,27 @@ BOOST_AUTO_TEST_CASE( test_variant )
     { variant v("test");    BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type()); }
     { std::string s("test");
       variant v(s);         BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type()); }
+
+    {   variant v = variant(true);
+        BOOST_REQUIRE_EQUAL(variant::TYPE_BOOL, v.type());
+        BOOST_REQUIRE(v.to_bool());
+    } {
+        variant v = variant(false);
+        BOOST_REQUIRE_EQUAL(variant::TYPE_BOOL, v.type());
+        BOOST_REQUIRE(!v.to_bool());
+    }
+
+    {   variant v = variant(1.0);
+        BOOST_REQUIRE_EQUAL(variant::TYPE_DOUBLE, v.type());
+        BOOST_REQUIRE_EQUAL(1.0, v.to_float()); }
+
+    {   variant v = variant("test");
+        BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type());
+        BOOST_REQUIRE_EQUAL("test", v.to_str());
+        v = variant(std::string("xyz"));
+        BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type());
+        BOOST_REQUIRE_EQUAL("xyz", v.to_str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree )
@@ -214,7 +235,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
 BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
 {
     // Sample data 2
-    const char *data2 = 
+    const char *data2 =
         "key1 1\n"
         "key2 true\n"
         "key3 10.0\n"
@@ -235,7 +256,8 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         BOOST_REQUIRE_EQUAL(2, tree.count("key4"));
 
         //tree.swap(pt);
-        //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(s.str(), tree, std::string(), 0);
+        //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(
+        //    s.str(), tree, std::string(), 0);
     }
 }
 
