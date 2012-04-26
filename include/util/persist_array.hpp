@@ -1,0 +1,291 @@
+//----------------------------------------------------------------------------
+/// \file  basic_persistent_array.hpp
+//----------------------------------------------------------------------------
+/// \brief Implementation of persistent array storage class.
+//----------------------------------------------------------------------------
+// Copyright (c) 2010 Omnibius, LLC
+// Author:  Serge Aleynikov <saleyn@gmail.com>
+// Created: 2010-10-25
+//----------------------------------------------------------------------------
+/*
+***** BEGIN LICENSE BLOCK *****
+
+This file is part of the util open-source project.
+
+Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+vsn 2.1 of the License, or (at your option) any later vsn.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+***** END LICENSE BLOCK *****
+*/
+
+
+#ifndef _UTIL_PERSISTENT_ARRAY_HPP_
+#define _UTIL_PERSISTENT_ARRAY_HPP_
+
+#include <boost/interprocess/file_mapping.hpp>
+#include <boost/interprocess/mapped_region.hpp>
+#include <boost/static_assert.hpp>
+#include <boost/scope_exit.hpp>
+#include <boost/thread.hpp>
+#include <boost/filesystem.hpp>
+#include <util/atomic.hpp>
+#include <util/error.hpp>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <cstring>
+#include <cstddef>
+#include <cstdlib>
+#include <unistd.h>
+
+namespace util {
+
+    namespace { namespace bip = boost::interprocess; }
+
+    template <typename T, size_t NLocks = 32, typename Lock = boost::mutex>
+    struct persistent_array {
+        struct header {
+            static const uint32_t s_version = 0xa0b1c2d3;
+            uint32_t        version;
+            volatile long   last_rec_id;
+            size_t          max_recs;
+            size_t          rec_size;
+            Lock            locks[NLocks];
+        };
+
+    protected:
+        typedef persistent_array<T, NLocks, Lock> self;
+
+        BOOST_STATIC_ASSERT(!(NLocks & (NLocks - 1))); // must be power of 2
+
+        static const size_t s_lock_mask = NLocks-1;
+        // Shared memory file mapping
+        bip::file_mapping  m_file;
+        // Shared memory mapped region
+        bip::mapped_region m_region;
+
+        // Locks that guard access to internal record structures.
+        header* m_header;
+        T*      m_begin;
+        T*      m_end;
+
+        void check_range(size_t a_id) throw (badarg_error) const {
+            size_t n = m_header->last_rec_id;
+            if (a_id > n)
+                throw badarg_error("Invalid record id specified ", a_id, " (max=", n, ')');
+        }
+
+    public:
+        typedef Lock                        lock_type;
+        typedef typename Lock::scoped_lock  scoped_lock;
+        typedef typename Lock::scoped_try_lock  scoped_try_lock;
+
+        BOOST_STATIC_ASSERT(sizeof(T) >= sizeof(header));
+        BOOST_STATIC_ASSERT((NLocks & (NLocks-1)) == 0); // Must be power of 2.
+
+        basic_persistent_array()
+            : m_header(NULL), m_begin(NULL), m_end(NULL)
+        {}
+
+        /// Initialize the storage
+        /// @return true if the storage file didn't exist and was created
+        bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
+            int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) throw (io_error);
+
+        size_t last_rec_id()    const { return m_header->last_rec_id; }
+        size_t capacity()       const { return m_header->max_recs; }
+
+        /// Allocate next record and return its ID.
+        long allocate_next_id() {
+            return atomic::add(&m_header->last_rec_id,1) + 1;
+        }
+
+        std::pair<T*, long> get_next() {
+            long n = allocate_next_id();
+            return std::make_pair(m_begin + n, n);
+        }
+
+        Lock& get_lock(size_t a_rec_id) { return m_header->locks[a_rec_id & s_lock_mask]; }
+
+        /// Add a record with given ID to the store
+        void add(size_t a_id, const T& a_rec) {
+            BOOST_ASSERT(a_id <= m_header->last_rec_id);
+            scoped_lock guard(get_lock(a_id));
+            *(m_begin + a_id) = a_rec;
+        }
+
+        const T& operator[] (size_t a_id) throw(badarg_error) const {
+            check_range(a_id); return *get(a_id);
+        }
+        T& operator[] (size_t a_id) throw(badarg_error) {
+            check_range(a_id); return *get(a_id);
+        }
+
+        const T* get(size_t a_rec_id) const {
+            return a_rec_id < m_header->max_recs ? m_begin+a_rec_id : NULL;
+        }
+
+        T* get(size_t a_rec_id) {
+            return a_rec_id < m_header->max_recs ? m_begin+a_rec_id : NULL;
+        }
+
+        /// Flush header to disk
+        bool flush_header() { return m_region.flush(0, sizeof(header)); }
+        
+        /// Flush region of cached records to disk
+        bool flush(size_t a_from_rec = 0, size_t a_num_recs = 0) {
+            return m_region.flush(a_from_rec, a_num_recs*sizeof(T));
+        }
+
+        /// Remove memory mapped file from disk
+        void remove() {
+            m_file.remove(m_file.get_name());
+        }
+
+        const T*    begin() const { return m_begin; }
+        const T*    end()   const { return m_end; }
+        T*          begin()       { return m_begin; }
+        T*          end()         { return m_end; }
+
+        template <class Visitor>
+        void for_each(Visitor& a_visitor) {
+            const T* i = begin();
+            for (size_t n = 0, e = last_rec_id(); n <= e; ++i, ++n)
+                a_visitor(n, *i);
+        }
+
+        std::ostream& operator<< (std::ostream& out, const std::string& a_prefix="") {
+            const T* i = begin(), *;
+            for (const T* p = begin(), *e = p + last_rec_id(); p <= e; ++p)
+                out << a_prefix << *p << std::endl;
+            return out;
+        }
+    };
+
+    //-------------------------------------------------------------------------
+    // Implementation
+    //-------------------------------------------------------------------------
+
+    template <typename T, size_t NLocks, typename Lock>
+    bool persistent_array<T,NLocks,Lock>::
+    init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode)
+        throw (io_error)
+    {
+        static const size_t s_pack_size = getpagesize();
+
+        size_t sz = (a_max_recs+1) * sizeof(T);
+        sz += sz % s_pack_size;
+
+        bool exists;
+        try {
+            boost::filesystem::path l_name(a_filename);
+            try {
+                boost::filesystem::create_directories(l_name.parent_path());
+            } catch (boost::system_error& e) {
+                throw io_error("Cannot create directory: ",
+                    l_name.parent_path(), ": ", e.what());
+            }
+
+            bip::file_lock flock(a_filename);
+            {
+                std::filebuf f;
+                f.open(a_filename, std::ios_base::in | std::ios_base::out 
+                    | std::ios_base::binary);
+                exists = f.is_open();
+
+                bip::scoped_lock<bip::file_lock> g_lock(flock);
+
+                if (exists && !a_read_only) {
+                    header h;
+                    f.sgetn(reinterpret_cast<char*>(&h), sizeof(header));
+
+                    if (h.version != header::s_version) {
+                        throw io_error("Invalid file format", a_filename);
+                    }
+                    if (h.rec_size != sizeof(T)) {
+                        throw io_error("Invalid item size in file", a_filename,
+                            " (expected ", sizeof(T), " got ", h.rec_size, ')');
+                    }
+                    // Increase the file size if instructed to do so.
+                    if (h.max_recs < a_max_recs) {
+                        h.max_recs = a_max_recs;
+                        f.pubseekoff(0, std::ios_base::beg);
+                        f.sputn(reinterpret_cast<char*>(&h), sizeof(header));
+                        f.pubseekoff(sz-1, std::ios_base::beg);
+                        f.sputc(0);
+                    }
+                }
+            }
+
+            if (!exists && !a_read_only) {
+                int l_fd = ::open(a_filename, O_RDWR | O_CREAT | O_TRUNC, a_mode);
+                if (l_fd < 0)
+                    throw io_error(errno, "Error creating file ", a_filename);
+
+                BOOST_SCOPE_EXIT( (&l_fd) ) {
+                    ::close(l_fd);
+                } BOOST_SCOPE_EXIT_END;
+
+                bip::scoped_lock<bip::file_lock> g_lock(flock);
+
+                header h;
+                h.version     = header::s_version;
+                h.last_rec_id = 0;
+                h.max_recs    = a_max_recs;
+                h.rec_size    = sizeof(T);
+
+                if (::write(l_fd, &h, sizeof(h)) < 0)
+                    throw io_error(errno, "Error writing to file ", a_filename);
+
+                if (::ftruncate(l_fd, sz) < 0)
+                    throw io_error(errno, "Error setting file ",
+                        a_filename, " to size ", sz);
+
+                ::fsync(l_fd);
+            }
+
+            bip::file_mapping shmf(a_filename, a_read_only ? bip::read_only : bip::read_write);
+            bip::mapped_region region(shmf, a_read_only ? bip::read_only : bip::read_write);
+
+            //Get the address of the mapped region
+            void*  addr  = region.get_address();
+            size_t size  = region.get_size();
+
+            m_file.swap(shmf);
+            m_region.swap(region);
+
+            //if (!exists && !a_read_only)
+            //    memset(static_cast<char*>(addr) + sizeof(header), 0, size - sizeof(header));
+            m_header = static_cast<header*>(addr);
+            m_begin  = static_cast<T*>(addr) + 1;
+            m_end    = static_cast<T*>(addr) + a_max_recs;
+            BOOST_ASSERT(reinterpret_cast<char*>(m_end) <= static_cast<char*>(addr)+size);
+
+            if (!exists && !a_read_only) {
+                // If the file was just created, initialize the locks
+                for (Lock* l = m_header->locks, *e = m_header->locks + NLocks; l != e; ++l)
+                    new (l) Lock();
+            }
+
+        } catch (io_error& e)       { throw; }
+        } catch (std::exception& e) { throw io_error(e.what()); }
+
+        return !exists;
+    }
+
+} // namespace util
+
+#endif // _UTIL_PERSISTENT_ARRAY_HPP_
