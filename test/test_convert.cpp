@@ -33,7 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define BOOST_TEST_MODULE test_convert
 #include <boost/test/unit_test.hpp>
 #include <util/convert.hpp>
+#include <util/verbosity.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/timer/timer.hpp>
 #include <limits>
 
 using namespace util;
@@ -287,7 +289,7 @@ BOOST_AUTO_TEST_CASE( test_convert )
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_fast_atoi2 )
+BOOST_AUTO_TEST_CASE( test_convert_fast_atoi2 )
 {
 
     for (int64_t i=1, j=1; j < 100000; ++j) {
@@ -301,6 +303,100 @@ BOOST_AUTO_TEST_CASE( test_fast_atoi2 )
         m = p-test;
         BOOST_REQUIRE_EQUAL((int64_t)strlen(buf), m);
         BOOST_REQUIRE_EQUAL(buf, std::string(test, m));
+    }
+}
+
+__attribute__ ((noinline)) void atoi2(const std::string& s, long& n) {
+    n = atoi(s.c_str());
+}
+
+BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
+{
+    long n;
+    BOOST_REQUIRE(fast_atoi( "123456989012345678", n));
+    BOOST_REQUIRE_EQUAL( 123456989012345678, n);
+
+    BOOST_REQUIRE(fast_atoi( "-123456989012345678", n));
+    BOOST_REQUIRE_EQUAL(-123456989012345678, n);
+
+    BOOST_REQUIRE(!fast_atoi( "        123", n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( "        123", n));
+    BOOST_REQUIRE_EQUAL(123, n);
+
+    BOOST_REQUIRE(!fast_atoi("123ABC", n));
+    BOOST_REQUIRE(fast_atoi( "123ABC", n, false));
+    BOOST_REQUIRE_EQUAL(123, n);
+    
+    BOOST_REQUIRE(!fast_atoi( "123  ", n));
+    BOOST_REQUIRE(fast_atoi( "123  ", n, false));
+    BOOST_REQUIRE_EQUAL(123, n);
+    
+    BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000123", 7), n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000123", 7), n));
+    BOOST_REQUIRE_EQUAL(123, n);
+
+    BOOST_REQUIRE(!fast_atoi( "        -123", n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( "        -123", n));
+    BOOST_REQUIRE_EQUAL(-123, n);
+
+    BOOST_REQUIRE(!fast_atoi( "-123ABC", n));
+    BOOST_REQUIRE(fast_atoi( "-123ABC", n, false));
+    BOOST_REQUIRE_EQUAL(-123, n);
+    
+    BOOST_REQUIRE(!fast_atoi( "-123  ", n));
+    BOOST_REQUIRE(fast_atoi( "-123  ", n, false));
+    BOOST_REQUIRE_EQUAL(-123, n);
+    
+    BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000-123", 8), n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), n));
+    BOOST_REQUIRE_EQUAL(-123, n);
+    
+}
+
+BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
+{
+    using boost::timer::cpu_timer;
+    using boost::timer::cpu_times;
+    using boost::timer::nanosecond_type;
+
+    const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
+
+    {
+        cpu_timer t;
+        const std::string buf("1234567890");
+        long n;
+        BOOST_REQUIRE(fast_atoi(buf, n));
+        BOOST_REQUIRE_EQUAL(1234567890, n);
+
+        for (int i = 0; i < ITERATIONS; i++)
+            fast_atoi(buf, n);
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        if (verbosity::level() > util::VERBOSE_NONE) {
+            printf("    fast_atoi  iterations: %ld\n", ITERATIONS);
+            printf("    fast_atoi  time      : %.3fs (%.3fus/call)\n",
+                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
+        }
+    }
+    {
+        cpu_timer t;
+        const std::string buf("1234567890");
+        long n;
+        BOOST_REQUIRE_EQUAL(1234567890, atoi(buf.c_str()));
+
+        for (int i = 0; i < ITERATIONS; i++)
+            atoi2(buf, n);
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        if (verbosity::level() > util::VERBOSE_NONE) {
+            printf("          atoi iterations: %ld\n", ITERATIONS);
+            printf("          atoi time      : %.3fs (%.3fus/call)\n",
+                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
+        }
     }
 }
 

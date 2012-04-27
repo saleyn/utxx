@@ -440,6 +440,63 @@ inline Char* itoa(Char* a_data, size_t a_size, T a_value, Char a_pad = '\0') {
     }
 }
 
+/// @param till_eol instructs that the integer must be validated till a_str+a_sz.
+///                 If false "123ABC" is considered a valid 123 number. Otherwise
+///                 the function will return false.
+inline bool fast_atoi(const char* a_str, const char* a_end, long& result, bool till_eol = true) {
+    if (a_str >= a_end) return false;
+
+    bool l_neg;
+
+    if (*a_str == '-') { l_neg = true; ++a_str; }
+    else               { l_neg = false; }
+    
+    long x = 0;
+
+    do {
+        const int c = *a_str - '0';
+        if (c < 0 || c > 9) {
+           if (till_eol)
+               return false;
+            else
+                break;
+        }
+        x = (x << 3) + (x << 1) + c;
+    } while (++a_str != a_end);
+
+    result = l_neg ? -x : x;
+    return true;
+}
+
+inline bool fast_atoi_skip_ws(const char* a_str, size_t a_sz, long& result,
+    bool a_till_eol = true)
+{
+    const char* l_end = a_str + a_sz;
+    // Find first non-white space char by treating ' ' like '\0'
+    while (!(a_str == l_end || (*a_str & 0xF))) ++a_str;
+    return fast_atoi(a_str, l_end, result, a_till_eol);
+}
+
+inline bool fast_atoi(const char* a_str, size_t a_sz, long& result,
+    bool a_till_eol = true)
+{
+    const char* l_end = a_str + a_sz;
+    return fast_atoi(a_str, l_end, result, a_till_eol);
+}
+
+inline bool fast_atoi_skip_ws(const std::string& a_str, long& result,
+    bool a_till_eol = true)
+{
+    return fast_atoi_skip_ws(a_str.c_str(), a_str.size(), result, a_till_eol);
+}
+
+/// \copydetail fast_atoi()
+inline bool fast_atoi(const std::string& a_value, long& a_result,
+    bool a_till_eol = true)
+{
+    return fast_atoi(a_value.c_str(), a_value.size(), a_result, a_till_eol);
+}
+
 //--------------------------------------------------------------------------------
 /// Convert a floating point number to string
 //--------------------------------------------------------------------------------
