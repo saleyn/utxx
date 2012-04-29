@@ -3,3 +3,4 @@
   number of seconds is passed as tv->sec.
 2. Add test cases for testing "include" options file feature in config_validator.
 3. Add test cases for testing concurrent multi_async_file_logger.
+4. Add file locking to persist_blob (similar to persist_array)

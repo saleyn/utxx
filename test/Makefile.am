@@ -29,6 +29,7 @@ test_util_SOURCES  	= \
 	test_path.cpp \
 	test_pcap.cpp \
 	test_persist_blob.cpp \
+	test_persist_array.cpp \
 	test_pidfile.cpp \
 	test_robust_mutex.cpp \
 	test_running_stat.cpp \
@@ -60,7 +61,9 @@ test_util_LDFLAGS  	= $(BOOST_SYSTEM_LDFLAGS) $(BOOST_UNIT_TEST_FRAMEWORK_LDFLAG
 test_util_LDADD    	= $(srcdir)/../src/.libs/libutil.la \
 					  $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) \
 					  $(BOOST_DATE_TIME_LIBS) \
-					  $(BOOST_UNIT_TEST_FRAMEWORK_LIBS) -lrt -lboost_timer
+					  $(BOOST_UNIT_TEST_FRAMEWORK_LIBS) \
+					  -lboost_filesystem \
+					  -lboost_timer -lrt
 test_util_DATA 		= test_config_validator.xml
 
 

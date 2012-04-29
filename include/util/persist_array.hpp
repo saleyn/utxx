@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file  basic_persistent_array.hpp
+/// \file  basic_persist_array.hpp
 //----------------------------------------------------------------------------
 /// \brief Implementation of persistent array storage class.
 //----------------------------------------------------------------------------
@@ -35,14 +35,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTIL_PERSISTENT_ARRAY_HPP_
 #define _UTIL_PERSISTENT_ARRAY_HPP_
 
+#include <boost/interprocess/sync/file_lock.hpp>
+#include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/scope_exit.hpp>
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
+#include <util/compiler_hints.hpp>
 #include <util/atomic.hpp>
 #include <util/error.hpp>
+#include <stdexcept>
 #include <fstream>
 #include <string>
 #include <vector>
@@ -56,18 +60,19 @@ namespace util {
     namespace { namespace bip = boost::interprocess; }
 
     template <typename T, size_t NLocks = 32, typename Lock = boost::mutex>
-    struct persistent_array {
+    struct persist_array {
         struct header {
             static const uint32_t s_version = 0xa0b1c2d3;
             uint32_t        version;
-            volatile long   last_rec_id;
+            volatile long   rec_count;
             size_t          max_recs;
             size_t          rec_size;
             Lock            locks[NLocks];
+            T               records[0];
         };
 
     protected:
-        typedef persistent_array<T, NLocks, Lock> self;
+        typedef persist_array<T, NLocks, Lock> self;
 
         BOOST_STATIC_ASSERT(!(NLocks & (NLocks - 1))); // must be power of 2
 
@@ -82,10 +87,11 @@ namespace util {
         T*      m_begin;
         T*      m_end;
 
-        void check_range(size_t a_id) throw (badarg_error) const {
-            size_t n = m_header->last_rec_id;
-            if (a_id > n)
-                throw badarg_error("Invalid record id specified ", a_id, " (max=", n, ')');
+        void check_range(size_t a_id) const throw (badarg_error) {
+            size_t n = m_header->max_recs;
+            if (likely(a_id < n))
+                return;
+            throw badarg_error("Invalid record id specified ", a_id, " (max=", n-1, ')');
         }
 
     public:
@@ -93,10 +99,9 @@ namespace util {
         typedef typename Lock::scoped_lock  scoped_lock;
         typedef typename Lock::scoped_try_lock  scoped_try_lock;
 
-        BOOST_STATIC_ASSERT(sizeof(T) >= sizeof(header));
         BOOST_STATIC_ASSERT((NLocks & (NLocks-1)) == 0); // Must be power of 2.
 
-        basic_persistent_array()
+        persist_array()
             : m_header(NULL), m_begin(NULL), m_end(NULL)
         {}
 
@@ -105,29 +110,45 @@ namespace util {
         bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
             int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) throw (io_error);
 
-        size_t last_rec_id()    const { return m_header->last_rec_id; }
-        size_t capacity()       const { return m_header->max_recs; }
+        size_t count()    const { return static_cast<size_t>(m_header->rec_count); }
+        size_t capacity() const { return m_header->max_recs; }
 
         /// Allocate next record and return its ID.
-        long allocate_next_id() {
-            return atomic::add(&m_header->last_rec_id,1) + 1;
+        /// @return 
+        size_t allocate_rec() throw(std::runtime_error) {
+            size_t n = static_cast<size_t>(atomic::add(&m_header->rec_count,1));
+            if (n >= capacity()) {
+                atomic::dec(&m_header->rec_count);
+                throw std::runtime_error("Out of storage capacity!");
+            }
+            return n;
         }
 
         std::pair<T*, long> get_next() {
-            long n = allocate_next_id();
-            return std::make_pair(m_begin + n, n);
+            size_t n = allocate_rec();
+            return std::make_pair(get(n), n);
         }
 
-        Lock& get_lock(size_t a_rec_id) { return m_header->locks[a_rec_id & s_lock_mask]; }
+        Lock& get_lock(size_t a_rec_id) {
+            return m_header->locks[a_rec_id & s_lock_mask];
+        }
 
         /// Add a record with given ID to the store
         void add(size_t a_id, const T& a_rec) {
-            BOOST_ASSERT(a_id <= m_header->last_rec_id);
+            BOOST_ASSERT(a_id < m_header->rec_count);
             scoped_lock guard(get_lock(a_id));
-            *(m_begin + a_id) = a_rec;
+            *get(a_id) = a_rec;
         }
 
-        const T& operator[] (size_t a_id) throw(badarg_error) const {
+        /// Add a record to the storage and return it's id
+        size_t add(const T& a_rec) {
+            size_t n = allocate_rec();
+            scoped_lock guard(get_lock(n));
+            *(m_begin+n) = a_rec;
+            return n;
+        }
+
+        const T& operator[] (size_t a_id) const throw(badarg_error) {
             check_range(a_id); return *get(a_id);
         }
         T& operator[] (size_t a_id) throw(badarg_error) {
@@ -135,11 +156,11 @@ namespace util {
         }
 
         const T* get(size_t a_rec_id) const {
-            return a_rec_id < m_header->max_recs ? m_begin+a_rec_id : NULL;
+            return likely(a_rec_id < m_header->max_recs) ? m_begin+a_rec_id : NULL;
         }
 
         T* get(size_t a_rec_id) {
-            return a_rec_id < m_header->max_recs ? m_begin+a_rec_id : NULL;
+            return likely(a_rec_id < m_header->max_recs) ? m_begin+a_rec_id : NULL;
         }
 
         /// Flush header to disk
@@ -162,14 +183,13 @@ namespace util {
 
         template <class Visitor>
         void for_each(Visitor& a_visitor) {
-            const T* i = begin();
-            for (size_t n = 0, e = last_rec_id(); n <= e; ++i, ++n)
-                a_visitor(n, *i);
+            size_t n = 0;
+            for (const T* p = begin(), *e = p + count(); p <= e; ++p, ++n)
+                a_visitor(n, p);
         }
 
-        std::ostream& operator<< (std::ostream& out, const std::string& a_prefix="") {
-            const T* i = begin(), *;
-            for (const T* p = begin(), *e = p + last_rec_id(); p <= e; ++p)
+        std::ostream& dump(std::ostream& out, const std::string& a_prefix="") {
+            for (const T* p = begin(), *e = p + count(); p <= e; ++p)
                 out << a_prefix << *p << std::endl;
             return out;
         }
@@ -180,7 +200,7 @@ namespace util {
     //-------------------------------------------------------------------------
 
     template <typename T, size_t NLocks, typename Lock>
-    bool persistent_array<T,NLocks,Lock>::
+    bool persist_array<T,NLocks,Lock>::
     init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode)
         throw (io_error)
     {
@@ -189,26 +209,26 @@ namespace util {
         size_t sz = (a_max_recs+1) * sizeof(T);
         sz += sz % s_pack_size;
 
-        bool exists;
+        bool l_exists;
         try {
             boost::filesystem::path l_name(a_filename);
             try {
                 boost::filesystem::create_directories(l_name.parent_path());
-            } catch (boost::system_error& e) {
+            } catch (boost::system::system_error& e) {
                 throw io_error("Cannot create directory: ",
                     l_name.parent_path(), ": ", e.what());
             }
 
-            bip::file_lock flock(a_filename);
             {
                 std::filebuf f;
                 f.open(a_filename, std::ios_base::in | std::ios_base::out 
                     | std::ios_base::binary);
-                exists = f.is_open();
+                l_exists = f.is_open();
 
-                bip::scoped_lock<bip::file_lock> g_lock(flock);
+                if (l_exists && !a_read_only) {
+                    bip::file_lock flock(a_filename);
+                    bip::scoped_lock<bip::file_lock> g_lock(flock);
 
-                if (exists && !a_read_only) {
                     header h;
                     f.sgetn(reinterpret_cast<char*>(&h), sizeof(header));
 
@@ -230,22 +250,23 @@ namespace util {
                 }
             }
 
-            if (!exists && !a_read_only) {
+            if (!l_exists && !a_read_only) {
                 int l_fd = ::open(a_filename, O_RDWR | O_CREAT | O_TRUNC, a_mode);
                 if (l_fd < 0)
                     throw io_error(errno, "Error creating file ", a_filename);
 
-                BOOST_SCOPE_EXIT( (&l_fd) ) {
+                BOOST_SCOPE_EXIT_TPL( (&l_fd) ) {
                     ::close(l_fd);
                 } BOOST_SCOPE_EXIT_END;
 
+                bip::file_lock flock(a_filename);
                 bip::scoped_lock<bip::file_lock> g_lock(flock);
 
                 header h;
-                h.version     = header::s_version;
-                h.last_rec_id = 0;
-                h.max_recs    = a_max_recs;
-                h.rec_size    = sizeof(T);
+                h.version   = header::s_version;
+                h.rec_count = 0;
+                h.max_recs  = a_max_recs;
+                h.rec_size  = sizeof(T);
 
                 if (::write(l_fd, &h, sizeof(h)) < 0)
                     throw io_error(errno, "Error writing to file ", a_filename);
@@ -270,20 +291,26 @@ namespace util {
             //if (!exists && !a_read_only)
             //    memset(static_cast<char*>(addr) + sizeof(header), 0, size - sizeof(header));
             m_header = static_cast<header*>(addr);
-            m_begin  = static_cast<T*>(addr) + 1;
-            m_end    = static_cast<T*>(addr) + a_max_recs;
+            m_begin  = m_header->records;
+            m_end    = m_begin + a_max_recs;
             BOOST_ASSERT(reinterpret_cast<char*>(m_end) <= static_cast<char*>(addr)+size);
 
-            if (!exists && !a_read_only) {
+            if (!l_exists && !a_read_only) {
+                bip::file_lock flock(a_filename);
+                bip::scoped_lock<bip::file_lock> g_lock(flock);
+
                 // If the file was just created, initialize the locks
-                for (Lock* l = m_header->locks, *e = m_header->locks + NLocks; l != e; ++l)
+                for (Lock* l = m_header->locks, *e = l + NLocks; l != e; ++l)
                     new (l) Lock();
             }
 
-        } catch (io_error& e)       { throw; }
-        } catch (std::exception& e) { throw io_error(e.what()); }
+        } catch (io_error& e) {
+            throw;
+        } catch (std::exception& e) {
+            throw io_error(e.what());
+        }
 
-        return !exists;
+        return !l_exists;
     }
 
 } // namespace util

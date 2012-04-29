@@ -65,6 +65,7 @@ util_headers = \
 		pcap.hpp \
 		perf_histogram.hpp \
 		persist_blob.hpp \
+		persist_array.hpp \
 		pidfile.hpp \
 		rate_throttler.hpp \
 		robust_mutex.hpp \
