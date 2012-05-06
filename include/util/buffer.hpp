@@ -348,8 +348,9 @@ struct io_buffer {
  */
 template <typename Alloc = std::allocator<char> >
 class buffered_queue {
-    std::deque<boost::asio::const_buffer, Alloc>
-          m_out_queues[2];      ///< Queues of outgoing data
+    typedef std::deque<boost::asio::const_buffer, Alloc> deque;
+    deque  m_q1, m_q2;
+    deque* m_out_queues[2];     ///< Queues of outgoing data
                                 ///< The first queue is used for accumulating
                                 ///< messages, while the second queue is used
                                 ///< for writing them to socket.
@@ -379,9 +380,13 @@ class buffered_queue {
     }
 public:
     explicit buffered_queue(const Alloc& a_alloc = Alloc())
-        : m_out_queues(a_alloc), m_available_queue(0)
+        : m_q1(a_alloc), m_q2(a_alloc)
+        , m_available_queue(0)
         , m_is_writing(false), m_allocator(a_alloc)
-    {}
+    {
+        m_out_queues[0] = &m_q1;
+        m_out_queues[1] = &m_q1;
+    }
 
     /// Allocate space to be later enqueued to this buffer.
     template <class T>
@@ -398,7 +403,7 @@ public:
 
     /// Enqueue data to the queue without initiating a socket write.
     void enqueue(const boost::asio::const_buffer& a_buf) {
-        m_out_queues[available_queue()].push_back(a_buf);
+        *(m_out_queues)[available_queue()].push_back(a_buf);
     }
 
     /// Initiate asynchronous socket write.
@@ -410,7 +415,7 @@ public:
     /// Enqueue data and initiate asynchronous socket write.
     template <class Socket, class Handler>
     void async_write(Socket a_socket, const boost::asio::const_buffer& a_buf, Handler a_h) {
-        m_out_queues[available_queue()].push_back(a_buf);
+        *(m_out_queues)[available_queue()].push_back(a_buf);
         do_write_internal(a_socket, a_h);
     }
 
@@ -422,14 +427,14 @@ public:
         }
 
         for (std::deque<boost::asio::const_buffer>::iterator 
-                    it  = m_out_queues[writing_queue()].begin(),
-                    end = m_out_queues[writing_queue()].end();
+                    it  = *(m_out_queues)[writing_queue()].begin(),
+                    end = *(m_out_queues)[writing_queue()].end();
                 it != end; ++it)
         {
             char* p = boost::asio::buffer_cast<char*>(*it);
             m_allocator.deallocate(p, boost::asio::buffer_size(*it));
         }
-        m_out_queues[writing_queue()].clear();
+        *(m_out_queues)[writing_queue()].clear();
         m_is_writing = false;
         do_write_internal(a_socket, a_h);
     }

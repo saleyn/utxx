@@ -320,7 +320,83 @@ namespace detail {
         }
     };
 
+    /*
+    // Similar but simplier approach with no error checking
+    // The number is assumed to be right-justified.
+    template <int N, typename T>
+    class unsafe_atoi {
+        inline static void _atoi(const char*& c, T& n) {
+            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
+            // N & 0xF treats '0' and ' ' the same
+            n = n*10 + *(c++) & 0xF;
+            unsafe_atoi<N-1, T>::_atoi(c, *(c++) & 0xF, n);
+        }
+    public:
+        inline static const char* _atoi(const char* c, T& n) {
+            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
+            n = *(c++) & 0xF;
+            unsafe_atoi<N-1, T>::_atoi(c, n);
+            return c;
+        }
+        inline static const char* _atoi_sgn(const char* c, T& n) {
+            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ' || *c == '-');
+            switch (*c) {
+                case ' ': { unsafe_atoi<N-1, T>::_atoi_sgn(++c, n); return c; }
+                case '-': { const char* p = unsafe_atoi<N-1, T>::_atoi(++c, n); n = -n; return p; }
+                default:  { unsafe_atoi<N, T>::_atoi(c, n); return c; }
+            }
+        }
+    };
+
+    template <typename T>
+    class unsafe_atoi<1, T> {
+        inline static void _atoi(const char*& c, T& n) {
+            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
+            n *= 10;
+            n += *(c++) & 0xF;
+        }
+    public:
+        inline static const char* _atoi(const char* c, T& n) {
+            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
+            n = *(c++) & 0xF;
+            return c;
+        }
+        inline static const char* _atoi_sgn(const char* c, T& n) {
+            _atoi(c, n);
+            return c;
+        }
+    };
+
+    template <bool T> struct sgn {};
+
+    template <int N, typename T>
+    const char* atoi(const char* c, T& n, sgn<false>) {
+        return unsafe_atoi<N, T>::unsafe_atoi(c, n);
+    }
+
+    template <int N, typename T>
+    const char* atoi(const char* c, T& n, sgn<true>) {
+        return unsafe_atoi<N, T>::unsafe_atoi_sgn(c, n);
+    }
+    */
+
 } // namespace detail
+
+/*
+/// Skips leading '0' and ' ' and converts an ASCII string to number.
+/// The buffer size N must be statically known. Assign the result to
+/// a signed integer for additional checking for leading '-'.
+template <typename T, int N>
+const char* unsafe_atoi(const char* c, T& n) {
+    return detail::atoi<N, T>(c, detail::sgn<std::numeric_limits<T>::is_signed>());
+}
+
+template <typename T, int N>
+const char* unsafe_atoi(const char*(&a_buf)[N], T& n) {
+    return detail::atoi<N, T>(a_buf, detail::sgn<std::numeric_limits<T>::is_signed>());
+}
+*/
+
 
 /**
  * A faster replacement to itoa() library function.

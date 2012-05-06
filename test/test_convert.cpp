@@ -398,6 +398,26 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
                 (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
         }
     }
+
+    /*
+    {
+        cpu_timer t;
+        const char buf[] = "1234567890";
+        long n;
+
+        for (int i = 0; i < ITERATIONS; i++)
+            unsafe_atoi<long, sizeof(buf)>(buf, n);
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        if (verbosity::level() > util::VERBOSE_NONE) {
+            printf("   unsafe_atoi iterations: %ld (n = %ld)\n", ITERATIONS, n);
+            printf("          atoi time      : %.3fs (%.3fus/call)\n",
+                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
+        }
+    }
+    */
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_skip_left )
