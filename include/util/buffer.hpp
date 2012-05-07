@@ -359,6 +359,21 @@ class buffered_queue {
     Alloc m_allocator;
 
     template <class Socket, class Handler>
+    class write_wrapper {
+        buffered_queue& m_bq;
+        Socket& m_socket;
+        Handler m_handler;
+    public:
+        write_wrapper(buffered_queue& a_bq, Socket& a_socket, Handler a_hdlr) :
+            m_bq(a_bq), m_socket(a_socket), m_handler(a_hdlr) {
+        }
+        void operator()(const boost::system::error_code& ec,
+            std::size_t bytes_transferred) {
+            m_bq.handle_write(ec, m_socket, m_handler);
+        }
+    };
+
+    template <class Socket, class Handler>
     void do_write_internal(Socket& a_socket, Handler a_h) {
         if (m_is_writing || m_out_queues[available_queue()]->empty()) {
             // Nothing more to write to a socket - going idle
@@ -371,10 +386,8 @@ class buffered_queue {
         buffers_t buffers(*m_out_queues[available_queue()]);
         m_is_writing = true;
         flip_queues(); // Work on the data accumulated in the available_queue.
-        boost::asio::async_write(a_socket, buffers,
-            boost::asio::transfer_all(),
-            boost::bind(&buffered_queue::handle_write<Socket, Handler>, this,
-                boost::asio::placeholders::error, boost::ref(a_socket), a_h));
+        boost::asio::async_write(a_socket, buffers, boost::asio::transfer_all(),
+            write_wrapper<Socket, Handler>(*this, a_socket, a_h));
     }
 public:
     explicit buffered_queue(const Alloc& a_alloc = Alloc())
