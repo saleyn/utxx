@@ -57,19 +57,19 @@ generated:
 
 test_util_CPPFLAGS 	= -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 					  $(BOOST_CPPFLAGS)
-test_util_LDFLAGS  	= $(BOOST_SYSTEM_LDFLAGS) $(BOOST_UNIT_TEST_FRAMEWORK_LDFLAGS)
+test_util_LDFLAGS  	= $(BOOST_LDFLAGS)
 test_util_LDADD    	= $(srcdir)/../src/.libs/libutil.la \
-					  $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) \
-					  $(BOOST_DATE_TIME_LIBS) \
-					  $(BOOST_UNIT_TEST_FRAMEWORK_LIBS) \
+					  $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+					  $(BOOST_DATE_TIME_LIB) \
+					  $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
 					  -lboost_filesystem \
 					  -lboost_timer -lrt
 test_util_DATA 		= test_config_validator.xml
 
 
 example_repeating_timer_CPPFLAGS = -I$(srcdir)/../include $(BOOST_CPPFLAGS)
-example_repeating_timer_LDFLAGS  = $(BOOST_SYSTEM_LDFLAGS) $(BOOST_DATE_TIME_LDFLAGS)
+example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutil.la \
-								   $(BOOST_SYSTEM_LIBS) $(BOOST_THREAD_LIBS) \
-								   $(BOOST_DATE_TIME_LIBS)
+								   $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+								   $(BOOST_DATE_TIME_LIB)
 EXTRA_DIST = test_config_validator.xml

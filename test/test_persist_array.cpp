@@ -76,12 +76,12 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         bool l_created;
         BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
         BOOST_REQUIRE(l_created);
-        BOOST_REQUIRE_EQUAL(0, a.count());
-        BOOST_REQUIRE_EQUAL(1, a.capacity());
+        BOOST_REQUIRE_EQUAL(0u, a.count());
+        BOOST_REQUIRE_EQUAL(1u, a.capacity());
         
         size_t n;
         BOOST_REQUIRE_NO_THROW(n = a.allocate_rec());
-        BOOST_REQUIRE_EQUAL(0, n);
+        BOOST_REQUIRE_EQUAL(0u, n);
         BOOST_REQUIRE_THROW(a.allocate_rec(), std::runtime_error);
 
         test_blob* b = a.get(n);
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         bool l_created;
         BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
         BOOST_REQUIRE(!l_created);
-        BOOST_REQUIRE_EQUAL(1, a.count());
-        BOOST_REQUIRE_EQUAL(1, a.capacity());
+        BOOST_REQUIRE_EQUAL(1u, a.count());
+        BOOST_REQUIRE_EQUAL(1u, a.capacity());
         
         test_blob* b = a.get(0);
         BOOST_REQUIRE(b);
@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
             l_stats[b.i1-1] = b.i2;
         }
 
-        BOOST_REQUIRE_EQUAL(ITERATIONS, l_storage.count());
+        BOOST_REQUIRE_EQUAL((size_t)ITERATIONS, l_storage.count());
     }
     ::unlink(s_filename);
 }

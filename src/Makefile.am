@@ -100,7 +100,7 @@ libutil_la_SOURCES = \
 		url.cpp
 
 libutil_la_LTADD    = -version-info 1:0:0 -shared
-libutil_la_LIBS     = $(BOOST_THREAD_LIBS)
+libutil_la_LIBS     = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 libutil_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
 
 nobase_include_HEADERS = $(util_headers:%=../include/@PACKAGE@/%)

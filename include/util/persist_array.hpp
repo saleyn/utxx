@@ -124,7 +124,7 @@ namespace util {
             return n;
         }
 
-        std::pair<T*, long> get_next() {
+        std::pair<T*, size_t> get_next() {
             size_t n = allocate_rec();
             return std::make_pair(get(n), n);
         }
@@ -147,6 +147,9 @@ namespace util {
             *(m_begin+n) = a_rec;
             return n;
         }
+
+        /// @return id of the given object in the storage
+        size_t id_of(const T* a_rec) const { return a_rec - m_begin; }
 
         const T& operator[] (size_t a_id) const throw(badarg_error) {
             check_range(a_id); return *get(a_id);
