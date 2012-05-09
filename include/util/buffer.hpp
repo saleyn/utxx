@@ -348,6 +348,7 @@ struct io_buffer {
  */
 template <typename Alloc = std::allocator<char> >
 class buffered_queue {
+    typedef typename Alloc::template rebind<char>::other alloc_t;
     typedef std::deque<boost::asio::const_buffer, Alloc> deque;
     deque  m_q1, m_q2;
     deque* m_out_queues[2];     ///< Queues of outgoing data
@@ -356,7 +357,7 @@ class buffered_queue {
                                 ///< for writing them to socket.
     char  m_available_queue;    ///< Index of the queue used for cacheing
     bool  m_is_writing;         ///< Is asynchronous write in progress?
-    Alloc m_allocator;
+    alloc_t m_allocator;
 
     template <class Socket, class Handler>
     class write_wrapper {
