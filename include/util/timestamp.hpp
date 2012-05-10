@@ -78,8 +78,8 @@ public:
     /// Write local date in format: YYYYMMDD. If \a eos_pos > 8
     /// the function appends '-' at the end of the YYYYMMDD string.
     /// The function sets a_buf[eos_pos] = '\0'.
-    static void write_local_date(
-        char* a_buf, time_t a_utc_seconds, size_t eos_pos = 8);
+    static void write_date(
+        char* a_buf, time_t a_utc_seconds, bool a_utc=false, size_t eos_pos=8);
 
     inline static void write_time(
         char* a_buf, time_t seconds, size_t eos_pos = 8)
@@ -179,9 +179,10 @@ public:
         }
     }
 
-    static int update_and_write(stamp_type a_tp, char* a_buf, size_t a_sz) {
+    static int update_and_write(stamp_type a_tp,
+            char* a_buf, size_t a_sz, bool a_utc=false) {
         update();
-        return format(a_tp, &last_time().timeval(), a_buf, a_sz);
+        return format(a_tp, &last_time().timeval(), a_buf, a_sz, a_utc);
     }
 
     /// Write formatted timestamp string to the given \a a_buf buffer.
@@ -189,36 +190,37 @@ public:
     /// position.
     /// @param a_sz is the size of a_buf buffer and must be greater than 26.
     /// @return number of bytes written or -1 if \a a_tp is not known.
-    static int write(stamp_type a_tp, char* a_buf, size_t a_sz) {
-        return format(a_tp, last_time(), a_buf, a_sz);
+    static int write(stamp_type a_tp, char* a_buf, size_t a_sz, bool a_utc=false) {
+        return format(a_tp, last_time(), a_buf, a_sz, a_utc);
     }
 
     /// Write a timeval structure to \a a_buf.
     inline static int format(stamp_type a_tp,
-        const time_val& tv, char* a_buf, size_t a_sz) {
-        return format(a_tp, &tv.timeval(), a_buf, a_sz);
+        const time_val& tv, char* a_buf, size_t a_sz, bool a_utc = false) {
+        return format(a_tp, &tv.timeval(), a_buf, a_sz, a_utc);
     }
 
     template <int N>
-    static int format(stamp_type a_tp, const struct timeval* tv, char (&a_buf)[N]) {
-        return format(a_tp, tv, a_buf, N);
+    static int format(stamp_type a_tp, const struct timeval* tv,
+            char (&a_buf)[N], bool a_utc = false) {
+        return format(a_tp, tv, a_buf, N, a_utc);
     }
 
     static int format(stamp_type a_tp,
-        const struct timeval* tv, char* a_buf, size_t a_sz);
+        const struct timeval* tv, char* a_buf, size_t a_sz, bool a_utc=false);
 
-    static std::string to_string(stamp_type a_tp = TIME_WITH_USEC) {
-        return to_string(cached_time(), a_tp);
+    static std::string to_string(stamp_type a_tp = TIME_WITH_USEC, bool a_utc=false) {
+        return to_string(cached_time(), a_tp, a_utc);
     }
 
     static std::string to_string(
-            const time_val& a_tv, stamp_type a_tp=TIME_WITH_USEC) {
-        return to_string(&a_tv.timeval(), a_tp);
+            const time_val& a_tv, stamp_type a_tp=TIME_WITH_USEC, bool a_utc=false) {
+        return to_string(&a_tv.timeval(), a_tp, a_utc);
     }
 
     static std::string to_string(const struct timeval* a_tv,
-            stamp_type a_tp=TIME_WITH_USEC) {
-        char buf[32]; format(a_tp, a_tv, buf, sizeof(buf));
+            stamp_type a_tp=TIME_WITH_USEC, bool a_utc=false) {
+        buf_type buf; format(a_tp, a_tv, buf, sizeof(buf), a_utc);
         return std::string(buf);
     }
 

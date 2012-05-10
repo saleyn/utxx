@@ -17,11 +17,14 @@ volatile long timestamp::s_hrcalls;
 volatile long timestamp::s_syscalls;
 #endif
 
-static int internal_write_local_date(
-    char* a_buf, time_t a_utc_seconds, size_t eos_pos)
+static int internal_write_date(
+    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
 {
     struct tm tm;
-    localtime_r(&a_utc_seconds, &tm);
+    if (a_utc)
+        gmtime_r(&a_utc_seconds, &tm);
+    else
+        localtime_r(&a_utc_seconds, &tm);
     int y = 1900 + tm.tm_year;
     int m = tm.tm_mon + 1;
     int d = tm.tm_mday;
@@ -40,15 +43,15 @@ static int internal_write_local_date(
     return tm.tm_gmtoff;
 }
 
-void timestamp::write_local_date(
-    char* a_buf, time_t a_utc_seconds, size_t eos_pos)
+void timestamp::write_date(
+    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
 {
     // If same day - use cached string value
-    if (labs(a_utc_seconds - s_last_time.tv_sec) <  86400) {
+    if (!a_utc && labs(a_utc_seconds - s_last_time.tv_sec) < 86400) {
         strncpy(a_buf, s_timestamp, 9);
         a_buf[eos_pos] = '\0';
     } else {
-        internal_write_local_date(a_buf, a_utc_seconds, eos_pos);
+        internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos);
     }
 }
 
@@ -57,8 +60,8 @@ void timestamp::update_midnight_seconds(const time_val& a_now)
     // FIXME: it doesn't seem like the mutex is needed here at all
     // since s_timestamp lives in TLS storage
     boost::mutex::scoped_lock guard(s_mutex);
-    s_utc_offset = internal_write_local_date(
-        s_timestamp, a_now.timeval().tv_sec, 9);
+    s_utc_offset = internal_write_date(
+        s_timestamp, a_now.timeval().tv_sec, false, 9);
 
     s_midnight_seconds  = a_now.sec() - a_now.sec() % 86400;
 }
@@ -87,7 +90,7 @@ void timestamp::update_slow()
 }
 
 int timestamp::format(stamp_type a_tp,
-    const struct timeval* tv, char* a_buf, size_t a_sz)
+    const struct timeval* tv, char* a_buf, size_t a_sz, bool a_utc)
 {
     BOOST_ASSERT((a_tp < DATE_TIME && a_sz > 14) || a_sz > 26);
 
@@ -102,7 +105,7 @@ int timestamp::format(stamp_type a_tp,
 
     // If small time is given, it's a relative value.
     bool l_rel  = tv->tv_sec < 86400;
-    time_t sec  = l_rel ? tv->tv_sec : tv->tv_sec + s_utc_offset;
+    time_t sec  = l_rel ? tv->tv_sec : tv->tv_sec + (a_utc ? 0 : s_utc_offset);
     long l_usec = tv->tv_usec;
 
     switch (a_tp) {
@@ -120,17 +123,17 @@ int timestamp::format(stamp_type a_tp,
             itoa(a_buf+9, 3, l_usec / 1000, '0');
             return 12;
         case DATE_TIME:
-            write_local_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, 9);
+            write_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, a_utc, 9);
             write_time(a_buf+9, sec, 8);
             return 17;
         case DATE_TIME_WITH_USEC:
-            write_local_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, 9);
+            write_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, a_utc, 9);
             write_time(a_buf+9, sec, 15);
             a_buf[17] = '.';
             itoa(a_buf+18, 6, l_usec, '0');
             return 24;
         case DATE_TIME_WITH_MSEC:
-            write_local_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, 9);
+            write_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, a_utc, 9);
             write_time(a_buf+9, sec, 12);
             a_buf[17] = '.';
             itoa(a_buf+18, 3, l_usec / 1000, '0');
