@@ -73,9 +73,9 @@ struct test1 {
                 DATE_TIME_WITH_USEC, buf[0], sizeof(buf[0]));
             hr.stop_incr();
             time_val t1 = timestamp::last_time();
-            if (n != 26 || strlen(buf[0]) != 26) {
+            if (n != 24 || strlen(buf[0]) != 24) {
                 std::cerr << "Wrong buffer length: " << buf[0] << std::endl;
-                BOOST_REQUIRE_EQUAL(26, n);
+                BOOST_REQUIRE_EQUAL(24, n);
             }
             hr.start_incr();
             timestamp::update_and_write(
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 
     timestamp::buf_type buf, expected, temp;
 
-    sprintf(expected, "%d-%02d-%02d %02d:%02d:%02d",
+    sprintf(expected, "%d%02d%02d-%02d:%02d:%02d",
         (unsigned short) now_local.date().year(),
         (unsigned short) now_local.date().month(),
         (unsigned short) now_local.date().day(),
@@ -292,27 +292,27 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
         std::cerr << "UTC Offset: " << timestamp::utc_offset() << std::endl;
 
     timestamp::format(TIME, &tv, buf);
-    strncpy(temp, expected+11, 9);
+    strncpy(temp, expected+9, 9);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(TIME_WITH_USEC, &tv, buf);
-    snprintf(temp, 16, "%s.%06d", expected+11, (int)tv.tv_usec);
+    snprintf(temp, 16, "%s.%06d", expected+9, (int)tv.tv_usec);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(TIME_WITH_MSEC, &tv, buf);
-    snprintf(temp, 13, "%s.%03d", expected+11, (int)tv.tv_usec / 1000);
+    snprintf(temp, 13, "%s.%03d", expected+9, (int)tv.tv_usec / 1000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(DATE_TIME, &tv, buf);
-    snprintf(temp, 20, "%s", expected);
+    snprintf(temp, 18, "%s", expected);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(DATE_TIME_WITH_USEC, &tv, buf);
-    snprintf(temp, 27, "%s.%06d", expected, (int)tv.tv_usec);
+    snprintf(temp, 25, "%s.%06d", expected, (int)tv.tv_usec);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(DATE_TIME_WITH_MSEC, &tv, buf);
-    snprintf(temp, 24, "%s.%03d", expected, (int)tv.tv_usec / 1000);
+    snprintf(temp, 22, "%s.%03d", expected, (int)tv.tv_usec / 1000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
 }

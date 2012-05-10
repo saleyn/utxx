@@ -94,7 +94,8 @@ AC_OUTPUT
 echo
 echo "========================================================================"
 echo "   CXXFLAGS: ${CXXFLAGS}" $BOOST_CPPFLAGS
-echo "      BOOST: $BOOST_ROOT"
+echo "      BOOST: ${BOOST_ROOT}"
+echo "       UTIL: ${UTIL_ROOT}"
 echo "------------------------------------------------------------------------"
 echo "             Configuration completed successfully!                      "
 echo "========================================================================"

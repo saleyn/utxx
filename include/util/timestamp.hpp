@@ -75,23 +75,29 @@ public:
     /// Suggested buffer space type needed for format() calls.
     typedef char buf_type[32];
 
-    inline static void write_timestamp(
-        char* timestamp, time_t seconds, size_t eos_pos = 8)
+    /// Write local date in format: YYYYMMDD. If \a eos_pos > 8
+    /// the function appends '-' at the end of the YYYYMMDD string.
+    /// The function sets a_buf[eos_pos] = '\0'.
+    static void write_local_date(
+        char* a_buf, time_t a_utc_seconds, size_t eos_pos = 8);
+
+    inline static void write_time(
+        char* a_buf, time_t seconds, size_t eos_pos = 8)
     {
         unsigned long n = seconds / 86400;
         n = seconds - n*86400;
-        int hour = n / 3600;        n -= hour*3600;
+        int hour = n / 3600;    n -= hour*3600;
         int min  = n / 60;
-        int sec  = n - min*60;      n = hour / 10;
-        timestamp[0] = '0' + n;     hour -= n*10;
-        timestamp[1] = '0' + hour;
-        timestamp[2] = ':';         n = min / 10;
-        timestamp[3] = '0' + n;     min -= n*10;
-        timestamp[4] = '0' + min;
-        timestamp[5] = ':';         n = sec / 10;
-        timestamp[6] = '0' + n;     sec -= n*10;
-        timestamp[7] = '0' + sec;
-        timestamp[eos_pos] = '\0';
+        int sec  = n - min*60;  n = hour / 10;
+        a_buf[0] = '0' + n;     hour -= n*10;
+        a_buf[1] = '0' + hour;
+        a_buf[2] = ':';         n = min / 10;
+        a_buf[3] = '0' + n;     min -= n*10;
+        a_buf[4] = '0' + min;
+        a_buf[5] = ':';         n = sec / 10;
+        a_buf[6] = '0' + n;     sec -= n*10;
+        a_buf[7] = '0' + sec;
+        a_buf[eos_pos] = '\0';
     }
 
     /// Update internal timestamp by calling gettimeofday().

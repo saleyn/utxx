@@ -21,6 +21,21 @@
 #include <util/compiler_hints.hpp>
 
 namespace util {
+
+    inline static iovec make_iovec(const char* a_bytes, size_t a_sz) {
+        iovec v = { (void*) a_bytes, a_sz };
+        return v;
+    }
+
+    inline static iovec make_iovec(const char* a_bytes) {
+        BOOST_ASSERT(a_bytes != NULL);
+        iovec v = { (void*) a_bytes, strlen(a_bytes) };
+        return v;
+    }
+
+} // namespace util
+
+namespace util {
 namespace io {
 
 class iovector: std::vector<iovec> {
@@ -33,17 +48,6 @@ class iovector: std::vector<iovec> {
     size_t m_length;
 
 public:
-
-    inline static iovec make_iovec(const char* a_bytes, size_t a_sz) {
-        iovec v = { (void*) a_bytes, a_sz };
-        return v;
-    }
-
-    inline static iovec make_iovec(const char* a_bytes) {
-        BOOST_ASSERT(a_bytes != NULL);
-        iovec v = { (void*) a_bytes, strlen(a_bytes) };
-        return v;
-    }
 
     iovector() :
         m_offset(0), m_length(0) {

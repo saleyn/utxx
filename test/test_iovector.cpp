@@ -48,15 +48,15 @@ BOOST_AUTO_TEST_CASE(test_iovector)
         BOOST_REQUIRE(v.empty());
 
         // testing fn: void push_back(const iovec & a_vec)
-        v.push_back(iovector::make_iovec("a"));
+        v.push_back(make_iovec("a"));
         BOOST_REQUIRE_EQUAL(1u, v.size());
         BOOST_REQUIRE_EQUAL(1u, v.length());
 
-        v.push_back(iovector::make_iovec("b"));
+        v.push_back(make_iovec("b"));
         BOOST_REQUIRE_EQUAL(2u, v.size());
         BOOST_REQUIRE_EQUAL(2u, v.length());
 
-        v.push_back(iovector::make_iovec("c", 2));
+        v.push_back(make_iovec("c", 2));
         BOOST_REQUIRE_EQUAL(3u, v.size());
         BOOST_REQUIRE_EQUAL(4u, v.length());
 
@@ -66,8 +66,8 @@ BOOST_AUTO_TEST_CASE(test_iovector)
         BOOST_REQUIRE(v.empty());
     }
 
-    iovec tv[] = { iovector::make_iovec("abc"), iovector::make_iovec(
-            "de"), iovector::make_iovec("fghi") };
+    iovec tv[] = { make_iovec("abc"), make_iovec(
+            "de"), make_iovec("fghi") };
 
     {
         // testing: template<int M> iovector(const iovec(& a_data)[M])

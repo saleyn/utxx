@@ -127,6 +127,8 @@ namespace <xsl:value-of select="@namespace"/> {
                 <xsl:choose>
                     <xsl:when test="@type">
                         <xsl:call-template name="string-to-type">
+                            <xsl:with-param name="name" select="@name"/>
+                            <xsl:with-param name="kind" select="'type_of_name'"/>
                             <xsl:with-param name="type" select="@type"/>
                         </xsl:call-template>
                     </xsl:when>
@@ -134,6 +136,8 @@ namespace <xsl:value-of select="@namespace"/> {
                 </xsl:choose>
                 <xsl:text>, </xsl:text>
                 <xsl:call-template name="string-to-type">
+                    <xsl:with-param name="name" select="@name"/>
+                    <xsl:with-param name="kind" select="'type_of_value'"/>
                     <xsl:with-param name="type" select="@val_type"/>
                 </xsl:call-template>
                 <xsl:text>, "</xsl:text><xsl:value-of select="@desc"/><xsl:text>", </xsl:text>
@@ -206,6 +210,8 @@ namespace <xsl:value-of select="@namespace"/> {
 </xsl:template>
 
 <xsl:template name="string-to-type">
+    <xsl:param name="name"/>
+    <xsl:param name="kind"/>
     <xsl:param name="type"/>
     <xsl:choose>
         <xsl:when test="$type = 'string'"><xsl:text>STRING</xsl:text></xsl:when>
@@ -213,9 +219,9 @@ namespace <xsl:value-of select="@namespace"/> {
         <xsl:when test="$type = 'float'"><xsl:text>FLOAT</xsl:text></xsl:when>
         <xsl:when test="$type = 'anonymous'"><xsl:text>ANONYMOUS</xsl:text></xsl:when>
         <xsl:otherwise>
-            <xsl:text>/* ERROR: undefined type </xsl:text>
-            <xsl:value-of select="$type"/>
-            <xsl:text>*/</xsl:text>
+            <xsl:message terminate="yes">
+                ERROR: undefined <xsl:value-of select="$kind"/> of option: <xsl:value-of select="$name"/>
+            </xsl:message>
         </xsl:otherwise>
     </xsl:choose>
 </xsl:template>
