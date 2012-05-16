@@ -110,23 +110,24 @@ namespace util {
         long                    usec()    const { return m_tv.tv_usec; }
         time_t&                 sec()           { return m_tv.tv_sec;  }
         suseconds_t&            usec()          { return m_tv.tv_usec; }
+        time_t                  msec()    const { return m_tv.tv_usec / 1000; }
 
         uint64_t microseconds() const {
             return (uint64_t)m_tv.tv_sec*N10e6 + (uint64_t)m_tv.tv_usec;
         }
 
-        double seconds()      const { return  (double)m_tv.tv_sec
-                                            + (double)m_tv.tv_usec/N10e6; }
+        double seconds()          const { return  (double)m_tv.tv_sec
+                                                + (double)m_tv.tv_usec/N10e6; }
 
-        size_t millisec() const     { return m_tv.tv_sec*1000u + m_tv.tv_usec/1000; }
-        void sec (size_t s)         { m_tv.tv_sec  = s;  }
-        void usec(size_t us)        { m_tv.tv_usec = us; normalize(); }
-        void microsec(uint64_t ms)  { setd(ms, N10e6); }
-        void millisec(size_t   ms)  { setd(ms, 1000);  }
-        void nanosec (uint64_t ms)  { setd(ms, N10e9); }
-        bool empty()          const { return sec() == 0 && usec() == 0; }
+        long milliseconds()       const { return m_tv.tv_sec*1000u + m_tv.tv_usec/1000; }
+        void sec (size_t s)             { m_tv.tv_sec  = s;  }
+        void usec(size_t us)            { m_tv.tv_usec = us; normalize(); }
+        void microseconds(uint64_t ms)  { setd(ms, N10e6); }
+        void milliseconds(size_t   ms)  { setd(ms, 1000);  }
+        void nanosec (uint64_t ms)      { setd(ms, N10e9); }
+        bool empty()              const { return sec() == 0 && usec() == 0; }
 
-        void clear()                { m_tv.tv_sec = 0; m_tv.tv_usec = 0; }
+        void clear()                    { m_tv.tv_sec = 0; m_tv.tv_usec = 0; }
 
         void set(const time_val& tv, long _s=0, long _us=0) {
             m_tv.tv_sec = tv.sec() + _s; m_tv.tv_usec = tv.usec() + _us; normalize();

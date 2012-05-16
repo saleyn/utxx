@@ -338,6 +338,11 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     snprintf(temp, 22, "%s.%03d", expected_utc, (int)tv.tv_usec / 1000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
+    std::string str = timestamp::to_string(&tv, DATE_TIME);
+    BOOST_REQUIRE_EQUAL(expected, str);
+    str = timestamp::to_string(timestamp::cached_time(), DATE_TIME);
+    BOOST_REQUIRE_EQUAL(expected, str);
+
 }
 
 BOOST_AUTO_TEST_CASE( test_timestamp_gettimeofday )
