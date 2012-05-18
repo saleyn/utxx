@@ -141,13 +141,13 @@ namespace <xsl:value-of select="@namespace"/> {
                             <xsl:with-param name="type" select="@type"/>
                         </xsl:call-template>
                     </xsl:when>
-                    <xsl:when test="count(option) > 0">BRANCH</xsl:when>
+                    <xsl:when test="count(option | include) > 0">BRANCH</xsl:when>
                     <xsl:otherwise><xsl:text>STRING</xsl:text></xsl:otherwise>
                 </xsl:choose>
                 <xsl:text>, </xsl:text>
                 <xsl:variable name="type">
                     <xsl:choose>
-                        <xsl:when test="not(@type) and count(option) > 0">string</xsl:when>
+                        <xsl:when test="not(@type) and count(option | include) > 0">string</xsl:when>
                         <xsl:otherwise><xsl:value-of select="@val_type"/></xsl:otherwise>
                     </xsl:choose>
                 </xsl:variable>
