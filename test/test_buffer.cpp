@@ -44,6 +44,14 @@ BOOST_AUTO_TEST_CASE( test_io_buffer )
 BOOST_AUTO_TEST_CASE( test_bufferred_queue )
 {
     buffered_queue<> v;
+    buffered_queue<true> l_buf_owner;
+    buffered_queue<false> l_buf_proxy;
+    buffered_queue<true, std::allocator<double> > l_buf_alloc;
+    uint32_t l_buf = 0;
+    boost::asio::const_buffer hb(&l_buf, sizeof(l_buf));
+    l_buf_alloc.enqueue(hb);
+    l_buf_proxy.enqueue(hb);
+    l_buf_owner.enqueue(hb);
 }
 
 } // namespace util

@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/asio/detail/consuming_buffers.hpp>
 #include <boost/type_traits/has_trivial_constructor.hpp>
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
 #include <algorithm>
 #include <deque>
 #include <string.h>
@@ -338,6 +339,42 @@ struct io_buffer {
 };
 
 /**
+ * \brief used by buffered_queue
+ */
+template <bool False, typename Alloc>
+struct basic_buffered_queue {
+    typedef boost::asio::const_buffer buf_t;
+    typedef std::deque<buf_t, Alloc> deque;
+    basic_buffered_queue(const Alloc&) {}
+    void deallocate(deque *) {}
+};
+
+template <typename Alloc>
+struct basic_buffered_queue<true, Alloc> {
+    typedef boost::asio::const_buffer buf_t;
+    typedef std::deque<buf_t, Alloc> deque;
+    typedef typename Alloc::template rebind<char>::other alloc_t;
+    alloc_t m_allocator;
+
+    basic_buffered_queue(const Alloc& a_alloc) : m_allocator(a_alloc) {}
+
+    /// Allocate space to be later enqueued to this buffer.
+    template <class T>
+    T* allocate(size_t a_size) {
+        return static_cast<T*>(m_allocator.allocate(a_size));
+    }
+
+    /// Deallocate space used by buffer.
+    void deallocate(deque *p) {
+        BOOST_FOREACH(buf_t& b, *p) {
+            m_allocator.deallocate(
+                const_cast<char *>(boost::asio::buffer_cast<const char *>(b)),
+                boost::asio::buffer_size(b));
+        }
+    }
+};
+
+/**
  * \brief A stream that can be used for asyncronous output with boost::asio.
  * There are a couple of optimizations implemented to reduce
  * the number of system calls. Two queues are being used for writing.
@@ -346,10 +383,11 @@ struct io_buffer {
  * (identified by <tt>writing_queue()</tt>) contains a list of outgoing
  * messages that are being written to the socket using scattered I/O.
  */
-template <typename Alloc = std::allocator<char> >
-class buffered_queue {
-    typedef typename Alloc::template rebind<char>::other alloc_t;
-    typedef std::deque<boost::asio::const_buffer, Alloc> deque;
+
+template <bool IsOwner = true, typename Alloc = std::allocator<char> >
+class buffered_queue : public basic_buffered_queue<IsOwner, Alloc> {
+    typedef basic_buffered_queue<IsOwner, Alloc> base;
+    typedef typename base::deque deque;
     deque  m_q1, m_q2;
     deque* m_out_queues[2];     ///< Queues of outgoing data
                                 ///< The first queue is used for accumulating
@@ -357,7 +395,6 @@ class buffered_queue {
                                 ///< for writing them to socket.
     char  m_available_queue;    ///< Index of the queue used for cacheing
     bool  m_is_writing;         ///< Is asynchronous write in progress?
-    alloc_t m_allocator;
 
     template <class Socket, class Handler>
     class write_wrapper {
@@ -392,18 +429,13 @@ class buffered_queue {
     }
 public:
     explicit buffered_queue(const Alloc& a_alloc = Alloc())
-        : m_q1(a_alloc), m_q2(a_alloc)
+        : base(a_alloc)
+        , m_q1(a_alloc), m_q2(a_alloc)
         , m_available_queue(0)
-        , m_is_writing(false), m_allocator(a_alloc)
+        , m_is_writing(false)
     {
         m_out_queues[0] = &m_q1;
         m_out_queues[1] = &m_q1;
-    }
-
-    /// Allocate space to be later enqueued to this buffer.
-    template <class T>
-    T* allocate(size_t a_size) {
-        return static_cast<T*>(m_allocator.allocate(a_size));
     }
 
     /// Swap available and writing queue indexes.
@@ -437,15 +469,7 @@ public:
             a_h(ec);
             return;
         }
-
-        for (typename deque::iterator 
-                    it  = m_out_queues[writing_queue()]->begin(),
-                    end = m_out_queues[writing_queue()]->end();
-                it != end; ++it)
-        {
-            char* p = const_cast<char *>(boost::asio::buffer_cast<const char *>(*it));
-            m_allocator.deallocate(p, boost::asio::buffer_size(*it));
-        }
+        deallocate(m_out_queues[writing_queue()]);
         m_out_queues[writing_queue()]->clear();
         m_is_writing = false;
         do_write_internal(a_socket, a_h);
