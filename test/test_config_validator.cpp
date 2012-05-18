@@ -114,6 +114,17 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
         "      address: string\n"
         "        Description: Server address\n"
         "           Required: true\n"
+        "\n"
+        "section: string\n"
+        "     Required: true\n"
+        "\n"
+        "  location: int\n"
+        "       Required: true\n"
+        "\n"
+        "section2: string\n"
+        "\n"
+        "  abc: string\n"
+        "        Default: \"x\"\n"
         "\n",
         s.str());
 }
@@ -132,6 +143,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator1 )
         << "    ARCA\n"
         << "    { address \"1.2.3.4\" }\n"
         << "  }\n"
+        << "section {\n"
+        << "  location 10\n"
+        << "}\n"
         << "country \"CA\"\n"
         << "  {\n"
         << "    ARCA exchange\n" /* This is an example of an anonymous
@@ -190,7 +204,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
 
     l_config.clear();
     l_stream.clear();
-    l_stream << "country US { ARCA connection { address abc } }\nduration 10\n";
+    l_stream << "country US { ARCA connection { address abc } }\nduration 10\n"
+             << "section { location 10 }\n";
 
     variant_tree::read_info(l_stream, l_config);
 
@@ -220,7 +235,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator4 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
-    l_stream << "country US { ARCA connection { address abc } }\nduration 5\n";
+    l_stream << "country US { ARCA connection { address abc } }\nduration 5\n"
+             << "section { location 10 }\n";
 
     variant_tree::read_info(l_stream, l_config);
 
@@ -238,7 +254,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator5 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
-    l_stream << "country US { ARCA connection { address abc } }\nduration 61\n";
+    l_stream << "country US { ARCA connection { address abc } }\nduration 61\n"
+             << "section { location 10 }\n";
 
     variant_tree::read_info(l_stream, l_config);
 
@@ -257,7 +274,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator6 )
     variant_tree l_config;
     std::stringstream l_stream;
     l_stream << "duration 10\n"
-             << "country \"ER\" { ARCA connection { address abc } }\n";
+             << "country \"ER\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
 
     variant_tree::read_info(l_stream, l_config);
 
@@ -278,7 +296,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     test::cfg_validator l_validator;
 
     l_stream << "duration 10\n"
-             << "country \"US\"\n";
+             << "country \"US\"\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -293,7 +312,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_stream.clear();
     l_stream << "duration 10\n"
              << "country \"US\"\n"
-             << "{\"ARCA\" example }\n";
+             << "{\"ARCA\" example }\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -308,7 +328,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_stream.clear();
     l_stream << "duration 10\n"
              << "country \"ER\" { ARCA connection { address abc } }\n"
-             << "abc test\n";
+             << "abc test\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -323,7 +344,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     l_stream.clear();
     l_stream << "duration 10\n"
              << "country \"US\" { ARCA connection { address abc } }\n"
-             << "abc test\n";
+             << "abc test\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -336,7 +358,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
 
     l_config.clear();
     l_stream.clear();
-    l_stream << "duration 10\n country \"US\"\n { \"\" example }\n";
+    l_stream << "duration 10\n country \"US\"\n { \"\" example }\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -349,7 +372,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
 
     l_config.clear();
     l_stream.clear();
-    l_stream << "address abc\n address bcd\n";
+    l_stream << "address abc\n address bcd\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -368,7 +392,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     test::cfg_validator l_validator;
 
     l_stream << "address 10\nduration 15\n"
-             << "country \"US\" { ARCA connection { address abc } }\n";
+             << "country \"US\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -382,7 +407,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     l_config.clear();
     l_stream.clear();
     l_stream << "duration abc\n"
-             << "country \"US\" { ARCA connection { address abc } }\n";
+             << "country \"US\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -397,7 +423,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     l_stream.clear();
     l_stream << "enabled 1\n"
              << "duration 10\n"
-             << "country \"US\" { ARCA connection { address abc } }\n";
+             << "country \"US\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -412,7 +439,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     l_stream.clear();
     l_stream << "cost 1\n"
              << "duration 10\n"
-             << "country \"US\" { ARCA connection { address abc } }\n";
+             << "country \"US\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
     variant_tree::read_info(l_stream, l_config);
 
     try {
@@ -422,5 +450,51 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE_EQUAL("/cost[1]", e.option());
         BOOST_REQUIRE_EQUAL("Wrong type - expected float!", e.what());
     }
+
+    l_config.clear();
+    l_stream.clear();
+    l_stream << "cost 1\n"
+             << "duration 10\n"
+             << "country \"US\" { ARCA connection { address abc } }\n";
+    variant_tree::read_info(l_stream, l_config);
+
+    try {
+        l_validator.validate(l_config);
+        BOOST_REQUIRE(false);
+    } catch (util::config_error& e) {
+        BOOST_REQUIRE_EQUAL("/section", e.option());
+        BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
+    }
+
+    l_config.clear();
+    l_stream.clear();
+    l_stream << "cost 1\n"
+             << "duration 10\n"
+             << "country \"US\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
+    variant_tree::read_info(l_stream, l_config);
+
+    try {
+        l_validator.validate(l_config);
+    } catch (util::config_error& e) {
+        BOOST_REQUIRE_EQUAL("/cost[1]", e.option());
+        BOOST_REQUIRE_EQUAL("Wrong type - expected float!", e.what());
+    }
+
+    l_config.clear();
+    l_stream.clear();
+    l_stream << "cost 1.0\n"
+             << "duration 10\n"
+             << "country \"US\" { ARCA connection { address abc } }\n"
+             << "section { location 10 }\n";
+    variant_tree::read_info(l_stream, l_config);
+
+    try {
+        l_validator.validate(l_config);
+    } catch (util::config_error& e) {
+        std::cerr << e.str() << std::endl;
+        BOOST_REQUIRE(false);
+    }
+
 }
 

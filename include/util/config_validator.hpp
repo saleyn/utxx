@@ -51,9 +51,8 @@
 /// * <tt>/config@namespace</tt> is the namespace where the class
 ///   <tt>/config@name</tt> (derived from util::config::validator) will be
 ///   put.
-/// * <tt>/config/options</tt> section consists of the sequence of options.
-/// * <tt>/config/options/option</tt> is an element that may contain an
-///   optional list of <tt>/config/options/option/choices</tt> and the
+/// * <tt>/config/option</tt> is an element that may contain an
+///   optional list of <tt>/config/option/value</tt> values and the
 ///   following attributes:
 ///     - <tt>name</tt> - the name of an option.
 ///     - <tt>type</tt> - the type of the option's name: "string" (default)
@@ -75,7 +74,7 @@
 ///     - <tt>max</tt> -  max value of the option (valid only for int/float).
 /// </code>
 ///
-/// An option may have an optional 'choices' child tag. If provided, the body
+/// An option may have an optional 'value' child tag. If provided, the body
 /// of the tag may have at least one 'value' or 'name' entries. The 'name'
 /// entry is only allowed for anonymous options used to restrict the name of
 /// the options to the ones enumerated by the tag.  The 'value' entry
@@ -112,7 +111,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-/*
+/* TODO: following schema is incomplete
+
     <?xml version="1.0"?>
     <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 
@@ -186,7 +186,16 @@ namespace config {
 
     class option;
 
-    enum option_type_t { UNDEF, STRING, INT, BOOL, FLOAT, ANONYMOUS };
+    enum option_type_t {
+          UNDEF
+        , STRING
+        , INT
+        , BOOL
+        , FLOAT
+        , ANONYMOUS // Doesn't have a fixed name
+        , BRANCH    // May not have value, but may have children
+    };
+
     typedef std::set<variant>       variant_set;
     typedef std::vector<option>     option_vector;
     typedef std::set<std::string>   string_set;
@@ -216,6 +225,7 @@ namespace config {
                 option_type_t a_type, option_type_t a_value_type,
                 const std::string& a_desc = std::string(),
                 bool a_unique = true,
+                bool a_required = true,
                 const variant& a_def = variant(),
                 const variant& a_min = variant(),
                 const variant& a_max = variant(),
@@ -230,7 +240,7 @@ namespace config {
             , min_value(a_min), max_value(a_max)
             , description(a_desc)
             , children(a_options)
-            , required(a_def.type() == variant::TYPE_NULL)
+            , required(!a_required ? false : a_def.type() == variant::TYPE_NULL)
             , unique(a_unique)
         {}
 

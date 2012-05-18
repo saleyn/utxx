@@ -51,6 +51,7 @@ const char* type_to_string(option_type_t a_type) {
         case BOOL:      return "bool";
         case FLOAT:     return "float";
         case ANONYMOUS: return "anonymous";
+        case BRANCH:    return "branch";
         default:        return "undefined";
     }
 }
@@ -176,9 +177,15 @@ void validator::check_required(const std::string& a_root,
                         std::cout << "    found: "
                             << format_name(a_root, opt, vt.first, vt.second.data().to_string())
                             << ", value=" << vt.second.data().to_string()
+                            << ", type=" << type_to_string(opt.opt_type)
                             << std::endl;
                         #endif
                         
+                        if (opt.opt_type == BRANCH) {
+                            l_found = true;
+                            break;
+                        }
+
                         if (vt.second.data().is_null())
                             throw config_error(format_name(a_root, opt,
                                     vt.first, vt.second.data().to_string()),
@@ -254,10 +261,12 @@ void validator::check_option(const std::string& a_root, variant_tree::value_type
     try {
         // Populate default value
         if (!a_opt.required && a_vt.second.data().is_null()) {
-            if (a_opt.default_value.is_null())
+            if (a_opt.default_value.is_null() && a_opt.opt_type != BRANCH)
                 throw std::invalid_argument("Check XML spec. Required option is missing default value!");
-            BOOST_ASSERT(to_option_type(a_opt.default_value.type()) == a_opt.value_type);
-            if (a_fill_defaults)
+            BOOST_ASSERT(
+                (a_opt.opt_type == BRANCH && a_opt.default_value.is_null()) ||
+                (to_option_type(a_opt.default_value.type()) == a_opt.value_type));
+            if (a_fill_defaults && !a_opt.default_value.is_null())
                 a_vt.second.data() = a_opt.default_value;
         }
 
@@ -289,7 +298,7 @@ void validator::check_option(const std::string& a_root, variant_tree::value_type
             default: {
                 // Allow anonymous options to have no value (since the
                 // name defines the value)
-                if (a_opt.opt_type == ANONYMOUS)
+                if (a_opt.opt_type == ANONYMOUS || a_opt.opt_type == BRANCH)
                     break; 
                 throw config_error(format_name(a_root, a_opt, a_vt.first,
                         a_vt.second.data().to_string()),
@@ -299,7 +308,9 @@ void validator::check_option(const std::string& a_root, variant_tree::value_type
             }
         }
 
-        if (a_opt.required && a_opt.opt_type != ANONYMOUS &&
+        if (a_opt.required && 
+                a_opt.opt_type != ANONYMOUS &&
+                a_opt.opt_type != BRANCH &&
                 a_vt.second.data().is_null())
             throw std::invalid_argument("Required value missing!");
         if (a_vt.first.empty())
@@ -308,6 +319,7 @@ void validator::check_option(const std::string& a_root, variant_tree::value_type
         switch (a_opt.opt_type) {
             case STRING:    break;
             case ANONYMOUS: break;
+            case BRANCH:    break;
             default: {
                 throw config_error(format_name(a_root, a_opt, a_vt.first,       
                         a_vt.second.data().to_string()),
@@ -371,10 +383,11 @@ std::ostream& validator::dump(std::ostream& out, const std::string& a_indent,
                 << std::endl;
         if (!opt.unique)
             out << l_indent << "       Unique: true" << std::endl;
-        if (!opt.required)
-            out << l_indent << "      Default: "
-                << value(opt.default_value) << std::endl;
-        else
+        if (!opt.required) {
+            if (!opt.default_value.is_null())
+                out << l_indent << "      Default: "
+                    << value(opt.default_value) << std::endl;
+        } else
             out << l_indent << "     Required: true" << std::endl;
         if (!opt.min_value.is_null() || !opt.max_value.is_null())
             out << l_indent << "         "
