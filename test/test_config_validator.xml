@@ -16,17 +16,19 @@
         default="1.5" min="0.0"/>
     <option name="country" val_type="string"
         desc="Sample choice required entry" unique="false">
-        <values>
-            <value val="US"/>   <!-- restricts option's values -->
-            <value val="CA"/>
-        </values>
+        <value val="US"/>   <!-- restricts option's values -->
+        <value val="CA"/>
         <option name="connection" type="anonymous" val_type="string"
             desc="Server connection" default="">
-            <values>
-                <name val="ARCA"/>
-                <name val="NSDQ"/>
-            </values>
+            <name val="ARCA"/>
+            <name val="NSDQ"/>
             <option name="address" val_type="string" desc="Server address"/>
         </option>
+    </option>
+    <option name="section">
+        <option name="location" val_type="int"/>
+    </option>
+    <option name="section2" required="false">
+        <option name="abc" val_type="string" default="x"/>
     </option>
 </config>

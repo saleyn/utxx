@@ -97,34 +97,42 @@ namespace <xsl:value-of select="@namespace"/> {
     <xsl:for-each select="option | include">
         <xsl:choose>
             <xsl:when test="self::node()[self::option]">
-                <xsl:value-of select="$ws"/><xsl:text>{
-</xsl:text>
-                <xsl:value-of select="$ws2"/>ovec l_children<xsl:value-of select="$level"/><xsl:text>; sset l_names; vset l_values;
-</xsl:text>
-            <xsl:call-template name="process_options">
-                <xsl:with-param name="level" select="$level+1"/>
-                <xsl:with-param name="arg" select="concat('l_children',$level)"/>
-            </xsl:call-template>
-            
-            <xsl:for-each select="values/name">
-                <xsl:value-of select="$ws2"/><xsl:text>l_names.insert("</xsl:text>
-                <xsl:value-of select="@val"/>
-                <xsl:text>");
-</xsl:text>
-            </xsl:for-each>
-
-            <xsl:for-each select="values/value">
-                <xsl:value-of select="$ws2"/><xsl:text>l_values.insert(variant(</xsl:text>
-                <xsl:call-template name="value-to-string">
-                    <xsl:with-param name="value" select="@val"/>
-                    <xsl:with-param name="type" select="../../@val_type"/>
+                <xsl:value-of select="$ws"/><xsl:text>{&#10;</xsl:text>
+                <xsl:value-of select="$ws2"/>
+                <xsl:text>ovec l_children</xsl:text>
+                <xsl:value-of select="$level"/>
+                <xsl:text>; sset l_names; vset l_values;&#10;</xsl:text>
+                <xsl:call-template name="process_options">
+                    <xsl:with-param name="level" select="$level+1"/>
+                    <xsl:with-param name="arg" select="concat('l_children',$level)"/>
                 </xsl:call-template>
-                <xsl:text>));
-</xsl:text>
-            </xsl:for-each>
+                
+                <xsl:for-each select="name">
+                    <xsl:value-of select="$ws2"/><xsl:text>l_names.insert("</xsl:text>
+                    <xsl:call-template name="value-to-string">
+                        <xsl:with-param name="value" select="@val"/>
+                        <xsl:with-param name="type" select="../@type"/>
+                    </xsl:call-template>
+                    <xsl:text>");&#10;</xsl:text>
+                </xsl:for-each>
 
-            <xsl:value-of select="$ws2"/><xsl:value-of select="$arg"/><xsl:text>.push_back(
-</xsl:text> <xsl:value-of select="$ws4"/>option("<xsl:value-of select="@name"/><xsl:text>", </xsl:text>
+                <xsl:for-each select="value">
+                    <xsl:value-of select="$ws2"/><xsl:text>l_values.insert(variant(</xsl:text>
+                    <xsl:call-template name="value-to-string">
+                        <xsl:with-param name="value" select="@val"/>
+                        <xsl:with-param name="type" select="../@val_type"/>
+                    </xsl:call-template>
+                    <xsl:text>));&#10;</xsl:text>
+                </xsl:for-each>
+
+                <xsl:value-of select="$ws2"/>
+                <xsl:value-of select="$arg"/>
+                <xsl:text>.push_back(&#10;</xsl:text>
+                <xsl:text> </xsl:text>
+                <xsl:value-of select="$ws4"/>
+                <xsl:text>option("</xsl:text>
+                <xsl:value-of select="@name"/>
+                <xsl:text>", </xsl:text>
                 <xsl:choose>
                     <xsl:when test="@type">
                         <xsl:call-template name="string-to-type">
@@ -133,23 +141,50 @@ namespace <xsl:value-of select="@namespace"/> {
                             <xsl:with-param name="type" select="@type"/>
                         </xsl:call-template>
                     </xsl:when>
+                    <xsl:when test="count(option) > 0">BRANCH</xsl:when>
                     <xsl:otherwise><xsl:text>STRING</xsl:text></xsl:otherwise>
                 </xsl:choose>
                 <xsl:text>, </xsl:text>
+                <xsl:variable name="type">
+                    <xsl:choose>
+                        <xsl:when test="not(@type) and count(option) > 0">string</xsl:when>
+                        <xsl:otherwise><xsl:value-of select="@val_type"/></xsl:otherwise>
+                    </xsl:choose>
+                </xsl:variable>
                 <xsl:call-template name="string-to-type">
                     <xsl:with-param name="name" select="@name"/>
                     <xsl:with-param name="kind" select="'type_of_value'"/>
-                    <xsl:with-param name="type" select="@val_type"/>
+                    <xsl:with-param name="type" select="$type"/>
                 </xsl:call-template>
                 <xsl:text>, "</xsl:text><xsl:value-of select="@desc"/><xsl:text>", </xsl:text>
                 <xsl:choose>
-                    <xsl:when test="@unique">
-                        <xsl:value-of select="@unique"/>
-                    </xsl:when>
-                    <xsl:otherwise>true</xsl:otherwise>
+                    <xsl:when test="@unique = 'true'"><xsl:text>true</xsl:text></xsl:when>
+                    <xsl:when test="@unique = 'false'"><xsl:text>false</xsl:text></xsl:when>
+                    <xsl:when test="not(@unique)"><xsl:text>true</xsl:text></xsl:when>
+                    <xsl:otherwise>
+                        <xsl:message terminate="yes">
+                            <xsl:text>Invalid value of the 'unique' attribute </xsl:text>
+                            <xsl:value-of select="@unique"/><xsl:text>of option </xsl:text>
+                            <xsl:value-of select="@name"/>
+                        </xsl:message>
+                    </xsl:otherwise>
                 </xsl:choose>
-                <xsl:text>,
-</xsl:text>     <xsl:value-of select="$ws4"/><xsl:text>  </xsl:text>
+                <xsl:text>, </xsl:text>
+                <xsl:choose>
+                    <xsl:when test="@required = 'true'"><xsl:text>true</xsl:text></xsl:when>
+                    <xsl:when test="@required = 'false'"><xsl:text>false</xsl:text></xsl:when>
+                    <xsl:when test="not(@required)"><xsl:text>true</xsl:text></xsl:when>
+                    <xsl:otherwise>
+                        <xsl:message terminate="yes">
+                            <xsl:text>Invalid value of the 'required' attribute </xsl:text>
+                            <xsl:value-of select="@required"/><xsl:text>of option </xsl:text>
+                            <xsl:value-of select="@name"/>
+                        </xsl:message>
+                    </xsl:otherwise>
+                </xsl:choose>
+                <xsl:text>,&#10;</xsl:text>
+                <xsl:value-of select="$ws4"/>
+                <xsl:text>  </xsl:text>
                 <xsl:choose>
                     <xsl:when test="@default">
                         <xsl:text>variant(</xsl:text>
@@ -180,9 +215,8 @@ namespace <xsl:value-of select="@namespace"/> {
                     <xsl:otherwise><xsl:text>variant()</xsl:text></xsl:otherwise>
                 </xsl:choose>
                 <xsl:text>, l_names, l_values, l_children</xsl:text>
-                <xsl:value-of select="$level"/><xsl:text>));
-</xsl:text>     <xsl:value-of select="$ws"/><xsl:text>}
-</xsl:text>
+                <xsl:value-of select="$level"/><xsl:text>));&#10;</xsl:text>
+                <xsl:value-of select="$ws"/><xsl:text>}&#10;</xsl:text>
             </xsl:when>
             <xsl:when test="self::node()[self::include]">
                 <xsl:variable name="inc" select="document(@file)"/>
