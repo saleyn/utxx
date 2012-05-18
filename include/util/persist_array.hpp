@@ -209,7 +209,7 @@ namespace util {
     {
         static const size_t s_pack_size = getpagesize();
 
-        size_t sz = (a_max_recs+1) * sizeof(T);
+        size_t sz = sizeof(header) + (a_max_recs * sizeof(T));
         sz += sz % s_pack_size;
 
         bool l_exists;

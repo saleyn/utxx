@@ -119,6 +119,7 @@ public:
         return s_midnight_seconds - s_utc_offset;
     }
 
+    /// Number of seconds since midnight in local time zone for a given UTC time.
     static time_t local_seconds_since_midnight(time_t a_utc_time) {
         time_t tm = a_utc_time + utc_offset();
         return tm % 86400;
