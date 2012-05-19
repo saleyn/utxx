@@ -198,21 +198,47 @@ namespace <xsl:value-of select="@namespace"/> {
                 </xsl:choose>
                 <xsl:text>, </xsl:text>
                 <xsl:choose>
-                    <xsl:when test="@min">
-                        <xsl:text>variant(</xsl:text>
-                        <xsl:value-of select="@min"/>
-                        <xsl:text>)</xsl:text>
+                    <xsl:when test="(@val_type = 'int' or @val_type = 'float') and @min">
+                        <xsl:text>variant(</xsl:text><xsl:value-of select="@min"/><xsl:text>)</xsl:text>
+                    </xsl:when>
+                    <xsl:when test="@val_type = 'string' and @min_length">
+                        <xsl:text>variant(</xsl:text><xsl:value-of select="@min_length"/><xsl:text>)</xsl:text>
+                    </xsl:when>
+                    <xsl:when test="@min or @min_length">
+                        <xsl:message terminate="yes">
+                            <xsl:text>Invalid attribute </xsl:text>
+                            <xsl:if test="@min"><xsl:text>'min'</xsl:text></xsl:if>
+                            <xsl:if test="@min_length"><xsl:text>'min_length'</xsl:text></xsl:if>
+                            <xsl:text> specified for field: </xsl:text>
+                            <xsl:value-of select="@name"/>
+                            <xsl:text>, value type: </xsl:text>
+                            <xsl:value-of select="@val_type"/>
+                        </xsl:message>
                     </xsl:when>
                     <xsl:otherwise><xsl:text>variant()</xsl:text></xsl:otherwise>
                 </xsl:choose>
                 <xsl:text>, </xsl:text>
                 <xsl:choose>
-                    <xsl:when test="@max">
-                        <xsl:text>variant(</xsl:text>
-                        <xsl:value-of select="@max"/>
-                        <xsl:text>)</xsl:text>
+                    <xsl:when test="(@val_type = 'int' or @val_type = 'float') and @max">
+                        <xsl:text>variant(</xsl:text><xsl:value-of select="@max"/><xsl:text>)</xsl:text>
                     </xsl:when>
-                    <xsl:otherwise><xsl:text>variant()</xsl:text></xsl:otherwise>
+                    <xsl:when test="@val_type = 'string' and @max_length">
+                        <xsl:text>variant(</xsl:text><xsl:value-of select="@max_length"/><xsl:text>)</xsl:text>
+                    </xsl:when>
+                    <xsl:when test="@max or @max_length">
+                        <xsl:message terminate="yes">
+                            <xsl:text>Invalid attribute </xsl:text>
+                            <xsl:if test="@max"><xsl:text>'max'</xsl:text></xsl:if>
+                            <xsl:if test="@max_length"><xsl:text>'max_length'</xsl:text></xsl:if>
+                            <xsl:text> specified for field: </xsl:text>
+                            <xsl:value-of select="@name"/>
+                            <xsl:text>, value type: </xsl:text>
+                            <xsl:value-of select="@val_type"/>
+                        </xsl:message>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:text>variant()</xsl:text>
+                    </xsl:otherwise>
                 </xsl:choose>
                 <xsl:text>, l_names, l_values, l_children</xsl:text>
                 <xsl:value-of select="$level"/><xsl:text>));&#10;</xsl:text>

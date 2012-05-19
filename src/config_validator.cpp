@@ -83,9 +83,9 @@ std::string option::to_string() const {
     if (!default_value.is_null())
         s << ",default=" << value(default_value);
     if (!min_value.is_null())
-        s << ",min=" << value(min_value);
+        s << (value_type == STRING ? ",min_length=" : ",min=") << value(min_value);
     if (!max_value.is_null())
-        s << ",min=" << value(max_value);
+        s << (value_type == STRING ? ",max_length=" : ",max=") << value(max_value);
     s << ",required="   << (required ? "true" : "false");
     s << ",unique="     << (unique ? "true" : "false");
     if (children.size()) {
@@ -274,6 +274,12 @@ void validator::check_option(const std::string& a_root, variant_tree::value_type
             case STRING:
                 if (a_vt.second.data().type() != variant::TYPE_STRING)
                     throw std::invalid_argument("Wrong type - expected string!");
+                if (!a_opt.min_value.is_null() &&
+                     a_vt.second.data().to_str().size() < (size_t)a_opt.min_value.to_int())
+                    throw std::invalid_argument("String value too short!");
+                if (!a_opt.max_value.is_null() &&
+                     a_vt.second.data().to_str().size() > (size_t)a_opt.max_value.to_int())
+                    throw std::invalid_argument("String value too long!");
                 break;
             case INT:
                 if (a_vt.second.data().type() != variant::TYPE_INT)
@@ -389,14 +395,19 @@ std::ostream& validator::dump(std::ostream& out, const std::string& a_indent,
                     << value(opt.default_value) << std::endl;
         } else
             out << l_indent << "     Required: true" << std::endl;
+
         if (!opt.min_value.is_null() || !opt.max_value.is_null())
             out << l_indent << "         "
                 << (!opt.min_value.is_null()
-                        ? std::string(  " Min: ") + value(opt.min_value)
-                        : std::string(""))
+                        ? std::string(opt.value_type == STRING
+                                       ? "MinLength: " : " Min: ")
+                            + value(opt.min_value)
+                        : std::string())
                 << (!opt.max_value.is_null()
-                        ? std::string(  " Max: ") + value(opt.max_value)
-                        : std::string(""));
+                        ? std::string(opt.value_type == STRING
+                                       ? "MaxLength: " : " Max: ")
+                            + value(opt.max_value)
+                        : std::string());
         out << std::endl;
         if (opt.children.size())
             dump(out, l_indent, a_level+2, opt.children);
