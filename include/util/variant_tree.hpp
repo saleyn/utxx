@@ -359,6 +359,9 @@ private:
         const variant_tree::path_type& a, const variant& v) { return v; }
 };
 
+/// Path in the tree derived from boost/property_tree/string_path.hpp
+typedef typename variant_tree::path_type tree_path;
+
 } // namespace util
 
 #endif // _UTIL_VARIANT_TREE_HPP_

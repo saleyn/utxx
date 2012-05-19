@@ -309,3 +309,12 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_variant_tree_path )
+{
+    const char s_path[] = "one.two.three";
+    tree_path a(s_path);
+    BOOST_REQUIRE(!a.single());
+    BOOST_REQUIRE_EQUAL("one", a.reduce());
+    BOOST_REQUIRE_EQUAL(s_path, a.dump());
+    BOOST_REQUIRE_EQUAL(std::string(s_path) + ".four", (a / "four").dump());
+}
