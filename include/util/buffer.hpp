@@ -338,41 +338,43 @@ struct io_buffer {
     basic_io_buffer<OutBufSize> out;
 };
 
-/**
- * \brief used by buffered_queue
- */
-template <bool False, typename Alloc>
-struct basic_buffered_queue {
-    typedef boost::asio::const_buffer buf_t;
-    typedef std::deque<buf_t, Alloc> deque;
-    basic_buffered_queue(const Alloc&) {}
-    void deallocate(deque *) {}
-};
+namespace {
+    /**
+     * \brief used by buffered_queue
+     */
+    template <bool False, typename Alloc>
+    struct basic_buffered_queue {
+        typedef boost::asio::const_buffer buf_t;
+        typedef std::deque<buf_t, Alloc> deque;
+        basic_buffered_queue(const Alloc&) {}
+        void deallocate(deque *) {}
+    };
 
-template <typename Alloc>
-struct basic_buffered_queue<true, Alloc> {
-    typedef boost::asio::const_buffer buf_t;
-    typedef std::deque<buf_t, Alloc> deque;
-    typedef typename Alloc::template rebind<char>::other alloc_t;
-    alloc_t m_allocator;
+    template <typename Alloc>
+    struct basic_buffered_queue<true, Alloc> {
+        typedef boost::asio::const_buffer buf_t;
+        typedef std::deque<buf_t, Alloc> deque;
+        typedef typename Alloc::template rebind<char>::other alloc_t;
+        alloc_t m_allocator;
 
-    basic_buffered_queue(const Alloc& a_alloc) : m_allocator(a_alloc) {}
+        basic_buffered_queue(const Alloc& a_alloc) : m_allocator(a_alloc) {}
 
-    /// Allocate space to be later enqueued to this buffer.
-    template <class T>
-    T* allocate(size_t a_size) {
-        return static_cast<T*>(m_allocator.allocate(a_size));
-    }
-
-    /// Deallocate space used by buffer.
-    void deallocate(deque *p) {
-        BOOST_FOREACH(buf_t& b, *p) {
-            m_allocator.deallocate(
-                const_cast<char *>(boost::asio::buffer_cast<const char *>(b)),
-                boost::asio::buffer_size(b));
+        /// Allocate space to be later enqueued to this buffer.
+        template <class T>
+        T* allocate(size_t a_size) {
+            return static_cast<T*>(m_allocator.allocate(a_size));
         }
-    }
-};
+
+        /// Deallocate space used by buffer.
+        void deallocate(deque *p) {
+            BOOST_FOREACH(buf_t& b, *p) {
+                m_allocator.deallocate(
+                    const_cast<char *>(boost::asio::buffer_cast<const char *>(b)),
+                    boost::asio::buffer_size(b));
+            }
+        }
+    };
+}
 
 /**
  * \brief A stream that can be used for asyncronous output with boost::asio.
