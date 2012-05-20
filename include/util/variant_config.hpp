@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------------
 /// \file variant_config.hpp
 //----------------------------------------------------------------------------
-/// Defines configuration error and config_path for ease of configuration
-/// management.
+/// Defines config_tree, config_path, and config_error classes for
+/// ease of configuration management.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Omnibius, LLC
 // Author:  Serge Aleynikov <saleyn@gmail.com>
