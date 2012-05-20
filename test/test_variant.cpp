@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/mpl/integral_c.hpp>
 #include <util/variant.hpp>
 #include <util/variant_tree.hpp>
+#include <util/variant_config.hpp>
 #include <util/verbosity.hpp>
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/detail/info_parser_read.hpp>
@@ -253,7 +254,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         BOOST_REQUIRE_EQUAL(1, tree.get<int>("key1"));
         BOOST_REQUIRE_EQUAL(true, tree.get<bool>("key2"));
         BOOST_REQUIRE_EQUAL(10.0, tree.get<double>("key3"));
-        BOOST_REQUIRE_EQUAL(2, tree.count("key4"));
+        BOOST_REQUIRE_EQUAL(2u, tree.count("key4"));
 
         //tree.swap(pt);
         //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(
@@ -317,4 +318,10 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
     BOOST_REQUIRE_EQUAL("one", a.reduce());
     BOOST_REQUIRE_EQUAL(s_path, a.dump());
     BOOST_REQUIRE_EQUAL(std::string(s_path) + ".four", (a / "four").dump());
+
+    try {
+        throw config_error(config_path(s_path));
+    } catch (config_error& e) {
+        BOOST_REQUIRE_EQUAL(s_path, e.path());
+    }
 }

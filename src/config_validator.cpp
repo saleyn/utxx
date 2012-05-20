@@ -105,18 +105,12 @@ std::string option::to_string() const {
 std::string validator::format_name(const std::string& a_root, const option& a_opt,
     const std::string& a_cfg_opt, const std::string& a_cfg_value) const
 {
-    std::string s;
-    if (a_root.empty()) s = std::string("/");
-    else if (a_root[0] != '/') s = '/' + a_root;
-    else s = a_root;
-
-    if (s[s.size()-1] != '/') s += '/';
-    s += a_opt.name;
+    config_path s = config_path(a_root) / a_opt.name;
     if (a_cfg_opt != std::string() && a_cfg_opt != a_opt.name) // && a_opt.opt_type == ANONYMOUS)
-        s += '.' + a_cfg_opt;
+        s /= a_cfg_opt;
     if (a_cfg_value != std::string()) // && !a_opt.unique)
-        s += '[' + a_cfg_value + ']';
-    return s;
+        s = s.dump() + '[' + a_cfg_value + ']';
+    return s.dump();
 }
 
 void validator::validate(variant_tree& a_config, const option_vector& a_opts,           

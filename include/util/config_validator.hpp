@@ -173,7 +173,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTIL_CONFIG_VALIDATOR_HPP_
 #define _UTIL_CONFIG_VALIDATOR_HPP_
 
-#include <util/variant_tree.hpp>
+#include <util/variant_config.hpp>
 #include <util/error.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -324,8 +324,8 @@ namespace config {
         }
     };
 
-} // namespace util
 } // namespace config
+} // namespace util
 
 #endif // _UTIL_CONFIG_VALIDATOR_HPP_
 

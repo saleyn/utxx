@@ -360,7 +360,7 @@ private:
 };
 
 /// Path in the tree derived from boost/property_tree/string_path.hpp
-typedef typename variant_tree::path_type tree_path;
+typedef typename variant_tree::path_type    tree_path;
 
 } // namespace util
 

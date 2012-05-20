@@ -106,42 +106,6 @@ namespace detail {
 }
 
 /**
- * \brief Exception class for configuration related errors.
- * Example use:
- *   <tt>throw config_error(a_path, a_option, "Test ") << 1 << " result:" << 2;</tt>
- */
-class config_error : public detail::streamed_exception {
-    std::string m_option;
-public:
-    config_error(const std::string& a_option) : m_option(a_option) {}
-
-    template <class T>
-    config_error(const std::string& a_option, T a) : m_option(a_option) {
-        *this << a;
-    }
-
-    template <class T1, class T2>
-    config_error(const std::string& a_option, T1 a1, T2 a2) : m_option(a_option) {
-        *this << a1 << a2;
-    }
-
-    template <class T1, class T2, class T3>
-    config_error(const std::string& a_option, T1 a1, T2 a2, T3 a3) : m_option(a_option) {
-        *this << a1 << a2 << a3;
-    }
-
-    virtual ~config_error() throw() {}
-
-    const std::string& option() const { return m_option; }
-
-    virtual std::string str() const {
-        std::stringstream s;
-        s << "Config error [" << m_option << "]: " << m_out->str();
-        return s.str();
-    }
-};
-
-/**
  * \brief Exception class for I/O related errors.
  * Note that we can't have a noncopyable stringstream as a 
  * member if we allow the following use:
