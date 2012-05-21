@@ -114,8 +114,8 @@ config_path validator::format_name(const config_path& a_root,
     return s;
 }
 
-void validator::validate(config_tree& a_config, const option_vector& a_opts,           
-    const config_path& a_root, bool a_fill_defaults) const throw (config_error)
+void validator::validate(const config_path& a_root, config_tree& a_config,
+    const option_vector& a_opts, bool a_fill_defaults) const throw (config_error)
 {
     check_unique(a_root, a_config, a_opts);
     check_required(a_root, a_config, a_opts);
@@ -347,8 +347,8 @@ void validator::check_option(const config_path& a_root, variant_tree::value_type
                     "Value is not allowed for option!");
             }
         if (!a_opt.children.empty())
-            validate(static_cast<config_tree&>(a_vt.second), a_opt.children,
-                a_root / a_opt.name, a_fill_defaults);
+            validate(a_root / a_opt.name, static_cast<config_tree&>(a_vt.second),
+                a_opt.children, a_fill_defaults);
     } catch (std::invalid_argument& e) {
         throw config_error(format_name(a_root, a_opt, a_vt.first,       
                 a_vt.second.data().to_string()),

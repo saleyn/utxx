@@ -323,4 +323,11 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
     } catch (config_error& e) {
         BOOST_REQUIRE_EQUAL(s_path, e.path());
     }
+
+    {
+        config_path s(s_path);
+        s = s / std::make_pair("four", "ABC");
+        std::string exp = std::string(s_path) + ".four[ABC]";
+        BOOST_REQUIRE_EQUAL(exp, s.dump());
+    }
 }

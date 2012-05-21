@@ -362,28 +362,54 @@ private:
 /// Path in the tree derived from boost/property_tree/string_path.hpp
 typedef typename variant_tree::path_type tree_path;
 
-inline tree_path operator/ (const tree_path& a, const std::string& s) {
-    tree_path t(a);
+} // namespace util
+
+inline util::tree_path operator/ (const util::tree_path& a, const std::string& s) {
+    util::tree_path t(a);
     t /= s;
     return t;
 }
 
-inline tree_path operator/ (const tree_path& a, const char* s) {
-    tree_path t(a);
+inline util::tree_path operator/ (const util::tree_path& a,
+    const std::pair<std::string,std::string>& a_option_with_value)
+{
+    std::string s = a_option_with_value.first + '[' + a_option_with_value.second + ']';
+    util::tree_path t(a);
     t /= s;
     return t;
 }
 
-inline tree_path& operator/ (tree_path& a, const std::string& s) {
+inline util::tree_path operator/ (const util::tree_path& a,
+    const std::pair<const char*,const char*>& a_option_with_value)
+{
+    std::string s = std::string(a_option_with_value.first)
+                  + '[' + a_option_with_value.second + ']';
+    util::tree_path t(a);
+    t /= s;
+    return t;
+}
+
+inline util::tree_path& operator/ (util::tree_path& a, const std::string& s) {
     return a /= s;
 }
 
-inline tree_path operator/ (const std::string& a, const tree_path& s) {
-    tree_path t(a);
+inline util::tree_path& operator/ (util::tree_path& a,
+    const std::pair<std::string,std::string>& a_option_with_value)
+{
+    return a /= a_option_with_value.first + '[' + a_option_with_value.second + ']';
+}
+
+inline util::tree_path& operator/ (util::tree_path& a,
+    const std::pair<const char*,const char*>& a_option_with_value)
+{
+    return a /= (std::string(a_option_with_value.first) +
+                 '[' + a_option_with_value.second + ']');
+}
+
+inline util::tree_path operator/ (const std::string& a, const util::tree_path& s) {
+    util::tree_path t(a);
     t /= s;
     return t;
 }
-
-} // namespace util
 
 #endif // _UTIL_VARIANT_TREE_HPP_

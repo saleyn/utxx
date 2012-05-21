@@ -281,8 +281,8 @@ namespace config {
     protected:
         option_vector m_options;
 
-        void validate(config_tree& a_config, const option_vector& a_opts,
-            const config_path& a_root, bool fill_defaults) const throw (config_error);
+        void validate(const config_path& a_root, config_tree& a_config,
+            const option_vector& a_opts, bool fill_defaults) const throw (config_error);
 
     public:
         virtual ~validator() {}
@@ -297,12 +297,12 @@ namespace config {
         /// @return vector of configuration options
         const option_vector& options() const { return m_options; }
 
-        inline void validate(config_tree& a_config, bool a_fill_defaults,
+        void validate(config_tree& a_config, bool a_fill_defaults,
                 const config_path& a_root = config_path()) const throw(config_error) {
-            validate(a_config, m_options, a_root, a_fill_defaults);
+            validate(a_root, a_config, m_options, a_fill_defaults);
         }
 
-        inline void validate(const config_tree& a_config,
+        void validate(const config_tree& a_config,
                 const config_path& a_root = config_path()) const throw(config_error) {
             config_tree l_config(a_config);
             validate(l_config, false, a_root);
