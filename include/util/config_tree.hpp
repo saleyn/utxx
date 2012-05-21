@@ -44,6 +44,9 @@ namespace util {
 typedef variant_tree config_tree;
 /// Configuration path derived from boost/property_tree/string_path.hpp
 typedef tree_path config_path;
+// Errors thrown on bad data
+typedef boost::property_tree::ptree_bad_data config_bad_data;
+typedef boost::property_tree::ptree_bad_path config_bad_path;
 
 /**
  * \brief Exception class for configuration related errors.

@@ -62,7 +62,7 @@ namespace </xsl:text>
     <xsl:call-template name="print-all-constants"/>
     
     <xsl:text>&#10;    namespace {
-        typedef option_vector ovec;
+        typedef option_map    ovec;
         typedef string_set    sset;
         typedef variant_set   vset;
     }
@@ -73,7 +73,9 @@ namespace </xsl:text>
     <xsl:value-of select="@name"/><xsl:text>() { init(); }&#10;</xsl:text>
     <xsl:text>
         void init() {
-            clear();&#10;</xsl:text>
+            clear();
+            m_root = "</xsl:text><xsl:value-of select="@namespace"/>
+            <xsl:text>";&#10;&#10;</xsl:text>
     <xsl:call-template name="process_options">
         <xsl:with-param name="level">0</xsl:with-param>
         <xsl:with-param name="arg">m_options</xsl:with-param>
@@ -136,12 +138,14 @@ namespace </xsl:text>
 
                     <xsl:value-of select="$ws2"/>
                     <xsl:value-of select="$arg"/>
-                    <xsl:text>.push_back(&#10;</xsl:text>
+                    <xsl:text>.insert(&#10;</xsl:text>
                     <xsl:text> </xsl:text>
                     <xsl:value-of select="$ws4"/>
-                    <xsl:text>option("</xsl:text>
-                    <xsl:value-of select="@name"/>
-                    <xsl:text>", </xsl:text>
+                    <xsl:text>std::make_pair(CFG_</xsl:text>
+                    <xsl:value-of select="translate(@name, $smallcase, $uppercase)"/>
+                    <xsl:text>, option(CFG_</xsl:text>
+                    <xsl:value-of select="translate(@name, $smallcase, $uppercase)"/>
+                    <xsl:text>, </xsl:text>
                     <xsl:choose>
                         <xsl:when test="@type">
                             <xsl:call-template name="string-to-type">
@@ -250,7 +254,7 @@ namespace </xsl:text>
                         </xsl:otherwise>
                     </xsl:choose>
                     <xsl:text>, l_names, l_values, l_children</xsl:text>
-                    <xsl:value-of select="$level"/><xsl:text>));&#10;</xsl:text>
+                    <xsl:value-of select="$level"/><xsl:text>)));&#10;</xsl:text>
                     <xsl:value-of select="$ws"/><xsl:text>}&#10;</xsl:text>
                 </xsl:when>
                 <xsl:when test="self::node()[self::include]">

@@ -91,15 +91,50 @@ std::string option::to_string() const {
     if (children.size()) {
         bool l_first = true;
         s << ",children=[";
-        BOOST_FOREACH(const option& o, children) {
+        BOOST_FOREACH(const typename option_map::value_type& o, children) {
             if (!l_first) s << ",";
             l_first = false;
-            s << "\n  " << o.to_string();
+            s << "\n  " << o.second.to_string();
         }
         s << "\n]";
     }
     s << "}";
     return s.str();
+}
+
+const variant& validator::default_value(const config_path& a_path)
+    const throw (config_error)
+{
+    static const variant s_null;
+
+    if (a_path.empty() || m_root.empty())
+        return s_null;
+
+    config_path s(a_path), t(a_path), r(m_root);
+    std::string s1, r1;
+    do {
+       s1 = s.reduce(), r1 = r.reduce();
+    } while (s1 == r1 && !s.empty() && !r.empty());
+
+    if (s.empty())
+        return s_null;
+
+    return find_default(a_path, s, m_options);
+}
+
+const variant& validator::find_default(
+    const config_path& a_option, config_path& a_suffix,
+    const option_map& a_options) throw (config_error)
+{
+    std::string s = a_suffix.reduce();
+    option_map::const_iterator it = a_options.find(s);
+    if (it == a_options.end())
+        throw config_error(a_option / s, "Invalid option!");
+
+    if (a_suffix.empty())
+        return it->second.default_value;
+
+    return find_default(a_option, a_suffix, it->second.children);
 }
 
 config_path validator::format_name(const config_path& a_root,
@@ -115,14 +150,15 @@ config_path validator::format_name(const config_path& a_root,
 }
 
 void validator::validate(const config_path& a_root, config_tree& a_config,
-    const option_vector& a_opts, bool a_fill_defaults) const throw (config_error)
+    const option_map& a_opts, bool a_fill_defaults) const throw (config_error)
 {
     check_unique(a_root, a_config, a_opts);
     check_required(a_root, a_config, a_opts);
 
-    BOOST_FOREACH(variant_tree::value_type& vt, a_config) {
+    BOOST_FOREACH(config_tree::value_type& vt, a_config) {
         bool l_match = false;
-        BOOST_FOREACH(const option& opt, a_opts) {
+        BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+            const option& opt = ovt.second;
             if (opt.opt_type == ANONYMOUS) {
                 if (!all_anonymous(a_opts))
                     throw config_error(format_name(a_root, opt,
@@ -146,13 +182,14 @@ void validator::validate(const config_path& a_root, config_tree& a_config,
 }
 
 void validator::check_required(const config_path& a_root,
-    const config_tree& a_config, const option_vector& a_opts) const throw (config_error)
+    const config_tree& a_config, const option_map& a_opts) const throw (config_error)
 {
     #ifdef TEST_CONFIG_VALIDATOR
     std::cout << "check_required(" << a_root << ", cfg.count=" << a_config.size()
         << ", opts.count=" << a_opts.size() << ')' << std::endl;
     #endif
-    BOOST_FOREACH(const option& opt, a_opts) {
+    BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+        const option& opt = ovt.second;
         if (opt.required && opt.default_value.is_null()) {
             #ifdef TEST_CONFIG_VALIDATOR
             std::cout << "  checking_option(" << format_name(a_root, opt) << ")"
@@ -167,7 +204,7 @@ void validator::check_required(const config_path& a_root,
                         "Check XML spec. Missing required value of anonymous option!");
             } else {
                 bool l_found = false;
-                BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
+                BOOST_FOREACH(const config_tree::value_type& vt, a_config)
                     if (vt.first == opt.name) {
                         #ifdef TEST_CONFIG_VALIDATOR
                         std::cout << "    found: "
@@ -212,10 +249,10 @@ void validator::check_required(const config_path& a_root,
                 std::cout << "  Checking children of anonymous node "
                     << format_name(a_root, opt) << std::endl;
             #endif
-            BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
+            BOOST_FOREACH(const config_tree::value_type& vt, a_config)
                 check_required(
                     format_name(a_root, opt, vt.first, vt.second.data().to_string()),
-                    static_cast<const variant_tree&>(vt.second), opt.children);
+                    static_cast<const config_tree&>(vt.second), opt.children);
         } else {
             #ifdef TEST_CONFIG_VALIDATOR
             if (opt.children.size())
@@ -225,7 +262,7 @@ void validator::check_required(const config_path& a_root,
             bool l_has_req = has_required_child_options(opt.children, l_req_name);
             bool l_found   = false;
 
-            BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
+            BOOST_FOREACH(const config_tree::value_type& vt, a_config)
                 if (vt.first == opt.name) {
                     l_found = true;
                     if (l_has_req) {
@@ -236,7 +273,7 @@ void validator::check_required(const config_path& a_root,
                                     l_req_name.dump());
                         check_required(
                             format_name(a_root, opt, vt.first, vt.second.data().to_string()),
-                            static_cast<const variant_tree&>(vt.second), opt.children);
+                            static_cast<const config_tree&>(vt.second), opt.children);
                     }
                     if (!opt.children.size() && vt.second.size())
                         throw config_error(format_name(a_root, opt, vt.first,
@@ -252,7 +289,7 @@ void validator::check_required(const config_path& a_root,
 }
 
 
-void validator::check_option(const config_path& a_root, variant_tree::value_type& a_vt, 
+void validator::check_option(const config_path& a_root, config_tree::value_type& a_vt, 
     const option& a_opt, bool a_fill_defaults) const throw(config_error)
 {
     try {
@@ -373,9 +410,10 @@ std::string validator::usage(const std::string& a_indent) const {
 }
 
 std::ostream& validator::dump(std::ostream& out, const std::string& a_indent,
-        int a_level, const option_vector& a_opts) {
+        int a_level, const option_map& a_opts) {
     std::string l_indent = a_indent + std::string(a_level, ' ');
-    BOOST_FOREACH(const option& opt, a_opts) {
+    BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+        const option& opt = ovt.second;
         out << l_indent << opt.name
             << (opt.opt_type == ANONYMOUS ? " (anonymous): " : ": ")
             << type_to_string(opt.value_type) << std::endl;
@@ -412,27 +450,30 @@ std::ostream& validator::dump(std::ostream& out, const std::string& a_indent,
     return out;
 }
 
-void validator::check_unique(const config_path& a_root, const variant_tree& a_config,
-        const option_vector& a_opts) const throw(config_error) {
+void validator::check_unique(const config_path& a_root, const config_tree& a_config,
+        const option_map& a_opts) const throw(config_error) {
     string_set l_names;
     BOOST_ASSERT(a_opts.size() > 0);
-    BOOST_FOREACH(const variant_tree::value_type& vt, a_config) {
+    BOOST_FOREACH(const config_tree::value_type& vt, a_config) {
         if (l_names.find(vt.first) == l_names.end())
             l_names.insert(vt.first);
         else {
-            BOOST_FOREACH(const option& o, a_opts)
+            BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+                const option& o = ovt.second;
                 if (o.name == vt.first && o.unique)
                     throw config_error(format_name(a_root, o, vt.first,
                           vt.second.data().to_string()),
                           "Non-unique config option found!");
+            }
         }
     }
 }
 
-bool validator::has_required_child_options(const option_vector& a_opts,
+bool validator::has_required_child_options(const option_map& a_opts,
     config_path& a_req_option_path) const
 {
-    BOOST_FOREACH(const option& opt, a_opts) {
+    BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+        const option& opt = ovt.second;
         config_path l_path = a_req_option_path / opt.name;
         if (opt.required) {
             a_req_option_path = l_path;

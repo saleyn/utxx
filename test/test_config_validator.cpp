@@ -90,14 +90,6 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
         "  Description: Sample string entry\n"
         "      Default: \"123.124.125.012\"\n"
         "\n"
-        "enabled: bool\n"
-        "  Description: Sample bool entry\n"
-        "      Default: true\n"
-        "\n"
-        "duration: int\n"
-        "  Description: Sample required int entry\n"
-        "     Required: true\n"
-        "          Min: 10 Max: 60\n"
         "cost: float\n"
         "  Description: Sample float entry\n"
         "      Default: 1.5\n"
@@ -114,6 +106,14 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
         "      address: string\n"
         "        Description: Server address\n"
         "           Required: true\n"
+        "\n"
+        "duration: int\n"
+        "  Description: Sample required int entry\n"
+        "     Required: true\n"
+        "          Min: 10 Max: 60\n"
+        "enabled: bool\n"
+        "  Description: Sample bool entry\n"
+        "      Default: true\n"
         "\n"
         "section: string\n"
         "     Required: true\n"
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
         l_validator.validate(l_config, true);
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
-        BOOST_REQUIRE_EQUAL("duration", e.path());
+        BOOST_REQUIRE_EQUAL("country", e.path());
         BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
     }
 }
@@ -498,3 +498,16 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
 
 }
 
+BOOST_AUTO_TEST_CASE( test_config_validator_def )
+{
+    test::cfg_validator l_validator;
+    BOOST_REQUIRE_EQUAL(variant("123.124.125.012"), l_validator.default_value("test.address"));
+    BOOST_REQUIRE_EQUAL(variant(true), l_validator.default_value("test.enabled"));
+    BOOST_REQUIRE_EQUAL(variant(1.5), l_validator.default_value("test.cost"));
+    BOOST_REQUIRE_EQUAL(variant("x"), l_validator.default_value("test.section2.abc"));
+    BOOST_REQUIRE_THROW(l_validator.default_value("a.b.c"), util::config_error);
+
+    config_tree l_config;
+    bool b = l_validator.get<bool>("test.enabled", l_config);
+    BOOST_REQUIRE(b);
+}

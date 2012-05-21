@@ -179,7 +179,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/algorithm/string/join.hpp>
 #include <set>
 #include <list>
-#include <vector>
+#include <map>
 
 namespace util {
 namespace config {
@@ -196,9 +196,9 @@ namespace config {
         , BRANCH    // May not have value, but may have children
     };
 
-    typedef std::set<variant>       variant_set;
-    typedef std::vector<option>     option_vector;
-    typedef std::set<std::string>   string_set;
+    typedef std::set<variant>               variant_set;
+    typedef std::map<std::string, option>   option_map;
+    typedef std::set<std::string>           string_set;
 
     const char* type_to_string(option_type_t a_type);
 
@@ -215,7 +215,7 @@ namespace config {
         variant         max_value;
 
         std::string     description;
-        option_vector   children;
+        option_map      children;
         bool            required;
         bool            unique;
 
@@ -229,9 +229,9 @@ namespace config {
                 const variant& a_def = variant(),
                 const variant& a_min = variant(),
                 const variant& a_max = variant(),
-                const string_set&    a_names   = string_set(),
-                const variant_set&   a_values  = variant_set(),
-                const option_vector& a_options = option_vector())
+                const string_set&   a_names   = string_set(),
+                const variant_set&  a_values  = variant_set(),
+                const option_map&   a_options = option_map())
             : name(a_name), opt_type(a_type)
             , name_choices(a_names)
             , value_choices(a_values)
@@ -254,10 +254,10 @@ namespace config {
             const option& a_opt, bool a_fill_defaults) const throw(config_error);
 
         void check_unique(const config_path& a_root, const config_tree& a_config,
-            const option_vector& a_opts) const throw(config_error);
+            const option_map& a_opts) const throw(config_error);
 
         void check_required(const config_path& a_root, const config_tree& a_config,
-            const option_vector& a_opts) const throw (config_error);
+            const option_map& a_opts) const throw (config_error);
 
         static option_type_t to_option_type(variant::value_type a_type);
 
@@ -265,24 +265,28 @@ namespace config {
             const std::string& a_cfg_opt   = std::string(),
             const std::string& a_cfg_value = std::string()) const;
 
-        bool has_required_child_options(const option_vector& a_opts,
+        bool has_required_child_options(const option_map& a_opts,
             config_path& a_req_option_path) const;
 
         static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
-            int a_level, const option_vector& a_opts);
+            int a_level, const option_map& a_opts);
 
-        static inline bool all_anonymous(const option_vector& a_opts) {
-            BOOST_FOREACH(const option& opt, a_opts)
-                if (opt.opt_type != ANONYMOUS)
+        static inline bool all_anonymous(const option_map& a_opts) {
+            BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts)
+                if (ovt.second.opt_type != ANONYMOUS)
                     return false;
             return true;
         }
 
+        static const variant& find_default(
+            const config_path& a_option, config_path& a_suffix,
+            const option_map& a_vec) throw (config_error);
     protected:
-        option_vector m_options;
+        config_path m_root;       // Path from configuration root
+        option_map  m_options;
 
         void validate(const config_path& a_root, config_tree& a_config,
-            const option_vector& a_opts, bool fill_defaults) const throw (config_error);
+            const option_map& a_opts, bool fill_defaults) const throw(config_error);
 
     public:
         virtual ~validator() {}
@@ -292,10 +296,27 @@ namespace config {
         /// @return config option details
         std::string usage(const std::string& a_indent=std::string()) const;
 
+        /// Get default value for a named option.
+        /// @return default value for a given option's path.
+        const variant& default_value(const config_path& a_path)
+            const throw (config_error);
+
+        /// Get configuration a_option of type <tt>T</tt> from \a a_config tree.
+        /// If the option is not found and there's a default value, that
+        /// value will be returned.  Otherwise if the option is required and there is
+        /// no default, an exception is thrown.
+        template <class T>
+        T get(const config_path& a_option, const config_tree& a_config) const
+                throw(config_error) {
+            try { return a_config.get<T>(a_option.dump()); } catch (config_bad_path&) {
+                return default_value(a_option).get<T>();
+            }
+        }
+
         inline void clear() { m_options.clear(); }
 
         /// @return vector of configuration options
-        const option_vector& options() const { return m_options; }
+        const option_map& options() const { return m_options; }
 
         void validate(config_tree& a_config, bool a_fill_defaults,
                 const config_path& a_root = config_path()) const throw(config_error) {
