@@ -32,33 +32,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTIL_VARIANT_CONFIG_HPP_
-#define _UTIL_VARIANT_CONFIG_HPP_
+#ifndef _UTIL_CONFIG_TREE_HPP_
+#define _UTIL_CONFIG_TREE_HPP_
 
 #include <util/variant_tree.hpp>
 #include <util/error.hpp>
 
 namespace util {
 
+/// Container for storing configuration data.
 typedef variant_tree config_tree;
 /// Configuration path derived from boost/property_tree/string_path.hpp
-typedef typename variant_tree::path_type    config_path;
-
-inline config_path operator/ (const config_path& a, const std::string& s) {
-    config_path t(a);
-    t /= s;
-    return t;
-}
-
-inline void operator/ (config_path& a, const std::string& s) {
-    a /= s;
-}
-
-inline config_path operator/ (const std::string& a, const config_path& s) {
-    config_path t(a);
-    t /= s;
-    return t;
-}
+typedef tree_path config_path;
 
 /**
  * \brief Exception class for configuration related errors.
@@ -102,6 +87,24 @@ public:
         *this << a1 << a2 << a3;
     }
 
+    template <class T1, class T2, class T3, class T4>
+    config_error(const config_path& a_path, T1 a1, T2 a2, T3 a3, T4 a4)
+        : m_path(a_path.dump()) {
+        *this << a1 << a2 << a3 << a4;
+    }
+
+    template <class T1, class T2, class T3, class T4, class T5>
+    config_error(const config_path& a_path, T1 a1, T2 a2, T3 a3, T4 a4, T5 a5)
+        : m_path(a_path.dump()) {
+        *this << a1 << a2 << a3 << a4 << a5;
+    }
+
+    template <class T1, class T2, class T3, class T4, class T5, class T6>
+    config_error(const config_path& a_path, T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6)
+        : m_path(a_path.dump()) {
+        *this << a1 << a2 << a3 << a4 << a5 << a6;
+    }
+
     virtual ~config_error() throw() {}
 
     const std::string& path() const { return m_path; }
@@ -115,5 +118,5 @@ public:
 
 } // namespace util
 
-#endif // _UTIL_VARIANT_CONFIG_HPP_
+#endif // _UTIL_CONFIG_TREE_HPP_
 

@@ -360,7 +360,29 @@ private:
 };
 
 /// Path in the tree derived from boost/property_tree/string_path.hpp
-typedef typename variant_tree::path_type    tree_path;
+typedef typename variant_tree::path_type tree_path;
+
+inline tree_path operator/ (const tree_path& a, const std::string& s) {
+    tree_path t(a);
+    t /= s;
+    return t;
+}
+
+inline tree_path operator/ (const tree_path& a, const char* s) {
+    tree_path t(a);
+    t /= s;
+    return t;
+}
+
+inline tree_path& operator/ (tree_path& a, const std::string& s) {
+    return a /= s;
+}
+
+inline tree_path operator/ (const std::string& a, const tree_path& s) {
+    tree_path t(a);
+    t /= s;
+    return t;
+}
 
 } // namespace util
 

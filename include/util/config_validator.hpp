@@ -3,8 +3,8 @@
 //----------------------------------------------------------------------------
 /// This file is a part of configuration verification framework.  Nearly every
 /// application requires an ability to read configuration information from a
-/// file.  The framework uses a util::variant_tree class derived from
-/// boost::property_tree.  Note that in order for the util::variant_tree to
+/// file.  The framework uses a util::config_tree class derived from
+/// boost::property_tree.  Note that in order for the util::config_tree to
 /// work correctly, the BOOST property_tree library needs to be patched as
 /// per https://svn.boost.org/trac/boost/ticket/4786.
 ///   Configuration data is stored in any one of these formats that can be
@@ -29,7 +29,7 @@
 /// <code>
 ///     #include "app_config.hpp"
 ///     ...
-///     util::variant_tree l_config;
+///     util::config_tree l_config;
 ///     boost::property_tree::read_info("app.info", l_config);
 ///     test::app_config_validator l_validator;
 ///     l_validator.validate(l_config, true); /* When the second parameter
@@ -173,7 +173,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTIL_CONFIG_VALIDATOR_HPP_
 #define _UTIL_CONFIG_VALIDATOR_HPP_
 
-#include <util/variant_config.hpp>
+#include <util/config_tree.hpp>
 #include <util/error.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
@@ -250,38 +250,23 @@ namespace config {
     };
 
     class validator {
-        void check_option(const std::string& a_root, variant_tree::value_type& a_vt,
+        void check_option(const config_path& a_root, config_tree::value_type& a_vt,
             const option& a_opt, bool a_fill_defaults) const throw(config_error);
 
-        void check_unique(const std::string& a_root, const variant_tree& a_config,
+        void check_unique(const config_path& a_root, const config_tree& a_config,
             const option_vector& a_opts) const throw(config_error);
 
-        void check_required(const std::string& a_root, const variant_tree& a_config,
+        void check_required(const config_path& a_root, const config_tree& a_config,
             const option_vector& a_opts) const throw (config_error);
 
         static option_type_t to_option_type(variant::value_type a_type);
 
-        std::string format_name(const std::string& a_root, const option& a_opt,              
+        config_path format_name(const config_path& a_root, const option& a_opt,              
             const std::string& a_cfg_opt   = std::string(),
             const std::string& a_cfg_value = std::string()) const;
 
-        bool has_required_child_options(const option_vector& a_opts) const {
-            std::string s; std::list<std::string> l;
-            bool res = has_required_child_options(a_opts, l);
-            if (res) s = boost::join(l, "/");
-            return res;
-        }
-
         bool has_required_child_options(const option_vector& a_opts,
-            std::list<std::string>& a_req_option_path) const;
-
-        bool has_required_child_options(const option_vector& a_opts,
-                std::string& a_first_req_option) const {
-            std::list<std::string> l;
-            bool res = has_required_child_options(a_opts, l);
-            if (res) a_first_req_option = boost::join(l, "/");
-            return res;
-        }
+            config_path& a_req_option_path) const;
 
         static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
             int a_level, const option_vector& a_opts);
@@ -296,8 +281,8 @@ namespace config {
     protected:
         option_vector m_options;
 
-        void validate(variant_tree& a_config, const option_vector& a_opts,
-            const std::string& a_root, bool fill_defaults) const throw (config_error);
+        void validate(config_tree& a_config, const option_vector& a_opts,
+            const config_path& a_root, bool fill_defaults) const throw (config_error);
 
     public:
         virtual ~validator() {}
@@ -312,14 +297,14 @@ namespace config {
         /// @return vector of configuration options
         const option_vector& options() const { return m_options; }
 
-        inline void validate(variant_tree& a_config, bool a_fill_defaults,
-                const std::string& a_root = std::string()) const throw(config_error) {
+        inline void validate(config_tree& a_config, bool a_fill_defaults,
+                const config_path& a_root = config_path()) const throw(config_error) {
             validate(a_config, m_options, a_root, a_fill_defaults);
         }
 
-        inline void validate(const variant_tree& a_config,
-                const std::string& a_root = std::string()) const throw(config_error) {
-            variant_tree l_config(a_config);
+        inline void validate(const config_tree& a_config,
+                const config_path& a_root = config_path()) const throw(config_error) {
+            config_tree l_config(a_config);
             validate(l_config, false, a_root);
         }
     };

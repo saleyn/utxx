@@ -36,8 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/integral_c.hpp>
 #include <util/variant.hpp>
-#include <util/variant_tree.hpp>
-#include <util/variant_config.hpp>
+#include <util/config_tree.hpp>
 #include <util/verbosity.hpp>
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/detail/info_parser_read.hpp>

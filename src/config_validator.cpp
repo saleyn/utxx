@@ -102,19 +102,20 @@ std::string option::to_string() const {
     return s.str();
 }
 
-std::string validator::format_name(const std::string& a_root, const option& a_opt,
-    const std::string& a_cfg_opt, const std::string& a_cfg_value) const
+config_path validator::format_name(const config_path& a_root,
+    const option& a_opt, const std::string& a_cfg_opt,
+    const std::string& a_cfg_value) const
 {
-    config_path s = config_path(a_root) / a_opt.name;
+    config_path s = a_root / a_opt.name;
     if (a_cfg_opt != std::string() && a_cfg_opt != a_opt.name) // && a_opt.opt_type == ANONYMOUS)
         s /= a_cfg_opt;
     if (a_cfg_value != std::string()) // && !a_opt.unique)
         s = s.dump() + '[' + a_cfg_value + ']';
-    return s.dump();
+    return s;
 }
 
-void validator::validate(variant_tree& a_config, const option_vector& a_opts,           
-    const std::string& a_root, bool a_fill_defaults) const throw (config_error)
+void validator::validate(config_tree& a_config, const option_vector& a_opts,           
+    const config_path& a_root, bool a_fill_defaults) const throw (config_error)
 {
     check_unique(a_root, a_config, a_opts);
     check_required(a_root, a_config, a_opts);
@@ -137,14 +138,15 @@ void validator::validate(variant_tree& a_config, const option_vector& a_opts,
                 break;
             }
         }
-        if (!l_match)
-            throw config_error(a_root + '/' + vt.first,
-                    "Unsupported config option!");
+        if (!l_match) {
+            config_path p; p /= vt.first;
+            throw config_error(p, "Unsupported config option!");
+        }
     }
 }
 
-void validator::check_required(const std::string& a_root,
-    const variant_tree& a_config, const option_vector& a_opts) const throw (config_error)
+void validator::check_required(const config_path& a_root,
+    const config_tree& a_config, const option_vector& a_opts) const throw (config_error)
 {
     #ifdef TEST_CONFIG_VALIDATOR
     std::cout << "check_required(" << a_root << ", cfg.count=" << a_config.size()
@@ -219,7 +221,7 @@ void validator::check_required(const std::string& a_root,
             if (opt.children.size())
                 std::cout << "  Checking children of " << format_name(a_root, opt) << std::endl;
             #endif
-            std::string l_req_name;
+            config_path l_req_name;
             bool l_has_req = has_required_child_options(opt.children, l_req_name);
             bool l_found   = false;
 
@@ -230,7 +232,8 @@ void validator::check_required(const std::string& a_root,
                         if (!vt.second.size())
                             throw config_error(format_name(a_root, opt,
                                     vt.first, vt.second.data().to_string()),
-                                std::string("Option is missing required child option ") + l_req_name);
+                                std::string("Option is missing required child option ") +
+                                    l_req_name.dump());
                         check_required(
                             format_name(a_root, opt, vt.first, vt.second.data().to_string()),
                             static_cast<const variant_tree&>(vt.second), opt.children);
@@ -243,13 +246,13 @@ void validator::check_required(const std::string& a_root,
 
             if (!l_found && l_has_req)
                 throw config_error(format_name(a_root, opt),
-                    std::string("Missing a required child option ") + l_req_name);
+                    std::string("Missing a required child option ") + l_req_name.dump());
         }
     }
 }
 
 
-void validator::check_option(const std::string& a_root, variant_tree::value_type& a_vt, 
+void validator::check_option(const config_path& a_root, variant_tree::value_type& a_vt, 
     const option& a_opt, bool a_fill_defaults) const throw(config_error)
 {
     try {
@@ -344,8 +347,8 @@ void validator::check_option(const std::string& a_root, variant_tree::value_type
                     "Value is not allowed for option!");
             }
         if (!a_opt.children.empty())
-            validate(static_cast<variant_tree&>(a_vt.second), a_opt.children,
-                a_root + '/' + a_opt.name, a_fill_defaults);
+            validate(static_cast<config_tree&>(a_vt.second), a_opt.children,
+                a_root / a_opt.name, a_fill_defaults);
     } catch (std::invalid_argument& e) {
         throw config_error(format_name(a_root, a_opt, a_vt.first,       
                 a_vt.second.data().to_string()),
@@ -409,7 +412,7 @@ std::ostream& validator::dump(std::ostream& out, const std::string& a_indent,
     return out;
 }
 
-void validator::check_unique(const std::string& a_root, const variant_tree& a_config,
+void validator::check_unique(const config_path& a_root, const variant_tree& a_config,
         const option_vector& a_opts) const throw(config_error) {
     string_set l_names;
     BOOST_ASSERT(a_opts.size() > 0);
@@ -427,15 +430,18 @@ void validator::check_unique(const std::string& a_root, const variant_tree& a_co
 }
 
 bool validator::has_required_child_options(const option_vector& a_opts,
-    std::list<std::string>& a_req_option_path) const
+    config_path& a_req_option_path) const
 {
     BOOST_FOREACH(const option& opt, a_opts) {
-        a_req_option_path.push_back(opt.name);
-        if (opt.required)
+        config_path l_path = a_req_option_path / opt.name;
+        if (opt.required) {
+            a_req_option_path = l_path;
             return true;
-        if (has_required_child_options(opt.children, a_req_option_path))
+        }
+        if (has_required_child_options(opt.children, l_path)) {
+            a_req_option_path = l_path;
             return true;
-        a_req_option_path.pop_back();
+        }
     }
     return false;
 }
