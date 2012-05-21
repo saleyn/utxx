@@ -82,7 +82,7 @@ using namespace util;
 
 BOOST_AUTO_TEST_CASE( test_config_validator0 )
 {
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     std::stringstream s;
     s << l_validator.usage("");
     BOOST_REQUIRE_EQUAL(
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator1 )
     variant_tree::read_info(l_stream, l_config);
 
     try {
-        test::cfg_validator l_validator;
+        const test::cfg_validator& l_validator = test::cfg_validator::instance();
         l_validator.validate(l_config, true);
         BOOST_REQUIRE(true); // Just to avoid a warning that there are no tests
     } catch (config_error& e) {
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
 
     variant_tree::read_info(l_stream, l_config);
 
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
         l_validator.validate(l_config, true);
         BOOST_REQUIRE(false);
@@ -193,7 +193,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
 
     variant_tree::read_info(l_stream, l_config);
 
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
         l_validator.validate(l_config);
         BOOST_REQUIRE(false);
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator4 )
 
     variant_tree::read_info(l_stream, l_config);
 
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
         l_validator.validate(l_config);
         BOOST_REQUIRE(false);
@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator5 )
 
     variant_tree::read_info(l_stream, l_config);
 
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
         l_validator.validate(l_config, true, "root");
         BOOST_REQUIRE(false);
@@ -279,7 +279,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator6 )
 
     variant_tree::read_info(l_stream, l_config);
 
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
         l_validator.validate(l_config);
         BOOST_REQUIRE(false);
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
 
     l_stream << "duration 10\n"
              << "country \"US\"\n"
@@ -389,7 +389,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
 
     l_stream << "address 10\nduration 15\n"
              << "country \"US\" { ARCA connection { address abc } }\n"
@@ -500,7 +500,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
 
 BOOST_AUTO_TEST_CASE( test_config_validator_def )
 {
-    test::cfg_validator l_validator;
+    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     BOOST_REQUIRE_EQUAL(variant("123.124.125.012"), l_validator.default_value("test.address"));
     BOOST_REQUIRE_EQUAL(variant(true), l_validator.default_value("test.enabled"));
     BOOST_REQUIRE_EQUAL(variant(1.5), l_validator.default_value("test.cost"));

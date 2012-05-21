@@ -249,6 +249,7 @@ namespace config {
         std::string to_string() const;
     };
 
+    template <class Derived>
     class validator {
         void check_option(const config_path& a_root, config_tree::value_type& a_vt,
             const option& a_opt, bool a_fill_defaults) const throw(config_error);
@@ -281,17 +282,30 @@ namespace config {
         static const variant& find_default(
             const config_path& a_option, config_path& a_suffix,
             const option_map& a_vec) throw (config_error);
+
     protected:
         config_path m_root;       // Path from configuration root
         option_map  m_options;
 
+        static Derived init_once() { Derived v; return v.init(); }
+
         void validate(const config_path& a_root, config_tree& a_config,
             const option_map& a_opts, bool fill_defaults) const throw(config_error);
 
+        static void add_option(option_map& a, const option& a_opt) {
+            a.insert(std::make_pair(a_opt.name, a_opt));
+        }
+
+        validator() {}
     public:
         virtual ~validator() {}
 
-        virtual void init() = 0;
+        static const Derived& instance() {
+            static Derived s_instance = init_once();
+            return s_instance;
+        }
+
+        virtual const Derived& init() = 0;
 
         /// @return config option details
         std::string usage(const std::string& a_indent=std::string()) const;
@@ -332,6 +346,8 @@ namespace config {
 
 } // namespace config
 } // namespace util
+
+#include <util/config_validator.ipp>
 
 #endif // _UTIL_CONFIG_VALIDATOR_HPP_
 

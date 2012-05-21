@@ -69,18 +69,29 @@ namespace </xsl:text>
 
     struct </xsl:text>
     <xsl:value-of select="@name"/>
-    <xsl:text>: public validator {&#10;        </xsl:text>
-    <xsl:value-of select="@name"/><xsl:text>() { init(); }&#10;</xsl:text>
+    <xsl:text>: public validator&lt;</xsl:text>
+    <xsl:value-of select="@name"/>
+    <xsl:text>&gt; {</xsl:text>
     <xsl:text>
-        void init() {
-            clear();
+    private:
+        </xsl:text>
+        <xsl:value-of select="@name"/><xsl:text>() {}
+
+        friend class validator&lt;</xsl:text>
+        <xsl:value-of select="@name"/>
+        <xsl:text>&gt;;
+
+        const </xsl:text>
+        <xsl:value-of select="@name"/>
+        <xsl:text>&amp; init() {
             m_root = "</xsl:text><xsl:value-of select="@namespace"/>
-            <xsl:text>";&#10;&#10;</xsl:text>
+            <xsl:text>";&#10;</xsl:text>
     <xsl:call-template name="process_options">
         <xsl:with-param name="level">0</xsl:with-param>
         <xsl:with-param name="arg">m_options</xsl:with-param>
     </xsl:call-template>
-    <xsl:text>        }
+    <xsl:text>            return *this;
+        }
     };
 } // namespace </xsl:text><xsl:value-of select="@namespace"/>
     <xsl:text>&#10;&#10;#endif // </xsl:text>
@@ -137,13 +148,12 @@ namespace </xsl:text>
                     </xsl:for-each>
 
                     <xsl:value-of select="$ws2"/>
+                    <xsl:text>add_option(</xsl:text>
                     <xsl:value-of select="$arg"/>
-                    <xsl:text>.insert(&#10;</xsl:text>
+                    <xsl:text>,&#10;</xsl:text>
                     <xsl:text> </xsl:text>
                     <xsl:value-of select="$ws4"/>
-                    <xsl:text>std::make_pair(CFG_</xsl:text>
-                    <xsl:value-of select="translate(@name, $smallcase, $uppercase)"/>
-                    <xsl:text>, option(CFG_</xsl:text>
+                    <xsl:text>option(CFG_</xsl:text>
                     <xsl:value-of select="translate(@name, $smallcase, $uppercase)"/>
                     <xsl:text>, </xsl:text>
                     <xsl:choose>
@@ -254,7 +264,7 @@ namespace </xsl:text>
                         </xsl:otherwise>
                     </xsl:choose>
                     <xsl:text>, l_names, l_values, l_children</xsl:text>
-                    <xsl:value-of select="$level"/><xsl:text>)));&#10;</xsl:text>
+                    <xsl:value-of select="$level"/><xsl:text>));&#10;</xsl:text>
                     <xsl:value-of select="$ws"/><xsl:text>}&#10;</xsl:text>
                 </xsl:when>
                 <xsl:when test="self::node()[self::include]">
