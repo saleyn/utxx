@@ -31,11 +31,11 @@
 ///     ...
 ///     util::config_tree l_config;
 ///     boost::property_tree::read_info("app.info", l_config);
-///     test::app_config_validator l_validator;
-///     l_validator.validate(l_config, true); /* When the second parameter
-///                                              is true the l_config will be
-///                                              populated with default values
-///                                              of missing options */
+///     test::app_config_validator::instance().
+///         validate(l_config, true); /* When the second parameter
+///                                      is true the l_config will be
+///                                      populated with default values
+///                                      of missing options */
 /// </code>
 ///
 /// The format of the XML file with validation rules is provided below:
@@ -262,7 +262,7 @@ namespace config {
 
         static option_type_t to_option_type(variant::value_type a_type);
 
-        config_path format_name(const config_path& a_root, const option& a_opt,              
+        config_path format_name(const config_path& a_root, const option& a_opt,
             const std::string& a_cfg_opt   = std::string(),
             const std::string& a_cfg_value = std::string()) const;
 
@@ -279,9 +279,11 @@ namespace config {
             return true;
         }
 
-        static const variant& find_default(
-            const config_path& a_option, config_path& a_suffix,
-            const option_map& a_vec) throw (config_error);
+        config_path strip_root(const config_path& a_root_path) const
+            throw(config_error);
+
+        static const option* find(config_path& a_suffix, const option_map& a_options)
+            throw ();
 
     protected:
         config_path m_root;       // Path from configuration root
@@ -312,25 +314,48 @@ namespace config {
 
         /// Get default value for a named option.
         /// @return default value for a given option's path.
-        const variant& default_value(const config_path& a_path)
-            const throw (config_error);
+        const variant& default_value(const config_path& a_path,
+            const config_path& a_root_path = config_path()) const throw (config_error);
+
+        /// Find option's metadata
+        const option* find(const config_path& a_path,
+            const config_path& a_root_path = config_path()) const throw ();
 
         /// Get configuration a_option of type <tt>T</tt> from \a a_config tree.
         /// If the option is not found and there's a default value, that
         /// value will be returned.  Otherwise if the option is required and there is
         /// no default, an exception is thrown.
+        /// @param a_option is the path of the option to get from a_config.
+        /// @param a_config is the configuration sub-tree.
+        /// @param a_root_path is the path of the \a a_config sub-tree from
+        ///             configuration root. empty path means that a_option is
+        ///             fully qualified from the root.
         template <class T>
-        T get(const config_path& a_option, const config_tree& a_config) const
-                throw(config_error) {
+        T get(const config_path& a_option, const config_tree& a_config,
+            const config_path& a_root_path = config_path()) const throw(config_error)
+        {
             try { return a_config.get<T>(a_option.dump()); } catch (config_bad_path&) {
-                return default_value(a_option).get<T>();
+                return default_value(
+                    a_root_path.empty() ? a_option : a_root_path / a_option).get<T>();
             }
         }
 
-        inline void clear() { m_options.clear(); }
+        const config_tree& get_child(const config_path& a_option,
+            const config_tree& a_config, const config_path& a_root_path = config_path())
+                const throw(config_error)
+        {
+            const static config_tree s_null;
+            try { return a_config.get_child(a_option.dump()); } catch (config_bad_path&) {}
+            const variant& v = default_value(a_option, a_root_path);
+            return s_null;
+        }
 
         /// @return vector of configuration options
         const option_map& options() const { return m_options; }
+
+        /// @return root path of this configuration from the XML /config/@namespace
+        ///              property
+        const config_path& root()   const { return m_root; }
 
         void validate(config_tree& a_config, bool a_fill_defaults,
                 const config_path& a_root = config_path()) const throw(config_error) {

@@ -318,6 +318,14 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
     BOOST_REQUIRE_EQUAL(s_path, a.dump());
     BOOST_REQUIRE_EQUAL(std::string(s_path) + ".four", (a / "four").dump());
 
+    {
+        config_path s1;
+        config_path s2 = s1 / "a.b.c";
+        BOOST_REQUIRE_EQUAL("a.b.c", s2.dump());
+        s2 /= "d.e";
+        BOOST_REQUIRE_EQUAL("a.b.c.d.e", s2.dump());
+    }
+
     try {
         throw config_error(config_path(s_path));
     } catch (config_error& e) {

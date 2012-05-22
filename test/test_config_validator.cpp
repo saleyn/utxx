@@ -501,6 +501,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
 BOOST_AUTO_TEST_CASE( test_config_validator_def )
 {
     const test::cfg_validator& l_validator = test::cfg_validator::instance();
+    BOOST_REQUIRE_EQUAL("test", l_validator.root().dump());
     BOOST_REQUIRE_EQUAL(variant("123.124.125.012"), l_validator.default_value("test.address"));
     BOOST_REQUIRE_EQUAL(variant(true), l_validator.default_value("test.enabled"));
     BOOST_REQUIRE_EQUAL(variant(1.5), l_validator.default_value("test.cost"));
@@ -510,4 +511,20 @@ BOOST_AUTO_TEST_CASE( test_config_validator_def )
     config_tree l_config;
     bool b = l_validator.get<bool>("test.enabled", l_config);
     BOOST_REQUIRE(b);
+
+    const config::option* l_opt = l_validator.find("enabled", "test");
+    BOOST_REQUIRE(l_opt);
+    BOOST_REQUIRE_EQUAL("enabled", l_opt->name);
+    BOOST_REQUIRE_EQUAL(true, l_opt->default_value.to_bool());
+    try {
+        l_validator.default_value("name", "test.country");
+        BOOST_REQUIRE(false);
+    } catch (config_error& e) {
+        BOOST_REQUIRE_EQUAL("test.country.name", e.path());
+    }
+    try {
+        const variant& v = l_validator.default_value("", "test.country.name");
+    } catch (config_error& e) {
+        BOOST_REQUIRE_EQUAL("test.country.name", e.path());
+    }
 }
