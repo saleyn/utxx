@@ -28,4 +28,4 @@ config.*
 configure
 libtool
 stamp-h1
-util-*.pc
+util.pc
