@@ -346,8 +346,8 @@ namespace config {
         {
             const static config_tree s_null;
             try { return a_config.get_child(a_option.dump()); } catch (config_bad_path&) {}
-            const variant& v = default_value(a_option, a_root_path);
-            return s_null;
+            default_value(a_option, a_root_path); // No default -> exception thrown
+            return s_null; // Return empty tree in case there's a node in the metadata.
         }
 
         /// @return vector of configuration options

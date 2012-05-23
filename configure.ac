@@ -88,7 +88,7 @@ dnl ------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([test/Makefile])
-AC_CONFIG_FILES([util-${PACKAGE_VERSION}.pc:util.pc.in])
+AC_CONFIG_FILES([util.pc:util.pc.in])
 
 AC_OUTPUT
 
