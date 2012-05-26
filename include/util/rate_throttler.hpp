@@ -4,7 +4,7 @@
 /// \brief Efficiently calculats the throttling rate over a number of seconds.
 /// The algorithm implements a variation of tocken bucket algorithm that
 /// doesn't require to add tokens to the bucket on a timer but rather it
-/// maintains a cirtular buffer of tockens with resolution of 1/BucketsPerSec.
+/// maintains a circular buffer of tockens with resolution of 1/BucketsPerSec.
 /// The basic_rate_throttler::add() function is used to adds items to a bucket
 /// associated with the timestamp passed as the first argument to the
 /// function.  The throttler::running_sum() returns the total number of

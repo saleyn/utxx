@@ -122,9 +122,12 @@ public:
 
     ~persist_blob() { close(); }
 
+    /// Default permission mask used for opening a file
+    static int default_file_mode() { return S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP; }
+
     /// @return true if file didn't exist and was created.
     bool init(const char* a_file, const T* a_init_val = NULL,
-        bool a_read_only = true, int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
+        bool a_read_only = true, int a_mode = default_file_mode())
         throw (io_error);
 
     bool is_open() const { return m_blob; }

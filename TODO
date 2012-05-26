@@ -3,3 +3,7 @@
 3. Add test cases for testing concurrent multi_async_file_logger.
 4. Add file locking to persist_blob (similar to persist_array)
 5. Add test cases to test_buffer.cpp
+6. Add regexp validation of data to config_validator:
+        node attribute:  regexp=String
+        node attribute:  regexp-type=Type
+        <type regexp=Type value=Value/>
