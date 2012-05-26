@@ -338,7 +338,7 @@ struct io_buffer {
     basic_io_buffer<OutBufSize> out;
 };
 
-namespace {
+namespace detail {
     /**
      * \brief used by buffered_queue
      */
@@ -387,8 +387,8 @@ namespace {
  */
 
 template <bool IsOwner = true, typename Alloc = std::allocator<char> >
-class buffered_queue : public basic_buffered_queue<IsOwner, Alloc> {
-    typedef basic_buffered_queue<IsOwner, Alloc> base;
+class buffered_queue : public detail::basic_buffered_queue<IsOwner, Alloc> {
+    typedef detail::basic_buffered_queue<IsOwner, Alloc> base;
     typedef typename base::deque deque;
     deque  m_q1, m_q2;
     deque* m_out_queues[2];     ///< Queues of outgoing data
