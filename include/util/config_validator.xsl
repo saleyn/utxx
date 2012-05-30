@@ -55,21 +55,19 @@
 
 namespace </xsl:text>
     <xsl:value-of select="@namespace"/><xsl:text> {
-    using namespace util::config;
-    using util::variant;
-    using util::config::option;&#10;</xsl:text>
+    using namespace util;&#10;</xsl:text>
 
     <xsl:call-template name="print-all-constants"/>
     
     <xsl:text>&#10;    namespace {
-        typedef option_map    ovec;
-        typedef string_set    sset;
-        typedef variant_set   vset;
+        typedef config::option_map    ovec;
+        typedef config::string_set    sset;
+        typedef config::variant_set   vset;
     }
 
     struct </xsl:text>
     <xsl:value-of select="@name"/>
-    <xsl:text>: public validator&lt;</xsl:text>
+    <xsl:text>: public config::validator&lt;</xsl:text>
     <xsl:value-of select="@name"/>
     <xsl:text>&gt; {</xsl:text>
     <xsl:text>
@@ -77,7 +75,7 @@ namespace </xsl:text>
         </xsl:text>
         <xsl:value-of select="@name"/><xsl:text>() {}
 
-        friend class validator&lt;</xsl:text>
+        friend class config::validator&lt;</xsl:text>
         <xsl:value-of select="@name"/>
         <xsl:text>&gt;;
 
@@ -153,7 +151,7 @@ namespace </xsl:text>
                     <xsl:text>,&#10;</xsl:text>
                     <xsl:text> </xsl:text>
                     <xsl:value-of select="$ws4"/>
-                    <xsl:text>option(CFG_</xsl:text>
+                    <xsl:text>config::option(CFG_</xsl:text>
                     <xsl:value-of select="translate(@name, $smallcase, $uppercase)"/>
                     <xsl:text>, </xsl:text>
                     <xsl:choose>
@@ -164,8 +162,8 @@ namespace </xsl:text>
                                 <xsl:with-param name="type" select="@type"/>
                             </xsl:call-template>
                         </xsl:when>
-                        <xsl:when test="count(option | include) > 0">BRANCH</xsl:when>
-                        <xsl:otherwise><xsl:text>STRING</xsl:text></xsl:otherwise>
+                        <xsl:when test="count(option | include) > 0">config::BRANCH</xsl:when>
+                        <xsl:otherwise><xsl:text>config::STRING</xsl:text></xsl:otherwise>
                     </xsl:choose>
                     <xsl:text>, </xsl:text>
                     <xsl:variable name="type">
@@ -179,7 +177,9 @@ namespace </xsl:text>
                         <xsl:with-param name="kind" select="'type_of_value'"/>
                         <xsl:with-param name="type" select="$type"/>
                     </xsl:call-template>
-                    <xsl:text>, "</xsl:text><xsl:value-of select="@desc"/><xsl:text>", </xsl:text>
+                    <xsl:text>,&#10;</xsl:text>
+                    <xsl:value-of select="$ws4"/>
+                    <xsl:text>  "</xsl:text><xsl:value-of select="@desc"/><xsl:text>", </xsl:text>
                     <xsl:choose>
                         <xsl:when test="@unique = 'true'"><xsl:text>true</xsl:text></xsl:when>
                         <xsl:when test="@unique = 'false'"><xsl:text>false</xsl:text></xsl:when>
@@ -298,13 +298,17 @@ namespace </xsl:text>
         <xsl:param name="kind"/>
         <xsl:param name="type"/>
         <xsl:choose>
-            <xsl:when test="$type = 'string'"><xsl:text>STRING</xsl:text></xsl:when>
-            <xsl:when test="$type = 'int'"><xsl:text>INT</xsl:text></xsl:when><xsl:when test="$type = 'bool'">BOOL</xsl:when>
-            <xsl:when test="$type = 'float'"><xsl:text>FLOAT</xsl:text></xsl:when>
-            <xsl:when test="$type = 'anonymous'"><xsl:text>ANONYMOUS</xsl:text></xsl:when>
+            <xsl:when test="$type = 'string'"><xsl:text>config::STRING</xsl:text></xsl:when>
+            <xsl:when test="$type = 'int'"><xsl:text>config::INT</xsl:text></xsl:when>
+            <xsl:when test="$type = 'bool'"><xsl:text>config::BOOL</xsl:text></xsl:when>
+            <xsl:when test="$type = 'float'"><xsl:text>config::FLOAT</xsl:text></xsl:when>
+            <xsl:when test="$type = 'anonymous'"><xsl:text>config::ANONYMOUS</xsl:text></xsl:when>
             <xsl:otherwise>
                 <xsl:message terminate="yes">
-                    ERROR: undefined <xsl:value-of select="$kind"/> of option: <xsl:value-of select="$name"/>
+                    <xsl:text>ERROR: undefined </xsl:text>
+                    <xsl:value-of select="$kind"/>
+                    <xsl:text> of option: </xsl:text>
+                    <xsl:value-of select="$name"/>
                 </xsl:message>
             </xsl:otherwise>
         </xsl:choose>

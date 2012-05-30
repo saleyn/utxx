@@ -105,10 +105,13 @@ namespace util {
             : m_header(NULL), m_begin(NULL), m_end(NULL)
         {}
 
+        /// Default permission mask used for opening a file
+        static int default_file_mode() { return S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP; }
+
         /// Initialize the storage
         /// @return true if the storage file didn't exist and was created
         bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
-            int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP) throw (io_error);
+            int a_mode = default_file_mode()) throw (io_error);
 
         size_t count()    const { return static_cast<size_t>(m_header->rec_count); }
         size_t capacity() const { return m_header->max_recs; }
