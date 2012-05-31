@@ -129,7 +129,9 @@ namespace util {
             int rc = set(a_buf, a_size);
             if (rc)
                 throw badarg_error("Invalid character at position ",
-                    -rc, " in '", std::string(a_buf, a_size), "'");
+                    -rc, " in '",
+                    std::string(a_buf, a_size && !*(a_buf+a_size-1) ? a_size-1 : a_size),
+                    "'");
         }
 
         bool valid_char(char ch) { return s_fwd_name_lookup_table[static_cast<int>(ch)]; }
@@ -141,7 +143,7 @@ namespace util {
 
         template <int N>
         void set(const char (&a_buf)[N]) throw (badarg_error) {
-            BOOST_STATIC_ASSERT(N == Size);
+            BOOST_STATIC_ASSERT(N <= Size);
             set_and_check(a_buf, N);
         }
 
@@ -151,8 +153,8 @@ namespace util {
 
         template <int N>
         void set(const char (&a_buf)[N], int& a_err) {
-            BOOST_STATIC_ASSERT(N == Size);
-            a_err = set(a_buf, N, a_err);
+            BOOST_STATIC_ASSERT(N <= Size);
+            a_err = set(a_buf, N);
         }
 
         /// Convert alphanumeric value to integer internal representation.
@@ -164,8 +166,8 @@ namespace util {
             const char* p = a_buf, *e = a_buf+sz;
             int rc = 0;
             m_value = 0;
-            for(int i = s_len_shift - s_bits_per_c; p != e; i -= s_bits_per_c) {
-                if (!valid_char(*p)) { rc = -(p - a_buf); break; }
+            for(int i = s_len_shift - s_bits_per_c; *p && p != e; i -= s_bits_per_c) {
+                if (!valid_char(*p)) { rc = p == a_buf ? -1 : -(p - a_buf); break; }
                 m_value |= static_cast<uint64_t>(
                     s_fwd_name_lookup_table[static_cast<int>(*p++)]) << i;
             }
@@ -230,6 +232,7 @@ namespace util {
             m_value = a_symbol;
         }
         name_t(const char* a_buf, size_t a_sz)  { this->set_and_check(a_buf, a_sz); }
+        name_t(const char* a_buf)               { this->set_and_check(a_buf, strlen(a_buf)); }
 
         template <int N>
         name_t (const char (&a_buf)[N])         { this->set_and_check(a_buf, N); }

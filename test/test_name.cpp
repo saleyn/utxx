@@ -47,9 +47,13 @@ BOOST_AUTO_TEST_CASE( test_name )
     {
         char value[]  = "C \177";
         char expect[] = "C";
-        name_t s(value);
-        const std::string& result = s.to_string();
+        BOOST_REQUIRE_THROW(name_t s(value), badarg_error);
+        name_t s1;
+        int rc;
+        s1.set(value, rc);
+        const std::string& result = s1.to_string();
         BOOST_REQUIRE_EQUAL(expect, result);
+        BOOST_REQUIRE_EQUAL(-1, rc);
     }
     {
         char expect[] = "A1C";
@@ -61,9 +65,13 @@ BOOST_AUTO_TEST_CASE( test_name )
     {
         char expect[5];
         strncpy(expect, "ABC  ", 5);
-        name_t s(expect);
+        { BOOST_REQUIRE_THROW(name_t s(expect), badarg_error); }
+        name_t s;
+        int rc;
+        s.set(expect, rc);
         const std::string& result = s.to_string();
         BOOST_REQUIRE_EQUAL("ABC", result);
+        BOOST_REQUIRE_EQUAL(-3, rc);
     }
     {
         char expect[6];
@@ -123,7 +131,7 @@ BOOST_AUTO_TEST_CASE( test_name )
     { name_t a(";<=>?#$%&'"); uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
     { name_t a("()*");        uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
     { name_t a("A.B[123]=0"); uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
-    { name_t a("!@#$%^&*()"); uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
+    { name_t a("~@#$%^&*()"); uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
     { name_t a("{}[]|:;'<>"); uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
     { name_t a("Z09?");       uint64_t i=a; name_t b(i); BOOST_REQUIRE_EQUAL(a.to_string(), b.to_string()); }
 

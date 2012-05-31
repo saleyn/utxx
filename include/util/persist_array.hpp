@@ -117,7 +117,7 @@ namespace util {
         size_t capacity() const { return m_header->max_recs; }
 
         /// Allocate next record and return its ID.
-        /// @return 
+        /// @return
         size_t allocate_rec() throw(std::runtime_error) {
             size_t n = static_cast<size_t>(atomic::add(&m_header->rec_count,1));
             if (n >= capacity()) {
@@ -171,7 +171,7 @@ namespace util {
 
         /// Flush header to disk
         bool flush_header() { return m_region.flush(0, sizeof(header)); }
-        
+
         /// Flush region of cached records to disk
         bool flush(size_t a_from_rec = 0, size_t a_num_recs = 0) {
             return m_region.flush(a_from_rec, a_num_recs*sizeof(T));
@@ -188,14 +188,14 @@ namespace util {
         T*          end()         { return m_end; }
 
         template <class Visitor>
-        void for_each(Visitor& a_visitor) {
+        void for_each(const Visitor& a_visitor) {
             size_t n = 0;
-            for (const T* p = begin(), *e = p + count(); p <= e; ++p, ++n)
+            for (const T* p = begin(), *e = p + count(); p != e; ++p, ++n)
                 a_visitor(n, p);
         }
 
         std::ostream& dump(std::ostream& out, const std::string& a_prefix="") {
-            for (const T* p = begin(), *e = p + count(); p <= e; ++p)
+            for (const T* p = begin(), *e = p + count(); p != e; ++p)
                 out << a_prefix << *p << std::endl;
             return out;
         }
@@ -227,7 +227,7 @@ namespace util {
 
             {
                 std::filebuf f;
-                f.open(a_filename, std::ios_base::in | std::ios_base::out 
+                f.open(a_filename, std::ios_base::in | std::ios_base::out
                     | std::ios_base::binary);
                 l_exists = f.is_open();
 
@@ -239,10 +239,10 @@ namespace util {
                     f.sgetn(reinterpret_cast<char*>(&h), sizeof(header));
 
                     if (h.version != header::s_version) {
-                        throw io_error("Invalid file format", a_filename);
+                        throw io_error("Invalid file format ", a_filename);
                     }
                     if (h.rec_size != sizeof(T)) {
-                        throw io_error("Invalid item size in file", a_filename,
+                        throw io_error("Invalid item size in file ", a_filename,
                             " (expected ", sizeof(T), " got ", h.rec_size, ')');
                     }
                     // Increase the file size if instructed to do so.
