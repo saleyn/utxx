@@ -125,8 +125,10 @@ namespace util {
             return begin;
         }
 
-        void set_and_check(const char* a_buf, size_t a_size) throw (badarg_error) {
-            int rc = set(a_buf, a_size);
+        void set_and_check(const char* a_buf, size_t a_size, bool a_no_case)
+            throw (badarg_error)
+        {
+            int rc = set(a_buf, a_size, a_no_case);
             if (rc)
                 throw badarg_error("Invalid character at position ",
                     -rc, " in '",
@@ -142,35 +144,46 @@ namespace util {
         size_t size() const { return SIZE; }
 
         template <int N>
-        void set(const char (&a_buf)[N]) throw (badarg_error) {
+        void set(const char (&a_buf)[N], bool a_no_case = false) throw (badarg_error) {
             BOOST_STATIC_ASSERT(N <= Size);
-            set_and_check(a_buf, N);
+            set_and_check(a_buf, N, a_no_case);
         }
 
-        void set(const std::string& a_val) throw (badarg_error) {
-            set_and_check(a_val.c_str(), a_val.size());
+        void set(const std::string& a_val, bool a_no_case = false) throw (badarg_error) {
+            set_and_check(a_val.c_str(), a_val.size(), a_no_case);
         }
 
         template <int N>
-        void set(const char (&a_buf)[N], int& a_err) {
+        void set(const char (&a_buf)[N], int& a_err, bool a_no_case = false) {
             BOOST_STATIC_ASSERT(N <= Size);
-            a_err = set(a_buf, N);
+            a_err = set(a_buf, N, a_no_case);
         }
 
         /// Convert alphanumeric value to integer internal representation.
         /// It will truncate the name to Size characters.
+        /// @param a_buf is the source string buffer
+        /// @param a_size is the string length
+        /// @param a_no_case if true perform upper case conversion.
         /// @return 0 on success.
         ///        -N on failure indicating position of the invalid character.
-        int set(const char* a_buf, size_t a_size) {
+        int set(const char* a_buf, size_t a_size, bool a_no_case = false) {
             size_t sz = std::min(Size, a_size);
             const char* p = a_buf, *e = a_buf+sz;
             int rc = 0;
             m_value = 0;
-            for(int i = s_len_shift - s_bits_per_c; *p && p != e; i -= s_bits_per_c) {
-                if (!valid_char(*p)) { rc = p == a_buf ? -1 : -(p - a_buf); break; }
-                m_value |= static_cast<uint64_t>(
-                    s_fwd_name_lookup_table[static_cast<int>(*p++)]) << i;
-            }
+            if (a_no_case)
+                for(int i = s_len_shift - s_bits_per_c; *p && p != e; i -= s_bits_per_c, ++p) {
+                    char c = ::toupper(*p);
+                    if (!valid_char(c)) { rc = p == a_buf ? -1 : -(p - a_buf); break; }
+                    m_value |= static_cast<uint64_t>(
+                        s_fwd_name_lookup_table[static_cast<int>(c)]) << i;
+                }
+            else
+                for(int i = s_len_shift - s_bits_per_c; *p && p != e; i -= s_bits_per_c) {
+                    if (!valid_char(*p)) { rc = p == a_buf ? -1 : -(p - a_buf); break; }
+                    m_value |= static_cast<uint64_t>(
+                        s_fwd_name_lookup_table[static_cast<int>(*p++)]) << i;
+                }
             sz = p - a_buf;
             m_value |= sz << s_len_shift;
             return rc;
@@ -225,17 +238,21 @@ namespace util {
     class name_t : public basic_short_name<10u> {
         typedef basic_short_name<10u> base;
     public:
-        name_t()                                { m_value = 0u; }
-        explicit name_t(const std::string& a)   { this->set(a); }
+        name_t() { m_value = 0u; }
         explicit name_t(uint64_t a_symbol) {
             BOOST_ASSERT((a_symbol & s_val_mask >> s_len_shift) < s_size);
             m_value = a_symbol;
         }
-        name_t(const char* a_buf, size_t a_sz)  { this->set_and_check(a_buf, a_sz); }
-        name_t(const char* a_buf)               { this->set_and_check(a_buf, strlen(a_buf)); }
+        explicit name_t(const std::string& a, bool a_no_case = false) {
+            this->set(a, a_no_case);
+        }
+
+        name_t(const char* a_buf, size_t a_sz, bool a_no_case = false) {
+            this->set_and_check(a_buf, a_sz, a_no_case);
+        }
 
         template <int N>
-        name_t (const char (&a_buf)[N])         { this->set_and_check(a_buf, N); }
+        name_t (const char (&a_buf)[N]) { this->set_and_check(a_buf, N, false); }
     };
 
 } // namespace util

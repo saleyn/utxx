@@ -45,6 +45,12 @@ BOOST_AUTO_TEST_CASE( test_name )
         BOOST_REQUIRE_EQUAL(expect, result);
     }
     {
+        char expect[] = "ABC_EF";
+        name_t s("aBc_Ef", 7, true);
+        const std::string& result = s.to_string();
+        BOOST_REQUIRE_EQUAL(expect, result);
+    }
+    {
         char value[]  = "C \177";
         char expect[] = "C";
         BOOST_REQUIRE_THROW(name_t s(value), badarg_error);
