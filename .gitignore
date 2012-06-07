@@ -29,3 +29,4 @@ configure
 libtool
 stamp-h1
 util.pc
+test.sh

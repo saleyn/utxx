@@ -10,6 +10,7 @@ test_util_SOURCES  	= \
 	test_atomic.cpp \
 	test_bitmap.cpp \
 	test_buffer.cpp \
+	test_shared_queue.cpp \
 	test_concurrent_fifo.cpp \
 	test_concurrent_stack.cpp \
 	test_concurrent_update.cpp \
