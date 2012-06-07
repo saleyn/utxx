@@ -56,12 +56,34 @@ public:
         : base_t(a_alloc) {
     }
 
+    /// Enqueue shared data to the queue without initiating a socket write.
     void enqueue(const shared_const_buffer& a_buf) {
         base_t::enqueue(a_buf);
     }
 
+    /// Enqueue undeletable data to the queue without initiating a socket write.
     void enqueue(const boost::asio::const_buffer& a_buf) {
         base_t::enqueue(shared_const_buffer(a_buf, nodel()));
+    }
+
+    /// Initiate asynchronous socket write.
+    template <class Socket, class Handler>
+    void async_write(Socket& a_socket, Handler a_h) {
+        base_t::async_write(a_socket, a_h);
+    }
+
+    /// Enqueue shared data and initiate asynchronous socket write.
+    template <class Socket, class Handler>
+    void async_write(Socket& a_socket, const shared_const_buffer& a_buf,
+            Handler a_h) {
+        base_t::async_write(a_socket, a_buf, a_h);
+    }
+
+    /// Enqueue undeletable data and initiate asynchronous socket write.
+    template <class Socket, class Handler>
+    void async_write(Socket& a_socket, const boost::asio::const_buffer& a_buf,
+            Handler a_h) {
+        base_t::async_write(a_socket, shared_const_buffer(a_buf, nodel()), a_h);
     }
 };
 

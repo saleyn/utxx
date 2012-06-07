@@ -5,7 +5,6 @@
  * \authors Serge Aleynikov, Dmitriy Kargapolov
  * \version 1.0
  * \since 05 June 2012
- *
  */
 
 /*
@@ -15,7 +14,6 @@
  * License, Version 1.0 (See accompanying file LICENSE_1_0.txt or copy
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
-
 
 #ifndef _UTIL_BASIC_BUFFER_QUEUE_HPP_
 #define _UTIL_BASIC_BUFFER_QUEUE_HPP_
