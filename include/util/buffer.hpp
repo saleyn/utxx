@@ -437,7 +437,7 @@ public:
         , m_is_writing(false)
     {
         m_out_queues[0] = &m_q1;
-        m_out_queues[1] = &m_q1;
+        m_out_queues[1] = &m_q2;
     }
 
     /// Swap available and writing queue indexes.
