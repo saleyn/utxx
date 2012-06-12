@@ -68,6 +68,21 @@ AX_BOOST_DATE_TIME
 # AX_BOOST_CHRONO
 AX_BOOST_UNIT_TEST_FRAMEWORK
 
+if test x"$ac_boost_path" != x; then
+    libsubdirs="lib"
+    ax_arch=`uname -m`
+    if test $ax_arch = x86_64 -o $ax_arch = ppc64 -o $ax_arch = s390x -o $ax_arch = sparc64; then
+        libsubdirs="lib64 lib"
+    fi
+    for ac_boost_path_tmp in $libsubdirs; do
+        if test -d "$ac_boost_path"/"$ac_boost_path_tmp" ; then
+            BOOST_LIBDIR="$ac_boost_path/$ac_boost_path_tmp"
+            AC_SUBST([BOOST_LIBDIR])
+            break
+        fi
+    done
+fi
+
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h sys/time.h])
 
@@ -88,6 +103,7 @@ dnl ------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([test/Makefile])
+AC_CONFIG_FILES([test.sh], [chmod +x test.sh])
 AC_CONFIG_FILES([util.pc:util.pc.in])
 
 AC_OUTPUT

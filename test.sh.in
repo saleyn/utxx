@@ -1,0 +1,17 @@
+#!/bin/sh
+
+test_case=$1
+shift
+
+if [ -z "${test_case}" ]; then
+	echo "use: $0 all | <test case> [other options]"
+	echo "where test cases are:"
+	grep BOOST_AUTO_TEST_CASE test/*.cpp | awk '{print $2}' |less
+	exit
+else
+	if [ "${test_case}" != "all" ]; then
+		tests="--run_test=${test_case}"
+	fi
+fi
+
+LD_LIBRARY_PATH=@BOOST_LIBDIR@ test/test_util $tests $*
