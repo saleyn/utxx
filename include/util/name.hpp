@@ -96,7 +96,7 @@ namespace util {
         static const size_t s_bits_per_c = 6;
         static const size_t s_len_bits   = 4;
         static const size_t s_len_shift  = sizeof(uint64_t)*8 - s_len_bits;
-        static const size_t s_len_mask   = ~0lu << s_len_shift;
+        static const size_t s_len_mask   = ~0llu << s_len_shift;
         static const size_t s_val_mask   = ~s_len_mask;
         static const size_t s_char_mask  = (1 << s_bits_per_c) - 1;
         BOOST_STATIC_ASSERT(s_size < 11);
@@ -240,7 +240,7 @@ namespace util {
     public:
         name_t() { m_value = 0u; }
         explicit name_t(uint64_t a_symbol) {
-            BOOST_ASSERT((a_symbol & s_val_mask >> s_len_shift) < s_size);
+            BOOST_ASSERT(((a_symbol & s_len_mask) >> s_len_shift) <= s_size);
             m_value = a_symbol;
         }
         explicit name_t(const std::string& a, bool a_no_case = false) {

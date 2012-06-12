@@ -77,6 +77,9 @@ const option* validator<D>::find(
         return NULL;
 
     std::string s = a_suffix.reduce();
+    size_t n = s.find_first_of('[');
+    if (n != std::string::npos)
+        s.erase(n);
 
     option_map::const_iterator it = a_options.find(s);
     if (it == a_options.end())
