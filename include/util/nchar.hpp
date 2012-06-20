@@ -159,7 +159,7 @@ namespace detail {
             return n;
         }
 
-        std::ostream& dump(std::ostream& out) {
+        std::ostream& dump(std::ostream& out) const {
             bool printable = true;
             const char* end = m_data + N;
             for (const char* p = m_data; p != end; ++p) {
