@@ -93,13 +93,21 @@ double atof(const char* p, const char* end)
     return sign * value;
 }
 
-int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact)
+/* For internal use by sys_double_to_chars_fast() */
+static char* float_first_trailing_zero(char* p)
+{
+    for (--p; *p == '0' && *(p-1) == '0'; --p);
+    if (*(p-1) == '.') ++p;
+    return p;
+}
+
+int ftoa_fast(double f, char *outbuf, int maxlen, int decimals, bool compact)
 {
     enum {
-          FRAC_SIZE = 52
-        , EXP_SIZE  = 11
-        , EXP_MASK  = (1ll << EXP_SIZE) - 1
-        , FRAC_MASK = (1ll << FRAC_SIZE) - 1
+          FRAC_SIZE  = 52
+        , EXP_SIZE   = 11
+        , EXP_MASK   = (1ll << EXP_SIZE) - 1
+        , FRAC_MASK  = (1ll << FRAC_SIZE) - 1
         , FRAC_MASK2 = (1ll << (FRAC_SIZE + 1)) - 1
         , MAX_FLOAT  = 1ll << (FRAC_SIZE+1)
     };
@@ -133,16 +141,21 @@ int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact)
         return p - outbuf;
     }
 
-    exp     -= EXP_MASK >> 1;
+    exp      -= EXP_MASK >> 1;
     mantissa |= (1ll << FRAC_SIZE);
     frac_part = 0;
     int_part  = 0;
     absf      = f * sign;
 
-    /* Don't bother with optimizing too large numbers and precision */
-    if (absf > MAX_FLOAT || precision > maxlen-17) {
-       int len = snprintf(outbuf, maxlen, "%.*f", precision, f);
-       return len;
+    /* Don't bother with optimizing too large numbers and decimals */
+    if (absf > MAX_FLOAT || decimals > maxlen-17) {
+        int len = snprintf(outbuf, maxlen-1, "%.*f", decimals, f);
+        p = outbuf + len;
+        /* Delete trailing zeroes */
+        if (compact)
+            p = float_first_trailing_zero(outbuf + len);
+        *p = '\0';
+        return p - outbuf;
     }
 
     if (exp >= FRAC_SIZE)
@@ -170,17 +183,18 @@ int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact)
         /* Reverse string */
         ret = p - outbuf;
         for (i = 0, n = ret/2; i < n; i++) {
+            int j = ret - i - 1;
             c = outbuf[i];
-            outbuf[i] = outbuf[ret - i - 1];
-            outbuf[ret - i - 1] = c;
+            outbuf[i] = outbuf[j];
+            outbuf[j] = c;
         }
     }
-    if (precision != 0)
+    if (decimals != 0)
         *p++ = '.';
 
-    max = maxlen - (p - outbuf);
-    if (max > precision)
-        max = precision;
+    max = maxlen - (p - outbuf) - 1 /* leave room for trailing '\0' */;
+    if (max > decimals)
+        max = decimals;
     for (m = 0; m < max; m++) {
         /* frac_part *= 10; */
         frac_part = (frac_part << 3) + (frac_part << 1);
@@ -188,10 +202,7 @@ int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact)
         *p++ = (char)((frac_part >> (FRAC_SIZE + 1)) + '0');
         frac_part &= FRAC_MASK2;
     }
-    /* Delete ending zeroes */
-    if (compact)
-        for (--p; *p == '0' && *(p-1) == '0'; --p);
-    
+
     roundup = 0;
     /* Rounding - look at the next digit */
     frac_part = (frac_part << 3) + (frac_part << 1);
@@ -208,14 +219,18 @@ int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact)
         do {
             d = outbuf[pos];
             if (d == '-') break;
-            if (d == '.') { pos--; continue; }
-            d++; outbuf[pos] = d;
-            if (d != ':') break;
+            if (d == '.') continue;
+            if (++d != ':') {
+                outbuf[pos] = d;
+                break;
+            }
             outbuf[pos] = '0';
-            pos--;
-        } while (pos);
+        } while (--pos);
     }
 
+    /* Delete trailing zeroes */
+    if (compact)
+        p = float_first_trailing_zero(--p);
     *p = '\0';
     return p - outbuf;
 }
