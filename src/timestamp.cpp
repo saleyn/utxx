@@ -115,12 +115,12 @@ int timestamp::format(stamp_type a_tp,
         case TIME_WITH_USEC:
             write_time(a_buf, sec, 15);
             a_buf[8] = '.';
-            itoa(a_buf+9, 6, l_usec, '0');
+            itoa_right(a_buf+9, 6, l_usec, '0');
             return 15;
         case TIME_WITH_MSEC:
             write_time(a_buf, sec, 12);
             a_buf[8] = '.';
-            itoa(a_buf+9, 3, l_usec / 1000, '0');
+            itoa_right(a_buf+9, 3, l_usec / 1000, '0');
             return 12;
         case DATE_TIME:
             write_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, a_utc, 9);
@@ -130,13 +130,13 @@ int timestamp::format(stamp_type a_tp,
             write_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, a_utc, 9);
             write_time(a_buf+9, sec, 15);
             a_buf[17] = '.';
-            itoa(a_buf+18, 6, l_usec, '0');
+            itoa_right(a_buf+18, 6, l_usec, '0');
             return 24;
         case DATE_TIME_WITH_MSEC:
             write_date(a_buf, l_rel ? s_last_time.tv_sec : tv->tv_sec, a_utc, 9);
             write_time(a_buf+9, sec, 12);
             a_buf[17] = '.';
-            itoa(a_buf+18, 3, l_usec / 1000, '0');
+            itoa_right(a_buf+18, 3, l_usec / 1000, '0');
             return 21;
         default:
             strcpy(a_buf, "UNDEFINED");
