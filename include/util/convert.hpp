@@ -89,7 +89,7 @@ namespace detail {
                 return;
             }
             next::save_itoa(bytes, m, a_pad);
-        }  
+        }
 
         static uint64_t load_atoi(const Char*& bytes, uint64_t acc) {
             typename boost::make_unsigned<Char>::type i=*bytes-'0';
@@ -225,14 +225,14 @@ namespace detail {
                 if (p >= bytes)
                     *p--= '-';
                 return pad ? bytes-1 : p;
-            }                
+            }
             p = signness_helper<T, N, false, RIGHT_JUSTIFIED, Char>::
                 fast_itoa(bytes, i, pad);
             return pad ? bytes-1 : p;
         }
 
         /**
-         * A replacement to atoi() library function that does 
+         * A replacement to atoi() library function that does
          * the job 4 times faster. Additionally it allows skipping
          * leading characters before making a signness_helper.
          */
@@ -492,11 +492,13 @@ inline const char* atoi_right(const Char (&bytes)[N], T& value, Char skip = '\0'
 }
 
 //--------------------------------------------------------------------------------
-// Fallback implementation of itoa.
+/// Fallback implementation of itoa. Prints \a a_value into \a a_data buffer
+/// right padded with \a a_pad character.
+/// @return pointer to the beginning of the buffer.
 // 2010-10-15 Serge Aleynikov
 //--------------------------------------------------------------------------------
 template <typename T, typename Char>
-inline Char* itoa(Char* a_data, size_t a_size, T a_value, Char a_pad = '\0') {
+inline Char* itoa_right(Char* a_data, size_t a_size, T a_value, Char a_pad = '\0') {
     BOOST_ASSERT(a_size > 0);
     Char* p = a_data + a_size - 1;
     while (p >= a_data) {
@@ -526,7 +528,7 @@ inline bool fast_atoi(const char* a_str, const char* a_end, long& result, bool t
 
     if (*a_str == '-') { l_neg = true; ++a_str; }
     else               { l_neg = false; }
-    
+
     long x = 0;
 
     do {
