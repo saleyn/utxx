@@ -8,6 +8,9 @@
 
 #include <boost/asio.hpp>
 
+namespace boost {
+namespace asio {
+
 class iovec_range {
     struct to_buffer {
         typedef boost::asio::mutable_buffer result_type;
@@ -25,7 +28,12 @@ public:
 
 };
 
+} // namespace asio
+} // namespace boost
+
 #if 0
+using boost::asio::iovec_range;
+
 int main()
 {
     iovec vec[10] = { { 0, 0 } };
