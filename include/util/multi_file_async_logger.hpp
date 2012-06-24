@@ -246,6 +246,12 @@ public:
     /// writing any messages to it.
     void set_writer(const file_id& a_id, const msg_writer& a_writer);
 
+    /// Set the size of a batch used to write messages to file using on_write
+    /// function. Valid value is between 1 and IOV_MAX.
+    /// Call this function immediately after calling open_file() and before
+    /// writing any messages to it.
+    void set_batch_size(const file_id& a_id, size_t a_size);
+
     /// Close one log file
     /// @param a_id identifier of the file to be closed. After return the value
     ///             will be reset.
@@ -417,6 +423,12 @@ set_writer(const file_id& a_id, const msg_writer& a_writer) {
     m_files[a_id.fd()].on_write = a_writer ? a_writer : &::writev;
 }
 
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+set_batch_size(const file_id& a_id, size_t a_size) {
+    BOOST_ASSERT(check_range(a_id));
+    m_files[a_id.fd()].max_batch_sz = a_size < IOV_MAX ? a_size : IOV_MAX;
+}
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
