@@ -233,6 +233,8 @@ namespace util {
         bool operator> (const self_type& a_rhs) const {
             return (m_value & s_val_mask) > (a_rhs.m_value & s_val_mask);
         }
+
+        std::ostream& operator<<(std::ostream& out) const { out << to_string(); }
     };
 
     class name_t : public basic_short_name<10u> {
