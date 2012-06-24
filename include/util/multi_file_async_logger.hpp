@@ -70,6 +70,10 @@ struct multi_file_async_logger_traits {
     /// functions.  The returned iovec will be used as the content written to disk.
     typedef boost::function<iovec (iovec& a_msg)> msg_formatter;
 
+    /// Callback called on writing scattered array of iovec structures to file
+    /// descriptor.  Implementation defaults to writev(3).
+    typedef boost::function<int (int, const iovec*, size_t)> msg_writer;
+
     enum {
           commit_timeout    = 2000  // commit this number of usec
         , write_buf_sz      = 256   // Max size of the buffer for string formatting
@@ -81,6 +85,7 @@ template<typename traits = multi_file_async_logger_traits>
 struct basic_multi_file_async_logger {
     typedef typename traits::event_type             event_type;
     typedef typename traits::msg_formatter          msg_formatter;
+    typedef typename traits::msg_writer             msg_writer;
     typedef synch::posix_event                      close_event_type;
     typedef boost::shared_ptr<close_event_type>     close_event_type_ptr;
     typedef typename traits::allocator::template
@@ -90,11 +95,19 @@ struct basic_multi_file_async_logger {
         std::string          name;
         int                  fd;
         int                  error;
-        int                  version;  // Version number assigned when file is opened.
-        close_event_type_ptr on_close; // Event to signal on close
-        msg_formatter        on_format;
+        int                  version;       // Version number assigned when file is opened.
+        size_t               max_batch_sz;  // Max number of messages to be batched
+        close_event_type_ptr on_close;      // Event to signal on close
+        msg_formatter        on_format;     // Message "before-write" formatter
+        msg_writer           on_write;      // Message writer
 
-        file_info() : fd(-1), error(0), version(0) {}
+        file_info()
+            : fd(-1), error(0), version(0), max_batch_sz(IOV_MAX)
+            , on_format(&file_info::def_on_format)
+            , on_write(&::writev)
+        {}
+
+        static iovec def_on_format(iovec& a_msg) { return a_msg; }
     };
 
     class file_id {
@@ -115,7 +128,7 @@ struct basic_multi_file_async_logger {
     };
 
 private:
-    typedef std::vector<file_info>                          file_info_vec;
+    typedef std::vector<file_info> file_info_vec;
 
     struct command_t {
         enum type_t { msg, close } type;
@@ -226,6 +239,12 @@ public:
     /// call this function immediately after calling open_file() and before
     /// writing any messages to it.
     void set_formatter(const file_id& a_id, const msg_formatter& a_formatter);
+
+    /// This callback will be called from within the logger's thread
+    /// to write an array of iovec structures to a log file. You should
+    /// call this function immediately after calling open_file() and before
+    /// writing any messages to it.
+    void set_writer(const file_id& a_id, const msg_writer& a_writer);
 
     /// Close one log file
     /// @param a_id identifier of the file to be closed. After return the value
@@ -387,8 +406,17 @@ template<typename traits>
 void basic_multi_file_async_logger<traits>::
 set_formatter(const file_id& a_id, const msg_formatter& a_formatter) {
     BOOST_ASSERT(check_range(a_id));
-    m_files[a_id.fd()].on_format = a_formatter;
+    m_files[a_id.fd()].on_format =
+        a_formatter ? a_formatter : &file_info::def_on_format;
 }
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+set_writer(const file_id& a_id, const msg_writer& a_writer) {
+    BOOST_ASSERT(check_range(a_id));
+    m_files[a_id.fd()].on_write = a_writer ? a_writer : &::writev;
+}
+
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
@@ -520,7 +548,7 @@ template<typename traits>
 int basic_multi_file_async_logger<traits>::
 do_writev_and_free(file_info& a_fi, command_t* a_cmds[], const iovec* a_wr_iov, size_t a_sz)
 {
-    int n = a_sz ? ::writev(a_fi.fd, a_wr_iov, a_sz) : 0;
+    int n = a_sz ? a_fi.on_write(a_fi.fd, a_wr_iov, a_sz) : 0;
     if (n < 0) {
         a_fi.error = errno;
         LOG_ERROR(("Error writing data to file %s: (%d) %s\n",
@@ -621,8 +649,8 @@ commit(const struct timespec* tsp)
 
         ASYNC_TRACE(("Processing commands for fd=%d\n", l_fd));
 
-        struct iovec      iov[IOV_MAX];  // Contains pointers to write
-        struct command_t* cmds[IOV_MAX];
+        struct iovec      iov [l_fi->max_batch_sz];  // Contains pointers to write
+        struct command_t* cmds[l_fi->max_batch_sz];
         size_t n = 0, sz = 0;
 
         BOOST_ASSERT(p);
@@ -631,14 +659,13 @@ commit(const struct timespec* tsp)
             command_t* l_next = p->next;
             switch (p->type) {
                 case command_t::msg: {
-                    iov[n]  = l_on_fmt  ? l_on_fmt(p->args.msg)
-                                        : p->args.msg;
+                    iov[n]  = l_on_fmt(p->args.msg);
                     cmds[n] = p;
                     ASYNC_TRACE(("FD=%d, Command %lu address %p write(%p, %lu) free(%p, %lu)\n",
                             l_fd, n, cmds[n], iov[n].iov_base, iov[n].iov_len,
                             p->args.msg.iov_base, p->args.msg.iov_len));
                     sz += iov[n].iov_len;
-                    if (++n == IOV_MAX || p == NULL) {
+                    if (++n == l_fi->max_batch_sz || p == NULL) {
                         #ifdef DEBUG_ASYNC_LOGGER
                         int k =
                         #endif
