@@ -520,7 +520,7 @@ template<typename traits>
 int basic_multi_file_async_logger<traits>::
 do_writev_and_free(file_info& a_fi, command_t* a_cmds[], const iovec* a_wr_iov, size_t a_sz)
 {
-    int n = ::writev(a_fi.fd, a_wr_iov, a_sz);
+    int n = a_sz ? ::writev(a_fi.fd, a_wr_iov, a_sz) : 0;
     if (n < 0) {
         a_fi.error = errno;
         LOG_ERROR(("Error writing data to file %s: (%d) %s\n",
@@ -640,7 +640,7 @@ commit(const struct timespec* tsp)
                     sz += iov[n].iov_len;
                     if (++n == IOV_MAX || p == NULL) {
                         #ifdef DEBUG_ASYNC_LOGGER
-                        int k = 
+                        int k =
                         #endif
                         do_writev_and_free(*l_fi, cmds, iov, n);
                         ASYNC_TRACE(("Written %d bytes to %s\n", k,
