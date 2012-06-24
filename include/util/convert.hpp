@@ -469,7 +469,7 @@ template <typename T, int Size>
 inline std::string itoa_right(T value, char pad = '\0') {
     char buf[Size];
     char* p = itoa_right<T,Size>(buf, value, pad);
-    return std::string(buf, p - buf);
+    return std::string(p+1, buf+Size - p - 1);
 }
 
 /**

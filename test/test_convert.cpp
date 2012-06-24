@@ -465,3 +465,9 @@ BOOST_AUTO_TEST_CASE( test_convert_ftoa_right )
         BOOST_REQUIRE_EQUAL(6, n);
     }
 }
+
+BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )
+{
+    BOOST_REQUIRE_EQUAL("0001", (itoa_right<int, 4>(1, '0')));
+    BOOST_REQUIRE_EQUAL("1", (itoa_right<int, 10>(1)));
+}
