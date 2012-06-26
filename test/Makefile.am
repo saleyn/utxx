@@ -8,6 +8,7 @@ bin_PROGRAMS       	= test_util \
 test_util_SOURCES  	= \
 	test_alloc_fixed_page.cpp \
 	test_atomic.cpp \
+	test_basic_udp_receiver.cpp \
 	test_bitmap.cpp \
 	test_buffer.cpp \
 	test_shared_queue.cpp \
