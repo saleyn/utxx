@@ -234,7 +234,9 @@ namespace util {
             return (m_value & s_val_mask) > (a_rhs.m_value & s_val_mask);
         }
 
-        std::ostream& operator<<(std::ostream& out) const { out << to_string(); }
+        std::ostream& operator<<(std::ostream& out) const {
+            return out << to_string();
+        }
     };
 
     class name_t : public basic_short_name<10u> {
