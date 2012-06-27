@@ -100,7 +100,7 @@ namespace detail {
         template <class T>
         streamed_exception& operator<< (const T& a) { *m_out << a; return *this; }
 
-        virtual const char* what()  const throw() { return m_out->str().c_str(); }
+        virtual const char* what()  const throw() { return str().c_str(); }
         virtual std::string str()   const { return m_out->str();  }
     };
 }
