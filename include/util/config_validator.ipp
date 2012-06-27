@@ -105,6 +105,56 @@ const option* validator<D>::find(const config_path& a_path,
 }
 
 template <class D>
+std::string validator<D>::substitute_env_vars(
+    subst_env_type a_type, const std::string& a_value) const
+{
+    namespace pt = boost::posix_time;
+    switch (a_type) {
+        case ENV_VARS:
+            return path::replace_env_vars(a_value);
+        case ENV_VARS_AND_DATETIME: {
+            struct tm tm = pt::to_tm(pt::second_clock::local_time());
+            return path::replace_env_vars(a_value, &tm);
+        }
+        case ENV_VARS_AND_DATETIME_UTC: {
+            struct tm tm = pt::to_tm(pt::second_clock::universal_time());
+            return path::replace_env_vars(a_value, &tm);
+        }
+        default:
+            return a_value;
+    }
+}
+
+template <class D>
+template <class T>
+T validator<D>::get(const config_path& a_option, const config_tree& a_config,
+    const config_path& a_root_path) const throw(config_error)
+{
+    T l_value;
+    const option* l_opt = find(a_option, a_root_path);
+    try {
+        l_value = a_config.get<T>(a_option.dump());
+    } catch (config_bad_path&) {
+        if (!l_opt)
+            throw config_error(
+                a_root_path.empty() ? a_option : a_root_path / a_option,
+                "Required option doesn't have default value!");
+        l_value = l_opt->default_value.get<T>();
+    }
+    return substitute_env_vars(l_opt ? l_opt->subst_env : ENV_NONE, l_value);
+}
+
+template <class D>
+const config_tree& validator<D>::get_child(const config_path& a_option,
+    const config_tree& a_config, const config_path& a_root_path) const throw(config_error)
+{
+    const static config_tree s_null;
+    try { return a_config.get_child(a_option.dump()); } catch (config_bad_path&) {}
+    default_value(a_option, a_root_path); // No default -> exception thrown
+    return s_null; // Return empty tree in case there's a node in the metadata.
+}
+
+template <class D>
 const variant& validator<D>::default_value(const config_path& a_path,
     const config_path& a_root_path) const throw (config_error)
 {

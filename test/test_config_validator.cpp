@@ -125,6 +125,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
         "\n"
         "  abc: string\n"
         "        Default: \"x\"\n"
+        "\n"
+        "tmp_str: string\n"
+        "      Default: \"$TMP\"\n"
         "\n",
         s.str());
 }
@@ -181,7 +184,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
-        BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
+        BOOST_REQUIRE_EQUAL("Missing a required child option connection.address", e.what());
     }
 }
 
@@ -199,7 +202,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
-        BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
+        BOOST_REQUIRE_EQUAL("Missing a required child option connection.address", e.what());
     }
 
     l_config.clear();
@@ -463,7 +466,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("section", e.path());
-        BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
+        std::string s = e.what();
+        BOOST_REQUIRE_EQUAL("Missing a required child option location", s);
     }
 
     l_config.clear();
@@ -527,4 +531,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator_def )
     } catch (config_error& e) {
         BOOST_REQUIRE_EQUAL("test.country.name", e.path());
     }
+
+    std::string l_tmp_str = l_validator.get<std::string>("test.tmp_str", l_config);
+    BOOST_REQUIRE(l_tmp_str.find('$') == std::string::npos);
 }

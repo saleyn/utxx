@@ -60,7 +60,7 @@
 ///                       option.  The later is an option with a variable
 ///                       name.  It may be useful to have options where the
 ///                       option's name signifies a group name of options.
-///     - <tt>value_type</tt> - the type of option's value: "string", "int",
+///     - <tt>val_type</tt> - the type of option's value: "string", "int",
 ///                       "float", "bool".
 ///     - <tt>description</tt> - description of an option (used for
 ///                       outputting usage details).
@@ -72,6 +72,10 @@
 ///                       a value. Otherwise the option is optional.
 ///     - <tt>min</tt> -  min value of the option (valid only for int/float).
 ///     - <tt>max</tt> -  max value of the option (valid only for int/float).
+///     - <tt>macros</tt> - perform environment substitution in the value.
+///                       Only valid for string type. Valid values are:
+///                       'false', 'true' (same as 'env'),
+///                       'env', 'env-date', 'env-date-utc'.
 /// </code>
 ///
 /// An option may have an optional 'value' child tag. If provided, the body
@@ -174,9 +178,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTIL_CONFIG_VALIDATOR_HPP_
 
 #include <util/config_tree.hpp>
+#include <util/path.hpp>
 #include <util/error.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/date_time/posix_time/conversion.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <set>
 #include <list>
 #include <map>
@@ -194,6 +202,14 @@ namespace config {
         , FLOAT
         , ANONYMOUS // Doesn't have a fixed name
         , BRANCH    // May not have value, but may have children
+    };
+
+    /// Environment subsctitution type
+    enum subst_env_type {
+          ENV_NONE                  // No substitution
+        , ENV_VARS                  // Substitute environment variables only
+        , ENV_VARS_AND_DATETIME     // Substitute environment variables and datetime macros
+        , ENV_VARS_AND_DATETIME_UTC // Same as ENV_VARS_AND_DATETIME but using UTC clock
     };
 
     typedef std::set<variant>               variant_set;
@@ -218,6 +234,8 @@ namespace config {
         option_map      children;
         bool            required;
         bool            unique;
+        subst_env_type  subst_env;  // If true, the value may have environment
+                                    // variable references that require substitution
 
         option() : opt_type(UNDEF), value_type(UNDEF), required(true), unique(true) {}
 
@@ -226,6 +244,7 @@ namespace config {
                 const std::string& a_desc = std::string(),
                 bool a_unique = true,
                 bool a_required = true,
+                subst_env_type a_subst_env = ENV_NONE,
                 const variant& a_def = variant(),
                 const variant& a_min = variant(),
                 const variant& a_max = variant(),
@@ -242,6 +261,7 @@ namespace config {
             , children(a_options)
             , required(!a_required ? false : a_def.type() == variant::TYPE_NULL)
             , unique(a_unique)
+            , subst_env(a_subst_env)
         {}
 
         bool operator== (const option& a_rhs) const { return name == a_rhs.name; }
@@ -285,6 +305,10 @@ namespace config {
         static const option* find(config_path& a_suffix, const option_map& a_options)
             throw ();
 
+        template <typename T>
+        T substitute_env_vars(subst_env_type, const T& a_value) const { return a_value; }
+        std::string substitute_env_vars(
+            subst_env_type a_type, const std::string& a_value) const;
     protected:
         config_path m_root;       // Path from configuration root
         option_map  m_options;
@@ -332,23 +356,11 @@ namespace config {
         ///             fully qualified from the root.
         template <class T>
         T get(const config_path& a_option, const config_tree& a_config,
-            const config_path& a_root_path = config_path()) const throw(config_error)
-        {
-            try { return a_config.get<T>(a_option.dump()); } catch (config_bad_path&) {
-                return default_value(
-                    a_root_path.empty() ? a_option : a_root_path / a_option).get<T>();
-            }
-        }
+            const config_path& a_root_path = config_path()) const throw(config_error);
 
         const config_tree& get_child(const config_path& a_option,
             const config_tree& a_config, const config_path& a_root_path = config_path())
-                const throw(config_error)
-        {
-            const static config_tree s_null;
-            try { return a_config.get_child(a_option.dump()); } catch (config_bad_path&) {}
-            default_value(a_option, a_root_path); // No default -> exception thrown
-            return s_null; // Return empty tree in case there's a node in the metadata.
-        }
+                const throw(config_error);
 
         /// @return vector of configuration options
         const option_map& options() const { return m_options; }

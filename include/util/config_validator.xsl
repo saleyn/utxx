@@ -187,7 +187,7 @@ namespace </xsl:text>
                         <xsl:otherwise>
                             <xsl:message terminate="yes">
                                 <xsl:text>Invalid value of the 'unique' attribute </xsl:text>
-                                <xsl:value-of select="@unique"/><xsl:text>of option </xsl:text>
+                                <xsl:value-of select="@unique"/><xsl:text> of option </xsl:text>
                                 <xsl:value-of select="@name"/>
                             </xsl:message>
                         </xsl:otherwise>
@@ -200,7 +200,28 @@ namespace </xsl:text>
                         <xsl:otherwise>
                             <xsl:message terminate="yes">
                                 <xsl:text>Invalid value of the 'required' attribute </xsl:text>
-                                <xsl:value-of select="@required"/><xsl:text>of option </xsl:text>
+                                <xsl:value-of select="@required"/><xsl:text> of option </xsl:text>
+                                <xsl:value-of select="@name"/>
+                            </xsl:message>
+                        </xsl:otherwise>
+                    </xsl:choose>
+                    <xsl:text>, </xsl:text>
+                    <xsl:choose>
+                        <xsl:when test="not($type = 'string')"><xsl:text>config::ENV_NONE</xsl:text></xsl:when>
+                        <xsl:when test="@macros = 'true'"><xsl:text>config::ENV_VARS</xsl:text></xsl:when>
+                        <xsl:when test="@macros = 'false'"><xsl:text>config::ENV_NONE</xsl:text></xsl:when>
+                        <xsl:when test="@macros = 'env'"><xsl:text>config::ENV_VARS</xsl:text></xsl:when>
+                        <xsl:when test="@macros = 'env-date'">
+                            <xsl:text>config::ENV_VARS_AND_DATETIME</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="@macros = 'env-date-utc'">
+                            <xsl:text>config::ENV_VARS_AND_DATETIME_UTC</xsl:text>
+                        </xsl:when>
+                        <xsl:when test="not(@macros)"><xsl:text>config::ENV_NONE</xsl:text></xsl:when>
+                        <xsl:otherwise>
+                            <xsl:message terminate="yes">
+                                <xsl:text>Invalid value of the 'macros' attribute </xsl:text>
+                                <xsl:value-of select="@macros"/><xsl:text> of option </xsl:text>
                                 <xsl:value-of select="@name"/>
                             </xsl:message>
                         </xsl:otherwise>
