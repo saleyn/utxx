@@ -301,11 +301,13 @@ namespace util {
             m_end    = m_begin + a_max_recs;
             BOOST_ASSERT(reinterpret_cast<char*>(m_end) <= static_cast<char*>(addr)+size);
 
-            if (!l_exists && !a_read_only) {
+            //if (!l_exists && !a_read_only) {
+            if (!a_read_only) {
                 bip::file_lock flock(a_filename);
                 bip::scoped_lock<bip::file_lock> g_lock(flock);
 
-                // If the file was just created, initialize the locks
+                // If the file is open for writing, initialize the locks
+                // since previous program crash might have left locks in inconsistent state
                 for (Lock* l = m_header->locks, *e = l + NLocks; l != e; ++l)
                     new (l) Lock();
             }

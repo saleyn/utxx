@@ -194,10 +194,18 @@ namespace util {
         /// padding character on the right.
         template <int N>
         int write(char (&a_buf)[N], char pad) const {
-            int n = write(a_buf, N);
-            return right_pad(pad, a_buf+n, a_buf+N) - a_buf;
+            return write(a_buf, N, pad);
         }
 
+        /// Write decoded name to a given
+        /// character buffer left-justified using \a pad as the
+        /// padding character on the right.
+        int write(char* a_buf, size_t a_size, char pad) const {
+            int n = write(a_buf, a_size);
+            return right_pad(pad, a_buf+n, a_buf+a_size) - a_buf;
+        }
+
+        /// Write decoded name to a given character buffer
         int write(char* a_buf, size_t a_size) const {
             BOOST_ASSERT(a_size == SIZE || a_size > length());
             size_t n = unsafe_write(a_buf);
