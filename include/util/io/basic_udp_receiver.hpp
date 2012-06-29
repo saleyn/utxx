@@ -57,7 +57,7 @@ public:
         m_socket.set_option(l_opt);
 
         if (a_buf_sz) {
-            boost::asio::socket_base::send_buffer_size l_opt(a_buf_sz);
+            boost::asio::socket_base::receive_buffer_size l_opt(a_buf_sz);
             m_socket.set_option(l_opt);
         }
 
