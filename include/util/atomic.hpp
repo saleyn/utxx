@@ -167,6 +167,18 @@ bool dcas(volatile T* p, I vold, I vnew) {
     return detail::dcas<sizeof(T), int_t>(p, (int_t*)&vold, (int_t*)&vnew);
 }
 
+static inline int add(volatile int* v, int inc)
+{
+    int ret;
+    __asm__ __volatile__ (
+        "lock xadd %0,(%1)"
+        : "=r" (ret)
+        : "r" (v), "0" (inc)
+        : "memory"
+    );
+    return ret;
+}
+
 static inline long add(volatile long* v, long inc)
 {
     long ret;

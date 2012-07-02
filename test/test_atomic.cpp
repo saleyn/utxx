@@ -143,6 +143,12 @@ BOOST_AUTO_TEST_CASE( test_atomic_add )
     BOOST_REQUIRE_EQUAL(2, n);
     BOOST_REQUIRE_EQUAL(2, atomic::add(&n, -1));
     BOOST_REQUIRE_EQUAL(1, n);
+    volatile int m = 1;
+    BOOST_REQUIRE_EQUAL(1, atomic::add(&m,  1));
+    BOOST_REQUIRE_EQUAL(2, m);
+    BOOST_REQUIRE_EQUAL(2, atomic::add(&m, -1));
+    BOOST_REQUIRE_EQUAL(1, m);
+
     atomic::inc(&n);
     BOOST_REQUIRE_EQUAL(2, n);
     atomic::dec(&n);
