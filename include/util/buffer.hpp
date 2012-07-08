@@ -89,7 +89,7 @@ protected:
 
     /// Deallocate any heap space occupied by the buffer.
     void deallocate() {
-        if (m_begin != m_data && N > 0) {
+        if (m_begin != m_data && N) {
             m_allocator.deallocate(m_begin, max_size());
             m_begin = m_data;
             m_end   = m_begin + N;
@@ -176,22 +176,24 @@ protected:
     ///         value preceeding the increment of its position by \a n.
     /// @param n is the number of bytes to read.
     char* read(int n) {
-        if (n == 0 || (size_t)n > size())
+        if (unlikely((size_t)n > size()))
             return NULL;
         char* p = m_rd_ptr;
-        m_rd_ptr += n;
-        BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+        if (likely(n)) {
+            m_rd_ptr += n;
+            BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+        }
         return p;
     }
 
     /// Do the same action as read(n), and call crunch() function
     /// when the buffer's capacity gets less than the wr_lwm() value.
     /// @param n is the number of bytes to read.
-    /// @returns NULL if there is not enough data in the buffer 
+    /// @returns -1 if there is not enough data in the buffer 
     ///         to read \a n bytes.
     int read_and_crunch(int n) {
-        if (read(n) == NULL)
-            return 0;
+        if (unlikely(read(n) == NULL))
+            return -1;
         if (capacity() < m_wr_lwm)
             crunch();
         BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
@@ -218,7 +220,7 @@ protected:
         if (m_rd_ptr == m_begin)
             return;
         size_t sz = size();
-        if (sz > 0) {
+        if (sz) {
             if (unlikely(m_begin + sz > m_rd_ptr)) // overlap of memory block
                 memmove(m_begin, m_rd_ptr, sz);
             else
