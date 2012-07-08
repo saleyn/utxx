@@ -57,9 +57,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace util {
 
-    namespace { namespace bip = boost::interprocess; }
+    namespace {
+        namespace bip = boost::interprocess;
+        struct empty_data {};
+    }
 
-    template <typename T, size_t NLocks = 32, typename Lock = boost::mutex>
+    template <
+        typename T,
+        size_t NLocks = 32,
+        typename Lock = boost::mutex,
+        typename ExtraHeaderData = empty_data>
     struct persist_array {
         struct header {
             static const uint32_t s_version = 0xa0b1c2d3;
@@ -68,11 +75,12 @@ namespace util {
             size_t          max_recs;
             size_t          rec_size;
             Lock            locks[NLocks];
+            ExtraHeaderData extra_header_data;
             T               records[0];
         };
 
     protected:
-        typedef persist_array<T, NLocks, Lock> self;
+        typedef persist_array<T, NLocks, Lock, ExtraHeaderData> self_type;
 
         BOOST_STATIC_ASSERT(!(NLocks & (NLocks - 1))); // must be power of 2
 
@@ -115,6 +123,8 @@ namespace util {
 
         size_t count()    const { return static_cast<size_t>(m_header->rec_count); }
         size_t capacity() const { return m_header->max_recs; }
+
+        ExtraHeaderData& extra_header_data() { return m_header->extra_header_data; }
 
         /// Allocate next record and return its ID.
         /// @return
@@ -205,8 +215,8 @@ namespace util {
     // Implementation
     //-------------------------------------------------------------------------
 
-    template <typename T, size_t NLocks, typename Lock>
-    bool persist_array<T,NLocks,Lock>::
+    template <typename T, size_t NLocks, typename Lock, typename Ext>
+    bool persist_array<T,NLocks,Lock,Ext>::
     init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode)
         throw (io_error)
     {
