@@ -57,16 +57,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace util {
 
-    namespace {
-        namespace bip = boost::interprocess;
-        struct empty_data {};
-    }
+    namespace { namespace bip = boost::interprocess; }
+    namespace detail { struct empty_data {}; }
 
     template <
         typename T,
         size_t NLocks = 32,
         typename Lock = boost::mutex,
-        typename ExtraHeaderData = empty_data>
+        typename ExtraHeaderData = detail::empty_data>
     struct persist_array {
         struct header {
             static const uint32_t s_version = 0xa0b1c2d3;
