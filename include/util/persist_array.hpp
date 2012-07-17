@@ -77,6 +77,7 @@ namespace util {
             T               records[0];
         };
 
+        static const size_t s_locks = NLocks;
     protected:
         typedef persist_array<T, NLocks, Lock, ExtraHeaderData> self_type;
 
@@ -201,14 +202,27 @@ namespace util {
         T*          begin()       { return m_begin; }
         T*          end()         { return m_end; }
 
+        /// Call \a a_visitor for every record.
+        /// @param a_visitor functor accepting two arguments:
+        ///    (size_t rec_num, T* data)
+        /// @param a_min_rec start from this record number
+        /// @param a_count print up to this number of records (0 - all)
+        /// @return number of records processed.
         template <class Visitor>
-        void for_each(const Visitor& a_visitor) {
-            size_t n = 0;
-            for (const T* p = begin(), *e = p + count(); p != e; ++p, ++n)
-                a_visitor(n, p);
+        size_t for_each(const Visitor& a_visitor, size_t a_min_rec = 0, size_t a_count = 0) const {
+            const T* l_begin = begin() + a_min_rec;
+            const T* p = l_begin;
+            const T* l_end = begin() + count();
+            const T* e = p + (a_count ? a_count : count());
+            if (e > l_end) e = l_end;
+            if (p >= e)
+                return 0;
+            for (int i = 0; p != e; ++p, ++i)
+                a_visitor(a_min_rec + i, p);
+            return e - l_begin;
         }
 
-        std::ostream& dump(std::ostream& out, const std::string& a_prefix="") {
+        std::ostream& dump(std::ostream& out, const std::string& a_prefix="") const {
             for (const T* p = begin(), *e = p + count(); p != e; ++p)
                 out << a_prefix << *p << std::endl;
             return out;
