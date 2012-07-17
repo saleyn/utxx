@@ -184,7 +184,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
-        BOOST_REQUIRE_EQUAL("Missing a required child option connection.address", e.what());
+        BOOST_REQUIRE_EQUAL(
+            "Config error [country]: Missing a required child option connection.address",
+            e.what());
     }
 }
 
@@ -202,7 +204,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
-        BOOST_REQUIRE_EQUAL("Missing a required child option connection.address", e.what());
+        BOOST_REQUIRE_EQUAL(
+            "Config error [country]: Missing a required child option connection.address",
+            e.what());
     }
 
     l_config.clear();
@@ -230,7 +234,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
         BOOST_REQUIRE(true); // TODO: throw error because country.US.connection.address is undefined
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US]", e.path());
-        BOOST_REQUIRE_EQUAL("Option is missing required child option connection.address", e.what());
+        BOOST_REQUIRE_EQUAL(
+            "Config error [country[US]]: Option is missing required child option connection.address",
+            e.what());
     }
 }
 
@@ -249,7 +255,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator4 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("duration[5]", e.path());
-        BOOST_REQUIRE_EQUAL("Value too small!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [duration[5]]: Value too small!", e.what());
     }
 }
 
@@ -268,7 +274,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator5 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("root.duration[61]", e.path());
-        BOOST_REQUIRE_EQUAL("Value too large!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [root.duration[61]]: Value too large!", e.what());
     }
 }
 
@@ -288,7 +294,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator6 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[ER]", e.path());
-        BOOST_REQUIRE_EQUAL("Value is not allowed for option!", e.what());
+        BOOST_REQUIRE_EQUAL(
+            "Config error [country[ER]]: Value is not allowed for option!",
+            e.what());
     }
 }
 
@@ -308,7 +316,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US]", e.path());
-        BOOST_REQUIRE_EQUAL("Option is missing required child option connection.address", e.what());
+        BOOST_REQUIRE_EQUAL(
+            "Config error [country[US]]: Option is missing required child option connection.address",
+            e.what());
     }
 
     l_config.clear();
@@ -324,7 +334,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US].connection.ARCA[example].address", e.path());
-        BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [country[US].connection.ARCA[example].address]: "
+            "Missing required option with no default!", e.what());
     }
 
     l_config.clear();
@@ -340,7 +351,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[ER]", e.path());
-        BOOST_REQUIRE_EQUAL("Value is not allowed for option!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [country[ER]]: Value is not allowed for option!", e.what());
     }
 
     l_config.clear();
@@ -356,7 +367,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("abc", e.path());
-        BOOST_REQUIRE_EQUAL("Unsupported config option!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [abc]: Unsupported config option!", e.what());
     }
 
     l_config.clear();
@@ -370,7 +381,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US].connection[example].address", e.path());
-        BOOST_REQUIRE_EQUAL("Missing required option with no default!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [country[US].connection[example].address]: "
+            "Missing required option with no default!", e.what());
     }
 
     l_config.clear();
@@ -384,7 +396,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("address[bcd]", e.path());
-        BOOST_REQUIRE_EQUAL("Non-unique config option found!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [address[bcd]]: "
+            "Non-unique config option found!", e.what());
     }
 }
 
@@ -404,7 +417,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("address[10]", e.path());
-        BOOST_REQUIRE_EQUAL("Wrong type - expected string!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [address[10]]: "
+            "Wrong type - expected string!", e.what());
     }
 
     l_config.clear();
@@ -419,7 +433,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("duration[abc]", e.path());
-        BOOST_REQUIRE_EQUAL("Wrong type - expected integer!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [duration[abc]]: Wrong type - expected integer!", e.what());
     }
 
     l_config.clear();
@@ -435,7 +449,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("enabled[1]", e.path());
-        BOOST_REQUIRE_EQUAL("Wrong type - expected boolean true/false!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [enabled[1]]: "
+            "Wrong type - expected boolean true/false!", e.what());
     }
 
     l_config.clear();
@@ -451,7 +466,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE(false);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("cost[1]", e.path());
-        BOOST_REQUIRE_EQUAL("Wrong type - expected float!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
     }
 
     l_config.clear();
@@ -467,7 +482,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("section", e.path());
         std::string s = e.what();
-        BOOST_REQUIRE_EQUAL("Missing a required child option location", s);
+        BOOST_REQUIRE_EQUAL("Config error [section]: "
+            "Missing a required child option location", s);
     }
 
     l_config.clear();
@@ -482,7 +498,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         l_validator.validate(l_config);
     } catch (util::config_error& e) {
         BOOST_REQUIRE_EQUAL("cost[1]", e.path());
-        BOOST_REQUIRE_EQUAL("Wrong type - expected float!", e.what());
+        BOOST_REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
     }
 
     l_config.clear();
