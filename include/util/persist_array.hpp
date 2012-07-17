@@ -122,7 +122,13 @@ namespace util {
         size_t count()    const { return static_cast<size_t>(m_header->rec_count); }
         size_t capacity() const { return m_header->max_recs; }
 
-        ExtraHeaderData& extra_header_data() { return m_header->extra_header_data; }
+        /// Return internal storage header.
+        /// Use only for debugging
+        const header&           header_data() const { BOOST_ASSERT(m_header); return *m_header; }
+
+        /// Return user-defined custom header data.
+        const ExtraHeaderData&  extra_header_data() const { return m_header->extra_header_data; }
+        ExtraHeaderData&        extra_header_data() { return m_header->extra_header_data; }
 
         /// Allocate next record and return its ID.
         /// @return
