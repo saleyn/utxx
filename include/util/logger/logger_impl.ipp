@@ -32,7 +32,7 @@ inline log_msg_info::log_msg_info(
     , m_level(lv)
     , m_src_location_len(
             m_logger.show_location()
-            ? snprintf(m_src_location, sizeof(m_src_location), " [%s:%ld]",
+            ? snprintf(m_src_location, sizeof(m_src_location), " [%s:%zd]",
                 path::basename(filename, filename+N), ln)
             : 0
       )

@@ -200,19 +200,19 @@ dump(std::ostream& out, const timeval& a_time)
 
     char buf[256];
     std::stringstream s;
-    sprintf(buf, "last_time=%ld, last_bucket=%3lu, sum=%ld (interval=%ld)\n",
+    sprintf(buf, "last_time=%ld, last_bucket=%3zu, sum=%ld (interval=%ld)\n",
             m_last_time, l_bucket, m_sum, m_interval);
     s << buf;
     int k = 0;
     size_t n = (l_bucket-m_interval) & s_bucket_mask;
     for (size_t j=0; j < s_bucket_count; j++) {
-        k += snprintf(buf+k, sizeof(buf)-k, "%3lu%c", j, (j == l_bucket || j == n) ? '|' : ' ');
+        k += snprintf(buf+k, sizeof(buf)-k, "%3zu%c", j, (j == l_bucket || j == n) ? '|' : ' ');
         k += snprintf(buf+k, sizeof(buf)-k, "%s", (j < s_bucket_count-1) ? "" : "\n");
     }
     s << buf;
     k = 0;
     for (size_t j=0; j < s_bucket_count; j++) {
-        k += snprintf(buf+k, sizeof(buf)-k, "%3lu%c", m_buckets[j], (j == l_bucket || j == n) ? '|' : ' ');
+        k += snprintf(buf+k, sizeof(buf)-k, "%3zu%c", m_buckets[j], (j == l_bucket || j == n) ? '|' : ' ');
         k += snprintf(buf+k, sizeof(buf)-k, "%s", (j < s_bucket_count-1) ? "" : "\n");
     }
     s << buf;

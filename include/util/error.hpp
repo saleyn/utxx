@@ -93,6 +93,7 @@ namespace detail {
     class streamed_exception : public std::exception {
     protected:
         boost::shared_ptr<std::stringstream> m_out;
+        mutable std::string m_str;
     public:
         streamed_exception() : m_out(new std::stringstream()) {}
         virtual ~streamed_exception() throw() {}
@@ -100,7 +101,7 @@ namespace detail {
         template <class T>
         streamed_exception& operator<< (const T& a) { *m_out << a; return *this; }
 
-        virtual const char* what()  const throw() { return str().c_str(); }
+        virtual const char* what()  const throw() { m_str = str(); return m_str.c_str(); }
         virtual std::string str()   const { return m_out->str();  }
     };
 }
