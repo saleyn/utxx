@@ -21,10 +21,9 @@ using namespace boost::assign;
 
 namespace file_reader_test {
 
-struct string_traits {
+struct string_codec {
 
     typedef std::string data_t;
-    typedef string_traits decoder_t;
 
     size_t encode(const data_t& a_msg, char *a_buf, size_t a_len) {
         size_t l = a_msg.size();
@@ -37,7 +36,7 @@ struct string_traits {
         return n;
     }
 
-    ssize_t decode(data_t& a_msg, const char *a_buf, size_t a_len) const {
+    ssize_t decode(data_t& a_msg, const char *a_buf, size_t a_len, size_t) const {
         size_t h = sizeof(size_t);
         if (a_len < h)
             return 0;
@@ -52,7 +51,7 @@ struct string_traits {
 
 
 size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
-    string_traits codec;
+    string_codec codec;
     std::ofstream l_file(a_fname, std::ios::out | std::ios::binary);
     char l_buf[64];
     size_t total = 0;
@@ -67,7 +66,7 @@ size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
     return total;
 }
 
-typedef util::data_file_reader<string_traits> reader_t;
+typedef util::data_file_reader<string_codec> reader_t;
 typedef typename reader_t::iterator it_t;
 
 const char* fname = "file.dat";
@@ -89,7 +88,6 @@ BOOST_AUTO_TEST_CASE( initial_value ) {
     it_t it = r.begin(), e = r.end();
     BOOST_REQUIRE_EQUAL(false, it == e);
     BOOST_REQUIRE_EQUAL(true, it != e);
-    r.close();
 
     it_t it1 = r.begin(), e1 = r.end();
     BOOST_REQUIRE_EQUAL(false, it1 == e1);
@@ -111,13 +109,11 @@ BOOST_AUTO_TEST_CASE( simple_read )
     BOOST_REQUIRE_EQUAL(exp, n);
 
     // reading sequence
-    reader_t r;
-    r.open(fname);
+    reader_t r(fname);
     std::list<std::string> out;
     for (it_t it = r.begin(), e = r.end(); it != e; ++it) {
         out.push_back(*it);
     }
-    r.close();
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
@@ -132,13 +128,11 @@ BOOST_AUTO_TEST_CASE( foreach )
     write_file(fname, in);
 
     // reading sequence
-    reader_t r;
-    r.open(fname);
+    reader_t r(fname);
     std::list<std::string> out;
     BOOST_FOREACH(std::string& s, r) {
         out.push_back(s);
     }
-    r.close();
 
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }

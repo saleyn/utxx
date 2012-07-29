@@ -32,25 +32,44 @@ class basic_file_reader : private boost::noncopyable {
     std::ifstream m_file;
     util::basic_io_buffer<BufSize> m_buf;
     size_t m_offset;
+    bool m_open;
 
 public:
-    basic_file_reader() : m_offset(0) {}
+    basic_file_reader() : m_offset(0), m_open(false) {}
 
-    void open(const std::string a_fname) {
-        m_fname = a_fname;
-        m_file.open(m_fname.c_str(), std::ios::in | std::ios::binary);
-        m_buf.reset();
+    basic_file_reader(const std::string a_fname)
+        : m_offset(0), m_open(false)
+    {
+        try {
+            open(a_fname);
+        } catch (...) {
+        }
     }
 
-    void close() {
-        m_file.close();
+    ~basic_file_reader() {
+        if (!m_open) return;
+        try {
+            m_file.close();
+        } catch (...) {
+        }
+    }
+
+    void open(const std::string a_fname) {
+        if (m_open) return;
+        m_file.open(a_fname.c_str(), std::ios::in | std::ios::binary);
+        m_open = true;
+        m_fname = a_fname;
+        m_buf.reset();
+        BOOST_ASSERT(m_buf.capacity() > 0);
     }
 
     void seek(size_t a_offset) {
+        if (!m_open) return;
         m_file.seekg(a_offset, std::ios::beg);
         m_offset = m_file.tellg();
     }
 
+    /// offset at which read start
     size_t offset() const { return m_offset; }
 
     /// Current number of bytes available to read.
@@ -65,7 +84,7 @@ public:
     /// read portion of file into internal buffer
     /// if a_crunch == true, crunch buffer before reading
     bool read(bool a_crunch = true) {
-        if (!m_file.is_open())
+        if (!m_open || !m_file.is_open())
             return false;
         if (a_crunch)
             m_buf.crunch();
@@ -87,48 +106,54 @@ public:
 };
 
 /**
- * \brief File reader with data payload decoder and input iterator.
+ * \brief File reader with data payload codec and input iterator.
  */
-template<typename DataTraits, size_t BufSize = 1024 * 1024>
+template<typename Codec, size_t BufSize = 1024 * 1024>
 class data_file_reader : public basic_file_reader<BufSize> {
 
-    typedef DataTraits traits;
-    typedef typename traits::data_t data_t;
-    typedef typename traits::decoder_t decoder_t;
+    typedef Codec codec_t;
+    typedef typename codec_t::data_t data_t;
+    typedef basic_file_reader<BufSize> base;
 
-    decoder_t m_decoder;
+    codec_t m_codec;
+
     friend class iterator;
 
 public:
-    /// Create file reader with specific or default decoder object
-    data_file_reader(const decoder_t& a_decoder = decoder_t())
-        : m_decoder(a_decoder)
+    /// Create file reader with specific or default codec object
+    data_file_reader(const codec_t& a_codec = codec_t())
+        : m_codec(a_codec)
+    {}
+
+    data_file_reader(const std::string a_fname,
+                     const codec_t& a_codec = codec_t())
+        : base(a_fname), m_codec(a_codec)
     {}
 
     /// iterator for reading sequence of records
     class iterator : public std::iterator<std::input_iterator_tag, data_t> {
 
         data_file_reader& m_freader;
-        decoder_t& m_decoder;
-        size_t m_next_data_offset;
+        codec_t& m_codec;
+        size_t m_data_offset;
         data_t m_data;
         bool m_end, m_error;
 
     public:
         iterator(data_file_reader& a_freader, bool a_end = false)
             : m_freader(a_freader)
-            , m_decoder(m_freader.m_decoder)
-            , m_next_data_offset(m_freader.offset())
+            , m_codec(m_freader.m_codec)
+            , m_data_offset(m_freader.offset())
             , m_end(a_end)
             , m_error(false)
         {}
 
         iterator& operator++() {
             while (!m_end) {
-                ssize_t n = m_decoder.decode(m_data,
-                    m_freader.rd_ptr(), m_freader.size());
+                ssize_t n = m_codec.decode(m_data,
+                    m_freader.rd_ptr(), m_freader.size(), m_data_offset);
                 if (n > 0) {
-                    m_next_data_offset += n;
+                    m_data_offset += n;
                     m_freader.commit(n);
                     break;
                 }
@@ -145,15 +170,17 @@ public:
             return *this;
         }
 
+#if 0
         iterator operator++(int) {
             iterator tmp(*this); operator++(); return tmp;
         }
+#endif
 
         bool operator==(const iterator& rhs) const {
             return (m_end == true && m_end == rhs.m_end)
                 || (m_end == false && m_end == rhs.m_end &&
                     m_error == false && m_error == rhs.m_error &&
-                    m_next_data_offset == rhs.m_next_data_offset);
+                    m_data_offset == rhs.m_data_offset);
         }
 
         bool operator!=(const iterator& rhs) const {
