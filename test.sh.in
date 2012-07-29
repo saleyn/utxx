@@ -4,9 +4,17 @@ test_case=$1
 shift
 
 if [ -z "${test_case}" ]; then
+	(
 	echo "use: $0 all | <test case> [other options]"
 	echo "where test cases are:"
-	grep BOOST_AUTO_TEST_CASE test/*.cpp | awk '{print $2}' |less
+	for f in test/*.cpp; do
+		if grep -q BOOST_AUTO_TEST_SUITE $f; then
+			grep -w BOOST_AUTO_TEST_SUITE $f |sed -e 's/.*BOOST_AUTO_TEST_SUITE\s*(\s*//' -e 's/\s*).*//'
+		else
+			grep -w BOOST_AUTO_TEST_CASE $f |sed -e 's/.*BOOST_AUTO_TEST_CASE\s*(\s*//' -e 's/\s*).*//'
+		fi
+	done
+	) |less
 	exit
 else
 	if [ "${test_case}" != "all" ]; then
