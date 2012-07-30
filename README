@@ -1,0 +1,57 @@
+util - an open-source collection of C++ miscelaneous components
+===============================================================
+
+    This library provides a set of classes that complement C++ and
+    boost with functionality needed by many applications.
+
+    The components include:
+
+    - Custom allocators
+    - Atomic functions
+    - Bitmap container
+    - BOOST wait_timeout, repeating timer
+    - Buffer for I/O handling
+    - Concurrent array/fifo/priority_queue/stack
+    - Conversion routines
+    - Endian-handling
+    - Exception error classes with dynamic number of arguments
+    - Hashmap abstraction
+    - UDP receiver
+    - Logging framework
+    - Math functions
+    - Metaprogramming functions
+    - Persistent blob and array
+    - PCAP format reader
+    - PID file manager
+    - Variant / variant tree components
+    - Configuration framework with option validation
+
+Downloading
+===========
+    $ git clone git@git.assembla.com:util.git
+
+Building
+========
+    Make sure that you have autoconf-archive package installed:
+        http://www.gnu.org/software/autoconf-archive
+
+    Run:
+    $ ./bootstrap
+    $ ./configure --with-boost="/path/to/boost" \
+        [--prefix="/target/install/path"]
+    $ make
+    $ make install      # Default install path is ./install
+
+Author
+======
+    Serge Aleynikov <saleyn at gmail dot com>
+
+Contributors
+============
+    Dmitriy Kargapolov <dmitriy.kargapolov at gmail dot com>
+
+LICENSE
+=======
+    GNU Lesser General Public License
+
+
