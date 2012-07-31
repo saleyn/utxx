@@ -188,7 +188,9 @@ public:
         }
 
         data_t& operator*() { return m_data; }
+        const data_t& operator*() const { return m_data; }
         data_t* operator->() { return &m_data; }
+        const data_t* operator->() const { return &m_data; }
 
     };
 
