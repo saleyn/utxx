@@ -10,7 +10,6 @@ libutil_la_SOURCES = \
 	logger_impl.cpp \
 	logger_impl_file.cpp \
 	logger_impl_syslog.cpp \
-	name.cpp \
 	path.cpp \
 	synch.cpp \
 	timestamp.cpp \
