@@ -8,7 +8,7 @@ if [ -z "${test_case}" ]; then
 	echo "use: $0 all | <test case> [other options]"
 	echo "where test cases are:"
 	for f in test/*.cpp; do
-        sed -n '/BOOST_AUTO_TEST_/{s/^.*BOOST_AUTO_TEST_CASE *( *//; s/^.*BOOST_AUTO_TEST_SUITE *( *//; s/ *).*//; p}'
+        sed -n '/BOOST_AUTO_TEST_/{s/^.*BOOST_AUTO_TEST_CASE *( *//; s/^.*BOOST_AUTO_TEST_SUITE *( *//; s/ *).*//; p}' $f
 	done
 	) |less
 	exit
