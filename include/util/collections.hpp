@@ -133,15 +133,15 @@ public:
 
 	};
 
+        typedef const iterator const_iterator;
+
 	/// Beginning of merged sequence.
-	iterator begin() {
-		return iterator(m_colls);
-	}
+	iterator begin() { return iterator(m_colls); }
+	const_iterator begin() const { return iterator(m_colls); }
 
 	/// End of merged sequence.
-	iterator end() {
-		return iterator();
-	}
+	iterator end() { return iterator(); }
+	const_iterator end() const { return iterator(); }
 };
 
 } // namespace util
