@@ -15,7 +15,9 @@ test "$prefix" = "NONE" && prefix="$default_prefix"
 test "$sysconfdir" = "\${prefix}/etc" && sysconfdir='../etc'
 test "$scriptdir" = "" && scriptdir='../lib'
 
-AM_CONDITIONAL([Ix86], [test x$host = xi?86-*-*])
+# Setting Ix86 conditional for x86 platform
+AC_CANONICAL_HOST
+AM_CONDITIONAL([Ix86], [case x$host_cpu in xi?86) test -n a;; *) test;; esac])
 
 # Options
 
