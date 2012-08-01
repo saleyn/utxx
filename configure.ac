@@ -15,6 +15,8 @@ test "$prefix" = "NONE" && prefix="$default_prefix"
 test "$sysconfdir" = "\${prefix}/etc" && sysconfdir='../etc'
 test "$scriptdir" = "" && scriptdir='../lib'
 
+AM_CONDITIONAL([Ix86], [test x$host = xi?86-*-*])
+
 # Options
 
 AC_ARG_VAR([ERLC_FLAGS], [general flags to prepend to ERLC_FLAGS])
@@ -60,7 +62,7 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for libraries.
 
 AC_CHECK_LIB(pthread, pthread_create)
-AX_BOOST_BASE([1.47.0], [], [AC_MSG_ERROR("BOOST library version >= 1.47.0 not found!")])
+AX_BOOST_BASE([1.49.0], [], [AC_MSG_ERROR("BOOST library version >= 1.49.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_THREAD
 AX_BOOST_ASIO
