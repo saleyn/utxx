@@ -82,10 +82,21 @@ BOOST_AUTO_TEST_CASE( simple_write )
     BOOST_REQUIRE_EQUAL(exp, n);
 }
 
+BOOST_AUTO_TEST_CASE( exceptions )
+{
+    // unexisting file case
+    BOOST_REQUIRE_THROW(reader_t r("hf/sdf/hfhd/fvdfk"), std::ifstream::failure);
+    // non-regular file case
+    reader_t r("/");
+    BOOST_REQUIRE_THROW(it_t it = r.begin(), std::ifstream::failure);
+}
+
 BOOST_AUTO_TEST_CASE( initial_value ) {
     reader_t r;
     r.open(fname);
-    it_t it = r.begin(), e = r.end();
+
+    it_t it = r.begin();
+    it_t e = r.end();
     BOOST_REQUIRE_EQUAL(false, it == e);
     BOOST_REQUIRE_EQUAL(true, it != e);
 
