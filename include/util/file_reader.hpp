@@ -37,13 +37,10 @@ class basic_file_reader : private boost::noncopyable {
 public:
     basic_file_reader() : m_offset(0), m_open(false) {}
 
-    basic_file_reader(const std::string a_fname)
+    basic_file_reader(const std::string a_fname) throw (std::ifstream::failure)
         : m_offset(0), m_open(false)
     {
-        try {
-            open(a_fname);
-        } catch (...) {
-        }
+        open(a_fname);
     }
 
     ~basic_file_reader() {
@@ -54,16 +51,21 @@ public:
         }
     }
 
-    void open(const std::string a_fname) {
+    void open(const std::string a_fname) throw (std::ifstream::failure) {
         if (m_open) return;
+        // make sure exception thrown in case of error
+        m_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         m_file.open(a_fname.c_str(), std::ios::in | std::ios::binary);
+        // further read can set failbit in case there is not enough data
+        // this case should not throw an exception in our class
+        m_file.exceptions(std::ifstream::badbit);
         m_open = true;
         m_fname = a_fname;
         m_buf.reset();
         BOOST_ASSERT(m_buf.capacity() > 0);
     }
 
-    void seek(size_t a_offset) {
+    void seek(size_t a_offset) throw (std::ifstream::failure) {
         if (!m_open) return;
         m_file.seekg(a_offset, std::ios::beg);
         m_offset = m_file.tellg();
@@ -83,7 +85,7 @@ public:
 
     /// read portion of file into internal buffer
     /// if a_crunch == true, crunch buffer before reading
-    bool read(bool a_crunch = true) {
+    bool read(bool a_crunch = true) throw (std::ifstream::failure) {
         if (!m_open || !m_file.is_open())
             return false;
         if (a_crunch)
@@ -127,6 +129,7 @@ public:
 
     data_file_reader(const std::string a_fname,
                      const codec_t& a_codec = codec_t())
+            throw (std::ifstream::failure)
         : base(a_fname), m_codec(a_codec)
     {}
 
@@ -148,7 +151,7 @@ public:
             , m_error(false)
         {}
 
-        iterator& operator++() {
+        iterator& operator++() throw (std::ifstream::failure) {
             while (!m_end) {
                 ssize_t n = m_codec.decode(m_data,
                     m_freader.rd_ptr(), m_freader.size(), m_data_offset);
@@ -170,11 +173,9 @@ public:
             return *this;
         }
 
-#if 0
-        iterator operator++(int) {
+        iterator operator++(int) throw (std::ifstream::failure) {
             iterator tmp(*this); operator++(); return tmp;
         }
-#endif
 
         bool operator==(const iterator& rhs) const {
             return (m_end == true && m_end == rhs.m_end)
