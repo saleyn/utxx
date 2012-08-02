@@ -49,7 +49,6 @@ struct string_codec {
     }
 };
 
-
 size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
     string_codec codec;
     std::ofstream l_file(a_fname, std::ios::out | std::ios::binary);
@@ -69,18 +68,27 @@ size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
 typedef util::data_file_reader<string_codec> reader_t;
 typedef typename reader_t::iterator it_t;
 
-const char* fname = "file.dat";
+struct f0 {
+    const char* fname;
+    f0() : fname("file.dat") {}
+    ~f0() { unlink(fname); }
+};
+
+struct f1 {
+    const char* fname;
+    std::list<std::string> in;
+
+    f1() : fname("file.dat") {
+        in += "couple", "more", "strings", "about", "nothing";
+        write_file(fname, in);
+    }
+
+    ~f1() {
+        unlink(fname);
+    }
+};
 
 BOOST_AUTO_TEST_SUITE( test_file_reader )
-
-BOOST_AUTO_TEST_CASE( simple_write )
-{
-    std::list<std::string> lst;
-    lst += "couple", "strings";
-    size_t n = write_file(fname, lst);
-    size_t exp = 2 * sizeof(size_t) + 6 + 7;
-    BOOST_REQUIRE_EQUAL(exp, n);
-}
 
 BOOST_AUTO_TEST_CASE( exceptions )
 {
@@ -91,7 +99,16 @@ BOOST_AUTO_TEST_CASE( exceptions )
     BOOST_REQUIRE_THROW(it_t it = r.begin(), std::ifstream::failure);
 }
 
-BOOST_AUTO_TEST_CASE( initial_value ) {
+BOOST_FIXTURE_TEST_CASE( simple_write, f0 )
+{
+    std::list<std::string> lst;
+    lst += "couple", "strings";
+    size_t n = write_file(fname, lst);
+    size_t exp = 2 * sizeof(size_t) + 6 + 7;
+    BOOST_REQUIRE_EQUAL(exp, n);
+}
+
+BOOST_FIXTURE_TEST_CASE( initial_value, f1 ) {
     reader_t r;
     r.open(fname);
 
@@ -110,41 +127,23 @@ BOOST_AUTO_TEST_CASE( initial_value ) {
     BOOST_REQUIRE_EQUAL(false, it2 != e2);
 }
 
-BOOST_AUTO_TEST_CASE( simple_read )
+BOOST_FIXTURE_TEST_CASE( simple_read, f1 )
 {
-    // writing sequence
-    std::list<std::string> in;
-    in += "couple", "strings";
-    size_t n = write_file(fname, in);
-    size_t exp = 2 * sizeof(size_t) + 6 + 7;
-    BOOST_REQUIRE_EQUAL(exp, n);
-
-    // reading sequence
     reader_t r(fname);
     std::list<std::string> out;
     for (it_t it = r.begin(), e = r.end(); it != e; ++it) {
         out.push_back(*it);
     }
-
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 
-BOOST_AUTO_TEST_CASE( foreach )
+BOOST_FIXTURE_TEST_CASE( foreach, f1 )
 {
-    const char* fname = "file.dat";
-
-    // writing sequence
-    std::list<std::string> in;
-    in += "couple", "more", "strings", "about", "nothing";
-    write_file(fname, in);
-
-    // reading sequence
     reader_t r(fname);
     std::list<std::string> out;
     BOOST_FOREACH(std::string& s, r) {
         out.push_back(s);
     }
-
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 
