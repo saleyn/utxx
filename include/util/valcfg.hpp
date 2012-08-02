@@ -26,14 +26,16 @@ namespace util {
  */
 template<typename Validator>
 class valcfg {
-    config_tree m_config;
+    config_tree  m_config_root;
+    config_tree& m_config;
     const Validator& m_validator;
     config_path m_root_path;
 
 public:
     /// Root configuration constructor
     valcfg(std::string a_fname, const config_path& a_root_path = config_path())
-        : m_validator(Validator::cfg_validator::instance())
+        : m_config(m_config_root)
+        , m_validator(Validator::cfg_validator::instance())
         , m_root_path(a_root_path)
     {
         config_tree::read_info(a_fname, m_config);
@@ -60,6 +62,9 @@ public:
     T get(const config_path& a_option) const throw(config_error) {
         return m_validator.get<T>(a_option, m_config, m_root_path);
     }
+
+    config_tree     & conf_tree() { return m_config;    }
+    const Validator & validator() { return m_validator; }
 };
 
 } // namespace util
