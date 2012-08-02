@@ -35,14 +35,17 @@ class basic_file_reader : private boost::noncopyable {
     bool m_open;
 
 public:
+    /// default constructor
     basic_file_reader() : m_offset(0), m_open(false) {}
 
+    /// constructor opening file for reading
     basic_file_reader(const std::string a_fname) throw (std::ifstream::failure)
         : m_offset(0), m_open(false)
     {
         open(a_fname);
     }
 
+    /// destructor
     ~basic_file_reader() {
         if (!m_open) return;
         try {
@@ -51,6 +54,7 @@ public:
         }
     }
 
+    /// open file for reading
     void open(const std::string a_fname) throw (std::ifstream::failure) {
         if (m_open) return;
         // make sure exception thrown in case of error
@@ -65,22 +69,26 @@ public:
         BOOST_ASSERT(m_buf.capacity() > 0);
     }
 
+    /// set initial read position
     void seek(size_t a_offset) throw (std::ifstream::failure) {
         if (!m_open) return;
         m_file.seekg(a_offset, std::ios::beg);
         m_offset = m_file.tellg();
     }
 
+    /// clear error control state so read could be resumed
+    void clear() { m_file.clear(); }
+
     /// offset at which read start
     size_t offset() const { return m_offset; }
 
-    /// Current number of bytes available to read.
+    /// current number of bytes available to read.
     size_t size() const { return m_buf.size(); }
 
-    /// Current read pointer.
+    /// current read pointer.
     const char* rd_ptr() const { return m_buf.rd_ptr(); }
 
-    /// Confirm consuming of n bytes
+    /// confirm consuming of n bytes
     void commit(size_t n) { m_buf.read(n); }
 
     /// read portion of file into internal buffer
@@ -118,27 +126,50 @@ class data_file_reader : public basic_file_reader<BufSize> {
     typedef basic_file_reader<BufSize> base;
 
     codec_t m_codec;
+    size_t m_data_offset;
 
     friend class iterator;
 
 public:
-    /// Create file reader with specific or default codec object
+    /// create file reader with specific or default codec object
     data_file_reader(const codec_t& a_codec = codec_t())
         : m_codec(a_codec)
+        , m_data_offset(base::offset())
     {}
 
+    /// create reader object and open file for reading
     data_file_reader(const std::string a_fname,
                      const codec_t& a_codec = codec_t())
             throw (std::ifstream::failure)
         : base(a_fname), m_codec(a_codec)
+        , m_data_offset(base::offset())
     {}
+
+    /// create reader object and open file for reading at given offset
+    data_file_reader(const std::string a_fname, size_t a_offset,
+                     const codec_t& a_codec = codec_t())
+            throw (std::ifstream::failure)
+        : base(a_fname), m_codec(a_codec)
+        , m_data_offset(base::offset())
+    {
+        seek(a_offset);
+    }
+
+    /// set initial read position
+    void seek(size_t a_offset) throw (std::ifstream::failure) {
+        base::seek(a_offset);
+        m_data_offset = base::offset();
+    }
+
+    /// offset for the next record to decode
+    size_t data_offset() const { return m_data_offset; }
 
     /// iterator for reading sequence of records
     class iterator : public std::iterator<std::input_iterator_tag, data_t> {
 
         data_file_reader& m_freader;
         codec_t& m_codec;
-        size_t m_data_offset;
+        size_t& m_data_offset;
         data_t m_data;
         bool m_end, m_error;
 
@@ -146,10 +177,12 @@ public:
         iterator(data_file_reader& a_freader, bool a_end = false)
             : m_freader(a_freader)
             , m_codec(m_freader.m_codec)
-            , m_data_offset(m_freader.offset())
+            , m_data_offset(m_freader.m_data_offset)
             , m_end(a_end)
             , m_error(false)
-        {}
+        {
+            if (!m_end) m_freader.clear();
+        }
 
         iterator& operator++() throw (std::ifstream::failure) {
             while (!m_end) {
@@ -197,9 +230,11 @@ public:
 
     typedef const iterator const_iterator;
 
+    /// get input iterator at currect read position
     iterator begin() { return ++iterator(*this); }
     const_iterator begin() const { return ++iterator(*this); }
 
+    /// end-of-read position iterator
     iterator end() { return iterator(*this, true); }
     const_iterator end() const { return iterator(*this, true); }
 };

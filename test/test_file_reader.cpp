@@ -36,7 +36,8 @@ struct string_codec {
         return n;
     }
 
-    ssize_t decode(data_t& a_msg, const char *a_buf, size_t a_len, size_t) const {
+    ssize_t decode(data_t& a_msg, const char *a_buf, size_t a_len, size_t a_offset) const {
+        // BOOST_TEST_MESSAGE( getpid() << ": decode at " << a_offset );
         size_t h = sizeof(size_t);
         if (a_len < h)
             return 0;
@@ -51,7 +52,7 @@ struct string_codec {
 
 size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
     string_codec codec;
-    std::ofstream l_file(a_fname, std::ios::out | std::ios::binary);
+    std::ofstream l_file(a_fname, std::ios::out | std::ios::binary | std::ios::app);
     char l_buf[64];
     size_t total = 0;
     BOOST_FOREACH(std::string a_str, a_lst) {
@@ -77,12 +78,10 @@ struct f0 {
 struct f1 {
     const char* fname;
     std::list<std::string> in;
-
     f1() : fname("file.dat") {
         in += "couple", "more", "strings", "about", "nothing";
         write_file(fname, in);
     }
-
     ~f1() {
         unlink(fname);
     }
@@ -145,6 +144,68 @@ BOOST_FIXTURE_TEST_CASE( foreach, f1 )
         out.push_back(s);
     }
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+}
+
+BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
+{
+    std::list<std::string> in;
+    in += "couple", "strings", "more";
+
+    int c2p[2], p2c[2];
+    pipe(c2p);
+    pipe(p2c);
+    int marker = 0;
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        close(c2p[0]);
+        close(p2c[1]);
+
+        BOOST_TEST_MESSAGE( "CHILD: 1st writing..." );
+        write_file(fname, in);
+
+        BOOST_TEST_MESSAGE( "CHILD: 1st write done, signalling..." );
+        write(c2p[1], &marker, sizeof(marker));
+
+        BOOST_TEST_MESSAGE( "CHILD: 1st write done, waiting..." );
+        read(p2c[0], &marker, sizeof(marker));
+
+        write_file(fname, in);
+
+        BOOST_TEST_MESSAGE( "CHILD: 2nd write done, signalling..." );
+        write(c2p[1], &marker, sizeof(marker));
+
+        exit(0);
+
+    } else {
+        close(c2p[1]);
+        close(p2c[0]);
+
+        BOOST_TEST_MESSAGE( "PARNT: waiting for 1st write to complete..." );
+        read(c2p[0], &marker, sizeof(marker));
+
+        BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
+
+        reader_t r(fname, 0);
+        std::list<std::string> out;
+        BOOST_FOREACH(std::string& s, r) out.push_back(s);
+        BOOST_TEST_MESSAGE( "PARNT: compare collections" );
+        BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+
+        BOOST_TEST_MESSAGE( "PARNT: 1st read done, signalling..." );
+        write(p2c[1], &marker, sizeof(marker));
+
+        BOOST_TEST_MESSAGE( "PARNT: waiting for 2nd write to complete..." );
+        read(c2p[0], &marker, sizeof(marker));
+
+        BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
+
+        out.clear();
+        BOOST_FOREACH(std::string& s, r) out.push_back(s);
+        BOOST_TEST_MESSAGE( "PARNT: compare collections" );
+        BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+    }
 }
 
 BOOST_AUTO_TEST_SUITE_END()
