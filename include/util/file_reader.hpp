@@ -183,7 +183,7 @@ public:
             if (!m_end) m_freader.clear();
         }
 
-        iterator& operator++() throw (std::ifstream::failure) {
+        iterator& operator++() throw (std::ifstream::failure, io_error) {
             while (!m_end) {
                 ssize_t n = m_codec.decode(m_data,
                     m_freader.rd_ptr(), m_freader.size(), m_data_offset);
@@ -205,7 +205,7 @@ public:
             return *this;
         }
 
-        iterator operator++(int) throw (std::ifstream::failure) {
+        iterator operator++(int) throw (std::ifstream::failure, io_error) {
             iterator tmp(*this); operator++(); return tmp;
         }
 
@@ -230,8 +230,12 @@ public:
     typedef const iterator const_iterator;
 
     /// get input iterator at currect read position
-    iterator begin() { return ++iterator(*this); }
-    const_iterator begin() const { return ++iterator(*this); }
+    iterator begin() throw (std::ifstream::failure, io_error) {
+        return ++iterator(*this);
+    }
+    const_iterator begin() const throw (std::ifstream::failure, io_error) {
+        return ++iterator(*this);
+    }
 
     /// end-of-read position iterator
     iterator end() { return iterator(*this, true); }
