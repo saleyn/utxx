@@ -39,7 +39,7 @@ public:
     basic_file_reader() : m_offset(0), m_open(false) {}
 
     /// constructor opening file for reading
-    basic_file_reader(const std::string& a_fname) throw (std::ifstream::failure)
+    basic_file_reader(const std::string& a_fname)
         : m_offset(0), m_open(false)
     {
         open(a_fname);
@@ -55,7 +55,7 @@ public:
     }
 
     /// open file for reading
-    void open(const std::string& a_fname) throw (std::ifstream::failure) {
+    void open(const std::string& a_fname) {
         if (m_open) return;
         // make sure exception thrown in case of error
         m_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
@@ -70,7 +70,7 @@ public:
     }
 
     /// set initial read position
-    void seek(size_t a_offset) throw (std::ifstream::failure) {
+    void seek(size_t a_offset) {
         if (!m_open) return;
         m_file.seekg(a_offset, std::ios::beg);
         m_offset = m_file.tellg();
@@ -93,7 +93,7 @@ public:
 
     /// read portion of file into internal buffer
     /// if a_crunch == true, crunch buffer before reading
-    bool read(bool a_crunch = true) throw (std::ifstream::failure, io_error) {
+    bool read(bool a_crunch = true) {
         if (!m_open || !m_file.is_open())
             return false;
         if (a_crunch)
@@ -106,7 +106,7 @@ public:
                 if (m_file.good()) continue;
                 if (m_file.eof()) return false;
                 // this should never happen since we have set badbit
-                throw(io_error(errno, "Unexpected error reading ", m_fname));
+                throw io_error(errno, "Unexpected error reading ", m_fname);
             }
             m_buf.commit(n);
             return true;
@@ -139,7 +139,6 @@ public:
     /// create reader object and open file for reading
     data_file_reader(const std::string& a_fname,
                      const codec_t& a_codec = codec_t())
-            throw (std::ifstream::failure)
         : base(a_fname), m_codec(a_codec)
         , m_data_offset(base::offset())
     {}
@@ -147,7 +146,6 @@ public:
     /// create reader object and open file for reading at given offset
     data_file_reader(const std::string& a_fname, size_t a_offset,
                      const codec_t& a_codec = codec_t())
-            throw (std::ifstream::failure)
         : base(a_fname), m_codec(a_codec)
         , m_data_offset(base::offset())
     {
@@ -155,7 +153,7 @@ public:
     }
 
     /// set initial read position
-    void seek(size_t a_offset) throw (std::ifstream::failure) {
+    void seek(size_t a_offset) {
         base::seek(a_offset);
         m_data_offset = base::offset();
     }
@@ -183,7 +181,7 @@ public:
             if (!m_end) m_freader.clear();
         }
 
-        iterator& operator++() throw (std::ifstream::failure, io_error) {
+        iterator& operator++() {
             while (!m_end) {
                 ssize_t n = m_codec.decode(m_data,
                     m_freader.rd_ptr(), m_freader.size(), m_data_offset);
@@ -205,7 +203,7 @@ public:
             return *this;
         }
 
-        iterator operator++(int) throw (std::ifstream::failure, io_error) {
+        iterator operator++(int) {
             iterator tmp(*this); operator++(); return tmp;
         }
 
@@ -230,10 +228,10 @@ public:
     typedef const iterator const_iterator;
 
     /// get input iterator at currect read position
-    iterator begin() throw (std::ifstream::failure, io_error) {
+    iterator begin() {
         return ++iterator(*this);
     }
-    const_iterator begin() const throw (std::ifstream::failure, io_error) {
+    const_iterator begin() const {
         return ++iterator(*this);
     }
 
