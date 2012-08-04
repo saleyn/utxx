@@ -23,6 +23,8 @@
 
 namespace util {
 
+namespace detail {
+
 /**
  * \brief Basic file reader with pre-allocated buffer.
  */
@@ -114,15 +116,17 @@ public:
     }
 };
 
+} // namespace detail
+
 /**
  * \brief File reader with data payload codec and input iterator.
  */
 template<typename Codec, size_t BufSize = 1024 * 1024>
-class data_file_reader : public basic_file_reader<BufSize> {
+class data_file_reader : public detail::basic_file_reader<BufSize> {
 
     typedef Codec codec_t;
     typedef typename codec_t::data_t data_t;
-    typedef basic_file_reader<BufSize> base;
+    typedef detail::basic_file_reader<BufSize> base;
 
     codec_t m_codec;
     size_t m_data_offset;

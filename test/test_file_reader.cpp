@@ -13,8 +13,9 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <boost/test/unit_test.hpp>
+#include <util/file_writer.hpp>
 #include <util/file_reader.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
@@ -50,7 +51,7 @@ struct string_codec {
     }
 };
 
-size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
+size_t write_file1(const char *a_fname, std::list<std::string>& a_lst) {
     string_codec codec;
     std::ofstream l_file(a_fname, std::ios::out | std::ios::binary | std::ios::app);
     char l_buf[64];
@@ -66,8 +67,16 @@ size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
     return total;
 }
 
+typedef util::data_file_writer<string_codec> writer_t;
 typedef util::data_file_reader<string_codec> reader_t;
 typedef typename reader_t::iterator it_t;
+
+size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
+    writer_t l_writer(a_fname, true);
+    BOOST_FOREACH(std::string a_str, a_lst)
+        l_writer.push_back(a_str);
+    return l_writer.data_offset();
+}
 
 struct f0 {
     const char* fname;
