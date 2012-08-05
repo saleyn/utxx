@@ -20,27 +20,29 @@ std::list<int> v;
 
 class iseq: public std::list<int> {
 public:
-	iseq(int n) {
-		for (int i=0; i<n; i++) {
-			int k = rand() % 100;
-			push_back(k);
-			v.push_back(k);
-		}
-		sort(compare);
-	}
-	static bool compare(const int& lhs, const int& rhs) { return lhs < rhs; }
+    iseq(int n) {
+        for (int i = 0; i < n; i++) {
+            int k = rand() % 100;
+            push_back(k);
+            v.push_back(k);
+        }
+        sort(compare);
+    }
+    static bool compare(const int& lhs, const int& rhs) {
+        return lhs < rhs;
+    }
 };
 
 BOOST_AUTO_TEST_SUITE( test_collections )
 
 BOOST_AUTO_TEST_CASE( int_seq_merge_test )
 {
-	util::collections<iseq> m;
-	for (int i=0; i<100; i++) {
-		m.add(iseq(rand() % 100));
-	}
-	v.sort(&iseq::compare);
-	BOOST_REQUIRE_EQUAL_COLLECTIONS(m.begin(), m.end(), v.begin(), v.end());
+    util::collections<iseq> m;
+    for (int i=0; i<100; i++) {
+        m.add(iseq(rand() % 100));
+    }
+    v.sort(&iseq::compare);
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(m.begin(), m.end(), v.begin(), v.end());
 }
 
 BOOST_AUTO_TEST_SUITE_END()
