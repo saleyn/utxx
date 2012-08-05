@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE( exceptions )
     BOOST_REQUIRE_THROW(reader_t r("hf/sdf/hfhd/fvdfk"), std::ifstream::failure);
     // non-regular file case
     reader_t r("/");
-    BOOST_REQUIRE_THROW(it_t it = r.begin(), std::ifstream::failure);
+    BOOST_REQUIRE_THROW(r.begin(), std::ifstream::failure);
 }
 
 BOOST_FIXTURE_TEST_CASE( simple_write, f0 )
@@ -130,9 +130,7 @@ BOOST_FIXTURE_TEST_CASE( initial_value, f1 ) {
     BOOST_REQUIRE_EQUAL(true, it1 != e1);
 
     reader_t r2;
-    it_t it2 = r2.begin(), e2 = r2.end();
-    BOOST_REQUIRE_EQUAL(true, it2 == e2);
-    BOOST_REQUIRE_EQUAL(false, it2 != e2);
+    BOOST_REQUIRE_EQUAL((r2.begin() == r2.end()), true);
 }
 
 BOOST_FIXTURE_TEST_CASE( simple_read, f1 )
@@ -152,6 +150,25 @@ BOOST_FIXTURE_TEST_CASE( foreach, f1 )
     BOOST_FOREACH(std::string& s, r) {
         out.push_back(s);
     }
+    BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+}
+
+BOOST_FIXTURE_TEST_CASE( foreach_2, f1 )
+{
+    reader_t r(fname);
+    std::list<std::string> out;
+    // read first two elements
+    int k = 0;
+    BOOST_FOREACH(std::string& s, r) {
+        out.push_back(s);
+        if (++k == 2)
+            break;
+    }
+    // read rest of elements
+    BOOST_FOREACH(std::string& s, r) {
+        out.push_back(s);
+    }
+    // compare...
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 

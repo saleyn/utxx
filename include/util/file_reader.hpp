@@ -38,7 +38,9 @@ class basic_file_reader : private boost::noncopyable {
 
 public:
     /// default constructor
-    basic_file_reader() : m_offset(0), m_open(false) {}
+    basic_file_reader()
+        : m_offset(0), m_open(false)
+    {}
 
     /// constructor opening file for reading
     basic_file_reader(const std::string& a_fname)
@@ -55,6 +57,9 @@ public:
         } catch (...) {
         }
     }
+
+    /// underlying filename
+    const std::string& filename() const { return m_fname; }
 
     /// open file for reading
     void open(const std::string& a_fname) {
@@ -79,7 +84,7 @@ public:
     }
 
     /// clear error control state so read could be resumed
-    void clear() { m_file.clear(); }
+    void clear() { if (m_open) m_file.clear(); }
 
     /// offset at which read start
     size_t offset() const { return m_offset; }
@@ -130,6 +135,8 @@ class data_file_reader : public detail::basic_file_reader<BufSize> {
 
     codec_t m_codec;
     size_t m_data_offset;
+    data_t m_data;
+    bool m_end;        // eof reached
 
     friend class iterator;
 
@@ -138,6 +145,7 @@ public:
     data_file_reader(const codec_t& a_codec = codec_t())
         : m_codec(a_codec)
         , m_data_offset(base::offset())
+        , m_end(false)
     {}
 
     /// create reader object and open file for reading
@@ -145,6 +153,7 @@ public:
                      const codec_t& a_codec = codec_t())
         : base(a_fname), m_codec(a_codec)
         , m_data_offset(base::offset())
+        , m_end(false)
     {}
 
     /// create reader object and open file for reading at given offset
@@ -152,6 +161,7 @@ public:
                      const codec_t& a_codec = codec_t())
         : base(a_fname), m_codec(a_codec)
         , m_data_offset(base::offset())
+        , m_end(false)
     {
         seek(a_offset);
     }
@@ -165,79 +175,76 @@ public:
     /// offset for the next record to decode
     size_t data_offset() const { return m_data_offset; }
 
+    /// clear error control state so read could be resumed
+    void clear() {
+        base::clear();
+        m_end = false;
+    }
+
+    void read_data() {
+        while (!m_end) {
+            ssize_t n = m_codec.decode(m_data,
+                base::rd_ptr(), base::size(), m_data_offset);
+            if (n > 0) {
+                m_data_offset += n;
+                base::commit(n);
+                break;
+            }
+            if (n < 0)
+                throw io_error("decode error", n, " at ", m_data_offset,
+                        " when reading ", base::filename());
+            // n == 0: not enough data in buffer
+            if (!base::read()) {
+                m_end = true;
+                break;
+            }
+        }
+    }
+
     /// iterator for reading sequence of records
     class iterator : public std::iterator<std::input_iterator_tag, data_t> {
 
         data_file_reader& m_freader;
-        codec_t& m_codec;
-        size_t& m_data_offset;
-        data_t m_data;
-        bool m_end, m_error;
+        bool m_end;
 
     public:
         iterator(data_file_reader& a_freader, bool a_end = false)
-            : m_freader(a_freader)
-            , m_codec(m_freader.m_codec)
-            , m_data_offset(m_freader.m_data_offset)
-            , m_end(a_end)
-            , m_error(false)
+            : m_freader(a_freader), m_end(a_end)
         {
-            if (!m_end) m_freader.clear();
+            if (m_end) return;
+            m_freader.clear();
+            m_freader.read_data();
+            m_end |= m_freader.m_end;
         }
 
         iterator& operator++() {
-            while (!m_end) {
-                ssize_t n = m_codec.decode(m_data,
-                    m_freader.rd_ptr(), m_freader.size(), m_data_offset);
-                if (n > 0) {
-                    m_data_offset += n;
-                    m_freader.commit(n);
-                    break;
-                }
-                if (n < 0) {
-                    m_end = true;
-                    m_error = true;
-                    break;
-                }
-                if (!m_freader.read()) {
-                    m_end = true;
-                    break;
-                }
-            }
+            m_freader.read_data();
+            m_end |= m_freader.m_end;
             return *this;
-        }
-
-        iterator operator++(int) {
-            iterator tmp(*this); operator++(); return tmp;
         }
 
         bool operator==(const iterator& rhs) const {
             return (m_end == true && m_end == rhs.m_end)
                 || (m_end == false && m_end == rhs.m_end &&
-                    m_error == false && m_error == rhs.m_error &&
-                    m_data_offset == rhs.m_data_offset);
+                    m_freader.data_offset() == rhs.m_freader.data_offset());
         }
 
         bool operator!=(const iterator& rhs) const {
             return !(*this == rhs);
         }
 
-        data_t& operator*() { return m_data; }
-        const data_t& operator*() const { return m_data; }
-        data_t* operator->() { return &m_data; }
-        const data_t* operator->() const { return &m_data; }
+        data_t& operator*() { return m_freader.m_data; }
+        const data_t& operator*() const { return m_freader.m_data; }
+        data_t* operator->() { return &m_freader.m_data; }
+        const data_t* operator->() const { return &m_freader.m_data; }
 
     };
 
     typedef const iterator const_iterator;
 
     /// get input iterator at currect read position
-    iterator begin() {
-        return ++iterator(*this);
-    }
-    const_iterator begin() const {
-        return ++iterator(*this);
-    }
+    iterator begin() { return iterator(*this); }
+    const_iterator begin() const { return iterator(*this); }
 
     /// end-of-read position iterator
     iterator end() { return iterator(*this, true); }
