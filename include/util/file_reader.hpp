@@ -136,7 +136,8 @@ class data_file_reader : public detail::basic_file_reader<BufSize> {
     codec_t m_codec;
     size_t m_data_offset;
     data_t m_data;
-    bool m_end;        // eof reached
+    bool m_empty;  // no data in m_data
+    bool m_end;    // eof reached
 
     friend class iterator;
 
@@ -145,6 +146,7 @@ public:
     data_file_reader(const codec_t& a_codec = codec_t())
         : m_codec(a_codec)
         , m_data_offset(base::offset())
+        , m_empty(true)
         , m_end(false)
     {}
 
@@ -153,6 +155,7 @@ public:
                      const codec_t& a_codec = codec_t())
         : base(a_fname), m_codec(a_codec)
         , m_data_offset(base::offset())
+        , m_empty(true)
         , m_end(false)
     {}
 
@@ -161,6 +164,7 @@ public:
                      const codec_t& a_codec = codec_t())
         : base(a_fname), m_codec(a_codec)
         , m_data_offset(base::offset())
+        , m_empty(true)
         , m_end(false)
     {
         seek(a_offset);
@@ -188,6 +192,7 @@ public:
             if (n > 0) {
                 m_data_offset += n;
                 base::commit(n);
+                m_empty = false;
                 break;
             }
             if (n < 0)
@@ -196,6 +201,7 @@ public:
             // n == 0: not enough data in buffer
             if (!base::read()) {
                 m_end = true;
+                m_empty = true;
                 break;
             }
         }
@@ -212,9 +218,11 @@ public:
             : m_freader(a_freader), m_end(a_end)
         {
             if (m_end) return;
-            m_freader.clear();
-            m_freader.read_data();
-            m_end |= m_freader.m_end;
+            if (m_freader.m_empty) {
+                m_freader.clear();
+                m_freader.read_data();
+                m_end |= m_freader.m_end;
+            }
         }
 
         iterator& operator++() {

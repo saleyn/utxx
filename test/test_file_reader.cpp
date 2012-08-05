@@ -160,9 +160,8 @@ BOOST_FIXTURE_TEST_CASE( foreach_2, f1 )
     // read first two elements
     int k = 0;
     BOOST_FOREACH(std::string& s, r) {
+        if (++k > 2) break;
         out.push_back(s);
-        if (++k == 2)
-            break;
     }
     // read rest of elements
     BOOST_FOREACH(std::string& s, r) {
