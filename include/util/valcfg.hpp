@@ -33,7 +33,7 @@ class valcfg {
 
 public:
     /// Root configuration constructor
-    valcfg(std::string a_fname, const config_path& a_root_path = config_path())
+    valcfg(const std::string& a_fname, const config_path& a_root_path = config_path())
         : m_config(m_config_root)
         , m_validator(Validator::cfg_validator::instance())
         , m_root_path(a_root_path)

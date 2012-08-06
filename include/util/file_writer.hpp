@@ -121,13 +121,13 @@ class data_file_writer : public detail::basic_file_writer<BufSize> {
     }
 
 public:
-    /// create file reader with specific or default codec object
+    /// create file writer with specific or default codec object
     data_file_writer(const codec_t& a_codec = codec_t())
         : m_codec(a_codec)
         , m_data_offset(base::offset())
     {}
 
-    /// create reader object and open file for reading
+    /// create writer object and open file for writing
     data_file_writer(const std::string& a_fname, bool a_append = false,
                      const codec_t& a_codec = codec_t())
         : base(a_fname, a_append)
@@ -150,7 +150,7 @@ public:
         throw io_error("encode error", "short buffer: ", base::capacity());
     }
 
-    /// offset for the next record to decode
+    /// offset for the next record to encode
     size_t data_offset() const { return m_data_offset; }
 };
 
