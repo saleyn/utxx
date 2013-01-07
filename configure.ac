@@ -64,7 +64,7 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for libraries.
 
 AC_CHECK_LIB(pthread, pthread_create)
-AX_BOOST_BASE([1.49.0], [], [AC_MSG_ERROR("BOOST library version >= 1.49.0 not found!")])
+AX_BOOST_BASE([1.47.0], [], [AC_MSG_ERROR("BOOST library version >= 1.47.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_THREAD
 AX_BOOST_ASIO
