@@ -250,7 +250,7 @@ public:
 
     typedef const iterator const_iterator;
 
-    /// get input iterator at currect read position
+    /// get input iterator at current read position
     iterator begin() { return iterator(*this); }
     const_iterator begin() const { return iterator(*this); }
 
