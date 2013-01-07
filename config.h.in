@@ -6,14 +6,23 @@
 /* define if the Boost::ASIO library is available */
 #undef HAVE_BOOST_ASIO
 
+/* define if the Boost::Chrono library is available */
+#undef HAVE_BOOST_CHRONO
+
 /* define if the Boost::Date_Time library is available */
 #undef HAVE_BOOST_DATE_TIME
+
+/* define if the Boost::Filesystem library is available */
+#undef HAVE_BOOST_FILESYSTEM
 
 /* define if the Boost::System library is available */
 #undef HAVE_BOOST_SYSTEM
 
 /* define if the Boost::Thread library is available */
 #undef HAVE_BOOST_THREAD
+
+/* Define to 1 if you have the <boost/timer/timer.hpp> header file. */
+#undef HAVE_BOOST_TIMER_TIMER_HPP
 
 /* define if the Boost::Unit_Test_Framework library is available */
 #undef HAVE_BOOST_UNIT_TEST_FRAMEWORK

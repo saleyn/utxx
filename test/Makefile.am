@@ -101,31 +101,21 @@ test_util_CPPFLAGS 	= -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 					  $(BOOST_CPPFLAGS)
 test_util_LDFLAGS  	= $(BOOST_LDFLAGS)
 
-if Ix86
 test_util_LDADD    	= $(srcdir)/../src/.libs/libutil.la \
-					  $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
-					  $(BOOST_DATE_TIME_LIB) -lboost_chrono \
-					  $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
-					  -lboost_filesystem
-else
-test_util_LDADD    	= $(srcdir)/../src/.libs/libutil.la \
-					  $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
-					  $(BOOST_DATE_TIME_LIB) -lboost_chrono \
-					  $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
-					  -lboost_filesystem \
-					  -lboost_timer -lrt
-endif
+					$(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+					$(BOOST_DATE_TIME_LIB) \
+					$(BOOST_TIMER_LIB) \
+					$(BOOST_CHRONO_LIB) \
+					$(BOOST_FILESYSTEM_LIB) \
+					$(BOOST_UNIT_TEST_FRAMEWORK_LIB)
 
 test_util_DATA 		= test_config_validator.xml
 
 
-if Ix86
-else
 example_repeating_timer_CPPFLAGS = -I$(srcdir)/../include $(BOOST_CPPFLAGS)
 example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutil.la \
-								   $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
-								   $(BOOST_DATE_TIME_LIB) -lboost_chrono
-endif
+					   $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+					   $(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB)
 
 EXTRA_DIST = test_config_validator.xml
