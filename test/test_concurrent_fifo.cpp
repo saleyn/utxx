@@ -3,14 +3,14 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#include <util/container/concurrent_fifo.hpp>
-#include <util/mt_queue.hpp>
-#include <util/allocator.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/container/concurrent_fifo.hpp>
+#include <utxx/mt_queue.hpp>
+#include <utxx/allocator.hpp>
+#include <utxx/verbosity.hpp>
 #include <iostream>
 #include <stdio.h>
 
-using namespace util;
+using namespace utxx;
 
 template <typename Queue, int Size>
 void test_queue_simple(int total)
@@ -96,7 +96,7 @@ struct producer {
                 i++;
                 atomic::inc(&count);
                 p = new node_t(i, id);
-                if (verbosity::level() >= util::VERBOSE_TRACE) {
+                if (verbosity::level() >= utxx::VERBOSE_TRACE) {
                     sprintf(buf, "%d => put(%p) [%7d]\n", id, p, p->data);
                 }
             }
@@ -104,12 +104,12 @@ struct producer {
             BOOST_ASSERT(((unsigned long)p & 0x3) == 0); // "Invalid alignment " << p);
 
             if (queue.enqueue(p, NULL) == 0) {
-                if (verbosity::level() >= util::VERBOSE_TRACE)
+                if (verbosity::level() >= utxx::VERBOSE_TRACE)
                     printf(buf);
                 p = NULL;
             }
         }
-        if (verbosity::level() != util::VERBOSE_NONE)
+        if (verbosity::level() != utxx::VERBOSE_NONE)
             printf("Producer %d finished (count=%ld)\n", id, count);
     }
 };
@@ -145,7 +145,7 @@ struct consumer : public producer<Queue> {
                 sum += p->data;
                 atomic::add(&this->count, 1); // cons. total count
                 atomic::add(&prod_counts[p->th-1], 1);
-                if (verbosity::level() >= util::VERBOSE_TRACE) {
+                if (verbosity::level() >= utxx::VERBOSE_TRACE) {
                     printf("%d <= get(%p) [%7d] count=%7ld prod_cnt=%d/%-7ld, "
                            "(sum=%ld, tot_prod_cnt=%7ld)\n",
                            base::id, p, p->data, base::count, p->th,
@@ -166,7 +166,7 @@ struct consumer : public producer<Queue> {
         } while (!base::terminate &&
                  (prod_tot_cnt < base::iterations || base::count < base::iterations));
 
-        if (verbosity::level() != util::VERBOSE_NONE)
+        if (verbosity::level() != utxx::VERBOSE_NONE)
             printf("Consumer %d finished (count=%ld)\n", base::id, base::count);
 
         base::queue.terminate();

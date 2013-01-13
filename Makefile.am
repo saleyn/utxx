@@ -2,7 +2,7 @@ SUBDIRS = src test
 ACLOCAL_AMFLAGS = -I build-aux
 
 pkgconfigdir = $(libdir)/pkgconfig
-nodist_pkgconfig_DATA = util.pc
+nodist_pkgconfig_DATA = utxx.pc
 
 clean-local:
 	-rm -fr @default_prefix@
@@ -24,9 +24,9 @@ MAINTAINERCLEANFILES = configure build-aux/l*.m4 build-aux/*.sh \
 	build-aux/install-sh build-aux/Doxyfile \
 	aclocal.m4 Makefile.in src/Makefile.in \
 	test/Makefile.in \
-    util.pc
+    utxx.pc
 
 EXTRA_DIST = build-aux/boost.m4 build-aux/boost.m4.readme \
-			 build-aux/Doxyfile.in bootstrap
+			 build-aux/Doxyfile.in bootstrap LICENSE
 
 .PHONY: docs doc

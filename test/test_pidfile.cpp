@@ -31,20 +31,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/pidfile.hpp>
-#include <util/path.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/pidfile.hpp>
+#include <utxx/path.hpp>
+#include <utxx/verbosity.hpp>
 #include <fstream>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_pid_file )
 {
     std::string filename("/tmp/test_pidfile.pid");
     {
-        util::pid_file l_pidfile(filename.c_str());
+        utxx::pid_file l_pidfile(filename.c_str());
 
-        std::string expected_pid = util::int_to_string(::getpid());
+        std::string expected_pid = utxx::int_to_string(::getpid());
         std::string got_pid;
 
         std::ifstream fs(filename.c_str());

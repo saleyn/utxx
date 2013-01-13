@@ -34,8 +34,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <util/verbosity.hpp>
-#include <util/high_res_timer.hpp>
+#include <utxx/verbosity.hpp>
+#include <utxx/high_res_timer.hpp>
 #include <stdio.h>
 #include <sstream>
 #include <iostream>
@@ -43,9 +43,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef DEBUG_TIMESTAMP
 #define DEBUG_TIMESTAMP
 #endif
-#include <util/timestamp.hpp>
+#include <utxx/timestamp.hpp>
 
-using namespace util;
+using namespace utxx;
 
 static long iterations   = ::getenv("ITERATIONS")
                          ? atoi(::getenv("ITERATIONS")) : 100000;

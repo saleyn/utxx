@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of util open-source project.
+This file is part of utxx open-source project.
 
 Copyright (C) 2009 Serge Aleynikov <saleyn@gmail.com>
 
@@ -35,14 +35,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#include <util/persist_array.hpp>
-#include <util/string.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/persist_array.hpp>
+#include <utxx/string.hpp>
+#include <utxx/verbosity.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 using namespace boost::unit_test;
-using namespace util;
+using namespace utxx;
 
 static const char* s_filename = "/tmp/persist_array.bin";
 

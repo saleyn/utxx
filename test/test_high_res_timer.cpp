@@ -1,12 +1,12 @@
 // #define BOOST_TEST_MODULE high_res_timer_test 
 
 #include <boost/test/unit_test.hpp>
-#include <util/high_res_timer.hpp>
-#include <util/cpu.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/high_res_timer.hpp>
+#include <utxx/cpu.hpp>
+#include <utxx/verbosity.hpp>
 #include <stdio.h>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( calibration_test )
 {

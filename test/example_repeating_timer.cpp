@@ -6,7 +6,7 @@
 #include <boost/ptr_container/ptr_array.hpp>
 #include <boost/date_time/c_local_time_adjustor.hpp>
 
-#include <util/boost/repeating_timer.hpp>
+#include <utxx/boost/repeating_timer.hpp>
 
 using namespace  boost::posix_time;
 

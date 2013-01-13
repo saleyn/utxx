@@ -32,10 +32,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define BOOST_TEST_MODULE bitmap_test 
 
 #include <boost/test/unit_test.hpp>
-#include <util/bitmap.hpp>
+#include <utxx/bitmap.hpp>
 #include <limits>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( bitmap_low_test )
 {

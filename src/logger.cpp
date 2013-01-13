@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file  util.cpp
+/// \file  utxx.cpp
 //----------------------------------------------------------------------------
 /// \brief Implementation of general purpose functions and classes.
 //----------------------------------------------------------------------------
@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the UDPR project.
+This file is part of the utxx open-source project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -32,12 +32,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <string>
 #include <algorithm>
-#include <util/error.hpp>
-#include <util/meta.hpp>
-#include <util/string.hpp>
-#include <util/synch.hpp>
-#include <util/bits.hpp>
-#include <util/logger/logger.hpp>
+#include <utxx/error.hpp>
+#include <utxx/meta.hpp>
+#include <utxx/string.hpp>
+#include <utxx/synch.hpp>
+#include <utxx/bits.hpp>
+#include <utxx/logger/logger.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/thread/locks.hpp>
 #include <boost/property_tree/info_parser.hpp>
@@ -46,7 +46,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdio.h>
 
 
-namespace util {
+namespace utxx {
 
     namespace {
         static const char* s_timestamp_types[] = {
@@ -301,4 +301,4 @@ std::ostream& logger::dump(std::ostream& out) const
     return out << s.str();
 }
 
-} // namespace util
+} // namespace utxx

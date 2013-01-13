@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of util open-source project.
+This file is part of utxx open-source project.
 
 Copyright (C) 2009 Serge Aleynikov <saleyn@gmail.com>
 
@@ -36,14 +36,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <boost/timer/timer.hpp>
-#include <util/persist_blob.hpp>
-#include <util/string.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/persist_blob.hpp>
+#include <utxx/string.hpp>
+#include <utxx/verbosity.hpp>
 
 #include <boost/test/unit_test.hpp>
 
 using namespace boost::unit_test;
-using namespace util;
+using namespace utxx;
 
 static const char* s_filename = "/tmp/persist_blob.bin";
 
@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        if (util::verbosity::level() > util::VERBOSE_NONE) {
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE) {
             printf("Persist storage iterations: %ld\n", ITERATIONS);
             printf("Persist storage time      : %.3fs (%.3fus/call)\n",
                 (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);

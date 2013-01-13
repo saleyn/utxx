@@ -14,7 +14,7 @@
  */
 
 #include <boost/test/unit_test.hpp>
-#include <util/shared_buffer_queue.hpp>
+#include <utxx/shared_buffer_queue.hpp>
 
 struct deleter {
     int& cnt;
@@ -29,11 +29,11 @@ BOOST_AUTO_TEST_CASE( shared_queue_test )
 
     int cnt = 0;
     {
-        util::shared_const_buffer sbuf(cbuf, deleter(cnt));
+        utxx::shared_const_buffer sbuf(cbuf, deleter(cnt));
         {
-            util::shared_buffer_queue<> bq1;
-            util::shared_buffer_queue<> bq2;
-            util::shared_buffer_queue<> bq3;
+            utxx::shared_buffer_queue<> bq1;
+            utxx::shared_buffer_queue<> bq2;
+            utxx::shared_buffer_queue<> bq3;
             bq1.enqueue(sbuf);
             bq2.enqueue(sbuf);
             bq3.enqueue(sbuf);
@@ -44,9 +44,9 @@ BOOST_AUTO_TEST_CASE( shared_queue_test )
 
     cnt = 0;
     {
-        util::shared_buffer_queue<> bq1;
-        util::shared_buffer_queue<> bq2;
-        util::shared_buffer_queue<> bq3;
+        utxx::shared_buffer_queue<> bq1;
+        utxx::shared_buffer_queue<> bq2;
+        utxx::shared_buffer_queue<> bq3;
         bq1.enqueue(cbuf);
         bq2.enqueue(cbuf);
         bq3.enqueue(cbuf);

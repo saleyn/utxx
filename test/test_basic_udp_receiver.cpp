@@ -10,7 +10,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the util open-source project
+This file is part of the utxx open-source project
 
 Copyright (C) 2012 Dmitriy Kargapolov, Serge Aleynikov
 
@@ -34,14 +34,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define _ALLOCATOR_MEM_DEBUG 1
 
 #include <boost/test/unit_test.hpp>
-#include <util/io/basic_udp_receiver.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/io/basic_udp_receiver.hpp>
+#include <utxx/verbosity.hpp>
 #include <iostream>
 
-using namespace util;
+using namespace utxx;
 
-class client : public util::io::basic_udp_receiver<client> {
-    typedef util::io::basic_udp_receiver<client> base;
+class client : public utxx::io::basic_udp_receiver<client> {
+    typedef utxx::io::basic_udp_receiver<client> base;
 public:
     client(boost::asio::io_service& a_io) : base(a_io) {}
 

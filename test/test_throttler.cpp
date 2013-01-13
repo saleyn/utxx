@@ -31,9 +31,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/rate_throttler.hpp>
+#include <utxx/rate_throttler.hpp>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_basic_rate_throttler )
 {

@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the util open-source projects
+This file is part of the utxx open-source projects
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -31,10 +31,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/name.hpp>
-#include <util/string.hpp>
+#include <utxx/name.hpp>
+#include <utxx/string.hpp>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_name )
 {

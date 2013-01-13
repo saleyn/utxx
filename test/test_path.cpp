@@ -31,12 +31,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/path.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/path.hpp>
+#include <utxx/verbosity.hpp>
 #include <iostream>
 #include <fstream>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_path_slash )
 {

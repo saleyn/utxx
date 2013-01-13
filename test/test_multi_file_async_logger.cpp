@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of util open-source project.
+This file is part of utxx open-source project.
 
 Copyright (C) 2009 Serge Aleynikov <saleyn@gmail.com>
 
@@ -39,9 +39,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 #include <boost/pool/pool_alloc.hpp>
-#include <util/multi_file_async_logger.hpp>
-#include <util/perf_histogram.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/multi_file_async_logger.hpp>
+#include <utxx/perf_histogram.hpp>
+#include <utxx/verbosity.hpp>
 
 static const size_t s_file_num  = 2;
 static const char* s_filename[] = { "/tmp/test_multi_file_async_logger1.log",
@@ -51,7 +51,7 @@ static const char s_str2[]      = "This is an stl std::string line:";
 static const char s_str3[]      = "This is another const char* string without line\n";
 
 using namespace boost::unit_test;
-using namespace util;
+using namespace utxx;
 
 namespace {
 #ifdef DEBUG_USE_BOOST_POOL_ALLOC

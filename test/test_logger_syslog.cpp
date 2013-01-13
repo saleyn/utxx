@@ -1,10 +1,10 @@
 //#define BOOST_TEST_MODULE logger_test
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/ptree.hpp>
-#include <util/logger.hpp>
+#include <utxx/logger.hpp>
 
 using namespace boost::property_tree;
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_logger_syslog )
 {

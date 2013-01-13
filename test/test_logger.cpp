@@ -12,13 +12,13 @@
 #include <boost/property_tree/ptree_serialization.hpp>
 #include <boost/property_tree/info_parser.hpp>
 #include <iostream>
-#include <util/logger.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/logger.hpp>
+#include <utxx/verbosity.hpp>
 
 //#define BOOST_TEST_MAIN
 
 using namespace boost::property_tree;
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_logger1 )
 {
@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     pt.put("logger.console.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put("logger.show_ident", variant(true));
 
-    if (util::verbosity::level() != util::VERBOSE_NONE)
+    if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
         write_info(std::cout, pt);
 
     BOOST_REQUIRE_EQUAL(1u, pt.count("logger"));

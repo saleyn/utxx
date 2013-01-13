@@ -2,7 +2,7 @@
 /// \file  high_res_timer.hpp
 //----------------------------------------------------------------------------
 /// \brief This file contains implementation of high resolution timer.
-/// Most of the high-resolution timer code is taken from ACE's 
+/// Most of the high-resolution timer code is derived from ACE's 
 /// high_res_timer (http://www.cs.wustl.edu/~schmidt/ACE.html)
 //----------------------------------------------------------------------------
 // ACE Library Copyright (c) 1993-2009 Douglas C. Schmidt
@@ -12,7 +12,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file may be included in various open-source projects.
+This file is part of utxx open-source project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -33,13 +33,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <util/high_res_timer.hpp>
-#include <util/cpu.hpp>
+#include <utxx/high_res_timer.hpp>
+#include <utxx/cpu.hpp>
 #include <boost/thread.hpp>
 #include <stdio.h>
 #include <unistd.h>
 
-namespace util {
+namespace utxx {
 
 size_t   high_res_timer::s_global_scale_factor = high_res_timer::cpu_frequency();
 uint64_t high_res_timer::s_usec_global_scale_factor = 
@@ -107,4 +107,4 @@ size_t high_res_timer::calibrate(uint32_t usec, uint32_t iterations) {
     return s_global_scale_factor;
 }
 
-} // namespace util
+} // namespace utxx

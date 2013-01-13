@@ -12,7 +12,7 @@
  */
 
 #include <boost/test/unit_test.hpp>
-#include <util/collections.hpp>
+#include <utxx/collections.hpp>
 
 namespace collections_test {
 
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_SUITE( test_collections )
 
 BOOST_AUTO_TEST_CASE( int_seq_merge_test )
 {
-    util::collections<iseq> m;
+    utxx::collections<iseq> m;
     for (int i=0; i<100; i++) {
         m.add(iseq(rand() % 100));
     }

@@ -28,7 +28,7 @@ util - an open-source collection of C++ miscelaneous components
 
 Downloading
 ===========
-    $ git clone git@git.assembla.com:util.git
+    $ git clone git@github.com:saleyn/utxx.git
 
 Building
 ========
@@ -53,5 +53,3 @@ Contributors
 LICENSE
 =======
     GNU Lesser General Public License
-
-

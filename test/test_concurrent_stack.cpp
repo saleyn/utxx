@@ -1,13 +1,13 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
-#include <util/container/concurrent_stack.hpp>
-#include <util/verbosity.hpp>
-#include <util/atomic.hpp>
+#include <utxx/container/concurrent_stack.hpp>
+#include <utxx/verbosity.hpp>
+#include <utxx/atomic.hpp>
 #include <vector>
 #include <stdio.h>
 
-using namespace util;
-using namespace util::container;
+using namespace utxx;
+using namespace utxx::container;
 
 class int_t : public versioned_stack::node_t {
     int m_data;
@@ -93,11 +93,11 @@ struct sproducer {
             int_t* p = new int_t(i+1, id);
             BOOST_ASSERT(p); // , "Out of memory id=" << id << " i=" << i);
             BOOST_ASSERT(((unsigned long)p & int_t::s_version_mask) == 0); // "Invalid alignment " << p);
-            if (verbosity::level() >= util::VERBOSE_TRACE)
+            if (verbosity::level() >= utxx::VERBOSE_TRACE)
                 fprintf(stderr, "  %d - Allocated %p (%d,%d) prod_cnt=%ld\n", id, p, id, i+1, count);
             stack.push(p);
         }
-        if (verbosity::level() != util::VERBOSE_NONE)
+        if (verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Producer %d finished (count=%ld)\n", id, count);
     }
 };
@@ -124,7 +124,7 @@ struct sconsumer : public sproducer {
                 BOOST_ASSERT(((unsigned long)p & int_t::s_version_mask) == 0); //, "Invalid alignment " << p);
                 sum += p->data();
                 atomic::add(&count, 1);
-                if (verbosity::level() >= util::VERBOSE_TRACE)
+                if (verbosity::level() >= utxx::VERBOSE_TRACE)
                     fprintf(stderr, "  %d - Freeing %p (%d,%7d) prod_cnt=%7ld, cons_cnt=%7ld\n",
                             id, p, p->id(), p->data(), prod_cnt, count);
                 delete p;
@@ -132,7 +132,7 @@ struct sconsumer : public sproducer {
             }
         } while (prod_cnt < iterations || count < iterations);
 
-        if (verbosity::level() != util::VERBOSE_NONE)
+        if (verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Consumer %d finished (count=%ld)\n", id, count);
     }
 };

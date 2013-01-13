@@ -34,9 +34,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 
-#include <util/iovec.hpp>
+#include <utxx/iovec.hpp>
 
-namespace util {
+namespace utxx {
 namespace io {
 BOOST_AUTO_TEST_CASE(test_iovec)
 {
@@ -66,4 +66,4 @@ BOOST_AUTO_TEST_CASE(test_iovec)
     }
 }
 } // namespace io
-} // namespace util
+} // namespace utxx

@@ -33,12 +33,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define _ALLOCATOR_MEM_DEBUG 1
 
 #include <boost/test/unit_test.hpp>
-#include <util/alloc_fixed_page.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/alloc_fixed_page.hpp>
+#include <utxx/verbosity.hpp>
 #include <vector>
 #include <iostream>
 
-using namespace util;
+using namespace utxx;
 
 struct test {
     char buf[44];

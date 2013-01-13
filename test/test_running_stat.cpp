@@ -33,10 +33,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <boost/bind.hpp>
 #include <algorithm>
-#include <util/running_stat.hpp>
-#include <util/detail/mean_variance.hpp>
+#include <utxx/running_stat.hpp>
+#include <utxx/detail/mean_variance.hpp>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_running_sum )
 {

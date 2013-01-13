@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is may be included in several open-source projects.
+This file is part of the utxx open-source project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -35,8 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
-#include <util/path.hpp>
-#include <util/error.hpp>
+#include <utxx/path.hpp>
+#include <utxx/error.hpp>
 
 #if defined(_WIN32) || defined (_WIN64) || defined(_MSC_VER)
 #include <boost/smart_ptr/scoped_ptr.hpp>
@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/stat.h>
 #endif
 
-namespace util {
+namespace utxx {
 namespace path {
 
 //------------------------------------------------------------------------------
@@ -240,5 +240,5 @@ program::program()
 }
 
 } // namespace path
-} // namespace util
+} // namespace utxx
 

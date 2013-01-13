@@ -1,13 +1,13 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/thread.hpp>
 #include <boost/cstdint.hpp>
-#include <util/container/concurrent_stack.hpp>
-#include <util/verbosity.hpp>
-#include <util/atomic.hpp>
+#include <utxx/container/concurrent_stack.hpp>
+#include <utxx/verbosity.hpp>
+#include <utxx/atomic.hpp>
 #include <vector>
 #include <stdio.h>
 
-using namespace util;
+using namespace utxx;
 
 #define MAX_DATA_SZ 64
 #define MAX_SLOTS   16
@@ -79,7 +79,7 @@ struct producer_t {
             memcpy(buf, &sum, sizeof(sum));
             data.set(i % MAX_SLOTS, buf, MAX_DATA_SZ);
         }
-        if (verbosity::level() != util::VERBOSE_NONE)
+        if (verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Producer %u finished (count=%ld)\n", id, count);
     }
 };
@@ -104,7 +104,7 @@ struct consumer_t : public producer_t {
             }
         } while (count < iterations);
 
-        if (verbosity::level() != util::VERBOSE_NONE)
+        if (verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Consumer %d finished (count=%ld, looped=%u)\n", id, count, looped);
     }
 };

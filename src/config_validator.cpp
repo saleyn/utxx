@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the UDPR project.
+This file is part of the utxx open-source project.
 
 Copyright (C) 2011 Serge Aleynikov <saleyn@gmail.com>
 
@@ -30,10 +30,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <util/config_validator.hpp>
+#include <utxx/config_validator.hpp>
 #include <boost/algorithm/string/replace.hpp>
 
-namespace util {
+namespace utxx {
 namespace config {
 
 const char* type_to_string(option_type_t a_type) {
@@ -94,5 +94,5 @@ std::string option::to_string() const {
     return s.str();
 }
 
-} // namespace util
+} // namespace utxx
 } // namespace config

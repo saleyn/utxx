@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the util project.
+This file is part of the utxx project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -29,9 +29,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <util/logger/logger.hpp>
+#include <utxx/logger/logger.hpp>
 
-namespace util {
+namespace utxx {
 
 int logger_impl::format_message(
     char* buf, size_t size, bool add_new_line,
@@ -74,4 +74,4 @@ int logger_impl::format_message(
 }
 
 
-} // namespace util
+} // namespace utxx

@@ -32,14 +32,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define BOOST_TEST_MODULE atomic_test 
 
 #include <boost/test/unit_test.hpp>
-#include <util/atomic.hpp>
+#include <utxx/atomic.hpp>
 #include <stdio.h>
 
 #define DO_REQUIRE_EQUAL(A, B, C) \
     { bool r = A == B; if (!r) { printf("Testing %s failed: %s != %s\n", C, #A, #B); \
       BOOST_REQUIRE(false); } }
 
-using namespace util;
+using namespace utxx;
 
 template <typename T>
 void do_test_atomic_cas(const char* str_type) {

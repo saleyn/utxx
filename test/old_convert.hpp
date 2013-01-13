@@ -1,5 +1,5 @@
-#ifndef _UTIL_ATOI_HPP_
-#define _UTIL_ATOI_HPP_
+#ifndef _UTXX_ATOI_HPP_
+#define _UTXX_ATOI_HPP_
 
 #include <limits>
 #include <string.h>
@@ -8,10 +8,10 @@
 #include <boost/type_traits/make_unsigned.hpp>
 #include <boost/assert.hpp>
 #include <string>
-#include <util/meta.hpp>
+#include <utxx/meta.hpp>
 #include <stdint.h>
 
-namespace util {
+namespace utxx {
 
 enum alignment { LEFT_JUSTIFIED, RIGHT_JUSTIFIED };
 
@@ -436,6 +436,6 @@ inline Char* ftoa_right(Char* a_buf, size_t a_size, double a_value, Char a_pad =
 //--------------------------------------------------------------------------------
 double atof(const char* p, const char* end);
 
-} // namespace util
+} // namespace utxx
 
-#endif // _UTIL_ATOI_HPP_
+#endif // _UTXX_ATOI_HPP_

@@ -1,12 +1,12 @@
 #  -*- Autoconf -*-
 
 AC_PREREQ([2.63])
-AC_INIT([util], [0.1], [BUG-REPORT-ADDRESS])
+AC_INIT([utxx], [0.1], [BUG-REPORT-ADDRESS])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign -Wall -Wno-portability])
 
-AC_SUBST([utildir], [$libdir/util])
+AC_SUBST([utxxdir], [$libdir/utxx])
 
 # Default prefix
 AC_PREFIX_DEFAULT(`pwd`)
@@ -108,7 +108,7 @@ AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([test/Makefile])
 AC_CONFIG_FILES([test.sh], [chmod +x test.sh])
-AC_CONFIG_FILES([util.pc:util.pc.in])
+AC_CONFIG_FILES([utxx.pc:utxx.pc.in])
 
 AC_OUTPUT
 

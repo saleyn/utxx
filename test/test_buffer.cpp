@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the util open-source project.
+This file is part of the utxx open-source project.
 
 Copyright (C) 2012 Serge Aleynikov <saleyn@gmail.com>
 
@@ -32,9 +32,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 
-#include <util/buffer.hpp>
+#include <utxx/buffer.hpp>
 
-namespace util {
+namespace utxx {
 
 BOOST_AUTO_TEST_CASE( test_io_buffer )
 {
@@ -54,4 +54,4 @@ BOOST_AUTO_TEST_CASE( test_bufferred_queue )
     l_buf_owner.enqueue(hb);
 }
 
-} // namespace util
+} // namespace utxx

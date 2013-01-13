@@ -1,26 +1,35 @@
-/**
- * Back-end plugin implementating asynchronous file writer for the <logger>
- * class.
- *-----------------------------------------------------------------------------
- * Copyright (c) 2009 Serge Aleynikov <serge@aleynikov.org>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- *-----------------------------------------------------------------------------
- * Created: 2009-11-25
- * $Id$
- */
+//----------------------------------------------------------------------------
+/// \file  logger_impl_async_file.cpp
+//----------------------------------------------------------------------------
+/// \brief Back-end plugin implementating asynchronous file writer for the
+/// <tt>logger</tt> class.
+//----------------------------------------------------------------------------
+// Copyright (c) 2011 Serge Aleynikov <saleyn@gmail.com>
+// Created: 2009-11-25
+//----------------------------------------------------------------------------
+/*
+***** BEGIN LICENSE BLOCK *****
+
+This file is part of the utxx open-source project.
+
+Copyright (C) 2011 Serge Aleynikov <saleyn@gmail.com>
+
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+***** END LICENSE BLOCK *****
+*/
 #include <stdio.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -28,9 +37,9 @@
 #include <sys/uio.h>
 #include <limits.h>
 #include <fcntl.h>
-#include <util/logger/logger_impl_async_file.hpp>
+#include <utxx/logger/logger_impl_async_file.hpp>
 
-namespace util {
+namespace utxx {
 
 static logger_impl_mgr::impl_callback_t f = &logger_impl_async_file::create;
 static logger_impl_mgr::registrar reg("async_file", f);
@@ -208,4 +217,4 @@ int logger_impl_async_file::write_data(async_data* p)
     return 0;
 }
 
-} // namespace util
+} // namespace utxx

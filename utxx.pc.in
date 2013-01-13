@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: @PACKAGE@
+Description: C++ Utility Library.
+#Requires: boost_1_49_0
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir}/utxx -lutxx
+Cflags: -isystem ${includedir}
+

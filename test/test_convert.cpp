@@ -32,13 +32,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#define BOOST_TEST_MODULE test_convert
 #include <boost/test/unit_test.hpp>
-#include <util/convert.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/convert.hpp>
+#include <utxx/verbosity.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/timer/timer.hpp>
 #include <limits>
 
-using namespace util;
+using namespace utxx;
 
 
 BOOST_AUTO_TEST_CASE( test_convert )
@@ -374,7 +374,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        if (verbosity::level() > util::VERBOSE_NONE) {
+        if (verbosity::level() > utxx::VERBOSE_NONE) {
             printf("    fast_atoi  iterations: %ld\n", ITERATIONS);
             printf("    fast_atoi  time      : %.3fs (%.3fus/call)\n",
                 (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
@@ -392,7 +392,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        if (verbosity::level() > util::VERBOSE_NONE) {
+        if (verbosity::level() > utxx::VERBOSE_NONE) {
             printf("          atoi iterations: %ld\n", ITERATIONS);
             printf("          atoi time      : %.3fs (%.3fus/call)\n",
                 (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
@@ -411,7 +411,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        if (verbosity::level() > util::VERBOSE_NONE) {
+        if (verbosity::level() > utxx::VERBOSE_NONE) {
             printf("   unsafe_atoi iterations: %ld (n = %ld)\n", ITERATIONS, n);
             printf("          atoi time      : %.3fs (%.3fus/call)\n",
                 (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);

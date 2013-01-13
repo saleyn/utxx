@@ -31,10 +31,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/string.hpp>
+#include <utxx/string.hpp>
 #include <iostream>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_string_length )
 {
@@ -47,9 +47,9 @@ enum op_type {OP_UNDEFINED = -1, OP_ADD, OP_REMOVE, OP_REPLACE, OP_UPDATE};
 BOOST_AUTO_TEST_CASE( test_string_find_index )
 {
     static const char* s_ops[] = {"add", "remove", "replace", "update"};
-    BOOST_REQUIRE(OP_REMOVE    == util::find_index<op_type>(s_ops, "remove"));
-    BOOST_REQUIRE(OP_REPLACE   == util::find_index<op_type>(s_ops, sizeof(s_ops), "replace"));
-    BOOST_REQUIRE(OP_UNDEFINED == util::find_index<op_type>(s_ops, "xxx"));
+    BOOST_REQUIRE(OP_REMOVE    == utxx::find_index<op_type>(s_ops, "remove"));
+    BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace"));
+    BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "xxx"));
 }
 
 BOOST_AUTO_TEST_CASE( test_string_nocase )

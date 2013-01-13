@@ -31,10 +31,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/pcap.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/pcap.hpp>
+#include <utxx/verbosity.hpp>
 
-using namespace util;
+using namespace utxx;
 
 static const uint8_t s_buffer[] = {
     212,195,178,161,2,0,4,0,0,0,0,0,0,0,0,0,255,255,0,0,1,0,0,0,213,0,212,76,132,

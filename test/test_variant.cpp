@@ -35,16 +35,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/integral_c.hpp>
-#include <util/variant.hpp>
-#include <util/config_tree.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/variant.hpp>
+#include <utxx/config_tree.hpp>
+#include <utxx/verbosity.hpp>
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/property_tree/detail/info_parser_read.hpp>
 #include <boost/property_tree/detail/info_parser_write.hpp>
 #include <boost/foreach.hpp>
 #include <iostream>
 
-using namespace util;
+using namespace utxx;
 
 namespace {
     typedef boost::mpl::vector<

@@ -1,4 +1,7 @@
 gmon.out
+*.o
+*.la
+*.lo
 *.swp
 .deps
 .libs
@@ -7,8 +10,8 @@ Makefile.in
 install
 src/libutil.la
 src/libutil_la*
-test/test_util-*
-test/test_util
+test/test_utxx-*
+test/test_utxx
 test/example_repeating_timer-*
 test/example_repeating_timer
 test/generated
@@ -28,5 +31,5 @@ config.*
 configure
 libtool
 stamp-h1
-util.pc
+utxx.pc
 test.sh

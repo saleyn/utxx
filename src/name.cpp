@@ -1,9 +1,9 @@
 //----------------------------------------------------------------------------
 /// \file  name.cpp
 //----------------------------------------------------------------------------
-/// \brief Short name (up to 10 characters) encoded in an 8 bytes integer.
+/// \brief Workabound for 32bit compiler
 //----------------------------------------------------------------------------
-// Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
+// Copyright (c) 2010 Dmitriy Kargapolov
 // Created: 2010-09-30
 //----------------------------------------------------------------------------
 /*
@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <util/name.hpp>
+#include <utxx/name.hpp>
 
-namespace util {
+namespace utxx {
 }

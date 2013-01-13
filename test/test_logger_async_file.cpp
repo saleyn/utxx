@@ -5,13 +5,13 @@
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/thread.hpp>
 #include <iostream>
-#include <util/logger.hpp>
-#include <util/verbosity.hpp>
-#include <util/test_helper.hpp>
-#include <util/high_res_timer.hpp>
+#include <utxx/logger.hpp>
+#include <utxx/verbosity.hpp>
+#include <utxx/test_helper.hpp>
+#include <utxx/high_res_timer.hpp>
 
 using namespace boost::property_tree;
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_async_logger )
 {
@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     pt.put("logger.async_file.filename",  variant(filename));
     pt.put("logger.async_file.append", variant(false));
 
-    if (util::verbosity::level() > util::VERBOSE_NONE)
+    if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         write_info(std::cout, pt);
 
     BOOST_REQUIRE(pt.get_child_optional("logger.async_file"));
@@ -136,7 +136,7 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
     }
     BOOST_REQUIRE(!getline(in, s));
 
-    if (util::verbosity::level() > util::VERBOSE_NONE) {
+    if (utxx::verbosity::level() > utxx::VERBOSE_NONE) {
         for(int i=1; i <= threads; i++)
             fprintf(stderr, "Verified %ld messages for thread %d\n", num[i-1]+1, i);
         fprintf(stderr, "Out of sequence time stamps: %ld\n", time_miss);
@@ -161,7 +161,7 @@ struct worker {
             LOG_WARNING(("%d %9d This is a %s", id, ++n, "warning"));
             LOG_FATAL  (("%d %9d This is a %s", id, ++n, "fatal error"));
         }
-        if (util::verbosity::level() != util::VERBOSE_NONE)
+        if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Worker %d finished (count=%ld)\n", id, count);
     }
 };
@@ -242,7 +242,7 @@ struct latency_worker {
             else
                 time_buckets[20]++;
         }
-        if (util::verbosity::level() != util::VERBOSE_NONE)
+        if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stdout, "Performance thread %d finished\n", id);
     }
 };
@@ -302,7 +302,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     log.finalize();
 
-    if (util::verbosity::level() != util::VERBOSE_NONE) {
+    if (utxx::verbosity::level() != utxx::VERBOSE_NONE) {
         printf("Performance test '%s' finished\n", BOOST_CURRENT_TEST_NAME);
         double tot_pcnt = 0;
         for (unsigned int i=0; i < sizeof(time_stats)/sizeof(int); i++) {

@@ -15,8 +15,8 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/bind.hpp>
 #include <boost/timer/timer.hpp>
-#include <util/robust_mutex.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/robust_mutex.hpp>
+#include <utxx/verbosity.hpp>
 
 namespace {
     template <int N>
@@ -29,47 +29,47 @@ namespace {
     static const int N = 128;
     typedef basic_buffer<N> buffer_t;
 
-    util::robust_mutex m1;
-    util::robust_mutex m2;
+    utxx::robust_mutex m1;
+    utxx::robust_mutex m2;
 
     void failing_thread(buffer_t* b)
     {
         const char* name = "Owner   ";
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "Started %s %d\n", name, getpid());
 
         /* Lock mutex1 to make thread1 wait */
         try { m1.lock(); } catch (std::exception& e) {
-            if (util::verbosity::level() > util::VERBOSE_NONE)
+            if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
                 fprintf(stderr, "%s %d: mutex1 error: %s\n", name, getpid(), e.what());
             exit(1);
         }
         try { m2.lock(); } catch (std::exception& e) {
-            if (util::verbosity::level() > util::VERBOSE_NONE)
+            if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
                 fprintf(stderr, "%s %d: mutex2 error: %s\n", name, getpid(), e.what());
             exit(1);
         }
 
-        if (util::verbosity::level() > util::VERBOSE_NONE) {
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE) {
             fprintf(stderr, "%s %d: mutex1 acquired\n", name, getpid());
             fprintf(stderr, "%s %d: mutex2 acquired\n", name, getpid());
         }
 
         sleep(1);
 
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "%s %d: Allow threads to run\n", name, getpid());
 
         b->data[0]++;
         m1.unlock();
 
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "%s %d: mutex1 released -> exiting\n", name, getpid());
     }
 
-    int on_owner_dead(const char* name, util::robust_mutex* m) {
+    int on_owner_dead(const char* name, utxx::robust_mutex* m) {
         int b = m->make_consistent();
-        if (util::verbosity::level() > util::VERBOSE_NONE) {
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE) {
             if (!b)
                 fprintf(stderr, "%s %d: mutex2 owner died, made consistent\n", name, getpid());
             else
@@ -84,22 +84,22 @@ namespace {
     {
         const char* name = "Consumer";
 
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "%s %d: wait on mutex2\n", name, getpid());
 
         m2.on_make_consistent = boost::bind(&on_owner_dead, name, &m2);
 
         try { m2.lock(); } catch (std::exception& e) {
-            if (util::verbosity::level() > util::VERBOSE_NONE)
+            if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
                 fprintf(stderr, "%s %d: Error waiting on mutex2: %s", name, getpid(), e.what());
             exit(EXIT_FAILURE);
         }
 
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "%s %d: mutex2 acquired\n", name, getpid());
         b->data[0]++;
         m2.unlock();
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "%s %d: unlocked mutex2 and exiting\n", name, getpid());
     }
 
@@ -143,7 +143,7 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex )
 
     munmap(buffer, sizeof(buffer_t));
 
-    if (util::verbosity::level() > util::VERBOSE_NONE)
+    if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         fprintf(stderr, "Main process exited (b=%d)\n", result);
 
     BOOST_REQUIRE_EQUAL(3, result);
@@ -156,7 +156,7 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
     using boost::timer::nanosecond_type;
 
     pthread_mutex_t mutex1;
-    util::robust_mutex m(mutex1, true);
+    utxx::robust_mutex m(mutex1, true);
 
     int k = getenv("ITERATIONS")   ? atoi(getenv("ITERATIONS")) : 100000;
     nanosecond_type t1, t2;
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
         }
         cpu_times elapsed_times(t.elapsed());
         t1 = elapsed_times.system + elapsed_times.user;
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             printf("Robust mutex time: %.3fs (%.3fus/call)\n",
                 (double)t1 / 1000000000.0, (double)t1 / k / 1000.0);
     }
@@ -183,7 +183,7 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
         }
         cpu_times elapsed_times(t.elapsed());
         t2 = elapsed_times.system + elapsed_times.user;
-        if (util::verbosity::level() > util::VERBOSE_NONE)
+        if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             printf("Simple mutex time: %.3fs (%.3fus/call)\n",
                 (double)t2 / 1000000000.0, (double)t2 / k / 1000.0);
     }

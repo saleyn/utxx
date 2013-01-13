@@ -31,11 +31,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <util/url.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/url.hpp>
+#include <utxx/verbosity.hpp>
 #include <iostream>
 
-using namespace util;
+using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_url )
 {

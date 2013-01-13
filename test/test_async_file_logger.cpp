@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of util open-source project.
+This file is part of utxx open-source project.
 
 Copyright (C) 2009 Serge Aleynikov <saleyn@gmail.com>
 
@@ -36,9 +36,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <util/async_file_logger.hpp>
-#include <util/perf_histogram.hpp>
-#include <util/verbosity.hpp>
+#include <utxx/async_file_logger.hpp>
+#include <utxx/perf_histogram.hpp>
+#include <utxx/verbosity.hpp>
 
 const char* s_filename = "/tmp/test_async_file_logger.log";
 const char* s_str1     = "This is a const char* string line:%d\n";
@@ -49,7 +49,7 @@ static const int32_t ITERATIONS =
     getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 100000u;
 
 using namespace boost::unit_test;
-using namespace util;
+using namespace utxx;
 
 struct T {
     void on_error(int, const char* s) {
