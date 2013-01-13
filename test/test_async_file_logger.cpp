@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#define BOOST_TEST_MAIN
 #include <boost/test/unit_test.hpp>
-#include <utxx/async_file_logger.hpp>
+#include <utxx/logger/async_file_logger.hpp>
 #include <utxx/perf_histogram.hpp>
 #include <utxx/verbosity.hpp>
 

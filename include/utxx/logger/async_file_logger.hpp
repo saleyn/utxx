@@ -75,11 +75,6 @@ public:
     bool        empty() const  { return base::empty(); }
     size_t      size()  const  { return base::size();  }
     const char* c_str() const  { return base::c_str(); }
-
-    /*
-    void operator= (const std::string& s)   { *static_cast<base*>(this) = s; }
-    void operator= (const char* s)          { *static_cast<base*>(this) = s; }
-    */
 };
 
 /// Traits of asynchronous logger
@@ -295,7 +290,6 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
     static const log_msg_type* l_new_head = NULL;
     const        log_msg_type* l_cur_head;
 
-    // Find current head and reset the old head to be NULL
     do {
         l_cur_head = const_cast<const log_msg_type*>( m_head );
     } while( !atomic::cas(&m_head, l_cur_head, l_new_head) );
@@ -324,7 +318,6 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
 
     l_next = l_last;
 
-    // Write messages in this sublist to disk in the proper order
     for(const log_msg_type* p = l_last; l_next; p = l_next) {
         if (::fwrite(p->c_str(), p->size(), 1, m_file) < 0)
             return -1;
@@ -337,14 +330,7 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
 
     if (::fflush(m_file) < 0)
         return -2;
-/*
-    l_next = l_last;
 
-    for(log_msg_type* p = l_last; l_next != NULL; p = l_next) {
-        l_next = p->next();
-        delete p;
-    }
-*/
     return 0;
 }
 
@@ -355,7 +341,6 @@ int basic_async_logger<traits>::internal_write(const log_msg_type* msg) {
 
     const log_msg_type* l_last_head;
 
-    // Replace the head with msg
     do {
         l_last_head = const_cast<const log_msg_type*>(m_head);
         msg->next( l_last_head );
