@@ -117,7 +117,7 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex )
     ftruncate(zfd, sizeof(buffer_t));
     close(zfd);
 
-    bzero(buffer->data, sizeof(buffer_t::data));
+    bzero(buffer->data, sizeof(buffer->data));
 
     m1.init(buffer->mutex1);
     m2.init(buffer->mutex2);
