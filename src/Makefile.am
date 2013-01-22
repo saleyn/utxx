@@ -1,6 +1,9 @@
 utxx_LTLIBRARIES = libutxx.la
 
-UTXX_SOURCES = \
+UTXX64_SRCS = \
+	name.cpp
+
+UTXX_SRCS = \
 	config_validator.cpp \
 	convert.cpp \
 	high_res_timer.cpp \
@@ -15,7 +18,11 @@ UTXX_SOURCES = \
 	timestamp.cpp \
 	url.cpp
 
-libutxx_la_SOURCES  = $(if $(Ix86),, name.cpp) $(UTXX_SOURCES)
+if Ix86
+libutxx_la_SOURCES  = $(UTXX_SRCS)
+else
+libutxx_la_SOURCES  = $(UTXX64_SRCS) $(UTXX_SRCS)
+endif
 libutxx_la_LTADD    = -version-info 1:0:0 -shared
 libutxx_la_LIBS     = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 libutxx_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)

@@ -11,7 +11,7 @@ TEST_UTXX64_SRCS = \
 	test_concurrent_fifo.cpp \
 	test_name.cpp
 
-TEST_UTXX_SOURCES = \
+TEST_UTXX_SRCS = \
 	test_alloc_fixed_page.cpp \
 	test_basic_udp_receiver.cpp \
 	test_buffer.cpp \
@@ -46,7 +46,11 @@ TEST_UTXX_SOURCES = \
 	test_utxx.cpp \
 	test_variant.cpp
 
-test_utxx_SOURCES  	= $(if $(Ix86),,$(TEST_UTXX64_SRCS)) $(TEST_UTXX_SOURCES)
+if Ix86
+test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
+else
+test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
+endif
 
 example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp

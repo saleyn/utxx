@@ -66,13 +66,13 @@ AC_CONFIG_HEADERS([config.h])
 AC_CHECK_LIB(pthread, pthread_create)
 AX_BOOST_BASE([1.47.0], [], [AC_MSG_ERROR("BOOST library version >= 1.47.0 not found!")])
 AX_BOOST_SYSTEM
-AX_BOOST_THREAD
 AX_BOOST_ASIO
 AX_BOOST_DATE_TIME
 
 # workaround unexpected extra dependency on boost_system library (at least in 1.49)
 LDFLAGS_SAVED=$LDFLAGS
 LDFLAGS="$LDFLAGS $BOOST_SYSTEM_LIB"
+AX_BOOST_THREAD
 AX_BOOST_CHRONO
 LDFLAGS=$LDFLAGS_SAVED
 # chrono.hpp depends on ::clock_gettime, which is in rt
