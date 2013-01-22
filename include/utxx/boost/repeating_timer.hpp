@@ -33,6 +33,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/weak_ptr.hpp>
+#include <boost/version.hpp>
 
 namespace boost {
 namespace asio {
@@ -108,7 +109,9 @@ namespace asio {
                 handler_.reset( new handler_impl<WaitHandler>( handler ) );
                 // create new timer
                 timer_ = internal_timer::create(
-                    #if BOOST_VERSION >= 104900
+// method io_service renamed to get_io_service in commit r40176 (19 Oct 2007),
+// so this change is probably released in 1.35.0 (August 14th, 2008)
+                    #if BOOST_VERSION >= 103500
                     this->get_io_service(),
                     #else
                     this->io_service(),

@@ -35,7 +35,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
+#endif
 #include <utxx/persist_blob.hpp>
 #include <utxx/string.hpp>
 #include <utxx/verbosity.hpp>
@@ -166,6 +168,8 @@ namespace {
     };
 }
 
+#ifdef HAVE_BOOST_TIMER_TIMER_HPP
+
 BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
 {
     using boost::timer::cpu_timer;
@@ -219,3 +223,4 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
     ::unlink(s_filename);
 }
 
+#endif

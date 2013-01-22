@@ -41,7 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 namespace {
-#if BOOST_VERSION >= 104900
+#if BOOST_VERSION >= 104800
     namespace bsd = boost::spirit::detail;
 #else
     namespace bsd = boost::detail;

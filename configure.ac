@@ -64,12 +64,21 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for libraries.
 
 AC_CHECK_LIB(pthread, pthread_create)
-AX_BOOST_BASE([1.49.0], [], [AC_MSG_ERROR("BOOST library version >= 1.49.0 not found!")])
+AX_BOOST_BASE([1.47.0], [], [AC_MSG_ERROR("BOOST library version >= 1.47.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_THREAD
 AX_BOOST_ASIO
 AX_BOOST_DATE_TIME
-# AX_BOOST_CHRONO
+
+# workaround unexpected extra dependency on boost_system library (at least in 1.49)
+LDFLAGS_SAVED=$LDFLAGS
+LDFLAGS="$LDFLAGS $BOOST_SYSTEM_LIB"
+AX_BOOST_CHRONO
+LDFLAGS=$LDFLAGS_SAVED
+# chrono.hpp depends on ::clock_gettime, which is in rt
+BOOST_CHRONO_LIB="$BOOST_CHRONO_LIB -lrt"
+
+AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
 
 if test x"$ac_boost_path" != x; then
@@ -89,6 +98,21 @@ fi
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h sys/time.h])
+
+# Checks for new (since 1.48) boost timer header and library
+CPPFLAGS_SAVED=$CPPFLAGS
+LDFLAGS_SAVED=$LDFLAGS
+CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
+LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+AC_LANG_PUSH(C++)
+AC_CHECK_HEADERS([boost/timer/timer.hpp])
+AC_CHECK_LIB([boost_timer], [main], [
+    BOOST_TIMER_LIB="-lboost_timer $BOOST_CHRONO_LIB"
+    AC_SUBST([BOOST_TIMER_LIB])
+], [], [$BOOST_CHRONO_LIB -lboost_system])
+AC_LANG_POP([C++])
+CPPFLAGS=$CPPFLAGS_SAVED
+LDFLAGS=$LDFLAGS_SAVED
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL

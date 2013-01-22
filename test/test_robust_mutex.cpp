@@ -14,7 +14,9 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/bind.hpp>
+#ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
+#endif
 #include <utxx/robust_mutex.hpp>
 #include <utxx/verbosity.hpp>
 
@@ -149,6 +151,8 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex )
     BOOST_REQUIRE_EQUAL(3, result);
 }
 
+#ifdef HAVE_BOOST_TIMER_TIMER_HPP
+
 BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
 {
     using boost::timer::cpu_timer;
@@ -196,3 +200,5 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
         BOOST_REQUIRE(true);
     }
 }
+
+#endif

@@ -35,7 +35,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/convert.hpp>
 #include <utxx/verbosity.hpp>
 #include <boost/lexical_cast.hpp>
+#ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
+#endif
 #include <limits>
 
 using namespace utxx;
@@ -353,6 +355,8 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
     
 }
 
+#ifdef HAVE_BOOST_TIMER_TIMER_HPP
+
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
 {
     using boost::timer::cpu_timer;
@@ -419,6 +423,8 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
     }
     */
 }
+
+#endif
 
 BOOST_AUTO_TEST_CASE( test_convert_skip_left )
 {
