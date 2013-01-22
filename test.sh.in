@@ -22,4 +22,4 @@ else
 	fi
 fi
 
-LD_LIBRARY_PATH=@BOOST_LIBDIR@ test/test_util $tests $*
+LD_LIBRARY_PATH=@BOOST_LIBDIR@ test/test_utxx $tests $*

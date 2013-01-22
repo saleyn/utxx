@@ -77,7 +77,8 @@ test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
 					$(BOOST_TIMER_LIB) \
 					$(BOOST_CHRONO_LIB) \
 					$(BOOST_FILESYSTEM_LIB) \
-					$(BOOST_UNIT_TEST_FRAMEWORK_LIB)
+					$(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
+					$(RTLIB)
 
 test_utxx_DATA 		= test_config_validator.xml
 

@@ -64,6 +64,14 @@ AC_CONFIG_HEADERS([config.h])
 # Checks for libraries.
 
 AC_CHECK_LIB(pthread, pthread_create)
+
+AC_CHECK_FUNCS(clock_gettime, [], [
+  AC_CHECK_LIB(rt, clock_gettime, [
+    RTLIB="-lrt"
+    AC_SUBST([RTLIB])
+  ])
+])
+
 AX_BOOST_BASE([1.47.0], [], [AC_MSG_ERROR("BOOST library version >= 1.47.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_ASIO
@@ -75,8 +83,6 @@ LDFLAGS="$LDFLAGS $BOOST_LDFLAGS $BOOST_SYSTEM_LIB"
 AX_BOOST_THREAD
 AX_BOOST_CHRONO
 LDFLAGS=$LDFLAGS_SAVED_1
-# chrono.hpp depends on ::clock_gettime, which is in rt
-BOOST_CHRONO_LIB="$BOOST_CHRONO_LIB -lrt"
 
 AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
