@@ -69,7 +69,7 @@ size_t write_file1(const char *a_fname, std::list<std::string>& a_lst) {
 
 typedef utxx::data_file_writer<string_codec> writer_t;
 typedef utxx::data_file_reader<string_codec> reader_t;
-typedef typename reader_t::iterator it_t;
+typedef reader_t::iterator it_t;
 
 size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
     writer_t l_writer(a_fname, true);

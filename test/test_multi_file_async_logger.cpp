@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 
     unlink();
 
-    typename logger_t::file_id l_fds[s_file_num];
+    logger_t::file_id l_fds[s_file_num];
     
     logger_t l_logger;
 
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
 
     logger_t l_logger;
 
-    typename logger_t::file_id l_fd;
+    logger_t::file_id l_fd;
     BOOST_REQUIRE(!l_fd);
     BOOST_REQUIRE_EQUAL(0, l_logger.close_file(l_fd));
 
@@ -202,7 +202,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
 
     logger_t l_logger;
 
-    typename logger_t::file_id l_fd =
+    logger_t::file_id l_fd =
         l_logger.open_file(s_filename[0], false);
     BOOST_REQUIRE(l_fd.fd() >= 0);
 

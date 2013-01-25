@@ -83,7 +83,7 @@ std::string option::to_string() const {
     if (children.size()) {
         bool l_first = true;
         s << ",children=[";
-        BOOST_FOREACH(const typename option_map::value_type& o, children) {
+        BOOST_FOREACH(const option_map::value_type& o, children) {
             if (!l_first) s << ",";
             l_first = false;
             s << "\n  " << o.second.to_string();
