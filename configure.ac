@@ -72,7 +72,7 @@ AC_CHECK_FUNCS(clock_gettime, [], [
   ])
 ])
 
-AX_BOOST_BASE([1.47.0], [], [AC_MSG_ERROR("BOOST library version >= 1.47.0 not found!")])
+AX_BOOST_BASE([1.41.0], [], [AC_MSG_ERROR("BOOST library version >= 1.41.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_ASIO
 AX_BOOST_DATE_TIME
