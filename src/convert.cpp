@@ -126,40 +126,69 @@ double atof(const char* p, const char* end)
 }
 
 /* For internal use by sys_double_to_chars_fast() */
-static char* float_first_trailing_zero(char* p)
+static char* find_first_trailing_zero(char* p)
 {
-    for (--p; *p == '0' && *(p-1) == '0'; --p);
+    for (; *(p-1) == '0'; --p);
     if (*(p-1) == '.') ++p;
     return p;
 }
 
-int ftoa_fast(double f, char *outbuf, int maxlen, int decimals, bool compact)
+int ftoa_fast(double f, char *buffer, int buffer_size, int decimals, bool compact)
 {
-    enum {
-          FRAC_SIZE  = 52
-        , EXP_SIZE   = 11
-        , EXP_MASK   = (1ll << EXP_SIZE) - 1
-        , FRAC_MASK  = (1ll << FRAC_SIZE) - 1
-        , FRAC_MASK2 = (1ll << (FRAC_SIZE + 1)) - 1
-        , MAX_FLOAT  = 1ll << (FRAC_SIZE+1)
+    static const double cs_rnd = 0.55555555555555555;
+    static const double cs_pow10_rnd[] = {
+        cs_rnd / 1ll, cs_rnd / 10ll, cs_rnd / 100ll, cs_rnd / 1000ll,
+        cs_rnd / 10000ll, cs_rnd / 100000ll, cs_rnd / 1000000ll,
+        cs_rnd / 10000000ll, cs_rnd / 100000000ll, cs_rnd / 1000000000ll,
+        cs_rnd / 10000000000ll, cs_rnd / 100000000000ll,
+        cs_rnd / 1000000000000ll, cs_rnd / 10000000000000ll,
+        cs_rnd / 100000000000000ll, cs_rnd / 1000000000000000ll,
+        cs_rnd / 10000000000000000ll, cs_rnd / 100000000000000000ll,
+        cs_rnd / 1000000000000000000ll
     };
 
-    long long mantissa, int_part, int_part2, frac_part;
-    short exp;
-    int sign, i, n, m, max;
-    double absf;
+    enum {
+          FRAC_SIZE     = 52
+        , EXP_SIZE      = 11
+        , EXP_MASK      = (1ll << EXP_SIZE) - 1
+        , FRAC_MASK     = (1ll << FRAC_SIZE) - 1
+        , FRAC_MASK2    = (1ll << (FRAC_SIZE + 1)) - 1
+        , MAX_FLOAT     = 1ll << (FRAC_SIZE+1)
+        , MAX_DECIMALS  = sizeof(cs_pow10_rnd) / sizeof(cs_pow10_rnd[0])
+    };
+
+    bool neg;
+    double fr;
     union { long long L; double F; } x;
-    char c, *p = outbuf;
-    int digit, roundup;
+    char *p = buffer;
 
-    x.F = f;
+    if (decimals < 0)
+        return -1;
 
-    exp      = (x.L >> FRAC_SIZE) & EXP_MASK;
-    mantissa = x.L & FRAC_MASK;
-    sign     = x.L >= 0 ? 1 : -1;
+    /* Round the number to given decimal places. The number of 5's in the
+     * constant 0.55... is chosen such that adding any more 5's doesn't
+     * change the double precision of the number, i.e.:
+     * 1> term_to_binary(0.55555555555555555, [{minor_version, 1}]).
+     * <<131,70,63,225,199,28,113,199,28,114>>
+     * 2> term_to_binary(0.555555555555555555, [{minor_version, 1}]).
+     * <<131,70,63,225,199,28,113,199,28,114>>
+     */
+    if (f >= 0) {
+        neg = false;
+        fr  = decimals < MAX_DECIMALS ? (f + cs_pow10_rnd[decimals]) : f;
+        x.F = fr;
+    } else {
+        neg = true;
+        fr  = decimals < MAX_DECIMALS ? (f - cs_pow10_rnd[decimals]) : f;
+        x.F = -fr;
+    }
+
+    short exp = (x.L >> FRAC_SIZE) & EXP_MASK;
+    int64_t mantissa  = x.L & FRAC_MASK;
+
     if (exp == EXP_MASK) {
         if (mantissa == 0) {
-            if (sign == -1)
+            if (neg)
                 *p++ = '-';
             *p++ = 'i';
             *p++ = 'n';
@@ -170,101 +199,77 @@ int ftoa_fast(double f, char *outbuf, int maxlen, int decimals, bool compact)
             *p++ = 'n';
         }
         *p = '\0';
-        return p - outbuf;
+        return p - buffer;
     }
 
     exp      -= EXP_MASK >> 1;
     mantissa |= (1ll << FRAC_SIZE);
-    frac_part = 0;
-    int_part  = 0;
-    absf      = f * sign;
+    int64_t int_part = 0, frac_part = 0;
 
-    /* Don't bother with optimizing too large numbers and decimals */
-    if (absf > MAX_FLOAT || decimals > maxlen-17) {
-        int len = snprintf(outbuf, maxlen-1, "%.*f", decimals, f);
-        p = outbuf + len;
+    /* Don't bother with optimizing too large numbers or too large precision */
+    if (x.F > MAX_FLOAT || decimals >= MAX_DECIMALS) {
+        int len = snprintf(buffer, buffer_size, "%.*f", decimals, f);
+        char* p = buffer + len;
+        if (len >= buffer_size)
+            return -1;
         /* Delete trailing zeroes */
         if (compact)
-            p = float_first_trailing_zero(outbuf + len);
+            p = find_first_trailing_zero(p);
         *p = '\0';
-        return p - outbuf;
-    }
-
-    if (exp >= FRAC_SIZE)
+        return p - buffer;
+    } else if (exp >= FRAC_SIZE) {
         int_part  = mantissa << (exp - FRAC_SIZE);
-    else if (exp >= 0) {
+    } else if (exp >= 0) {
         int_part  = mantissa >> (FRAC_SIZE - exp);
         frac_part = (mantissa << (exp + 1)) & FRAC_MASK2;
-    }
-    else /* if (exp < 0) */
+    } else /* if (exp < 0) */ {
         frac_part = (mantissa & FRAC_MASK2) >> -(exp + 1);
+    }
 
-    if (int_part == 0) {
-        if (sign == -1)
+    if (!int_part) {
+        if (neg)
             *p++ = '-';
         *p++ = '0';
     } else {
-        int ret;
         while (int_part != 0) {
-            int_part2 = int_part / 10;
-            *p++ = (char)(int_part - ((int_part2 << 3) + (int_part2 << 1)) + '0');
-            int_part = int_part2;
+            int j = int_part / 10;
+            *p++ = (char)(int_part - ((j << 3) + (j << 1)) + '0');
+            int_part = j;
         }
-        if (sign == -1)
+        if (neg)
             *p++ = '-';
         /* Reverse string */
-        ret = p - outbuf;
-        for (i = 0, n = ret/2; i < n; i++) {
-            int j = ret - i - 1;
-            c = outbuf[i];
-            outbuf[i] = outbuf[j];
-            outbuf[j] = c;
+        int ret = p - buffer;
+        for (int i = 0, n = ret >> 1; i < n; i++) {
+            int64_t j = ret - i - 1;
+            char    c = buffer[i];
+            buffer[i] = buffer[j];
+            buffer[j] = c;
         }
     }
-    if (decimals != 0)
+
+    if (decimals > 0) {
         *p++ = '.';
 
-    max = maxlen - (p - outbuf) - 1 /* leave room for trailing '\0' */;
-    if (max > decimals)
+        int max = buffer_size - (p - buffer) - 1 /* leave room for trailing '\0' */;
+
+        if (decimals > max)
+            return -1;  /* the number is not large enough to fit in the buffer */
+
         max = decimals;
-    for (m = 0; m < max; m++) {
-        /* frac_part *= 10; */
-        frac_part = (frac_part << 3) + (frac_part << 1);
 
-        *p++ = (char)((frac_part >> (FRAC_SIZE + 1)) + '0');
-        frac_part &= FRAC_MASK2;
-    }
+        for (int i = 0; i < max; i++) {
+            frac_part = (frac_part << 3) + (frac_part << 1);  /* equiv. *= 10; */
+            *p++      = (char)((frac_part >> (FRAC_SIZE + 1)) + '0');
+            frac_part &= FRAC_MASK2;
+        }
 
-    roundup = 0;
-    /* Rounding - look at the next digit */
-    frac_part = (frac_part << 3) + (frac_part << 1);
-    digit = (frac_part >> (FRAC_SIZE + 1));
-    if (digit > 5)
-        roundup = 1;
-    else if (digit == 5) {
-        frac_part &= FRAC_MASK2;
-        if (frac_part != 0) roundup = 1;
+        /* Delete trailing zeroes */
+        if (compact)
+            p = find_first_trailing_zero(p);
     }
-    if (roundup) {
-        char d;
-        int pos = p - outbuf - 1;
-        do {
-            d = outbuf[pos];
-            if (d == '-') break;
-            if (d == '.') continue;
-            if (++d != ':') {
-                outbuf[pos] = d;
-                break;
-            }
-            outbuf[pos] = '0';
-        } while (--pos);
-    }
-
-    /* Delete trailing zeroes */
-    if (compact)
-        p = float_first_trailing_zero(--p);
     *p = '\0';
-    return p - outbuf;
+    return p - buffer;
 }
 
 } // namespace utxx
