@@ -42,6 +42,11 @@ Building
     $ make
     $ make install      # Default install path is ./install
 
+Commit Notifications
+====================
+    The following news group was set up for commit notifications:
+    `github-utxx at googlegroups dot com`
+
 Author
 ======
     Serge Aleynikov <saleyn at gmail dot com>
