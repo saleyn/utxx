@@ -86,7 +86,7 @@ namespace utxx {
             m_tv.tv_usec = val - n*divisor;
         }
     public:
-        time_val()                   { m_tv.tv_usec=0; m_tv.tv_usec=0; }
+        time_val()                   { m_tv.tv_sec=0; m_tv.tv_usec=0; }
         time_val(long _s, long _us)  { m_tv.tv_sec=_s; m_tv.tv_usec=_us; normalize(); }
         time_val(const time_val& tv, long _s, long _us=0) {
             set(tv, _s, _us);
