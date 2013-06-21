@@ -47,6 +47,7 @@ TEST_UTXX_SRCS = \
 	test_shared_queue.cpp \
 	test_static_polymorphism.cpp \
 	test_stream64.cpp \
+	test_strie.cpp \
 	test_string.cpp \
 	test_throttler.cpp \
 	test_time_val.cpp \
