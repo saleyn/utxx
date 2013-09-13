@@ -33,6 +33,7 @@ build-aux/ltsugar.m4
 build-aux/ltversion.m4
 build-aux/lt~obsolete.m4
 build-aux/missing
+build-aux/Doxyfile
 config.*
 configure
 libtool

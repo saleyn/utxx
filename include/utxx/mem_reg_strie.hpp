@@ -1,7 +1,7 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief s-trie in flat memory region, data-agnostic
+ * \brief s-trie in flat memory region, data - immediate part of the node
  *
  * \author Dmitriy Kargapolov
  * \version 1.0
