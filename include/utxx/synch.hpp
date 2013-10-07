@@ -197,7 +197,7 @@ public:
     /// \copydetails wait()
     int wait(const boost::system_time& wait_until_abs_time, int* old_val = NULL) {
         struct timespec ts =
-            #if BOOST_VERSION >= 105400
+            #if BOOST_VERSION >= 105300
             boost::detail::to_timespec(wait_until_abs_time);
             #else
             boost::detail::get_timespec(wait_until_abs_time);
