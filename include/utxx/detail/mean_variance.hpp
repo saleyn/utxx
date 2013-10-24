@@ -61,18 +61,18 @@ double variance(const T* begin, const T* end) {
 // of the variance (and the mean as well).
 template <class T>
 double online_variance(const T* begin, const T* end) {
-	double count = 0;
-	double mean = 0;
-	double sum = 0;
+    double count = 0;
+    double mean = 0;
+    double sum = 0;
 
-	for (const T* p=begin; p != end; ++p) {
-		count = count + 1;
-		double delta = *p - mean;
-		mean = mean + delta/count;
-		sum = sum + delta*(*p - mean);
-	}
+    for (const T* p=begin; p != end; ++p) {
+        count = count + 1;
+        double delta = *p - mean;
+        mean = mean + delta/count;
+        sum = sum + delta*(*p - mean);
+    }
 
-	return sum/count;
+    return sum/count;
 }
 
 }  // namespace detail
