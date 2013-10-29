@@ -1,12 +1,12 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief Test cases for classes and functions in the strie.hpp
+ * \brief Test cases for persistent trie
  *
  * \author Dmitriy Kargapolov <dmitriy dot kargapolov at gmail dot com>
- * \since 01 Apr 2013
+ * \since 06 October 2013
  *
- * Copyright (C) 2012 Dmitriy Kargapolov <dmitriy.kargapolov@gmail.com>
+ * Copyright (C) 2013 Dmitriy Kargapolov <dmitriy.kargapolov@gmail.com>
  *
  * Use, modification and distribution are subject to the Boost Software
  * License, Version 1.0 (See accompanying file LICENSE_1_0.txt or copy
@@ -14,16 +14,17 @@
  */
 
 #include <config.h>
-#include <utxx/strie.hpp>
-#include <utxx/flat_mem_strie.hpp>
-#include <utxx/mmap_strie.hpp>
-#include <utxx/flat_data_store.hpp>
+#include <utxx/pnode.hpp>
+#include <utxx/pnode_ro.hpp>
+#include <utxx/ptrie.hpp>
+#include <utxx/mmap_ptrie.hpp>
 #include <utxx/simple_node_store.hpp>
-#include <utxx/memstat_alloc.hpp>
+#include <utxx/flat_data_store.hpp>
 #include <utxx/svector.hpp>
+#include <utxx/sarray.hpp>
+#include <utxx/memstat_alloc.hpp>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/foreach.hpp>
 
 #if defined HAVE_BOOST_CHRONO
 #include <boost/chrono/system_clocks.hpp>
@@ -32,7 +33,7 @@
 #include <boost/unordered_map.hpp>
 #include <map>
 
-namespace strie_test {
+namespace ptrie_test {
 
 #if defined HAVE_BOOST_CHRONO
 typedef boost::chrono::high_resolution_clock clock;
@@ -44,6 +45,8 @@ using boost::chrono::milliseconds;
 using boost::chrono::duration_cast;
 #endif
 
+#define NSAMPLES 1000000
+
 template<int N>
 struct memstat {
     static void inc(size_t n) { cnt += n; }
@@ -54,15 +57,20 @@ struct memstat {
 template<int N>
 size_t memstat<N>::cnt = 0;
 
-static const char *makenum(int *cnt) {
-    static char buf[11];
-    int n = 5 + rand() % 5;
+// generate random string of N..2*N-1 digits
+template<int N>
+static const char *make_number(int *cnt = 0) {
+    static char buf[N+N];
+    static const char digits[] = "0123456789";
+    int n = N + rand() % N;
     for (int i=0; i<n; ++i)
-        buf[i] = '0' + rand() % 10;
+        buf[i] = digits[rand() % (sizeof(digits) - 1)];
     if (cnt) *cnt += n;
     buf[n] = 0;
     return &buf[0];
 }
+
+typedef uint32_t offset_t;
 
 struct f0 {
 
@@ -89,55 +97,85 @@ struct f0 {
     typedef typename tab_t::const_iterator tab_it_t;
 
     typedef utxx::memstat_alloc<char, memstat<cStore> > node_alloc;
-    typedef utxx::simple_node_store<void, node_alloc> store_t;
-    // symbol-to-index mapping with compression factor of 1
-    typedef utxx::idxmap<1> idxmap_t;
     typedef utxx::memstat_alloc<char, memstat<cTrie> > trie_alloc;
 
-    typedef utxx::svector<char, idxmap_t, trie_alloc> svector_t;
-    typedef utxx::strie<store_t, data_t, svector_t> trie_t;
+    // expandable trie node type
+    typedef utxx::pnode<
+        utxx::simple_node_store<void, node_alloc>,
+        data_t,
+        utxx::svector<char, utxx::idxmap<1>, trie_alloc>
+    > node_t;
 
-    typedef typename trie_t::node_t node_t;
+    // expandable trie type
+    typedef utxx::ptrie<node_t> trie_t;
 
+    // node store type
+    typedef typename trie_t::store_t store_t;
+
+    // fold functor to perform lookup
+    static bool lookup(const data_t*& ret, const data_t& data,
+            store_t&, const char *) {
+        if (!data.empty())
+            ret = &data;
+        return true;
+    }
 };
 
 struct f1 {
-    typedef uint32_t offset_t;
     // export variant
-    struct edata {
+    struct data {
         std::string str;
-        edata() : str("") {}
-        edata(const char *s) : str(s) {}
+        data() : str("") {}
+        data(const char *s) : str(s) {}
         bool empty() const { return str.empty(); }
-        template <typename Store>
-        offset_t write_to_file(Store&, std::ofstream& f) const {
+
+        // data header in exported format
+        template<typename OffsetType> struct ext_header {
+            // offset to variable-length payload
+            OffsetType offset;
+            // write data header to file
+            void write_to_file(std::ofstream& a_ofs) const {
+                a_ofs.write((const char *)&offset, sizeof(offset));
+            }
+        };
+
+        // write nested data payload to file, fill header
+        template<typename OffsetType, typename Store>
+        void write_to_file(ext_header<OffsetType>& hdr, const Store&,
+                std::ofstream& f) const {
             uint8_t n = str.size();
             if (n > 0) {
-                offset_t l_ret = boost::numeric_cast<offset_t, long>(f.tellp());
+                hdr.offset =
+                    boost::numeric_cast<OffsetType, std::streamoff>(f.tellp());
                 f.write((const char *)&n, sizeof(n));
                 f.write((const char *)str.c_str(), n + 1);
-                return l_ret;
             } else {
-                return 0;
+                hdr.offset = 0;
             }
         }
     };
-    typedef utxx::simple_node_store<> store_t;
-    typedef utxx::svector<> svector_t;
-    typedef utxx::strie<store_t, edata, svector_t> etrie_t;
+
+    // expandable trie with export functions
+    typedef utxx::pnode<
+        utxx::simple_node_store<>, data, utxx::svector<>
+    > node_t;
+
+    // expandable trie type with export functions
+    typedef utxx::ptrie<node_t> trie_t;
 };
 
 struct f2 {
-    typedef uint32_t offset_t;
-    typedef utxx::flat_data_store<void, offset_t> store_t;
-    struct edata {
+    struct data {
         uint8_t m_len;
         char m_str[0];
         bool empty() const { return false; }
         bool empty(bool exact) const { return !exact; }
     };
-    typedef utxx::flat_mem_strie<store_t, edata> mem_trie_t;
-    typedef utxx::mmap_strie<mem_trie_t> ftrie_t;
+    typedef utxx::pnode_ro<
+        utxx::flat_data_store<void, offset_t>, offset_t, utxx::sarray<>
+    > node_t;
+    typedef utxx::mmap_ptrie<node_t> trie_t;
+    typedef typename trie_t::store_t store_t;
 
     static offset_t root(const void *m_addr, size_t m_size) {
         size_t s = sizeof(offset_t);
@@ -145,22 +183,64 @@ struct f2 {
         return *(const offset_t *)((const char *)m_addr + m_size - s);
     }
 
-    static bool copy_exact_f(std::string &acc, edata& data, const char *pos) {
-        if (!(*pos)) acc.assign(data.m_str, data.m_len);
+    // fold functor to save exact lookup result in a string
+    static bool copy_exact_f(std::string &acc, offset_t off,
+            store_t& store, const char *pos) {
+        if (*pos || off == store_t::null)
+            return true;
+        data *ptr = store.native_pointer<data>(off);
+        if (ptr == NULL)
+            throw std::runtime_error("bad store pointer");
+        acc.assign(ptr->m_str, ptr->m_len);
+        return false;
+    }
+
+    // fold functor to perform simple lookup
+    static bool lookup_simple(const data*& ret, offset_t off,
+            store_t& store, const char *) {
+        if (off == store_t::null)
+            return true;
+        data *ptr = store.native_pointer<data>(off);
+        if (ptr == NULL)
+            throw std::runtime_error("bad store pointer");
+        ret = ptr;
+        return true;
+    }
+
+    // fold functor to perform exact lookup
+    static bool lookup_exact(const data*& ret, offset_t off,
+            store_t& store, const char *pos) {
+        if (*pos || off == store_t::null)
+            return true;
+        data *ptr = store.native_pointer<data>(off);
+        if (ptr == NULL)
+            throw std::runtime_error("bad store pointer");
+        if (!ptr->empty())
+            ret = ptr;
+        return false;
+    }
+
+    // fold functor to perform a lookup
+    static bool lookup(const data*& ret, offset_t off,
+            store_t& store, const char *) {
+        if (off == store_t::null)
+            return true;
+        data *ptr = store.native_pointer<data>(off);
+        if (ptr == NULL)
+            throw std::runtime_error("bad store pointer");
+        if (!ptr->empty())
+            ret = ptr;
         return true;
     }
 };
 
-BOOST_AUTO_TEST_SUITE( test_strie )
+BOOST_AUTO_TEST_SUITE( test_ptrie )
 
 BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
 {
     { // start objects' life
 
-    trie_t l_data;
-    tab_t l_tab;
-
-    int l_total = 1000000;
+    int l_total = NSAMPLES;
     int l_cnt = 0;
 
     memstat<cData>::cnt = 0;
@@ -170,10 +250,13 @@ BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
     memstat<cTabData>::cnt = 0;
     memstat<cMap>::cnt = 0;
 
+    trie_t l_data;
+    tab_t l_tab;
+
     srand(1);
 
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(&l_cnt);
+        const char *l_num = make_number<5>(&l_cnt);
         // insert data into s-trie
         l_data.store(l_num, data_t(l_num));
         // insert data into unordered map (hash-table)
@@ -189,7 +272,10 @@ BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
         "\ntrie: num of chars in keys: " << l_cnt <<
         "\n" <<
         "\ntrie: data bytes allocated: " << memstat<cData>::cnt <<
+        "\ntrie:      nodes allocated: " << l_data.store().count() <<
         "\ntrie: node bytes allocated: " << memstat<cStore>::cnt <<
+        "\ntrie:       bytes per node: " <<
+                memstat<cStore>::cnt / l_data.store().count() <<
         "\ntrie: nptr bytes allocated: " << memstat<cTrie>::cnt <<
         "\ntrie: total byte allocated: " << l_trie_cnt <<
         "\ntrie:     bytes per object: " << l_trie_cnt / l_tab.size() <<
@@ -206,16 +292,12 @@ BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
     srand(123);
     int l_found = 0, l_exact = 0;
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
+        const char *l_num = make_number<5>();
         // direct data lookup
-        data_t *l_data_ptr = l_data.lookup(l_num);
-        // alternative way to find data
-        data_t l_acc;
-        l_data.fold(l_num, l_acc);
+        const data_t *l_data_ptr = 0;
+        l_data.fold(l_num, l_data_ptr, lookup);
         // if data found
         if (l_data_ptr) {
-            // check results are equal
-            BOOST_REQUIRE_EQUAL(l_acc, *l_data_ptr);
             // full or substring match only
             BOOST_REQUIRE_EQUAL(0,
                 strncmp(l_num, l_data_ptr->c_str(), l_data_ptr->length()));
@@ -229,7 +311,8 @@ BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
 
     // compare full strings matches to hash table
     BOOST_FOREACH(pair_t& p, l_tab) {
-        data_t *l_data_ptr = l_data.lookup(p.first.c_str());
+        const data_t *l_data_ptr = 0;
+        l_data.fold(p.first.c_str(), l_data_ptr, lookup);
         BOOST_REQUIRE(l_data_ptr != 0);
         BOOST_REQUIRE_EQUAL(0, strcmp(p.second.c_str(), l_data_ptr->c_str()));
     }
@@ -247,34 +330,35 @@ BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
 
 BOOST_FIXTURE_TEST_CASE( compact_test, f1 )
 {
-    etrie_t l_data;
+    trie_t l_data;
 
-    int l_total = 1000000;
+    int l_total = NSAMPLES;
     srand(1);
 
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
+        const char *l_num = make_number<5>();
         // insert data into s-trie
-        l_data.store(l_num, edata(l_num));
+        l_data.store(l_num, data(l_num));
     }
 
     BOOST_REQUIRE_NO_THROW((
-        l_data.write_to_file<offset_t, offset_t>("lalala")
+        l_data.write_to_file<offset_t>("lalala")
     ));
 }
 
 BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
 {
-    ftrie_t l_trie("lalala", root);
-    BOOST_TEST_MESSAGE( "reading ftrie" );
+    trie_t l_trie("lalala", root);
+    BOOST_TEST_MESSAGE( "reading trie from file" );
 
     // looking for random matches
-    int l_total = 1000000;
+    int l_total = NSAMPLES;
     srand(123);
     int l_found = 0, l_exact = 0;
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
-        edata *l_data_ptr = l_trie.lookup_simple(l_num);
+        const char *l_num = make_number<5>();
+        const data *l_data_ptr = 0;
+        l_trie.fold(l_num, l_data_ptr, lookup_simple);
         if (l_data_ptr) {
             // full or substring match only
             BOOST_REQUIRE_EQUAL(0,
@@ -290,9 +374,10 @@ BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
     // looking for random exact matches
     srand(123); l_found = 0;
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
+        const char *l_num = make_number<5>();
         // direct data lookup
-        edata *l_data_ptr = l_trie.lookup_exact(l_num);
+        const data *l_data_ptr = 0;
+        l_trie.fold(l_num, l_data_ptr, lookup_exact);
         // alternative way to find data
         std::string l_ret;
         l_trie.fold(l_num, l_ret, copy_exact_f);
@@ -311,11 +396,12 @@ BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
     BOOST_REQUIRE_EQUAL(l_exact, l_found);
 
     // compare full strings matches
-    l_total = 1000000;
+    l_total = NSAMPLES;
     srand(1);
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
-        edata *l_data_ptr = l_trie.lookup_simple(l_num);
+        const char *l_num = make_number<5>();
+        const data *l_data_ptr = 0;
+        l_trie.fold(l_num, l_data_ptr, lookup_simple);
         BOOST_REQUIRE(l_data_ptr != 0);
         BOOST_REQUIRE_EQUAL(0, strcmp(l_num, l_data_ptr->m_str));
     }
@@ -327,11 +413,11 @@ BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
 BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
 {
     trie_t l_data;
-    int l_total = 1000000;
+    int l_total = NSAMPLES;
     int l_cnt = 0;
 
     time_point tp1 = clock::now();
-    for (int i=0; i<l_total; ++i) makenum(&l_cnt);
+    for (int i=0; i<l_total; ++i) make_number<5>(&l_cnt);
     duration d1 = clock::now() - tp1;
 
     srand(1);
@@ -340,7 +426,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
     map_t l_map;
     time_point tp2 = clock::now();
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(&l_cnt);
+        const char *l_num = make_number<5>(&l_cnt);
         l_map.insert(pair_t(l_num, l_num));
     }
     duration d2 = (clock::now() - tp2 - d1) / l_total;
@@ -357,7 +443,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
     tab_t l_tab;
     time_point tp2a = clock::now();
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(&l_cnt);
+        const char *l_num = make_number<5>(&l_cnt);
         l_tab.insert(pair_t(l_num, l_num));
     }
     duration d2a = (clock::now() - tp2a - d1) / l_total;
@@ -372,7 +458,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
 
     time_point tp3 = clock::now();
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(&l_cnt);
+        const char *l_num = make_number<5>(&l_cnt);
         l_data.store(l_num, data_t(l_num));
     }
     duration d3 = (clock::now() - tp3 - d1) / l_total;
@@ -381,9 +467,10 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
         << duration_cast<nanoseconds>(d3).count() << " ns" );
 
     srand(123);
+    const data_t *l_data_ptr = 0;
     time_point tp4 = clock::now();
     for (int i=0; i<l_total; ++i)
-        l_data.lookup(makenum(0));
+        l_data.fold(make_number<5>(), l_data_ptr, lookup);
     duration d4 = (clock::now() - tp4 - d1) / l_total;
     BOOST_TEST_MESSAGE( "trie lookup time "
         << duration_cast<nanoseconds>(d4).count() << " ns" );
@@ -391,7 +478,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
     srand(123);
     time_point tp5 = clock::now();
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
+        const char *l_num = make_number<5>();
         l_map.find(l_num);
     }
     duration d5 = (clock::now() - tp5 - d1) / l_total;
@@ -401,7 +488,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
     srand(123);
     time_point tp6 = clock::now();
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
+        const char *l_num = make_number<5>();
         l_tab.find(l_num);
     }
     duration d6 = (clock::now() - tp6 - d1) / l_total;
@@ -412,7 +499,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
     time_point tp7 = clock::now();
     tab_it_t e = l_tab.end();
     for (int i=0; i<l_total; ++i) {
-        const char *l_num = makenum(0);
+        const char *l_num = make_number<5>();
         size_t n = strlen(l_num);
         while (n > 0) {
             key_t l_key(l_num, n);
@@ -429,17 +516,18 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
 
 BOOST_FIXTURE_TEST_CASE( chrono_mmap_test, f2 )
 {
-    ftrie_t l_trie("lalala", root);
-    int l_total = 1000000;
+    trie_t l_trie("lalala", root);
+    int l_total = NSAMPLES;
     srand(123);
     time_point tp0 = clock::now();
     for (int i=0; i<l_total; ++i)
-        makenum(0);
+        make_number<5>();
     duration d0 = clock::now() - tp0;
     srand(123);
+    const data *l_data_ptr = 0;
     time_point tp1 = clock::now();
     for (int i=0; i<l_total; ++i)
-        l_trie.lookup(makenum(0));
+        l_trie.fold(make_number<5>(), l_data_ptr, lookup);
     duration d = (clock::now() - tp1 - d0) / l_total;
     BOOST_TEST_MESSAGE( "mmap_trie lookup time "
         << duration_cast<nanoseconds>(d).count() << " ns" );
@@ -447,17 +535,18 @@ BOOST_FIXTURE_TEST_CASE( chrono_mmap_test, f2 )
 
 BOOST_FIXTURE_TEST_CASE( chrono_mmap_test_simple, f2 )
 {
-    ftrie_t l_trie("lalala", root);
-    int l_total = 1000000;
+    trie_t l_trie("lalala", root);
+    int l_total = NSAMPLES;
     srand(123);
     time_point tp0 = clock::now();
     for (int i=0; i<l_total; ++i)
-        makenum(0);
+        make_number<5>();
     duration d0 = clock::now() - tp0;
     srand(123);
+    const data *l_data_ptr = 0;
     time_point tp1 = clock::now();
     for (int i=0; i<l_total; ++i)
-        l_trie.lookup_simple(makenum(0));
+        l_trie.fold(make_number<5>(), l_data_ptr, lookup_simple);
     duration d = (clock::now() - tp1 - d0) / l_total;
     BOOST_TEST_MESSAGE( "mmap_trie lookup time "
         << duration_cast<nanoseconds>(d).count() << " ns" );
@@ -467,4 +556,4 @@ BOOST_FIXTURE_TEST_CASE( chrono_mmap_test_simple, f2 )
 
 BOOST_AUTO_TEST_SUITE_END()
 
-} // namespace strie_test
+} // namespace ptrie_test

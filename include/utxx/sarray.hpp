@@ -1,10 +1,11 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief sparse array - grow only array implementation
+ * \brief sparse array - read only implementation
+ *
+ * This is read-only complement to utxx::svector class.
  *
  * \author Dmitriy Kargapolov
- * \version 1.0
  * \since 12 May 2013
  *
  */
@@ -28,35 +29,27 @@ class sarray {
     typedef typename IdxMap::mask_t mask_t;
     typedef typename IdxMap::index_t index_t;
 
-public:
-    template<typename U>
-    struct rebind { typedef sarray<U, IdxMap> other; };
-
-    typedef typename IdxMap::symbol_t symbol_t;
-    typedef typename IdxMap::bad_symbol bad_symbol;
-    typedef std::pair<mask_t, index_t> pos_t;
-
-private:
     mask_t m_mask;
     Data m_array[0];
     static IdxMap m_map;
 
 public:
-    sarray() : m_mask(0), m_array(0) {}
+    typedef typename IdxMap::symbol_t symbol_t;
+    typedef typename IdxMap::bad_symbol bad_symbol;
 
-    bool find(symbol_t a_symbol, pos_t& a_ret) {
-        m_map.index(m_mask, a_symbol, a_ret.first, a_ret.second);
-        return (a_ret.first & m_mask) != 0;
-    }
+    template<typename U>
+    struct rebind { typedef sarray<U, IdxMap> other; };
 
-    // ensure at() called with valid position only
-    Data& at(const pos_t& a_pos) {
-        return m_array[a_pos.second];
-    }
+    sarray() : m_mask(0) {}
 
-    // ensure at() called with valid position only
-    const Data& at(const pos_t& a_pos) const {
-        return m_array.at[a_pos.second];
+    // find an element by symbol
+    const Data* get(symbol_t a_symbol) const {
+        mask_t l_mask; index_t l_index;
+        m_map.index(m_mask, a_symbol, l_mask, l_index);
+        if ((l_mask & m_mask) != 0)
+            return &m_array[l_index];
+        else
+            return 0;
     }
 };
 

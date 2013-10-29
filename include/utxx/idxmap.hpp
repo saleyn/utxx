@@ -4,7 +4,6 @@
  * \brief symbol-to-index mapping
  *
  * \author Dmitriy Kargapolov
- * \version 1.0
  * \since 01 April 2013
  *
  */
@@ -46,16 +45,27 @@ public:
         symbol_t symbol() const { return m_symbol; }
     };
 
-    idxmap();
+    inline idxmap();
+
     void index(mask_t a_mask, symbol_t a_symbol, mask_t& a_ret_mask,
         index_t& a_ret_index);
+
+    // iterate over symbols contained in mask
+    template<typename F>
+    static void foreach(mask_t mask, F f) {
+        symbol_t s = '0';
+        for (mask_t m=1; m<1024; ++s, m<<=1) {
+            if ((m & mask) != 0)
+                f(s);
+        }
+    }
 
 private:
     index_t m_maps[NElem];
 };
 
 template <>
-idxmap<1>::idxmap() {
+inline idxmap<1>::idxmap() {
     for (mask_t i=0, sm=1u; i<10; ++i, sm<<=1) {
         for (mask_t mask=0; mask<1024; ++mask) {
             // find number of i-th 1 in the mask
@@ -68,7 +78,7 @@ idxmap<1>::idxmap() {
 }
 
 template <>
-idxmap<2>::idxmap() {
+inline idxmap<2>::idxmap() {
     for (mask_t i=0, sm=1u; i<10; ++i, sm<<=1) {
         for (mask_t mask=0; mask<1024; ++mask) {
             // find number of i-th 1 in the mask
@@ -86,7 +96,8 @@ idxmap<2>::idxmap() {
 }
 
 template<>
-void idxmap<1>::index(mask_t a_mask, symbol_t a_symbol, mask_t& a_ret_mask,
+inline void idxmap<1>::index(mask_t a_mask, symbol_t a_symbol,
+        mask_t& a_ret_mask,
     index_t& a_ret_index)
 {
     if (a_mask > 1023)
@@ -99,7 +110,8 @@ void idxmap<1>::index(mask_t a_mask, symbol_t a_symbol, mask_t& a_ret_mask,
 }
 
 template<>
-void idxmap<2>::index(mask_t a_mask, symbol_t a_symbol, mask_t& a_ret_mask,
+inline void idxmap<2>::index(mask_t a_mask, symbol_t a_symbol,
+        mask_t& a_ret_mask,
     index_t& a_ret_index)
 {
     if (a_mask > 1023)

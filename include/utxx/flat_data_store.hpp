@@ -4,7 +4,6 @@
  * \brief flat memory read-only data storage facility
  *
  * \author Dmitriy Kargapolov
- * \version 1.0
  * \since 07 May 2013
  *
  */
@@ -23,32 +22,39 @@
 
 namespace utxx {
 
-// flat memory region strie data store implementation
+// flat memory region abstract strie node and data store
 //
-template <typename T = void, typename OffsetType = int>
+template <typename Node = void, typename OffsetType = unsigned>
 class flat_data_store {
 public:
+    // rebind to other node type
     template<typename U>
     struct rebind { typedef flat_data_store<U, OffsetType> other; };
 
+    // abstract data pointer
     typedef OffsetType pointer_t;
 
+    // this store does not provide allocate/deallocate methods
+    static const bool dynamic = false;
+
+    // null pointer constant
     static const pointer_t null;
 
+    // construct from memory region
     flat_data_store(const void *a_start, pointer_t a_size)
             : m_start(a_start), m_size(a_size) {
-        m_ptr_max = a_size - sizeof(T);
     }
 
-    T *native_pointer(pointer_t a_ptr) const {
-        if (a_ptr > m_ptr_max)
+    // convert abstract pointer to native pointer
+    template<typename T> T *native_pointer(pointer_t a_ptr) const {
+        if (a_ptr > m_size - sizeof(T))
             throw std::invalid_argument("flat_data_store: bad offset");
         return (T*)((char *)m_start + a_ptr);
     }
 
+private:
     const void *m_start;
     pointer_t m_size;
-    pointer_t m_ptr_max;
 };
 
 template<typename T, typename A>
