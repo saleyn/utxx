@@ -93,13 +93,6 @@ public:
         foreach(boost::bind(&ptrie::make_link, this, _2, _1));
     }
 
-    // print trie
-    template<typename T>
-    void print_trie(T& out) {
-        foreach(boost::bind(
-            &ptrie::template print_node<T>, this, _2, _1, boost::ref(out)));
-    }
-
     // traverse trie
     template<typename F>
     void foreach(F functor) {
@@ -269,7 +262,7 @@ protected:
     void foreach(node_t& root, const std::string& key, F& fun) {
         root.children().foreach_keyval(boost::bind(&ptrie::template each<F>,
             this, _2, boost::cref(key), _1, boost::ref(fun)));
-        fun(key, root);
+        fun(key, root, m_store);
     }
 
     // used by foreach
@@ -302,12 +295,6 @@ protected:
             p_node = node_ptr(*p_ptr);
         }
         return p_ptr ? *p_ptr : store_t::null;
-    }
-
-    // print node
-    template<typename T>
-    void print_node(node_t& a_node, const std::string& a_key, T& out) {
-        out << a_key << ": " << a_node.suffix() << "\n";
     }
 
     // used by sarray_t writer

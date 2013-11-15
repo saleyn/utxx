@@ -1,5 +1,11 @@
-SUBDIRS = src test
+
 ACLOCAL_AMFLAGS = -I build-aux
+
+if DEMO
+DEMODIR = demo
+endif
+
+SUBDIRS = src test $(DEMODIR)
 
 pkgconfigdir = $(libdir)/pkgconfig
 nodist_pkgconfig_DATA = utxx.pc
@@ -22,7 +28,7 @@ MAINTAINERCLEANFILES = configure build-aux/l*.m4 build-aux/*.sh \
 	build-aux/config.* build-aux/missing build-aux/depcomp \
 	build-aux/install-sh build-aux/Doxyfile \
 	aclocal.m4 Makefile.in src/Makefile.in \
-	test/Makefile.in \
+	test/Makefile.in demo/Makefile.in \
     utxx.pc
 
 EXTRA_DIST = build-aux/boost.m4 build-aux/boost.m4.readme \

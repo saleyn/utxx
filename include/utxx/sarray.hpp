@@ -51,6 +51,27 @@ public:
         else
             return 0;
     }
+
+    // key to key-val functor adapter
+    template<typename T, typename F>
+    class k2kv {
+        const T *a_;
+        const F& f_;
+        index_t i_;
+    public:
+        k2kv(const T *a, const F& f) : a_(a), f_(f) {
+            i_ = 0;
+        }
+        template<typename U>
+        void operator()(U k) {
+            f_(k, a_[i_++]);
+        }
+    };
+
+    // call functor for each key-value pair
+    template<typename F> void foreach_keyval(F f) const {
+        IdxMap::foreach(m_mask, k2kv<Data, F>(m_array, f));
+    }
 };
 
 template <typename Data, typename IdxMap>

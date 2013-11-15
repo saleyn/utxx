@@ -70,6 +70,12 @@ public:
     void fold_full(const symbol_t *key, A& acc, F proc) {
         m_trie.fold_full(key, acc, proc);
     }
+
+    // traverse trie
+    template<typename F>
+    void foreach(F functor) {
+        m_trie.foreach(functor);
+    }
 };
 
 } // namespace utxx
