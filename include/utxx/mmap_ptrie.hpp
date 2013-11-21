@@ -71,10 +71,10 @@ public:
         m_trie.fold_full(key, acc, proc);
     }
 
-    // traverse trie
-    template<typename F>
-    void foreach(F functor) {
-        m_trie.foreach(functor);
+    // traverse const trie
+    template<dir_t D, typename F>
+    void foreach(F functor) const {
+        m_trie.foreach<D, F>(functor);
     }
 };
 

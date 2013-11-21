@@ -75,7 +75,8 @@ static bool fun(const char *& acc, const data_t& data, const store_t& store,
 }
 
 // foreach functor example
-static void enumerate(const std::string& key, node_t& node, store_t store) {
+static void enumerate(const std::string& key, const node_t& node,
+        store_t store) {
     const encoded_string& data = node.data();
     std::cout << "'" << key << "' -> '" << data.str(store) << "'" << std::endl;
 }
@@ -89,7 +90,8 @@ int main() {
     std::cout << "lookup result: " << (ret ? ret : "not found") << std::endl;
 
     // traverse all the nodes
-    trie.foreach(enumerate);
+    trie.foreach<utxx::up>(enumerate);
+    trie.foreach<utxx::down>(enumerate);
 
     return 0;
 }

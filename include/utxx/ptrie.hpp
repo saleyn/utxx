@@ -24,6 +24,9 @@
 
 namespace utxx {
 
+// direction of traversing the trie
+enum dir_t { up, down };
+
 namespace {
 
 // conditional destroy
@@ -38,6 +41,57 @@ template<> template<typename T>
 void trie_destructor<true>::destroy(T& trie) { trie.clear(); }
 
 }
+
+// optional const qualifier, used by trie_walker
+template<bool Const, typename T> struct const_qual;
+template<typename T> struct const_qual<true, T> {
+    typedef const T type;
+};
+template<typename T> struct const_qual<false, T> {
+    typedef T type;
+};
+
+// trie traversing helper
+template<typename Node, bool Const, dir_t Dir, typename F>
+class trie_walker {
+    typedef typename const_qual<Const, Node>::type node_t;
+    typedef typename const_qual<Const, typename node_t::store_t>::type store_t;
+    typedef typename node_t::symbol_t symbol_t;
+    typedef typename store_t::pointer_t ptr_t;
+
+    store_t& m_store;
+    std::string& m_key;
+    F& m_fun;
+
+public:
+    trie_walker(store_t& a_store, std::string a_key, F& a_fun)
+        : m_store(a_store), m_key(a_key), m_fun(a_fun)
+    {}
+
+    template<typename K, typename V>
+    void operator()(K k, V v) {
+        if (v == store_t::null)
+            throw std::invalid_argument("null store pointer");
+        node_t *l_ptr = m_store.template native_pointer<node_t>(v);
+        if (!l_ptr)
+            throw std::invalid_argument("bad store pointer");
+        std::string next_key = m_key + k;
+        foreach(*l_ptr, next_key);
+    }
+
+    void foreach(node_t& root) { foreach(root, m_key); }
+
+    void foreach(node_t& root, const std::string& a_key) {
+        trie_walker l_next_level(m_store, a_key, m_fun);
+        if (Dir == up) {
+            root.children().foreach_keyval(l_next_level);
+            m_fun(a_key, root, m_store);
+        } else {
+            m_fun(a_key, root, m_store);
+            root.children().foreach_keyval(l_next_level);
+        }
+    }
+};
 
 template<typename Node>
 class ptrie {
@@ -90,13 +144,21 @@ public:
 
     // calculate suffix links
     void make_links() {
-        foreach(boost::bind(&ptrie::make_link, this, _2, _1));
+        foreach<up>(boost::bind(&ptrie::make_link, this, _2, _1));
     }
 
     // traverse trie
-    template<typename F>
+    template<dir_t D, typename F>
     void foreach(F functor) {
-        foreach(m_root, "", functor);
+        trie_walker<node_t, false, D, F> walker(m_store, "", functor);
+        walker.foreach(m_root);
+    }
+
+    // traverse const trie
+    template<dir_t D, typename F>
+    void foreach(F functor) const {
+        trie_walker<node_t, true, D, F> walker(m_store, "", functor);
+        walker.foreach(m_root);
     }
 
     // fold through trie nodes following key components
@@ -256,21 +318,6 @@ protected:
     }
 
     // FIXME: use container of symbol_t instead of std::string and array
-
-    // used by foreach
-    template<typename F>
-    void foreach(node_t& root, const std::string& key, F& fun) {
-        root.children().foreach_keyval(boost::bind(&ptrie::template each<F>,
-            this, _2, boost::cref(key), _1, boost::ref(fun)));
-        fun(key, root, m_store);
-    }
-
-    // used by foreach
-    template<typename F>
-    void each(ptr_t child, const std::string& key, symbol_t symbol, F& fun) {
-        std::string next_key = key + symbol;
-        foreach(*node_ptr(child), next_key, fun);
-    }
 
     // calculate suffix link for one node
     void make_link(node_t& a_node, const std::string& a_key) {

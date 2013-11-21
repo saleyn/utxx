@@ -56,10 +56,10 @@ public:
     template<typename T, typename F>
     class k2kv {
         const T *a_;
-        const F& f_;
+        F& f_;
         index_t i_;
     public:
-        k2kv(const T *a, const F& f) : a_(a), f_(f) {
+        k2kv(const T *a, F& f) : a_(a), f_(f) {
             i_ = 0;
         }
         template<typename U>
