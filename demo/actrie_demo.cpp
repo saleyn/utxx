@@ -68,8 +68,8 @@ int main() {
         << std::endl;
 
     // traverse all the nodes
-    trie.foreach<utxx::up>(enumerate);
-    trie.foreach<utxx::down>(enumerate);
+    trie.foreach<utxx::up, std::string>(enumerate);
+    trie.foreach<utxx::down, std::string>(enumerate);
 
     return 0;
 }

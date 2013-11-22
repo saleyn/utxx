@@ -72,9 +72,9 @@ public:
     }
 
     // traverse const trie
-    template<dir_t D, typename F>
+    template<dir_t D, typename Key, typename F>
     void foreach(F functor) const {
-        m_trie.foreach<D, F>(functor);
+        m_trie.foreach<D, Key, F>(functor);
     }
 };
 

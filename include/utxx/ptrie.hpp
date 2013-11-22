@@ -20,6 +20,7 @@
 
 #include <fstream>
 #include <stdexcept>
+#include <vector>
 #include <boost/bind.hpp>
 
 namespace utxx {
@@ -52,21 +53,27 @@ template<typename T> struct const_qual<false, T> {
 };
 
 // trie traversing helper
-template<typename Node, bool Const, dir_t Dir, typename F>
+template<typename Node, bool Const, dir_t Dir, typename Key, typename F>
 class trie_walker {
     typedef typename const_qual<Const, Node>::type node_t;
     typedef typename const_qual<Const, typename node_t::store_t>::type store_t;
     typedef typename node_t::symbol_t symbol_t;
     typedef typename store_t::pointer_t ptr_t;
 
-    store_t& m_store;
-    std::string& m_key;
-    F& m_fun;
+    store_t& m_store; F& m_fun;
+    Key m_key;
 
 public:
-    trie_walker(store_t& a_store, std::string a_key, F& a_fun)
-        : m_store(a_store), m_key(a_key), m_fun(a_fun)
+    trie_walker(store_t& a_store, F& a_fun)
+        : m_store(a_store), m_fun(a_fun)
     {}
+
+    trie_walker(trie_walker& a_walker, symbol_t a_sym)
+        : m_store(a_walker.m_store), m_fun(a_walker.m_fun)
+        , m_key(a_walker.m_key)
+    {
+        m_key.push_back(a_sym);
+    }
 
     template<typename K, typename V>
     void operator()(K k, V v) {
@@ -75,20 +82,17 @@ public:
         node_t *l_ptr = m_store.template native_pointer<node_t>(v);
         if (!l_ptr)
             throw std::invalid_argument("bad store pointer");
-        std::string next_key = m_key + k;
-        foreach(*l_ptr, next_key);
+        trie_walker next_level(*this, k);
+        next_level.foreach(*l_ptr);
     }
 
-    void foreach(node_t& root) { foreach(root, m_key); }
-
-    void foreach(node_t& root, const std::string& a_key) {
-        trie_walker l_next_level(m_store, a_key, m_fun);
+    void foreach(node_t& a_node) {
         if (Dir == up) {
-            root.children().foreach_keyval(l_next_level);
-            m_fun(a_key, root, m_store);
+            a_node.children().foreach_keyval(*this);
+            m_fun(m_key, a_node, m_store);
         } else {
-            m_fun(a_key, root, m_store);
-            root.children().foreach_keyval(l_next_level);
+            m_fun(m_key, a_node, m_store);
+            a_node.children().foreach_keyval(*this);
         }
     }
 };
@@ -99,6 +103,8 @@ public:
     typedef Node node_t;
     typedef typename node_t::store_t store_t;
     typedef typename node_t::symbol_t symbol_t;
+    typedef std::vector<symbol_t> key_t;
+    typedef typename key_t::const_iterator key_it_t;
     typedef typename store_t::pointer_t ptr_t;
 
     // constructor
@@ -144,20 +150,20 @@ public:
 
     // calculate suffix links
     void make_links() {
-        foreach<up>(boost::bind(&ptrie::make_link, this, _2, _1));
+        foreach<up, key_t>(boost::bind(&ptrie::make_link, this, _2, _1));
     }
 
     // traverse trie
-    template<dir_t D, typename F>
+    template<dir_t D, typename Key, typename F>
     void foreach(F functor) {
-        trie_walker<node_t, false, D, F> walker(m_store, "", functor);
+        trie_walker<node_t, false, D, Key, F> walker(m_store, functor);
         walker.foreach(m_root);
     }
 
     // traverse const trie
-    template<dir_t D, typename F>
+    template<dir_t D, typename Key, typename F>
     void foreach(F functor) const {
-        trie_walker<node_t, true, D, F> walker(m_store, "", functor);
+        trie_walker<node_t, true, D, Key, F> walker(m_store, functor);
         walker.foreach(m_root);
     }
 
@@ -317,29 +323,29 @@ protected:
         return p_node;
     }
 
-    // FIXME: use container of symbol_t instead of std::string and array
-
     // calculate suffix link for one node
-    void make_link(node_t& a_node, const std::string& a_key) {
+    void make_link(node_t& a_node, const key_t& a_key) {
         // find my nearest suffix
-        const symbol_t *l_key = a_key.c_str();
-        while (*l_key++) {
-            a_node.suffix() = find_exact(l_key);
+        key_it_t it = a_key.begin();
+        key_it_t e = a_key.end();
+        while (it != e) {
+            a_node.suffix() = find_exact(++it, e);
             if (a_node.suffix() != store_t::null)
                 break;
         }
     }
 
     // return reference to node matching a_key exactly or store_t::null
-    ptr_t find_exact(const symbol_t *key) {
-        symbol_t c;
+    ptr_t find_exact(key_it_t it, key_it_t e) {
         node_t *p_node = &m_root;
         const ptr_t *p_ptr = 0;
-        while ((c = *key++) != 0) {
+        while (it != e) {
+            symbol_t c = *it;
             p_ptr = p_node->children().get(c);
             if (p_ptr == 0)
                 break;
             p_node = node_ptr(*p_ptr);
+            ++it;
         }
         return p_ptr ? *p_ptr : store_t::null;
     }
