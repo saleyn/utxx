@@ -76,7 +76,7 @@ struct f0 {
 
     // fold functor to gather matched tags
     static bool lookup(ret_t& ret, const std::string& data,
-            const store_t&, const char *) {
+            const store_t&, uint32_t, uint32_t, bool) {
         if (!data.empty())
             ret.push_back(data);
         return true;
@@ -146,7 +146,8 @@ struct f2 {
 
     // fold functor to gather matched tags
     static
-    bool lookup(ret_t& ret, offset_t off, const store_t& store, const char *) {
+    bool lookup(ret_t& ret, offset_t off, const store_t& store,
+            uint32_t, uint32_t, bool) {
         if (off == store_t::null)
             return true;
         data *ptr = store.native_pointer<data>(off);
@@ -158,7 +159,7 @@ struct f2 {
 
     // fold functor to find first match
     static bool find_first(const data*& ret, offset_t off, const store_t& store,
-            const char *) {
+            uint32_t, uint32_t, bool) {
         if (off == store_t::null)
             return true;
         data *ptr = store.native_pointer<data>(off);
@@ -257,13 +258,16 @@ BOOST_FIXTURE_TEST_CASE( random_test, f0 )
         }
         exp.sort();
         ret.sort();
-        BOOST_CHECK_EQUAL_COLLECTIONS ( ret.begin(), ret.end(), exp.begin(), exp.end() );
+        BOOST_CHECK_EQUAL_COLLECTIONS ( ret.begin(), ret.end(),
+                exp.begin(), exp.end() );
         if (exp.size() != ret.size()) {
             std::cout << "returned: ";
-            std::copy(ret.begin(), ret.end(), std::ostream_iterator<std::string>(std::cout, " "));
+            std::copy(ret.begin(), ret.end(),
+                std::ostream_iterator<std::string>(std::cout, " "));
             std::cout << std::endl;
             std::cout << "expected: ";
-            std::copy(exp.begin(), exp.end(), std::ostream_iterator<std::string>(std::cout, " "));
+            std::copy(exp.begin(), exp.end(),
+                std::ostream_iterator<std::string>(std::cout, " "));
             std::cout << std::endl;
         }
     }
@@ -312,13 +316,16 @@ BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
         }
         exp.sort();
         ret.sort();
-        BOOST_CHECK_EQUAL_COLLECTIONS ( ret.begin(), ret.end(), exp.begin(), exp.end() );
+        BOOST_CHECK_EQUAL_COLLECTIONS ( ret.begin(), ret.end(),
+                exp.begin(), exp.end() );
         if (exp.size() != ret.size()) {
             std::cout << "returned: ";
-            std::copy(ret.begin(), ret.end(), std::ostream_iterator<std::string>(std::cout, " "));
+            std::copy(ret.begin(), ret.end(),
+                std::ostream_iterator<std::string>(std::cout, " "));
             std::cout << std::endl;
             std::cout << "expected: ";
-            std::copy(exp.begin(), exp.end(), std::ostream_iterator<std::string>(std::cout, " "));
+            std::copy(exp.begin(), exp.end(),
+                std::ostream_iterator<std::string>(std::cout, " "));
             std::cout << std::endl;
         }
     }

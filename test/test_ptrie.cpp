@@ -113,8 +113,8 @@ struct f0 {
     typedef typename trie_t::store_t store_t;
 
     // fold functor to perform lookup
-    static bool lookup(const data_t*& ret, const data_t& data,
-            store_t&, const char *) {
+    static bool lookup(const data_t*& ret, const data_t& data, store_t&,
+            uint32_t, bool) {
         if (!data.empty())
             ret = &data;
         return true;
@@ -185,8 +185,8 @@ struct f2 {
 
     // fold functor to save exact lookup result in a string
     static bool copy_exact_f(std::string &acc, offset_t off,
-            store_t& store, const char *pos) {
-        if (*pos || off == store_t::null)
+            store_t& store, uint32_t, bool has_next) {
+        if (has_next || off == store_t::null)
             return true;
         data *ptr = store.native_pointer<data>(off);
         if (ptr == NULL)
@@ -197,7 +197,7 @@ struct f2 {
 
     // fold functor to perform simple lookup
     static bool lookup_simple(const data*& ret, offset_t off,
-            store_t& store, const char *) {
+            store_t& store, uint32_t, bool) {
         if (off == store_t::null)
             return true;
         data *ptr = store.native_pointer<data>(off);
@@ -209,8 +209,8 @@ struct f2 {
 
     // fold functor to perform exact lookup
     static bool lookup_exact(const data*& ret, offset_t off,
-            store_t& store, const char *pos) {
-        if (*pos || off == store_t::null)
+            store_t& store, uint32_t, bool has_next) {
+        if (has_next || off == store_t::null)
             return true;
         data *ptr = store.native_pointer<data>(off);
         if (ptr == NULL)
@@ -222,7 +222,7 @@ struct f2 {
 
     // fold functor to perform a lookup
     static bool lookup(const data*& ret, offset_t off,
-            store_t& store, const char *) {
+            store_t& store, uint32_t, bool) {
         if (off == store_t::null)
             return true;
         data *ptr = store.native_pointer<data>(off);

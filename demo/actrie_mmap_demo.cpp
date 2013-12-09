@@ -50,11 +50,14 @@ typedef utxx::pnode_ss_ro<
         utxx::flat_data_store</*Node*/void, offset_t>, data_t, utxx::sarray<>
 > node_t;
 
-// trie type
+// trie type (default traits)
 typedef utxx::mmap_ptrie<node_t> trie_t;
 
 // concrete trie store type
 typedef typename trie_t::store_t store_t;
+
+// key element position type (default: uint32_t)
+typedef typename trie_t::position_t pos_t;
 
 // get offset of the 1st (root) node of the trie
 static offset_t root(const void *m_addr, size_t m_size) {
@@ -66,11 +69,11 @@ static offset_t root(const void *m_addr, size_t m_size) {
 
 // fold functor example
 static bool fun(const char *& acc, const data_t& data, const store_t& store,
-        const char *ptr) {
+        pos_t begin, pos_t end, bool has_next) {
     if (data.empty<store_t>())
         return true;
     acc = data.str(store);
-    std::cout << acc << std::endl;
+    std::cout << begin << ":" << end << ":" << has_next << ":" << acc << "\n";
     return true;
 }
 

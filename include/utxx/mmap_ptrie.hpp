@@ -27,15 +27,17 @@ namespace utxx {
 
 namespace { namespace bip = boost::interprocess; }
 
-template <typename Node>
+template <typename Node, typename Traits = ptrie_traits_default>
 class mmap_ptrie {
 protected:
-    typedef ptrie<Node> trie_t;
+    typedef ptrie<Node, Traits> trie_t;
 
 public:
     typedef typename trie_t::store_t store_t;
     typedef typename trie_t::ptr_t ptr_t;
     typedef typename trie_t::symbol_t symbol_t;
+    typedef Traits traits_t;
+    typedef typename traits_t::position_type position_t;
 
 protected:
     bip::file_mapping  m_fmap;
@@ -60,14 +62,14 @@ public:
     {}
 
     // fold through trie nodes following key components
-    template <typename A, typename F>
-    void fold(const symbol_t *key, A& acc, F proc) {
+    template <typename Key, typename A, typename F>
+    void fold(const Key& key, A& acc, F proc) {
         m_trie.fold(key, acc, proc);
     }
 
     // fold through trie nodes following key components
-    template <typename A, typename F>
-    void fold_full(const symbol_t *key, A& acc, F proc) {
+    template <typename Key, typename A, typename F>
+    void fold_full(const Key& key, A& acc, F proc) {
         m_trie.fold_full(key, acc, proc);
     }
 

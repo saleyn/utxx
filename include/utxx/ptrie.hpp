@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/range.hpp>
 
 namespace utxx {
 
@@ -97,12 +98,75 @@ public:
     }
 };
 
-template<typename Node>
+namespace {
+
+// generic zero-terminated character sequence
+template<typename Char>
+class char_cursor_base {
+    const Char *ptr;
+public:
+    char_cursor_base(const Char *key) : ptr(key) {}
+    bool has_data() const { return *ptr; }
+    const Char& get_data() { return *ptr; }
+    void next() { ++ptr; }
+};
+
+// cursor implementation class
+template<typename KeyT> class cursor_impl;
+
+// all cases of C-style char sequences
+template<>
+class cursor_impl<char *> : public char_cursor_base<char> {
+public:
+    cursor_impl(const char *key) : char_cursor_base<char>(key) {}
+};
+template<>
+class cursor_impl<const char *> : public char_cursor_base<char> {
+public:
+    cursor_impl(const char *key) : char_cursor_base<char>(key) {}
+};
+template<int N>
+class cursor_impl<char[N]> : public char_cursor_base<char> {
+public:
+    cursor_impl(const char *key) : char_cursor_base<char>(key) {}
+};
+template<int N>
+class cursor_impl<const char[N]> : public char_cursor_base<char> {
+public:
+    cursor_impl(const char *key) : char_cursor_base<char>(key) {}
+};
+
+// all other ranges, containers and fixed-size arrays
+template<typename K> class cursor_impl {
+    typedef typename boost::range_iterator<const K>::type it_t;
+    typedef typename boost::range_value<const K>::type val_t;
+    it_t it, end;
+public:
+    cursor_impl(const K& key)
+        : it(boost::begin(key)), end(boost::end(key))
+    {}
+    bool has_data() const { return it != end; }
+    const val_t& get_data() { return *it; }
+    void next() { ++it; }
+};
+
+}
+
+struct ptrie_traits_default {
+    template<typename Key>
+    struct cursor { typedef cursor_impl<Key> type; };
+    // element position in the key sequence type
+    typedef uint32_t position_type;
+};
+
+template<typename Node, typename Traits = ptrie_traits_default>
 class ptrie {
 public:
     typedef Node node_t;
     typedef typename node_t::store_t store_t;
     typedef typename node_t::symbol_t symbol_t;
+    typedef Traits traits_t;
+    typedef typename traits_t::position_type position_t;
     typedef std::vector<symbol_t> key_t;
     typedef typename key_t::const_iterator key_it_t;
     typedef typename store_t::pointer_t ptr_t;
@@ -137,14 +201,14 @@ public:
     void clear() { clear(m_root_ptr); }
 
     // store data, overwrite existing data if any
-    template<typename Data>
-    void store(const symbol_t *key, const Data& data) {
+    template<typename Key, typename Data>
+    void store(const Key& key, const Data& data) {
         path_to_node(key)->data() = data;
     }
 
     // update node data using provided merge-functor
-    template<typename MergeFunctor, typename DataT>
-    void update(const symbol_t *key, const DataT& data, MergeFunctor& merge) {
+    template<typename Key, typename MergeFunctor, typename DataT>
+    void update(const Key& key, const DataT& data, MergeFunctor& merge) {
         merge(path_to_node(key)->data(), data);
     }
 
@@ -168,48 +232,67 @@ public:
     }
 
     // fold through trie nodes following key components
-    template <typename A, typename F>
-    void fold(const symbol_t *key, A& acc, F proc) {
-        symbol_t c;
+    template <typename Key, typename A, typename F>
+    void fold(const Key& key, A& acc, F proc) {
+        typename Traits::template cursor<Key>::type cursor(key);
         node_t *node = &m_root;
-        while ((c = *key++) != 0) {
-            node = read_node(node, c);
+        position_t k = 0;
+        bool has_data = cursor.has_data();
+        while (has_data) {
+            node = read_node(node, cursor.get_data());
             if (!node)
                 break;
-            if (!proc(acc, node->data(), m_store, key))
+            cursor.next();
+            has_data = cursor.has_data();
+            if (!proc(acc, node->data(), m_store, ++k, has_data))
                 break;
         }
     }
 
     // fold through trie nodes following key components and suffix links
-    template <typename A, typename F>
-    void fold_full(const symbol_t *key, A& acc, F proc) {
-        symbol_t c;
+    template <typename Key, typename A, typename F>
+    void fold_full(const Key& key, A& acc, F proc) {
+        typename Traits::template cursor<Key>::type cursor(key);
         node_t *node = &m_root;
+        position_t end = 0;
 
-        while ((c = *key) != 0) {
+        position_t begin = 0;
+        while (cursor.has_data()) {
 
             // get child node
-            node_t *child = read_node(node, c);
-            if (child) {
-                node = child;
-                ++key;
+            node_t *next_node = read_node(node, cursor.get_data());
+            if (next_node) {
+                // switch to child node
+                node = next_node;
+                cursor.next(); ++end;
 
-                // process current node and all suffixes
-                node_t *suffix = node;
-                while ( proc(acc, suffix->data(), m_store, key) ) {
+                // process child node and all it's suffixes
+                position_t start = begin;
+                while ( proc(acc, next_node->data(), m_store, start, end,
+                            cursor.has_data()) ) {
                     // get next suffix
-                    suffix = read_suffix(suffix);
+                    node_t *suffix = read_suffix(next_node);
                     if (suffix == 0)
                         break;
+                    start += next_node->shift();
+                    next_node = suffix;
                 }
                 continue;
             }
 
             // get suffix node
-            if ((node = read_suffix(node)) == 0) {
-                // no child, no suffix - advance key, reset node pointer
-                ++key; node = &m_root;
+            node_t *suffix = read_suffix(node);
+            if (suffix == 0) {
+                // no child, no suffix
+                if (node == &m_root) {
+                    cursor.next(); ++begin; ++end;
+                } else {
+                    node = &m_root; begin = end;
+                }
+            } else {
+                // else switch to suffix node
+                begin += node->shift();
+                node = suffix;
             }
         }
     }
@@ -315,11 +398,14 @@ protected:
     }
 
     // build path adding missing nodes if needed
-    node_t *path_to_node(const symbol_t *key) {
-        symbol_t c;
+    template<typename Key>
+    node_t *path_to_node(const Key& key) {
+        typename Traits::template cursor<Key>::type cursor(key);
         node_t *p_node = &m_root;
-        while ((c = *key++) != 0)
-            p_node = next_node(p_node, c);
+        while (cursor.has_data()) {
+            p_node = next_node(p_node, cursor.get_data());
+            cursor.next();
+        }
         return p_node;
     }
 
@@ -328,10 +414,13 @@ protected:
         // find my nearest suffix
         key_it_t it = a_key.begin();
         key_it_t e = a_key.end();
+        position_t k = 0;
         while (it != e) {
-            a_node.suffix() = find_exact(++it, e);
-            if (a_node.suffix() != store_t::null)
+            a_node.suffix() = find_exact(++it, e); ++k;
+            if (a_node.suffix() != store_t::null) {
+                a_node.shift() = k;
                 break;
+            }
         }
     }
 

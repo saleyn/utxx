@@ -64,9 +64,12 @@ static offset_t root(const void *m_addr, size_t m_size) {
     return *(const offset_t *) ((const char *) m_addr + m_size - s);
 }
 
+// key element position type (default: uint32_t)
+typedef typename trie_t::position_t pos_t;
+
 // fold functor example
 static bool fun(const char *& acc, const data_t& data, const store_t& store,
-        const char *ptr) {
+        pos_t, bool) {
     if (data.empty<store_t>())
         return true;
     acc = data.str(store);

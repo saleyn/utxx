@@ -36,13 +36,16 @@ typedef utxx::ptrie<node_t> trie_t;
 // concrete trie store type
 typedef trie_t::store_t store_t;
 
+// key element position type (default: uint32_t)
+typedef typename trie_t::position_t pos_t;
+
 // fold functor example
 static bool fun(std::string& acc, const data_t& data, const trie_t::store_t&,
-        const char *ptr) {
+        pos_t begin, pos_t end, bool has_next) {
     if (data.empty())
         return true;
     acc = data;
-    std::cout << acc << std::endl;
+    std::cout << begin << ":" << end << ":" << has_next << ":" << acc << "\n";
     return true;
 }
 
