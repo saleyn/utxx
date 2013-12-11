@@ -14,6 +14,7 @@ UTXX_SRCS = \
 	logger_impl_file.cpp \
 	logger_impl_syslog.cpp \
 	path.cpp \
+	stream64.cpp \
 	synch.cpp \
 	timestamp.cpp \
 	url.cpp

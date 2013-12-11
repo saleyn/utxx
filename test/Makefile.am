@@ -3,7 +3,7 @@ bindir			   	= ${exec_prefix}/test
 test_utxxdir        = ${exec_prefix}/test
 
 bin_PROGRAMS       	= test_utxx \
-			  example_repeating_timer
+			  		  example_repeating_timer
 
 TEST_UTXX64_SRCS = \
 	test_atomic.cpp \
@@ -13,44 +13,40 @@ TEST_UTXX64_SRCS = \
 
 TEST_UTXX_SRCS = \
 	test_alloc_fixed_page.cpp \
+	test_async_file_logger.cpp \
 	test_basic_udp_receiver.cpp \
 	test_buffer.cpp \
-	test_shared_queue.cpp \
-	test_file_reader.cpp \
+	test_clustered_map.cpp \
 	test_collections.cpp \
 	test_concurrent_stack.cpp \
 	test_concurrent_update.cpp \
 	test_config_validator.cpp \
 	test_convert.cpp \
-	test_async_file_logger.cpp \
+	test_file_reader.cpp \
 	test_high_res_timer.cpp \
 	test_iovec.cpp \
 	test_iovector.cpp \
-	test_logger_async_file.cpp \
 	test_logger.cpp \
+	test_logger_async_file.cpp \
 	test_logger_syslog.cpp \
 	test_math.cpp \
 	test_multi_file_async_logger.cpp \
 	test_nchar.cpp \
 	test_path.cpp \
 	test_pcap.cpp \
-	test_persist_blob.cpp \
 	test_persist_array.cpp \
+	test_persist_blob.cpp \
 	test_pidfile.cpp \
 	test_robust_mutex.cpp \
 	test_running_stat.cpp \
+	test_shared_queue.cpp \
+	test_stream64.cpp \
 	test_string.cpp \
 	test_throttler.cpp \
 	test_timestamp.cpp \
 	test_url.cpp \
 	test_utxx.cpp \
 	test_variant.cpp
-
-if Ix86
-test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
-else
-test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
-endif
 
 example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp
@@ -64,10 +60,16 @@ generated/test_config_validator.generated.hpp: test_config_validator.xml \
 
 test_config_validator.cpp: generated/test_config_validator.generated.hpp
 
-generated:                                                                           
+generated:
 	mkdir $@
 
-test_utxx_CPPFLAGS 	= -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
+if Ix86
+test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
+else
+test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
+endif
+
+test_utxx_CPPFLAGS 	= -g -O0 -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 					  $(BOOST_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
 
@@ -88,5 +90,9 @@ example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
 					$(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
 					$(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB)
+
+#test_cm_SOURCES 	= test_clustered_map.cpp
+#test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+#test_cm_LDFLAGS     = $(BOOST_LDFLAGS)
 
 EXTRA_DIST = test_config_validator.xml

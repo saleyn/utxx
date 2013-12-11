@@ -100,7 +100,7 @@ private:
         typename Lock::lock_data lock_data;
         uint32_t version;
         T        data;
-    } __attribute((aligned( (atomic::cacheline::size) )));
+    } __attribute((aligned( (64 /*atomic::cacheline::size*/) )));
 
     BOOST_STATIC_ASSERT(sizeof(blob_t) % atomic::cacheline::size == 0);
 

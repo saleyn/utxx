@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
             BOOST_REQUIRE_EQUAL( val.i1, 1 );
             BOOST_REQUIRE_EQUAL( val.i2, 2 );
         }
-        
+
         orig.i1 = 3;
         orig.i2 = 4;
         o.dirty_set(orig);
@@ -110,7 +110,7 @@ namespace {
         long m_iterations;
         persist_blob<test_blob>& m_logger;
     public:
-        producer(persist_blob<test_blob>& logger, int n, long iter) 
+        producer(persist_blob<test_blob>& logger, int n, long iter)
             : m_instance(n), m_iterations(iter), m_logger(logger)
         {}
 
@@ -123,8 +123,8 @@ namespace {
                 test_blob o(i, i<<1);
                 m_logger.set(o);
                 if (i % 5000 == 0) {
-                    std::cerr << 
-                        (to_string("producer", m_instance, " - ", i) + 
+                    std::cerr <<
+                        (to_string("producer", m_instance, " - ", i) +
                          to_string(" (o1=", o.i1, ", o2=", o.i2, ")\n"));
                 }
                 sched_yield();
@@ -140,7 +140,7 @@ namespace {
         int* m_has_error;
         persist_blob<test_blob>& m_logger;
     public:
-        consumer(persist_blob<test_blob>& logger, int n, bool& cancel, int& error) 
+        consumer(persist_blob<test_blob>& logger, int n, bool& cancel, int& error)
             : m_instance(n), m_cancel(&cancel), m_has_error(&error), m_logger(logger)
         {}
 
@@ -152,7 +152,7 @@ namespace {
         void operator() () {
             while (!*m_cancel) {
                 test_blob o = m_logger.get();
-                
+
                 if (o.i2 != o.i1 << 1) {
                     *m_has_error = true;
                     std::cerr <<
@@ -180,7 +180,7 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
     ::unlink(s_filename);
     {
         persist_blob<test_blob> l_blob;
-        
+
         BOOST_REQUIRE_NO_THROW(l_blob.init(s_filename, NULL, false));
 
         bool cancel = false;

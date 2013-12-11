@@ -56,10 +56,11 @@ public:
         BOOST_STATIC_ASSERT(1 <= N && N <= sizeof(long)*8);
     }
 
-    static const unsigned int max = N - 1;
+    static const unsigned int max  = N - 1;
+    static const unsigned int cend = N;
 
     T               value()  const { return m_data; }
-    unsigned int    end()    const { return max+1; }
+    unsigned int    end()    const { return cend; }
     bool            empty()  const { return m_data == 0; }
     void            clear()        { m_data = 0; }
 

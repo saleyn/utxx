@@ -149,7 +149,7 @@ namespace atomic {
 
 template <typename T, typename I>
 bool cas(volatile T* p, I vold, I vnew) {
-    typedef typename 
+    typedef typename
         boost::mpl::if_c<sizeof(T) == 4, unsigned int, unsigned long>::type int_t;
     return detail::cas<sizeof(T), int_t>(p, (int_t)vold, (int_t)vnew);
 }
@@ -312,21 +312,21 @@ static inline unsigned long bit_scan_reverse(unsigned long v) {
 
 /// Holds cacheline size.
 // Compile with "gcc -DCL_SIZE=$(getconf LEVEL1_DCACHE_LINESIZE)"
-// for acurate value reading.  Defaults to 64.                                   
+// for acurate value reading.  Defaults to 64.
 struct cacheline {
-    enum { size =
+    static const int size =
         #ifdef CL_SIZE
         CL_SIZE
-        #else                                                                    
-        64                                                                       
-        #endif                                                                   
-     };                                                                          
-                                                                                 
-     template<int N>                                                             
-     struct pad {                                                                
-         enum { space = align<size, N>::padding };                               
-     };                                                                          
-};                                                                               
+        #else
+        64
+        #endif
+    ;
+
+    template<int N>
+    struct pad {
+        enum { space = align<size, N>::padding };
+    };
+};
 
 } // namespace atomic
 } // namespace utxx
