@@ -122,6 +122,21 @@ class clustered_map {
         }
     }
 
+    std::pair<bool, Data*> ensure(size_t a_hi, size_t a_lo) {
+        typename gross_map::iterator it; // FIXME: should we init it to m_map.end()?
+        bool found = mru_map_lookup(a_hi, it);
+        if (!found) {
+            std::pair<typename gross_map::iterator, bool> res =
+                m_map.insert(std::make_pair(a_hi, key_data()));
+            it = res.first;
+            update_mru(it);
+        } else
+            found = it->second.index[a_lo];
+
+        it->second.index.set(a_lo);
+        return std::make_pair(found, &it->second.data[a_lo]);
+    }
+
 public:
     typedef typename gross_map::key_type    key_type;
     typedef typename gross_map::mapped_type mapped_type;
@@ -141,13 +156,16 @@ public:
     const_iterator  begin() const { return const_iterator(m_map, m_map.begin()); }
     const_iterator  end()   const { return const_iterator(m_map, m_map.end(), bitmap_t::cend);   }
 
-    /// Total number of groups
+    /// Total number of clustered key groups
     size_t group_count() const { return m_map.size(); }
+    /// Number of items in the cluster group associated with the \a a_key.
     size_t item_count(Key a_key) const {
         typename gross_map::const_iterator it = m_map.find(a_key & s_hi_mask);
         return it == m_map.end() ? 0 : it->second.index.count();
     }
 
+    /// Return the data pointer associated with the \a a_key entry
+    /// in the container. If the \a a_key is not found, return NULL.
     Data* at(Key a_key) {
         typename gross_map::iterator it;
         if (!mru_map_lookup(a_key & s_hi_mask, it))
@@ -165,33 +183,25 @@ public:
         return it->second.index[l2] ? iterator(m_map, it, l2) : end();
     }
 
-    std::pair<bool, Data*> ensure(size_t a_hi, size_t a_lo) {
-        typename gross_map::iterator it; // FIXME: should we init it to m_map.end()?
-        bool found = mru_map_lookup(a_hi, it);
-        if (!found) {
-            std::pair<typename gross_map::iterator, bool> res =
-                m_map.insert(std::make_pair(a_hi, key_data()));
-            it = res.first;
-            update_mru(it);
-        } else
-            found = it->second.index[a_lo];
-
-        it->second.index.set(a_lo);
-        return std::make_pair(found, &it->second.data[a_lo]);
-    }
-
+    /// Insert an entry in the container associated with the \a a_key.
     Data& insert(Key a_key) {
         size_t lo = a_key & s_lo_mask;
         std::pair<bool, Data*> t = ensure(a_key & s_hi_mask, lo);
         return *t.second;
     }
 
+    /// Insert \a a_key and \a a_data pair in the container
     void insert(Key a_key, const Data& a_data) {
         size_t lo = a_key & s_lo_mask;
         std::pair<bool, Data*> t = ensure(a_key & s_hi_mask, lo);
         *t.second = a_data;
     }
 
+    /// Return data associated with the \a a_key. If the \a a_key
+    /// is not present in the container, it will be inserted.
+    Data& operator[] (Key a_key) { return insert(a_key); }
+
+    /// Erase entry pointed by the iterator \a a_it from the container
     bool erase(iterator a_it) {
         if (m_map.find(a_it.level1()->first) == m_map.end())
             return false;
@@ -206,10 +216,21 @@ public:
         return true;
     }
 
+    /// Erase given key from the container
     bool erase(Key a_key) {
         iterator it(m_map, a_key);
         return erase(it);
     }
+
+    /// Clears the container
+    void clear() {
+        m_map.clear();
+        m_mru[0] = m_map.end();
+        m_mru[1] = m_map.end();
+    }
+
+    /// Returns true when the container is empty
+    bool empty() const { return m_map.empty(); }
 
     template <class Visitor, class State>
     void for_each(Visitor& a_visit, State& a_state) {

@@ -37,16 +37,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #else
 #   include <boost/test/unit_test.hpp>
 #endif
+#include <boost/timer.hpp>
 #include <utxx/container/clustered_map.hpp>
+
+#if __cplusplus >= 201103L
+#include <random>
+#else
+#include <boost/random.hpp>
+#endif
 
 typedef utxx::clustered_map<int, int> cmap;
 
 void visitor(int k, int v, int& sum) { sum += k; }
 
+double sample() {
+  restart:
+    double u = ((double) rand() / (RAND_MAX)) * 2 - 1;
+    double v = ((double) rand() / (RAND_MAX)) * 2 - 1;
+    double r = u * u + v * v;
+    if (r == 0 || r > 1) goto restart;
+    double c = sqrt(-2 * log(r) / r);
+    return u * c;
+}
+
 #ifdef UTXX_STANDALONE
 int main(int argc, char* argv[]) {
 #else
-BOOST_AUTO_TEST_CASE( test_clustered_map_lookup) {
+BOOST_AUTO_TEST_CASE( test_clustered_map ) {
 #endif
     cmap m;
     static const int s_data[][2] = {
@@ -86,6 +103,84 @@ BOOST_AUTO_TEST_CASE( test_clustered_map_lookup) {
     BOOST_REQUIRE(m.erase(129));
     BOOST_REQUIRE_EQUAL(2, m.group_count());
     BOOST_REQUIRE_EQUAL(0, m.item_count(129));
+
+    m.clear();
+
+    BOOST_REQUIRE(m.empty());
+
+    const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
+    {
+        int mean = 8;
+        time_t seed = time(0);
+        double elapsed1, elapsed2;
+
+        {
+            utxx::clustered_map<int, int, 2> m;
+
+            #if __cplusplus >= 201103L
+            std::default_random_engine generator;
+            std::normal_distribution<double> distribution(mean, 3);
+            #else
+            boost::mt19937 generator(static_cast<unsigned>(seed));
+            boost::normal_distribution<double> normal_distribution(mean, 3);
+            boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> >
+                gaussian_rnd(generator, normal_distribution);
+            #endif
+
+            boost::timer t;
+            for (long i = 0; i < ITERATIONS; i++) {
+            recalc1:
+                #if __cplusplus >= 201103L
+                int number = (int)distribution(generator);
+                #else
+                int number = (int)gaussian_rnd();
+                #endif
+                if ((number < 0) || (number > 2*mean)) goto recalc1;
+                int& n = m.insert((int)number);
+                n++;
+            }
+
+            elapsed1 = t.elapsed();
+            char buf[80];
+            sprintf(buf, "clustered_map speed=%.0f ins/s, latency=%.3fus",
+                   (double)ITERATIONS/elapsed1, elapsed1 * 1000000 / ITERATIONS);
+            BOOST_MESSAGE(buf);
+        }
+
+        {
+            std::map<int, int> m;
+
+            #if __cplusplus >= 201103L
+            std::default_random_engine generator;
+            std::normal_distribution<double> distribution(mean, 3);
+            #else
+            boost::mt19937 generator(static_cast<unsigned>(seed));
+            boost::normal_distribution<double> normal_distribution(mean, 3);
+            boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> >
+                gaussian_rnd(generator, normal_distribution);
+            #endif
+
+            boost::timer t;
+            for (long i = 0; i < ITERATIONS; i++) {
+            recalc2:
+                #if __cplusplus >= 201103L
+                int number = (int)distribution(generator);
+                #else
+                int number = (int)gaussian_rnd();
+                #endif
+                if ((number < 0) || (number > 2*mean)) goto recalc2;
+                m[(int)number]++;
+            }
+
+            elapsed2 = t.elapsed();
+            char buf[80];
+            sprintf(buf, "std::map      speed=%.0f ins/s, latency=%.3fus",
+                   (double)ITERATIONS/elapsed2, elapsed2 * 1000000 / ITERATIONS);
+            BOOST_MESSAGE(buf);
+        }
+
+        BOOST_MESSAGE("Performance(clustered_map / std::map) = " << elapsed2 / elapsed1);
+    }
 
 #ifdef UTXX_STANDALONE
     return 0;

@@ -69,7 +69,8 @@ else
 test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
-test_utxx_CPPFLAGS 	= -g -O0 -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
+test_utxx_CPPFLAGS 	= $(if $(debug),-g -O0) $(if $(optimize),-O3) \
+					  -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 					  $(BOOST_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
 
