@@ -138,8 +138,8 @@ public:
     typedef logger_impl::on_bin_delegate_t on_bin_delegate_t;
 
 private:
-    event_source<on_msg_delegate_t> m_sig_msg[logger_impl::NLEVELS];
-    event_source<on_bin_delegate_t> m_sig_bin;
+    signal<on_msg_delegate_t>       m_sig_msg[logger_impl::NLEVELS];
+    signal<on_bin_delegate_t>       m_sig_bin;
     unsigned int                    m_level_filter;
     implementations_vector          m_implementations;
     stamp_type                      m_timestamp_type;
@@ -157,6 +157,25 @@ private:
 
     void set_timestamp(char* buf, time_t seconds) const;
 
+    friend class logger_impl;
+
+    /// To be called by <logger_impl> child to register a delegate to be
+    /// invoked on a call to LOG_*() macros.
+    /// @return Id assigned to the message logger, which is to be used
+    ///         in the remove_msg_logger call to release the event sink.
+    int add_msg_logger(log_level level, on_msg_delegate_t subscriber);
+
+    /// To be called by <logger_impl> child to register a delegate to be
+    /// invoked on a call to logger::log(msg, size).
+    /// @return Id assigned to the message logger, which is to be used
+    ///         in the remove_msg_logger call to release the event sink.
+    int add_bin_logger(on_bin_delegate_t subscriber);
+
+    /// To be called by <logger_impl> child to unregister a delegate
+    void remove_msg_logger(log_level a_lvl, int a_id);
+    /// To be called by <logger_impl> child to unregister a delegate
+    void remove_bin_logger(int a_id);
+
 public:
     static logger& instance() {
         return singleton<logger>::instance();
@@ -171,6 +190,9 @@ public:
         , m_show_location(true), m_show_ident(false)
     {}
     ~logger() { finalize(); }
+
+    /// @return vector of active back-end logging implementations
+    const implementations_vector&  implementations() const;
 
     enum init_file_type { INFO_FILE, JSON_FILE, XML_FILE };
 
@@ -218,23 +240,12 @@ public:
     /// Get program identifier to be used in the log output.
     const std::string& ident() const { return m_ident; }
 
-    /// To be called by <logger_impl> child to register a delegate to be
-    /// invoked on a call to LOG_*() macros.
-    void add_msg_logger(log_level level,
-            event_binder<on_msg_delegate_t>& binder, on_msg_delegate_t subscriber);
-    /// To be called by <logger_impl> child to register a delegate to be
-    /// invoked on a call to logger::log(msg, size).
-    void add_bin_logger(event_binder<on_bin_delegate_t>& binder, on_bin_delegate_t subscriber);
-
     /// Converts a string (e.g. "DEBUG | INFO | WARNING") sizeof(m_timestamp)-1to a bitmask of
     /// corresponding levels.  This method is used for configuration parsing
     static int parse_log_levels(const std::string& levels) throw(std::runtime_error);
     /// String representation of log levels enabled by default.  Used in config
     /// parsing.
-    static const char* default_log_levels; 
-
-    /// @return vector of active back-end logging implementations
-    const implementations_vector&  implementations() const;
+    static const char* default_log_levels;
 
     /// Dump internal settings
     std::ostream& dump(std::ostream& out) const;

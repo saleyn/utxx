@@ -3,6 +3,7 @@ bindir			   	= ${exec_prefix}/test
 test_utxxdir        = ${exec_prefix}/test
 
 bin_PROGRAMS       	= test_utxx \
+					  example_delegate \
 			  		  example_repeating_timer
 
 TEST_UTXX64_SRCS = \
@@ -69,7 +70,7 @@ else
 test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
-test_utxx_CPPFLAGS 	= $(if $(debug),-g -O0) $(if $(optimize),-O3) \
+test_utxx_CPPFLAGS 	= $(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
 					  -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 					  $(BOOST_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
@@ -91,6 +92,13 @@ example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
 					$(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
 					$(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB)
+
+example_delegate_SOURCES	= example_delegate.cpp
+example_delegate_CPPFLAGS 	= $(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
+					  -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+example_delegate_LDFLAGS     = $(BOOST_LDFLAGS) \
+					$(BOOST_SYSTEM_LIB) \
+					$(BOOST_TIMER_LIB)
 
 #test_cm_SOURCES 	= test_clustered_map.cpp
 #test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)

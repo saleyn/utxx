@@ -30,15 +30,24 @@
 /// "app_config.hpp" is "test::app_config_validator":
 ///
 /// <code>
-///     #include "app_config.hpp"
+///     #include "app_config.hpp" /* Auto-generated from user's app_config.xml */
 ///     ...
-///     utxx::config_tree l_config;
-///     boost::property_tree::read_info("app.info", l_config);
-///     test::app_config_validator::instance().
-///         validate(l_config, true); /* When the second parameter
-///                                      is true the l_config will be
-///                                      populated with default values
-///                                      of missing options */
+///     utxx::config_tree cfg;
+///     boost::property_tree::read_info("app.info", cfg);
+///     try {
+///         test::app_config_validator::instance().
+///             validate(cfg, true); /* When the second parameter
+///                                     is true the l_config will be
+///                                     populated with default values
+///                                     of missing options */
+///     } catch (util::config_error& e) {
+///         /* Output config usage information */
+///         std::cerr << "Configuration error in " << e.path() << ": "
+///                   << e.what() << std::endl
+///                   << test::app_config_validator::instance().usage()
+///                   << std::endl;
+///         exit(1);
+///     }
 /// </code>
 ///
 /// The format of the XML file with validation rules is provided below:

@@ -5,6 +5,7 @@
 #include <boost/property_tree/info_parser.hpp>
 #include <boost/thread.hpp>
 #include <iostream>
+#include <utxx/perf_histogram.hpp>
 #include <utxx/logger.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/test_helper.hpp>
@@ -69,9 +70,12 @@ std::string get_data(std::ifstream& in, int& thread, int& num, struct tm& tm) {
     if (!getline(in, s))
         return "";
     char* end;
-    tm.tm_year = strtol(s.c_str(), &end, 10) - 1900;
-    tm.tm_mon  = strtol(end+1, &end, 10) - 1;
-    tm.tm_mday = strtol(end+1, &end, 10);
+    int n = strtol(s.c_str(), &end, 10);
+    int y = n / 10000; n -= y*10000;
+    int m = n / 100;   n -= m*100;
+    tm.tm_year = y - 1900;
+    tm.tm_mon  = m - 1;
+    tm.tm_mday = n;
     tm.tm_hour = strtol(end+1, &end, 10);
     tm.tm_min  = strtol(end+1, &end, 10);
     tm.tm_sec  = strtol(end+1, &end, 10);
@@ -214,33 +218,20 @@ struct latency_worker {
     int              id;
     int              iterations;
     boost::barrier&  barrier;
-    int*             time_buckets;
+    perf_histogram*  histogram;
 
-    latency_worker(int a_id, int it, boost::barrier& b, int* a_time_stats)
-        : id(a_id), iterations(it), barrier(b), time_buckets(a_time_stats)
+    latency_worker(int a_id, int it, boost::barrier& b, perf_histogram* h)
+        : id(a_id), iterations(it), barrier(b), histogram(h)
     {}
 
     void operator() () {
         barrier.wait();
-        high_res_timer hr;
+        histogram->reset();
 
         for (int i=0; i < iterations; i++) {
-            hr.start();
+            histogram->start();
             LOG_ERROR  (("%d %9d This is an error #123", id, i));
-            hr.stop();
-            long usec = hr.elapsed_usec();
-            if (usec <= 15)
-                time_buckets[usec]++;
-            else if (usec < 50)
-                time_buckets[16]++;
-            else if (usec < 100)
-                time_buckets[17]++;
-            else if (usec < 500)
-                time_buckets[18]++;
-            else if (usec < 1000)
-                time_buckets[19]++;
-            else
-                time_buckets[20]++;
+            histogram->stop();
         }
         if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stdout, "Performance thread %d finished\n", id);
@@ -257,7 +248,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 {
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
-    const int iterations = 1000000;
+    const int iterations = ::getenv("ITERATIONS") ? atoi(::getenv("ITERATIONS")) : 1000000;
 
     ::unlink(filename);
 
@@ -277,70 +268,46 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
     const int threads = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : def_threads;
     boost::barrier barrier(threads+1);
     int id = 0;
-    const int tot_buckets = 21;
-    int time_buckets[threads][tot_buckets];
 
-    boost::shared_ptr<latency_worker> workers[threads];
-    boost::shared_ptr<boost::thread>  thread [threads];
+    boost::shared_ptr<latency_worker>   workers[threads];
+    boost::shared_ptr<boost::thread>    thread [threads];
+    perf_histogram                      histograms[threads];
+
     for (int i=0; i < threads; i++) {
-        bzero(time_buckets[i], sizeof(int)*tot_buckets);
         workers[i] = boost::shared_ptr<latency_worker>(
-                        new latency_worker(++id, iterations, barrier, time_buckets[i]));
+                        new latency_worker(++id, iterations, barrier, &histograms[i]));
         thread[i]  = boost::shared_ptr<boost::thread>(new boost::thread(boost::ref(*workers[i])));
     }
 
     barrier.wait();
 
-    int time_stats[tot_buckets];
-    bzero(time_stats, sizeof(time_stats));
+    perf_histogram totals("Total logger_async_file performance");
 
     for (int i=0; i < threads; i++) {
         thread[i]->join();
-        for(unsigned int j=0; j < sizeof(time_stats)/sizeof(int); ++j)
-            time_stats[j] += time_buckets[i][j];
+        totals += histograms[i];
     }
 
     log.finalize();
 
-    if (utxx::verbosity::level() != utxx::VERBOSE_NONE) {
-        printf("Performance test '%s' finished\n", BOOST_CURRENT_TEST_NAME);
-        double tot_pcnt = 0;
-        for (unsigned int i=0; i < sizeof(time_stats)/sizeof(int); i++) {
-            if (time_stats[i] == 0)
-                continue;
-            double pcnt = 100.0 * time_stats[i] / iterations / threads;
-            tot_pcnt   += pcnt;
-            if (i <= 15)
-                printf("  [<%3uus] = %9d (%6.2f%% / %6.2f%%)\n", i, time_stats[i], pcnt, tot_pcnt);
-            else if (i == 16)
-                printf("  [<%3dus] = %9d (%6.2f%% / %6.2f%%)\n", 50, time_stats[i], pcnt, tot_pcnt);
-            else if (i == 17)
-                printf("  [<%3dus] = %9d (%6.2f%% / %6.2f%%)\n", 100, time_stats[i], pcnt, tot_pcnt);
-            else if (i == 18)
-                printf("  [<%3dus] = %9d (%6.2f%% / %6.2f%%)\n", 500, time_stats[i], pcnt, tot_pcnt);
-            else if (i == 19)
-                printf("  [<  1ms] = %9d (%6.2f%% / %6.2f%%)\n", time_stats[i], pcnt, tot_pcnt);
-            else
-                printf("  [>  1ms] = %9d (%6.2f%% / %6.2f%%)\n", time_stats[i], pcnt, tot_pcnt);
-        }
-    }
+    totals.dump(std::cout);
 
     verify_result(filename, threads, iterations, 1);
 
     ::unlink(filename);
 }
 
-BOOST_AUTO_TEST_CASE( test_async_file_perf )
+BOOST_AUTO_TEST_CASE( test_logger_async_file_perf )
 {
     run_test("async_file", MODE_OVERWRITE, 3);
 }
 
-BOOST_AUTO_TEST_CASE( test_file_perf_overwrite )
+BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite )
 {
     run_test("file", MODE_OVERWRITE, 3);
 }
 
-BOOST_AUTO_TEST_CASE( test_file_perf_append )
+BOOST_AUTO_TEST_CASE( test_logger_file_perf_append )
 {
     run_test("file", MODE_APPEND, 3);
 }
@@ -348,7 +315,7 @@ BOOST_AUTO_TEST_CASE( test_file_perf_append )
 // Note that this test should fail when THREAD environment is set to
 // a value > 1 for thread-safety reasons described in the logger_impl_file.hpp.
 // We use default thread count = 1 to avoid the failure.
-BOOST_AUTO_TEST_CASE( test_file_perf_no_mutex )
+BOOST_AUTO_TEST_CASE( test_logger_file_perf_no_mutex )
 {
     run_test("file", MODE_NO_MUTEX, 1);
 }

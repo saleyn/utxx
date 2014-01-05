@@ -91,12 +91,11 @@ bool logger_impl_file::init(const variant_tree& a_config)
         for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
             log_level level = logger::signal_slot_to_level(lvl);
             if ((m_levels & static_cast<int>(level)) != 0)
-                this->m_log_mgr->add_msg_logger(level, msg_binder[lvl],
+                this->add_msg_logger(level,
                     on_msg_delegate_t::from_method<logger_impl_file, &logger_impl_file::log_msg>(this));
         }
         // Install log_bin callback
-        this->m_log_mgr->add_bin_logger(
-            bin_binder,
+        this->add_bin_logger(
             on_bin_delegate_t::from_method<logger_impl_file, &logger_impl_file::log_bin>(this));
     }
     return true;

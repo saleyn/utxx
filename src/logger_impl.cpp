@@ -33,6 +33,40 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+logger_impl::logger_impl()
+    : m_log_mgr(NULL), m_bin_sink_id(-1)
+{
+    for (int i=0; i < NLEVELS; ++i)
+        m_msg_sink_id[i] = -1;
+}
+
+logger_impl::~logger_impl()
+{
+    if (m_log_mgr) {
+        for (int i=0; i < NLEVELS; ++i)
+            if (m_msg_sink_id[i] != -1) {
+                log_level level = logger::signal_slot_to_level(i);
+                m_log_mgr->remove_msg_logger(level, m_msg_sink_id[i]);
+                m_msg_sink_id[i] = -1;
+            }
+        if (m_bin_sink_id != -1) {
+            m_log_mgr->remove_bin_logger(m_bin_sink_id);
+            m_bin_sink_id = -1;
+        }
+    }
+}
+
+void logger_impl::add_msg_logger(log_level level, on_msg_delegate_t subscriber)
+{
+    m_msg_sink_id[logger::level_to_signal_slot(level)] =
+        m_log_mgr->add_msg_logger(level, subscriber);
+}
+
+void logger_impl::add_bin_logger(on_bin_delegate_t subscriber)
+{
+    m_bin_sink_id = m_log_mgr->add_bin_logger(subscriber);
+}
+
 int logger_impl::format_message(
     char* buf, size_t size, bool add_new_line,
     bool a_show_ident, bool a_show_location,

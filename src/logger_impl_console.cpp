@@ -72,7 +72,7 @@ bool logger_impl_console::init(const variant_tree& a_config)
     for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
         log_level level = logger::signal_slot_to_level(lvl);
         if ((all_levels & static_cast<int>(level)) != 0)
-            this->m_log_mgr->add_msg_logger(level, msg_binder[lvl],
+            this->add_msg_logger(level,
                 on_msg_delegate_t::from_method<logger_impl_console, &logger_impl_console::log_msg>(this));
     }
     return true;

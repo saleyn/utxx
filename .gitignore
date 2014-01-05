@@ -10,10 +10,9 @@ Makefile.in
 install
 src/libutil.la
 src/libutil_la*
-test/test_utxx-*
 test/test_utxx
-test/example_repeating_timer-*
 test/example_repeating_timer
+test/example_delegate
 test/generated
 autom4te.cache
 aclocal.m4

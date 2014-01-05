@@ -83,7 +83,7 @@ struct async_logger_traits {
     typedef text_msg<allocator>     msg_type;
     typedef synch::futex            event_type;
     enum {
-          commit_timeout    = 2000  // commit this number of usec
+          commit_timeout    = 1000  // commit this number of usec
         , write_buf_sz      = 256
     };
 };
@@ -119,6 +119,7 @@ protected:
     int                                 m_max_queue_size;
     std::string                         m_filename;
     event_type                          m_event;
+    bool                                m_notify_immediate;
 
     // Invoked by the async thread to flush messages from queue to file
     int  commit(const struct timespec* tsp = NULL);
@@ -133,6 +134,7 @@ public:
     explicit basic_async_logger(const allocator& alloc = allocator())
         : m_allocator(alloc), m_file(NULL), m_head(NULL), m_cancel(false)
         , m_max_queue_size(0)
+        , m_notify_immediate(true)
     {}
 
     ~basic_async_logger() {
@@ -141,12 +143,9 @@ public:
     }
 
     /// Initialize and start asynchronous file writer
-    /// @param filename     - name of the file
-    /// @param max_msg_size - expected maximum message size (used to allocate
-    ///                       the buffer on the stack to format the
-    ///                       output string when calling fwrite function)
-    /// @param mode         - set file access mode
-    int start(const std::string& filename);
+    /// @param a_filename           - name of the file
+    /// @param a_notify_immediate   - whether to notify the I/O thread on write
+    int start(const std::string& filename, bool a_notify_immediate = true);
 
     /// Stop asynchronous file writering thread
     void stop();
@@ -155,6 +154,9 @@ public:
     const std::string&  filename()          const { return m_filename; }
     /// @return max size of the commit queue
     const int           max_queue_size()    const { return m_max_queue_size; }
+    /// @return indicates if async thread must be notified immediately
+    /// when message is written to queue
+    int                 notify_immediate()  const { return m_notify_immediate; }
 
     /// Callback to be called on file I/O error
     boost::function<void (int, const char*)> on_error;
@@ -208,16 +210,18 @@ struct text_file_logger: public basic_async_logger<Traits> {
 //-----------------------------------------------------------------------------
 
 template<typename traits>
-int basic_async_logger<traits>::start(const std::string& filename)
+int basic_async_logger<traits>::
+start(const std::string& filename, bool a_notify_immediate)
 {
     if (m_file)
         return -1;
 
     m_event.reset();
 
-    m_filename  = filename;
-    m_head      = NULL;
-    m_cancel    = false;
+    m_filename          = filename;
+    m_head              = NULL;
+    m_cancel            = false;
+    m_notify_immediate  = a_notify_immediate;
 
     if (!(m_file = fopen(m_filename.c_str(), "a+"))) {
         print_error(-1, strerror(errno), __LINE__);
@@ -346,7 +350,7 @@ int basic_async_logger<traits>::internal_write(const log_msg_type* msg) {
         msg->next( l_last_head );
     } while( !atomic::cas(&m_head, l_last_head, msg) );
 
-    if (!l_last_head)
+    if (!l_last_head && m_notify_immediate)
         m_event.signal();
 
     ASYNC_TRACE(("internal_write - cur head: %p, prev head: %p\n",

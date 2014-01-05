@@ -78,8 +78,8 @@ struct logger_impl {
                 - log<(int)LEVEL_TRACE, 2>::value + 1
     };
 
-    logger_impl() : m_log_mgr(NULL) {}
-    virtual ~logger_impl() {}
+    logger_impl();
+    virtual ~logger_impl();
 
     /// Name of the logger
     virtual const std::string& name() const = 0;
@@ -124,12 +124,22 @@ struct logger_impl {
               size_t      /* size */) throw(std::runtime_error)
     > on_bin_delegate_t;
 
+    /// To be called by <logger_impl> child to register a delegate to be
+    /// invoked on a call to LOG_*() macros.
+    /// @return Id assigned to the message logger, which is to be used
+    ///         in the remove_msg_logger call to release the event sink.
+    void add_msg_logger(log_level level, on_msg_delegate_t subscriber);
+
+    /// To be called by <logger_impl> child to register a delegate to be
+    /// invoked on a call to logger::log(msg, size).
+    /// @return Id assigned to the message logger, which is to be used
+    ///         in the remove_msg_logger call to release the event sink.
+    void add_bin_logger(on_bin_delegate_t subscriber);
+
 protected:
     logger* m_log_mgr;
-
-    // Binders for binding event_source's to event_sink's
-    event_binder<on_msg_delegate_t> msg_binder[NLEVELS];
-    event_binder<on_bin_delegate_t> bin_binder;
+    int     m_msg_sink_id[NLEVELS]; // Message sink identifiers in the loggers' signal
+    int     m_bin_sink_id;          // Message sink identifier in the loggers' signal
 };
 
 /// Log implementation manager. It handles registration of
@@ -140,9 +150,9 @@ struct logger_impl_mgr {
     typedef boost::function<logger_impl*(const char*)>  impl_callback_t;
     typedef std::map<std::string, impl_callback_t>      impl_map_t;
 
-    static logger_impl_mgr& instance() { 
+    static logger_impl_mgr& instance() {
         return singleton<logger_impl_mgr>::instance();
-    } 
+    }
 
     void register_impl(const char* config_name, impl_callback_t& factory);
     void unregister_impl(const char* config_name);

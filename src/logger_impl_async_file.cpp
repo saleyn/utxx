@@ -111,13 +111,12 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
     for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
         log_level level = logger::signal_slot_to_level(lvl);
         if ((m_levels & static_cast<int>(level)) != 0)
-            this->m_log_mgr->add_msg_logger(level, msg_binder[lvl],
+            this->add_msg_logger(level,
                 on_msg_delegate_t::from_method<
                     logger_impl_async_file, &logger_impl_async_file::log_msg>(this));
     }
     // Install log_bin callback
-    this->m_log_mgr->add_bin_logger(
-        bin_binder,
+    this->add_bin_logger(
         on_bin_delegate_t::from_method<
             logger_impl_async_file, &logger_impl_async_file::log_bin>(this));
 
@@ -153,7 +152,7 @@ void logger_impl_async_file::operator()()
 
 void logger_impl_async_file::log_msg(
     const log_msg_info& info, const timestamp& a_tv, const char* fmt, va_list args)
-    throw(std::runtime_error) 
+    throw(std::runtime_error)
 {
     char buf[logger::MAX_MESSAGE_SIZE];
     int len = logger_impl::format_message(buf, sizeof(buf), true, 

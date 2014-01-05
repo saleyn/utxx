@@ -102,14 +102,14 @@ BOOST_AUTO_TEST_CASE( test_async_logger_perf )
 BOOST_AUTO_TEST_CASE( test_async_logger_append )
 {
     enum { ITERATIONS = 10 };
-    
+
     {
         unlink(s_filename);
 
         text_file_logger<> l_logger;
 
         for (int k=0; k < 2; k++) {
-            
+
             int ok = l_logger.start(s_filename);
             BOOST_REQUIRE ( ok == 0 );
 
@@ -118,20 +118,20 @@ BOOST_AUTO_TEST_CASE( test_async_logger_append )
 
             l_logger.stop();
         }
-        
+
         std::ifstream file(s_filename, std::ios::in);
         for (int k = 0; k < 2; k++)
             for (int i = 0; i < ITERATIONS; i++) {
                 std::string s;
                 std::getline(file, s);
                 BOOST_REQUIRE( ! file.fail() );
-                
+
                 char buf[256];
                 sprintf(buf, s_str1, i);
                 s += '\n';
                 BOOST_REQUIRE_EQUAL( s, buf );
             }
-        
+
         {
             std::string s;
             std::getline(file, s);
@@ -147,22 +147,27 @@ class producer {
     int m_instance;
     int m_iterations;
     text_file_logger<>& m_logger;
+    perf_histogram* m_histogram;
 public:
-    producer(text_file_logger<>& a_logger, int n, int iter) 
-        : m_instance(n), m_iterations(iter), m_logger(a_logger)
+    producer(text_file_logger<>& a_logger, int n, int iter, perf_histogram* h)
+        : m_instance(n), m_iterations(iter), m_logger(a_logger), m_histogram(h)
     {}
 
     void operator() () {
         std::stringstream str;
         str << m_instance << "| " << s_str1;
 
+        m_histogram->reset();
+
         for (int i = 0; i < m_iterations; i++) {
+            m_histogram->start();
             if (m_logger.fwrite(str.str().c_str(), i) < 0) {
                 std::cerr << "Thread " << m_instance << " iter "
                           << m_iterations << " error writing to file ("
                           << i+1 << "): " << strerror(errno) << std::endl;
                 return;
             }
+            m_histogram->stop();
             if (i % 4 == 0)
                 ::sched_yield();
         }
@@ -172,30 +177,39 @@ public:
 //-----------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
 {
-    const int threads = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 2;
+    const int threads   = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 2;
+    const int immediate = !::getenv("NO_WAKEUP");
 
     ::unlink(s_filename);
 
     text_file_logger<> l_logger;
-    
-    int ok = l_logger.start(s_filename);
+
+    int ok = l_logger.start(s_filename, immediate);
     BOOST_REQUIRE ( ok == 0 );
+
+    perf_histogram totals("Total async_file_logger performance");
 
     {
         boost::shared_ptr<boost::thread> l_threads[threads];
+        perf_histogram                   l_histograms[threads];
         for (int i=0; i < threads; i++)
             l_threads[i] = boost::shared_ptr<boost::thread>(
-                new boost::thread(producer(l_logger, i+1, ITERATIONS)));
+                new boost::thread(producer(l_logger, i+1, ITERATIONS, &l_histograms[i])));
 
-        for (int i=0; i < threads; i++)
+        for (int i=0; i < threads; i++) {
             (*l_threads)->join();
+            totals += l_histograms[i];
+        }
     }
 
     l_logger.stop();
 
+    if (::getenv("VERBOSE"))
+        totals.dump(std::cout);
+
     int MAX = threads;
     int cur_count[MAX];
-    
+
     bzero(cur_count, sizeof(cur_count));
 
     std::ifstream file(s_filename, std::ios::in);
@@ -203,7 +217,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
         std::string s;
         std::getline(file, s);
         BOOST_REQUIRE( ! file.fail() );
-        
+
         size_t n1 = s.find_first_of('|');
         BOOST_REQUIRE( n1 != std::string::npos );
 

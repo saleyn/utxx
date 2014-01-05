@@ -99,7 +99,7 @@ const char* logger::log_level_to_str(log_level level)
         case LEVEL_LOG      : return "LOG";
         default             : return "UNDEFINED";
     }
-}       
+}
 
 int logger::level_to_signal_slot(log_level level) throw(badarg_error)
 {
@@ -271,15 +271,25 @@ void logger::set_min_level_filter(log_level a_level) {
     m_level_filter = static_cast<uint32_t>(~n);
 }
 
-void logger::add_msg_logger(log_level level,
-    event_binder<on_msg_delegate_t>& binder, on_msg_delegate_t subscriber)
+int logger::add_msg_logger(log_level level, on_msg_delegate_t subscriber)
 {
-    binder.bind(m_sig_msg[level_to_signal_slot(level)], subscriber);
+    return m_sig_msg[level_to_signal_slot(level)].connect(subscriber);
 }
 
-void logger::add_bin_logger(event_binder<on_bin_delegate_t>& binder, on_bin_delegate_t subscriber)
+int logger::add_bin_logger(on_bin_delegate_t subscriber)
 {
-    binder.bind(m_sig_bin, subscriber);
+    return m_sig_bin.connect(subscriber);
+}
+
+void logger::remove_msg_logger(log_level a_lvl, int a_id)
+{
+    m_sig_msg[level_to_signal_slot(a_lvl)].disconnect(a_id);
+}
+
+/// To be called by <logger_impl> child to unregister a delegate
+void logger::remove_bin_logger(int a_id)
+{
+    m_sig_bin.disconnect(a_id);
 }
 
 std::ostream& logger::dump(std::ostream& out) const
