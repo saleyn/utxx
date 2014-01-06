@@ -163,7 +163,8 @@ public:
                 tot += pcnt;
                 out << "    " << std::setw(6) << from_bucket(i) << "us = "
                     << std::setw(9) << m_latencies[i] 
-                    << '(' << std::setprecision(3) << pcnt << ") (total: "
+                    << '(' << std::setw(6)
+                    << std::setprecision(3) << pcnt << ") (total: "
                     << tot << ')' << std::endl;
             }
     }
