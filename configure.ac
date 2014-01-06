@@ -72,7 +72,7 @@ AC_CHECK_FUNCS(clock_gettime, [], [
   ])
 ])
 
-AX_BOOST_BASE([1.41.0], [], [AC_MSG_ERROR("BOOST library version >= 1.41.0 not found!")])
+AX_BOOST_BASE([1.49.0], [], [AC_MSG_ERROR("BOOST library version >= 1.49.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_ASIO
 AX_BOOST_DATE_TIME
@@ -145,7 +145,8 @@ AC_OUTPUT
 echo
 echo "========================================================================"
 echo "   CXXFLAGS: ${CXXFLAGS}" $BOOST_CPPFLAGS
-echo "      BOOST: ${BOOST_ROOT}"
+echo "      BOOST: (version: $(awk '/^#.*BOOST_LIB_VERSION/{print $3}' \
+                    ${BOOST_ROOT}/include/boost/version.hpp | xargs)) ${BOOST_ROOT}"
 echo "       UTIL: ${UTIL_ROOT}"
 echo "------------------------------------------------------------------------"
 echo "             Configuration completed successfully!                      "
