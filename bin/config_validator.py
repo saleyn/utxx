@@ -11,20 +11,20 @@ import shutil
 
 class RenamedTemporaryFile(object):
     """
-    A temporary file object which will be renamed to the specified
+    A temporary file which will be renamed to the specified
     path on exit.
     """
-    def __init__(self, final_path, **kwargs):
-        tmpfile_dir = kwargs.pop('dir', None)
+    def __init__(self, target_filename, **kwargs):
+        tmpdir = kwargs.pop('dir', None)
 
         # Put temporary file in the same directory as the location for the
         # final file so that an atomic move into place can occur.
 
-        if tmpfile_dir is None:
-            tmpfile_dir = os.path.dirname(final_path)
+        if tmpdir is None:
+            tmpdir = os.path.dirname(target_filename)
 
-        self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpfile_dir, **kwargs)
-        self.final_path = final_path
+        self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpdir, **kwargs)
+        self.final_path = target_filename
 
     def __getattr__(self, attr):
         """
@@ -107,6 +107,8 @@ def main():
         f.write("    using namespace utxx;\n")
 
         incl_files = sorted(set(root.xpath("//include/@file")))
+        s = "document('%s')" % incl_files[0]
+        t = root.xpath(s)
         inc_opts = [root.xpath("document('%s')//@name" % fn) for fn in incl_files]
         all_opts = root.xpath("*//@name") 
         print(inc_opts)
