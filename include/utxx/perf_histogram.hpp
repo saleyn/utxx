@@ -159,16 +159,19 @@ public:
         double tot = 0;
         for (int i = 0; i < BUCKETS; i++)
             if (m_latencies[i] > 0 && (a_filter < 0 || from_bucket(i) < a_filter)) {
-                double pcnt = 100.0 * (double)m_latencies[i] / m_count;
+                static const int s_gwidth = 30;
+                double pcnt  = 100.0 * (double)m_latencies[i] / m_count;
+                int    gauge = (int)(s_gwidth*pcnt/100);
                 tot += pcnt;
                 out << "    " << std::setw(6) << from_bucket(i) << "us = "
                     << std::setw(9) << m_latencies[i] 
                     << '(' << std::setw(6) << std::setprecision(3)
                     << pcnt << ") (total: "
                     << std::setw(7) << std::setprecision(3)
-                    << tot << ') '
-                    << std::string((int)(30*pcnt/100), '*')
-                    << std::endl;
+                    << tot << ") |"
+                    << std::string(gauge, '*')
+                    << std::string(s_gwidth-gauge, ' ')
+                    << '|' << std::endl;
             }
     }
 };
