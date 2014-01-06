@@ -6,6 +6,6 @@ before_script:
   - sudo apt-get install -qq libxslt1.1 xsltproc autoconf-archive libboost-all-dev
   - ./bootstrap
   - ./configure
-script: make -j $(grep MHz /proc/cpuinfo | wc -l) debug=true optimize=3
+script: make debug=true optimize=3
 branches:
   only: master
