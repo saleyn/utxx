@@ -25,6 +25,7 @@ namespace utxx
 #endif
 
 #include <utxx/delegate/detail/delegate_list.hpp>
+#include <utxx/delegate/FastDelegateBind.hpp>
 
 #undef SRUTXX_DELEGATE_CALLTYPE
 

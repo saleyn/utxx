@@ -37,13 +37,13 @@
 //      using boost::bind;
 //      bind(&Foo:func, &foo, _1, _2);
 // we should be able to replace the "using" with...
-//      using fastdelegate::bind;
+//      using utxx::bind;
 // and everything should work fine...
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef FASTDELEGATE_ALLOW_FUNCTION_TYPE_SYNTAX
 
-namespace fastdelegate {
+namespace utxx {
 
 //N=0
 template <class X, class Y, class RetType>
@@ -235,9 +235,9 @@ bind(
 }
 
 
-#endif //FASTDELEGATE_ALLOW_FUNCTION_TYPE_SYNTAX
+} // namespace utxx
 
-} // namespace fastdelegate
+#endif //FASTDELEGATE_ALLOW_FUNCTION_TYPE_SYNTAX
 
 #endif // !defined(FASTDELEGATEBIND_H)
 

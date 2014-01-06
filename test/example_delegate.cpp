@@ -52,7 +52,8 @@ struct Test {
                 source(delegate_t::invoker_type("binder %d\n", 1));
             boost::timer::cpu_times elapsed = t.elapsed();
             std::cout << "binder speed: "
-                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000) << std::endl;
+                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
+                << " us/call" << std::endl;
         }
     }
 
@@ -79,7 +80,8 @@ struct Test {
                 signal(delegate_t::invoker_type("signal %d\n", 1));
             boost::timer::cpu_times elapsed = t.elapsed();
             std::cout << "signal speed: "
-                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000) << std::endl;
+                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
+                << " us/call" << std::endl;
         }
     }
 
@@ -103,17 +105,52 @@ struct Test {
                 sig("boost::signal2 %d\n", 1);
             boost::timer::cpu_times elapsed = t.elapsed();
             std::cout << "boost::signals2 speed: "
-                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000) << std::endl;
+                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
+                << " us/call" << std::endl;
         }
     }
 
+    void test_bind(int ITERS, int a_mask, bool a_hist) {
+        typedef boost::function<void (const char*, int)> bind_type;
+        typedef typename std::vector<bind_type*>::iterator bind_iter;
+        std::vector<bind_type*> sig;
+        if (a_mask & (1 << 0))
+            sig.push_back(new bind_type(boost::bind(&Test::operator(), this, _1, _2)));
+        if (a_mask & (1 << 1))
+            sig.push_back(new bind_type(&Test::ms));
+        if (a_mask & (1 << 2))
+            sig.push_back(new bind_type(&m));
+
+        if (a_hist) {
+            utxx::perf_histogram h("boost::bind");
+            for (int i = 0; i < ITERS; ++i) {
+                utxx::perf_histogram::sample s(h);
+                for (bind_iter it=sig.begin(), e=sig.end(); it != e; ++it)
+                   if (**it) (**it)("boost::bind %d\n", 1);
+            }
+            h.dump(std::cout, 100);
+        } else {
+            boost::timer::auto_cpu_timer t;
+            for (int i = 0; i < ITERS; ++i) {
+                for (bind_iter it=sig.begin(), e=sig.end(); it != e; ++it)
+                   if (**it) (**it)("boost::bind %d\n", 1);
+            }
+            boost::timer::cpu_times elapsed = t.elapsed();
+            std::cout << "boost::bind speed: "
+                << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
+                << " us/call" << std::endl;
+        }
+        
+        for (bind_iter it=sig.begin(), e=sig.end(); it != e; ++it)
+            delete (*it);
+    }
 };
 
 int main(int argc, char* argv[])
 {
     std::cout
         << "This program measures performance of utxx::signal vs boost::signals2\n\n"
-        << "Usage: " << argv[0] << " TimingMethod Tests\n"
+        << "Usage: [ITERATIONS=Integer]" << argv[0] << " TimingMethod Tests\n"
         << "    TimingMethod    - UseHistogram(1) | UseGenericTimer(0)\n"
         << "    Tests           - Integer mask of which methods to profile:\n"
         << "                        1 - member function\n"
@@ -128,9 +165,10 @@ int main(int argc, char* argv[])
 
     std::cout << "Iterations: " << ITERS << std::endl;
 
-    { Test t; t.test_binder(ITERS, mask, hist);  }
-    { Test t; t.test_signal(ITERS, mask, hist);  }
-    { Test t; t.test_signals2(ITERS, mask, hist);}
+    { Test t; t.test_binder     (ITERS, mask, hist); }
+    { Test t; t.test_signal     (ITERS, mask, hist); }
+    { Test t; t.test_bind       (ITERS, mask, hist); }
+    { Test t; t.test_signals2   (ITERS, mask, hist); }
 
     return 0;
 }
