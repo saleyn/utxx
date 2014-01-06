@@ -208,8 +208,11 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
 
     l_logger.stop();
 
+    std::stringstream s;
+    s << "Max queue size: " << l_logger.max_queue_size() << std::endl;
     if (::getenv("VERBOSE"))
-        totals.dump(std::cout);
+        totals.dump(s);
+    BOOST_MESSAGE(s.str());
 
     int MAX = threads;
     int cur_count[MAX];

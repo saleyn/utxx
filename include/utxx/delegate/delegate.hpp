@@ -3,8 +3,8 @@
 
 	Fast delegate compatible with C++ Standard.
 */
-#ifndef SRUTXX_DELEGATE_INCLUDED
-#define SRUTXX_DELEGATE_INCLUDED
+#ifndef _UTXX_DELEGATE_HPP__
+#define _UTXX_DELEGATE_HPP__
 
 #if !defined(SRUTXX_DELEGATE_PREFERRED_SYNTAX) && !defined(NO_SRUTXX_DELEGATE_PREFERRED_SYNTAX)
 #define SRUTXX_DELEGATE_PREFERRED_SYNTAX
@@ -28,4 +28,4 @@ namespace utxx
 
 #undef SRUTXX_DELEGATE_CALLTYPE
 
-#endif//SRUTXX_DELEGATE_INCLUDED
+#endif//_UTXX_DELEGATE_HPP__

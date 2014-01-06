@@ -15,8 +15,8 @@
 //	1.4 Dec 2004. Initial release as part of FastDelegate 1.4.
 
 
-#ifndef FASTDELEGATEBIND_H
-#define FASTDELEGATEBIND_H
+#ifndef _UTXX_FAST_DELEGATE_BIND_HPP_
+#define _UTXX_FAST_DELEGATE_BIND_HPP_
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
@@ -37,13 +37,13 @@
 //      using boost::bind;
 //      bind(&Foo:func, &foo, _1, _2);
 // we should be able to replace the "using" with...
-//      using fastdelegate::bind;
+//      using utxx::bind;
 // and everything should work fine...
 ////////////////////////////////////////////////////////////////////////////////
 
 #ifdef FASTDELEGATE_ALLOW_FUNCTION_TYPE_SYNTAX
 
-namespace fastdelegate {
+namespace utxx {
 
 //N=0
 template <class X, class Y, class RetType>
@@ -235,9 +235,9 @@ bind(
 }
 
 
+} // namespace utxx
+
 #endif //FASTDELEGATE_ALLOW_FUNCTION_TYPE_SYNTAX
 
-} // namespace fastdelegate
-
-#endif // !defined(FASTDELEGATEBIND_H)
+#endif // !defined(_UTXX_FAST_DELEGATE_BIND_HPP_)
 
