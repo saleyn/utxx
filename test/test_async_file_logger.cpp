@@ -162,9 +162,13 @@ public:
         for (int i = 0; i < m_iterations; i++) {
             m_histogram->start();
             if (m_logger.fwrite(str.str().c_str(), i) < 0) {
-                std::cerr << "Thread " << m_instance << " iter "
-                          << m_iterations << " error writing to file ("
-                          << i+1 << "): " << strerror(errno) << std::endl;
+                std::stringstream s;
+                s << "Thread " << m_instance << " iter "
+                  << m_iterations << " error writing to file ("
+                  << (i+1) << ", max_q_size: "
+                  << m_logger.max_queue_size()
+                  << "): " << strerror(errno) << std::endl;
+                std::cerr << s.str();
                 return;
             }
             m_histogram->stop();
