@@ -15,8 +15,8 @@
 //	1.4 Dec 2004. Initial release as part of FastDelegate 1.4.
 
 
-#ifndef FASTDELEGATEBIND_H
-#define FASTDELEGATEBIND_H
+#ifndef _UTXX_FAST_DELEGATE_BIND_HPP_
+#define _UTXX_FAST_DELEGATE_BIND_HPP_
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
@@ -239,5 +239,5 @@ bind(
 
 #endif //FASTDELEGATE_ALLOW_FUNCTION_TYPE_SYNTAX
 
-#endif // !defined(FASTDELEGATEBIND_H)
+#endif // !defined(_UTXX_FAST_DELEGATE_BIND_HPP_)
 

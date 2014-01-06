@@ -51,7 +51,9 @@ struct Test {
             for (int i = 0; i < ITERS; ++i)
                 source(delegate_t::invoker_type("binder %d\n", 1));
             boost::timer::cpu_times elapsed = t.elapsed();
-            std::cout << "binder speed: "
+            std::cout << std::left << std::setw(25)
+                << "binder speed: "
+                << std::setprecision(4)
                 << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
                 << " us/call" << std::endl;
         }
@@ -79,7 +81,9 @@ struct Test {
             for (int i = 0; i < ITERS; ++i)
                 signal(delegate_t::invoker_type("signal %d\n", 1));
             boost::timer::cpu_times elapsed = t.elapsed();
-            std::cout << "signal speed: "
+            std::cout << std::left << std::setw(25)
+                << "signal speed: "
+                << std::setprecision(4)
                 << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
                 << " us/call" << std::endl;
         }
@@ -104,7 +108,9 @@ struct Test {
             for (int i = 0; i < ITERS; ++i)
                 sig("boost::signal2 %d\n", 1);
             boost::timer::cpu_times elapsed = t.elapsed();
-            std::cout << "boost::signals2 speed: "
+            std::cout << std::left << std::setw(25)
+                << "boost::signals2 speed: "
+                << std::setprecision(4)
                 << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
                 << " us/call" << std::endl;
         }
@@ -136,7 +142,9 @@ struct Test {
                    if (**it) (**it)("boost::bind %d\n", 1);
             }
             boost::timer::cpu_times elapsed = t.elapsed();
-            std::cout << "boost::bind speed: "
+            std::cout << std::left << std::setw(25)
+                << "boost::bind speed: "
+                << std::setprecision(4)
                 << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
                 << " us/call" << std::endl;
         }

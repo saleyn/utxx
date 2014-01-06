@@ -139,7 +139,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-namespace fastdelegate {
+namespace utxx {
 namespace detail {	// we'll hide the implementation details in a nested namespace.
 
 //		implicit_cast< >
@@ -2102,7 +2102,7 @@ FastDelegate8<Param1, Param2, Param3, Param4, Param5, Param6, Param7, Param8, FA
  // clean up after ourselves...
 #undef FASTDLGT_RETTYPE
 
-} // namespace fastdelegate
+} // namespace utxx
 
 #endif // !defined(FASTDELEGATE_H)
 
