@@ -145,7 +145,8 @@ AC_OUTPUT
 echo
 echo "========================================================================"
 echo "   CXXFLAGS: ${CXXFLAGS}" $BOOST_CPPFLAGS
-echo "      BOOST: ${BOOST_ROOT}"
+echo "      BOOST: (version: $(awk '/^#.*BOOST_LIB_VERSION/{print $3}' \
+                    ${BOOST_ROOT}/include/boost/version.hpp | xargs)) ${BOOST_ROOT}"
 echo "       UTIL: ${UTIL_ROOT}"
 echo "------------------------------------------------------------------------"
 echo "             Configuration completed successfully!                      "

@@ -105,7 +105,7 @@ struct producer {
 
             if (queue.enqueue(p, NULL) == 0) {
                 if (verbosity::level() >= utxx::VERBOSE_TRACE)
-                    printf(buf);
+                    puts(buf);
                 p = NULL;
             }
         }
