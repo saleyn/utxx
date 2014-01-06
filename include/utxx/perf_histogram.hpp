@@ -120,6 +120,8 @@ public:
         static const double fraction = 1 / 1000000000.0;
         double diff = (double)(now.tv_sec  - m_last_start.tv_sec)
                     + (double)(now.tv_nsec - m_last_start.tv_nsec) * fraction;
+        if (diff < 0)
+            return;
         if (m_minTime > diff) m_minTime = diff;
         if (m_maxTime < diff) m_maxTime = diff;
         m_sumTime += diff;

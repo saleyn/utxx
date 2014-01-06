@@ -23,7 +23,7 @@ AM_CONDITIONAL([Ix86], [case x$host_cpu in xi?86) test -n a;; *) test;; esac])
 
 AC_ARG_VAR([ERLC_FLAGS], [general flags to prepend to ERLC_FLAGS])
 
-CXXFLAGS="${CXXFLAGS% } -MMD"
+CXXFLAGS="${CXXFLAGS% } -MMD -D_REENTRANT"
 
 AC_ARG_ENABLE(debug,
      AC_HELP_STRING([--enable-debug],[enable debug [[default=yes]]]),
