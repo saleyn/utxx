@@ -167,7 +167,7 @@ public:
                     << pcnt << ") (total: "
                     << std::setw(7) << std::setprecision(3)
                     << tot << ') '
-                    << std::string('*', (int)(30*pcnt/100))
+                    << std::string((int)(30*pcnt/100), '*')
                     << std::endl;
             }
     }
