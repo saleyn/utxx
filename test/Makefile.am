@@ -96,7 +96,7 @@ example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
 example_delegate_SOURCES	= example_delegate.cpp
 example_delegate_CPPFLAGS 	= $(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
 					  -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
-example_delegate_LDFLAGS     = $(BOOST_LDFLAGS) \
+example_delegate_LDFLAGS     = $(BOOST_LDFLAGS) -lrt \
 					$(BOOST_SYSTEM_LIB) \
 					$(BOOST_TIMER_LIB)
 
