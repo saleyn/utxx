@@ -1,0 +1,16 @@
+<!-- 
+    Configuration validation framework test case input for config_validator.xsl
+
+    Copyright (C) 2012 Serge Aleynikov <saleyn@gmail.com>
+    Created: 2012-01-13
+-->
+
+<config>
+    <include file="abcde.xml"/>
+    <option name="section">
+        <option name="location" val_type="int">
+            <value val="abcde_val"/>
+        </option>
+    </option>
+    <option name="tmp_str" val_type="string" macros="env" default="$TMP"/>
+</config>

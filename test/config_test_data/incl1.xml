@@ -1,0 +1,5 @@
+<config namespace="incl1" name="cfg_validator">
+    <option name="section">
+        <include file="incl3.xml"/>
+    </option>
+</config>

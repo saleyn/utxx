@@ -83,7 +83,7 @@ class logger_impl_async_file: public logger_impl {
         , m_mode(0644), m_fd(-1), m_show_location(true), m_show_ident(false)
         , m_terminated(false), m_barrier(NULL), m_thread(NULL)
     {
-        m_timeout.tv_sec = 1; m_timeout.tv_nsec = 0;
+        m_timeout.tv_sec = 2; m_timeout.tv_nsec = 0;
     }
 
     struct async_data : public stack_t::node_t {

@@ -1,0 +1,11 @@
+<config namespace="incl0" name="cfg_validator">
+    <option name="section1">
+        <include file="incl1.xml"/>
+        <include file="incl2.xml"/>
+    </option>
+    <option name="section2">
+        <copy path="../../option[@name = 'section1']"/>
+        <include file="incl3.xml"/>
+        <include file="incl4.xml"/>
+    </option>
+</config>

@@ -6,16 +6,23 @@
 -->
 
 <config namespace="test" name="cfg_validator">
+    <copy path="../option[@name='num1']"/>
+    <option name="num1">
+        <copy path="../../option[@name='num2']"/>
+    </option>
+    <option name="num2">
+        <copy path="../../option[@name='num3']"/>
+    </option>
+    <option name="num3">
+        <copy path="../../option[@name='num4']"/>
+    </option>
+    <option name="num4"/>
     <include file="abc.xml"/>
 
     <option name="address" val_type="string" desc="Sample string entry"
-        default="123.124.125.012"/>
-    <option name="enabled" val_type="bool" desc="Sample bool entry"
-        default="true"/>
-    <option name="duration" val_type="int" desc="Sample required int entry"
-        min="10" max="60"/>
-    <option name="cost" val_type="float" desc="Sample float entry"
-        default="1.5" min="0.0"/>
+        default="123.124.125.012">
+        <copy path="../../option[@name='tmp_str']"/>
+    </option>
     <option name="country" val_type="string"
         desc="Sample choice required entry" unique="false">
         <value val="US"/>   <!-- restricts option's values -->
@@ -25,15 +32,20 @@
             <name val="ARCA"/>
             <name val="NSDQ"/>
             <option name="address" val_type="string" desc="Server address"/>
+            <copy path="/config/option[@name = 'address']"/>
         </option>
     </option>
-    <option name="section">
-        <option name="location" val_type="int"/>
+    <option name="sec0">
+        <option name="location" val_type="int">
+        </option>
     </option>
-    <option name="section2" required="false">
+    <option name="sec1" required="false">
         <option name="abc" val_type="string" default="x"/>
+        <copy path="/config/option[@name = 'country']/option[@name = 'connection']"/>
         <include file="abc.xml"/>
         <include file="abcd.xml"/>
     </option>
-    <option name="tmp_str" val_type="string" macros="env" default="$TMP"/>
+    <option name="tmp_str" val_type="string" macros="env" default="$TMP">
+        <copy path="../../option[@name='sec0']"/>
+    </option>
 </config>

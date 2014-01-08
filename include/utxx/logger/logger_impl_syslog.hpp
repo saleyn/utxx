@@ -68,7 +68,6 @@ class logger_impl_syslog: public logger_impl {
 
     logger_impl_syslog(const char* a_name)
         : m_name(a_name), m_levels(LEVEL_NO_DEBUG & ~LEVEL_LOG)
-        , m_show_pid(true)
     {}
 
     void finalize() {

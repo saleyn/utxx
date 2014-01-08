@@ -3,8 +3,11 @@ gmon.out
 *.la
 *.lo
 *.swp
+*.pyc
+*.iml
 .deps
 .libs
+log
 Makefile
 Makefile.in
 install
