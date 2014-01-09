@@ -84,7 +84,9 @@
 ///                       a value. Otherwise the option is optional.
 ///     - <tt>min</tt> -  min value of the option (valid only for int/float).
 ///     - <tt>max</tt> -  max value of the option (valid only for int/float).
-///     - <tt>macros</tt> - perform environment substitution in the value.
+///     - <tt>min_length</tt> - min value length (valid only for string type).
+///     - <tt>max_length</tt> - max value length (valid only for string type).
+///     - <tt>macros</tt>     - perform environment substitution in the value.
 ///                       Only valid for string type. Valid values are:
 ///                       'false', 'true' (same as 'env'),
 ///                       'env', 'env-date', 'env-date-utc'.

@@ -52,12 +52,16 @@ TEST_UTXX_SRCS = \
 example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp
 
-generated/test_config_validator.generated.hpp: test_config_validator.xml \
-		$(srcdir)/../include/@PACKAGE@/config_validator.xsl generated
-	$(XSLTPROC) --stringparam user \
-		"$(shell awk -F: '$$1 == u { print $$5 }' u=$(USER) /etc/passwd)" \
-		--stringparam file "$(notdir $@)" \
-		--stringparam now "$(shell date +'%Y-%m-%d')" $(word 2,$^) $< > $@
+generated/test_config_validator.generated.hpp: test_config_validator.xml generated
+	$(PYTHON) ../bin/config_validator_codegen.py -f $< -o $@ --overwrite
+
+# XSLT transform is deprecated
+#generated/test_config_validator.generated.hpp: test_config_validator.xml \
+#		$(srcdir)/../include/@PACKAGE@/config_validator.xsl generated
+#	$(XSLTPROC) --stringparam user \
+#		"$(shell awk -F: '$$1 == u { print $$5 }' u=$(USER) /etc/passwd)" \
+#		--stringparam file "$(notdir $@)" \
+#		--stringparam now "$(shell date +'%Y-%m-%d')" $(word 2,$^) $< > $@
 
 test_config_validator.cpp: generated/test_config_validator.generated.hpp
 
@@ -104,4 +108,4 @@ example_delegate_LDFLAGS     = $(BOOST_LDFLAGS) -lrt \
 #test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
 #test_cm_LDFLAGS     = $(BOOST_LDFLAGS)
 
-EXTRA_DIST = test_config_validator.xml
+EXTRA_DIST = test_config_validator.xml ../bin/config_validator_codegen.py

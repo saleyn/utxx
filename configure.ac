@@ -56,7 +56,11 @@ LT_INIT([disable-static])
 # Checks for programs.
 AC_PROG_CXX
 AC_PROG_SED
-AX_PROG_XSLTPROC
+#AX_PROG_XSLTPROC
+AM_PATH_PYTHON
+AX_PYTHON_MODULE(lxml.etree, fatal)
+
+# Make sure Python package python-lxml is installed
 
 dnl AC_CONFIG_SRCDIR([src/common.cpp])
 AC_CONFIG_HEADERS([config.h])

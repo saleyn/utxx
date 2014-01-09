@@ -30,6 +30,7 @@ libutxx_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
 
 nobase_include_HEADERS = \
 	$(sort ../include/@PACKAGE@/config_validator.xsl \
+		   ../bin/config_validator_codegen.py \
 		$(foreach d, \
 			$(shell find ../include/@PACKAGE@ -type d -print),\
 		  	$(wildcard $(d)/*.?pp)))

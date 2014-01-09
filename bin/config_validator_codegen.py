@@ -1,8 +1,25 @@
 #!/usr/bin/python
+"""
+config_validator_codegen.py
+--------===================
 
+This file generates C++ header file for configuration options
+of an application defined in the corresponding XML file.
+
+See utxx/config_validator.hpp header for description of the
+XML file format.
+
+Example usage:
+    $ config_validator_codegen.py -f config_options.xml \
+        -d ${HOME}/myproject/spec:${HOME}/myproj2/spec \
+        -o . --overwrite --email obama@gmail.com
+
+    XML file example: utxx/test/test_config_validator.xml
+"""
 import argparse
 import lxml.etree as et
-import os
+import os.path
+import commands
 import pwd
 import tempfile
 import time
@@ -101,8 +118,11 @@ class ConfigGenerator(object):
     """
 
     def __init__(self, args):
-        self.filename   = args.filename
-        self.outdir     = args.outdir
+        dir = os.path.dirname(args.filename)
+        self.filename   = os.path.basename(args.filename)
+        self.dirs       = args.dirs.split(':') if args.dirs else []
+        if dir: self.dirs.insert(0, dir)
+        self.outpath    = args.outpath
         self.verbosity  = args.verbosity
         self.overwrite  = args.overwrite
         self.user       = args.user
@@ -120,10 +140,16 @@ class ConfigGenerator(object):
 
     def parse_xml(self, filename):
         try:
-            return et.parse(filename).getroot()
-        except:
-            print >> sys.stderr, sys.exc_info()[1]
-            exit(1)
+            for d in self.dirs:
+                f = os.path.join(d, filename)
+                if os.path.isfile(f):
+                    return et.parse(f).getroot()
+            if os.path.isfile(filename):
+                return et.parse(filename).getroot()
+            raise Exception("File '%s' not found in:\n%s\n" % (filename, "\n".join(dirs)))
+        except Exception as e:
+            print >> sys.stderr, e.message
+            exit(10)
 
     def copy_and_check_loops(self, root, skip, visited):
         copies = root.xpath(".//copy")
@@ -153,10 +179,10 @@ class ConfigGenerator(object):
                 print >> sys.stderr, \
                     "Node '%s', has path %s that resolves to no nodes!\n  Skip: [%s]" % \
                     (node_path_to_string(tn,ids='_ID_'), path, ",".join(skip))
-                exit(1)
+                exit(2)
 
             self.debug(lambda:
-                "Scanning node %s [path=%s]\n%s" %
+                'Scanning node %s [path=%s]\n%s' %
                     (node_path_to_string(tn,ids='_ID_'), path,
                      "".join([node_to_string(i,ids='_ID_')+'\n' for i in nodes])),
                 verbosity=2)
@@ -166,7 +192,7 @@ class ConfigGenerator(object):
 
             for n in nodes:
                 self.debug(lambda:
-                    "Jumping %s[%s -> %s]: %s" %
+                    'Jumping %s[%s -> %s]: %s' %
                     (root.base,
                      node_to_string(tn,with_offset=False,ids='_ID_'),
                      node_to_string(n,with_offset=False,ids='_ID_'),
@@ -202,7 +228,7 @@ class ConfigGenerator(object):
         for n in sorted(set(root.xpath(".//include"))):
             fn = unicode(n.attrib['file'])
             self.debug(lambda:
-                "Checking %s/%s: %s" %(root.base, fn, [i.encode('utf8') for i in acc]))
+                "Checking %s/%s: %s" % (root.base, fn, [i.encode('utf8') for i in acc]))
             if fn not in filedict:
                 raise Exception("File: '%s' include node '%s' not found!" %
                     n.base, n.attrib['file'])
@@ -214,12 +240,12 @@ class ConfigGenerator(object):
             else:
                 print >> sys.stderr, \
                     "File: '{0}' found include loop '{1}'!".format(root.base, fn)
-                exit(1)
+                exit(3)
 
     def parse_all_files(self, filename, d):
         root = self.parse_xml(filename)
         d[filename] = root
-        for file in root.xpath(".//include"):
+        for file in root.xpath("//include"):
             n = unicode(file.attrib['file'])
             if n not in d:
                 self.parse_all_files(n, d)
@@ -235,7 +261,7 @@ class ConfigGenerator(object):
 
         return [root] if len(root.keys()) > 0 else root.getchildren()
 
-    def expand_all_includes(self, filename):
+    def expand_all_includes(self, filename, dirs=None):
         """
         Build a unique dict of include files and parse them all
         """
@@ -244,8 +270,8 @@ class ConfigGenerator(object):
         self.debug(lambda:
             "Loaded {0} XML files: {1}".format(
                 len(d), [i.encode('utf8') for i in d]))
-        self.check_include_loops(root, d, set([filename]))
-        root = self.expand_includes(root, d).pop(0)
+        self.check_include_loops(root, d, {filename})
+        self.expand_includes(root, d).pop(0)
         # Since includes might have made nodes non-unique, we need to add
         # a surrogate unique identifier in order to check for loops in <copy> tags
         for i in root.iter():
@@ -255,24 +281,32 @@ class ConfigGenerator(object):
         return root
 
     def run(self):
-        outname = os.path.basename(self.filename.rstrip(".xml").rstrip(".XML") + ".hpp")
-        outfile = os.path.join(self.outdir, outname)
+        if os.path.isdir(self.outpath):
+            outname = os.path.basename(self.filename.rstrip(".xml").rstrip(".XML") + ".hpp")
+            outfile = os.path.join(self.outpath, outname)
+        else:
+            outname = os.path.basename(self.outpath)
+            outfile = self.outpath
 
         if os.path.isfile(outfile) and not self.overwrite:
             print >> sys.stderr, \
-                "File '%s' exists and no --overwrite option provided!\n" % outfile
-            exit(2)
+                "File '%s' exists and no --overwrite option provided!" % outfile
+            exit(4)
 
-        root = self.expand_all_includes(
-            unicode(self.filename) if type(self.filename) != unicode else self.filename)[0]
+        outdir = os.path.dirname(outfile)
+        if not os.path.isdir(outdir):
+            print >> sys.stderr, "Output directory %s doesn't exist" % outdir
+
+        ufilename = unicode(self.filename) if type(self.filename) != unicode else self.filename
+        root = self.expand_all_includes(ufilename)
         names = sorted(set(root.xpath("*//@name")))
         values = sorted(set(root.xpath("*//name/@val | *//value/@val")))
 
         if not len(names):
             print >> sys.stderr, "No config option names are found in XML!\n"
-            exit(1)
+            exit(5)
 
-        with RenamedTemporaryFile(outname, dir=self.outdir) as f:
+        with RenamedTemporaryFile(outfile) as f:
             f.write("//%s\n" % ("-" * 78))
             f.write("// %s\n" % outname)
             f.write("// This file is auto-generated by utxx/bin/%s\n" \
@@ -299,12 +333,12 @@ class ConfigGenerator(object):
             f.write("    //---------- Configuration Options ------------\n")
             for n in names:
                 u = n.upper()
-                f.write('    static const char CFG_%s[]%s = "%s";\n' % (u, ' ' * (max_width - len(u) + 4), u))
+                f.write('    static const char CFG_%s[]%s = "%s";\n' % (u, ' ' * (max_width - len(n) + 4), n))
             f.write("\n")
             f.write("    //---------- Configuration Values -------------\n")
             for n in values:
-                v = n.upper()
-                f.write('    static const char CFG_VAL_%s[]%s = "%s";\n' % (v, ' ' * (max_width - len(v)), v))
+                u = n.upper()
+                f.write('    static const char CFG_VAL_%s[]%s = "%s";\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("\n" +
                     "    namespace {\n" +
                     "        typedef config::option_map    ovec;\n" +
@@ -319,20 +353,125 @@ class ConfigGenerator(object):
             f.write("        const %s& init() {\n" % name)
             f.write('            m_root = "%s";\n' % root.attrib['namespace'])
 
+            self.process_options(f, root)
+
+            f.write("            return *this;\n"
+                    "        }\n"
+                    "    };\n\n"
+                    "} // namespace %s\n\n"
+                    "#endif // %s" % (root.attrib['namespace'], ifdeftag))
+
+    def value_to_string(self, val, type):
+        if not val: return ""
+        return '"' + val + '"' if type == 'string' else val
+
+    def string_to_type(self, type):
+        if not type:            return 'config::STRING'
+        if type == 'string':    return 'config::STRING';
+        if type == 'int':       return 'config::INT'
+        if type == 'bool':      return 'config::BOOL'
+        if type == 'float':     return 'config::FLOAT'
+        if type == 'anonymous': return 'config::ANONYMOUS'
+
+        print >> sys.stderr, "Invalid option type '%s'" % (type)
+        exit(6)
+
+    def process_options(self, f, root, level=0, arg='m_options'):
+        ws = '  ' * (level+6)
+        ws1 = '  ' + ws
+        ws2 = '  ' + ws1
+
+        for node in root.xpath("./option"):
+            f.write(ws  + "{\n")
+            f.write(ws1 + "ovec l_children%d; sset l_names; vset l_values;\n" % (level))
+            self.process_options(f, node, level+1, 'l_children'+str(level))
+
+            subopts = len(node.xpath("./option"))
+
+            [name, desc, val, type, valtype, default, macros,
+             required, unique, min, max, minlen, maxlen] = \
+                [node.attrib.get(a[0], default=a[1]) for a in [
+                    ('name',        ""),
+                    ('desc',        ""),
+                    ('val',         None),
+                    ('type',        None),
+                    ('val_type',    None),
+                    ('default',     None),
+                    ('macros',      'false'),
+                    ('required',    'true'),
+                    ('unique',      'true'),
+                    ('min',         None),
+                    ('max',         None),
+                    ('min_length',  None),
+                    ('max_length',  None)]
+                ]
+
+            err = None
+
+            if macros == 'false' or type != 'string':
+                macros  = "config::ENV_NONE"
+            elif macros == 'true':          macros = "config::ENV_VARS"
+            elif macros == 'env':           macros = "config::ENV_VARS"
+            elif macros == 'env-date':      macros = "config::ENV_VARS_AND_DATETIME"
+            elif macros == 'env-date-utc':  macros = "config::ENV_VARS_AND_DATETIME_UTC"
+            else: err = "'macros': %s\n  Expected: [%s]" % \
+                        (macros, ','.join(['true','false','env','env-date','env-date-utc']))
+
+            if len(filter(lambda x: x not in ['true', 'false'], [unique, required])):
+                err = "unique/required (must be 'true' or 'false'): %s" % node.attrib
+
+            if not valtype                                      : err = "'val_type' is missing"
+            elif (valtype=='int' or valtype=='float') and min   : pass
+            elif valtype == 'string' and minlen                 : min = minlen
+            elif min                                            : err = "'min': %s " % min
+            elif minlen                                         : err = "'min_length': %s " % minlen
+
+            if (valtype == 'int' or valtype == 'float') and max : pass
+            elif valtype == 'string' and maxlen                 : max = maxlen
+            elif max    : err = "'max': %s " % max
+            elif maxlen : err = "'max_length': %s " % maxlen
+
+            for n in node.xpath("./name"):
+                f.write('%sl_names.insert("%s");\n' % \
+                        (ws1, self.value_to_string(n.attrib.get('val'), type)))
+
+            for n in node.xpath("./value"):
+                f.write('%sl_values.insert(variant(%s));\n' % \
+                        (ws1, self.value_to_string(n.attrib.get('val'), valtype)))
+
+            f.write("%sadd_option(%s,\n" % (ws1, arg))
+            f.write("%sconfig::option(CFG_%s, %s, %s,\n"
+                    '%s  "%s", %s, %s, %s,\n'
+                    "%s  variant(%s), variant(%s), variant(%s), l_names, l_values, l_children%d));\n"
+                    "%s}\n" % (
+                    ws2, name.upper(), self.string_to_type(type),
+                        'config::BRANCH' if subopts else 'config::STRING',
+                    ws2, desc, unique, required, macros,
+                    ws2, self.value_to_string(default, valtype),
+                        min if min else "", max if max else "", level,
+                    ws))
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Apply configuration option transform")
     parser.add_argument('-f', '--filename',
                         required=True, help="XML options file name")
-    parser.add_argument('-o', '--outdir',
-                        required=True, help="Destination directory")
+    parser.add_argument('-d', '--dirs',
+                        help="Colon-delimited list of directories to search for files")
+    parser.add_argument('-o', '--outpath',
+                        required=True, help="Destination file path")
     parser.add_argument("--overwrite", action='store_true',
                         default=False, help="Overwrite output file")
     parser.add_argument('--user',
-                        default=pwd.getpwuid(os.getuid()).pw_gecos,
                         help="Username of the XML author")
     parser.add_argument('--email',
                         help="Email of the XML author")
     parser.add_argument('-v', '--verbosity', action="count", help='Verbosity level')
 
-    ConfigGenerator(parser.parse_args()).run()
+    args = parser.parse_args()
+
+    if not args.user:  args.user  = commands.getoutput("git config --get user.name")
+    if not args.user:  args.user  = pwd.getpwuid(os.getuid()).pw_gecos
+    if not args.email: args.email = commands.getoutput("git config --get user.email")
+
+    ConfigGenerator(args).run()

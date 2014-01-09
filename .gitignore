@@ -17,6 +17,8 @@ test/test_utxx
 test/example_repeating_timer
 test/example_delegate
 test/generated
+test/config_test_data/config_options.hpp
+test/config_test_data/test_conf.hpp
 autom4te.cache
 aclocal.m4
 build-aux/config.*
