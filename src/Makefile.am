@@ -1,5 +1,7 @@
 utxx_LTLIBRARIES = libutxx.la
 
+bin_PROGRAMS = mreceive
+
 UTXX64_SRCS = \
 	name.cpp
 
@@ -27,6 +29,9 @@ endif
 libutxx_la_LTADD    = -version-info 1:0:0 -shared
 libutxx_la_LIBS     = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
 libutxx_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
+
+mreceive_SOURCES    = mreceive.c
+mreceive_CFLAGS     = -g
 
 nobase_include_HEADERS = \
 	$(sort ../include/@PACKAGE@/config_validator.xsl \
