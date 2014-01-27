@@ -1,5 +1,5 @@
-/* vim: ts=2 sw=2 */
-/*
+/* vim: ts=2 sw=2 
+ *
  * This program can be used to test presence of multicast traffic
  * and monitor its incoming rate.
  *
@@ -286,7 +286,7 @@ void main (int argc, char *argv[])
       struct tm* tm = localtime(&tv.tv_sec);
       if (sec == 0.0) sec = 1.0;
       printf("%02d:%02d:%02d|%6.1f KB/s %6d pkts/s|Total: %9ld %cB %6ld %spkts\n",
-        tm->tm_hour, tm->tm_min, tm->tm_sec, sec,
+        tm->tm_hour, tm->tm_min, tm->tm_sec,
         (double)bytes / 1024 / sec, (int)(pkts / sec),
         total_bytes > (1024*1024) ? total_bytes/1024/1024 : total_bytes/1024,
         total_bytes > (1024*1024) ? 'M' : 'K',
