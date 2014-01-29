@@ -1,7 +1,7 @@
 #!/usr/bin/python
 """
 config_validator_codegen.py
---------===================
+===========================
 
 This file generates C++ header file for configuration options
 of an application defined in the corresponding XML file.
@@ -146,7 +146,7 @@ class ConfigGenerator(object):
                     return et.parse(f).getroot()
             if os.path.isfile(filename):
                 return et.parse(filename).getroot()
-            raise Exception("File '%s' not found in:\n%s\n" % (filename, "\n".join(dirs)))
+            raise Exception("File '%s' not found in:\n%s\n" % (filename, "\n".join(self.dirs)))
         except Exception as e:
             print >> sys.stderr, e.message
             exit(10)

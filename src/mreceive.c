@@ -104,7 +104,7 @@ void main (int argc, char *argv[])
           addr = NULL;
         }
         mcast_addr = s;
-        p = strchr(p, ';');
+        p = strchr(s, ';');
         if (p) {
           *p++ = '\0';
           addr = mcast_addr;
@@ -153,11 +153,16 @@ void main (int argc, char *argv[])
       perror("ip route get");
       exit(1);
     }
-    if (fscanf(file, "multicast %16s via %16s dev %16s src %16s\n",
-        mc, via, dev, src) != 4) {
-      fprintf(stderr, "Couldn't parse output of 'ip route get'\n");
-      exit(2);
+    if (!fgets(buf, sizeof(buf), file)) {
+      buf[0] = '\0';
+      goto failure;
     }
+    if (sscanf(buf, "multicast %16s dev %32s src %16s\n", mc, dev, src) != 3)
+      if (sscanf(buf, "multicast %16s via %16s dev %32s src %16s\n", mc, via, dev, src) != 4) {
+failure:
+        fprintf(stderr, "Couldn't parse output of 'ip route get':\n  %s\n", buf);
+        exit(2);
+      }
     addr = src;
   }
 
