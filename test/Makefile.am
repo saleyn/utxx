@@ -78,32 +78,36 @@ endif
 test_utxx_CPPFLAGS 	= $(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
 					  -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
 					  $(BOOST_CPPFLAGS)
-test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
+test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS) -rpath '$(BOOST_LIBDIR)' \
+                      -rpath '$(libdir)'
 
 test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
-					$(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
-					$(BOOST_DATE_TIME_LIB) \
-					$(BOOST_TIMER_LIB) \
-					$(BOOST_CHRONO_LIB) \
-					$(BOOST_FILESYSTEM_LIB) \
-					$(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
-					$(RTLIB)
+					  $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+					  $(BOOST_DATE_TIME_LIB) \
+					  $(BOOST_TIMER_LIB) \
+					  $(BOOST_CHRONO_LIB) \
+					  $(BOOST_FILESYSTEM_LIB) \
+					  $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
+					  $(RTLIB)
 
 test_utxx_DATA 		= test_config_validator.xml
 
 
 example_repeating_timer_CPPFLAGS = -I$(srcdir)/../include $(BOOST_CPPFLAGS)
-example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
+example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS) -rpath '$(BOOST_LIBDIR)' \
+                                   -rpath '$(libdir)'
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
-					$(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
-					$(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB)
+                                   $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+                                   $(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB)
 
 example_delegate_SOURCES	= example_delegate.cpp
-example_delegate_CPPFLAGS 	= $(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
-					  -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
-example_delegate_LDFLAGS     = $(BOOST_LDFLAGS) -lrt \
-					$(BOOST_SYSTEM_LIB) \
-					$(BOOST_TIMER_LIB)
+example_delegate_CPPFLAGS 	= $(if $(debug),\
+                                -g $(if $(optimize),-O$(optimize),-O0),\
+                                $(if $(optimize),-O$(optimize))) \
+					          -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+example_delegate_LDFLAGS    = $(BOOST_LDFLAGS) -lrt -rpath '$(BOOST_LIBDIR)' \
+                              -rpath '$(libdir)' $(BOOST_SYSTEM_LIB) \
+                              $(BOOST_TIMER_LIB)
 
 #test_cm_SOURCES 	= test_clustered_map.cpp
 #test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
