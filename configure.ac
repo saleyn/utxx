@@ -6,7 +6,7 @@ AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign -Wall -Wno-portability])
 
-AC_SUBST([utxxdir], [$libdir/utxx])
+AC_SUBST([utxxdir], [$libdir])
 
 # Default prefix
 AC_PREFIX_DEFAULT(`pwd`)
@@ -102,7 +102,6 @@ if test x"$ac_boost_path" != x; then
     for ac_boost_path_tmp in $libsubdirs; do
         if test -d "$ac_boost_path"/"$ac_boost_path_tmp" ; then
             BOOST_LIBDIR="$ac_boost_path/$ac_boost_path_tmp"
-            BOOST_LIBDIR="$BOOST_LIBDIR -rpath -Wl,$BOOST_LIBDIR"
             AC_SUBST([BOOST_LIBDIR])
             break
         fi
@@ -116,7 +115,7 @@ AC_CHECK_HEADERS([stdlib.h string.h sys/time.h])
 CPPFLAGS_SAVED_2=$CPPFLAGS
 LDFLAGS_SAVED_2=$LDFLAGS
 CPPFLAGS="$CPPFLAGS $BOOST_CPPFLAGS"
-LDFLAGS="$LDFLAGS $BOOST_LDFLAGS"
+LDFLAGS="$LDFLAGS $BOOST_LDFLAGS -rpath '$BOOST_LIBDIR' -rpath '$(libdir)'"
 AC_LANG_PUSH(C++)
 AC_CHECK_HEADERS([boost/timer/timer.hpp])
 AC_CHECK_LIB([boost_timer], [main], [
