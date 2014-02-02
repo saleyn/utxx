@@ -802,7 +802,12 @@ uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_r
     int res, len = find_stopbit_byte(&buff, buff+n);
     const char* q = buff;
     uint64_t  tid, seq = 0;
+
     res = decode_uint_loop(&q, q+5, &tid);
+
+    if (tid == 120) // reset
+      return last_seqno;
+
     res = decode_uint_loop(&q, q+5, &seq);
 
     // If sequence reset, parse new seqno
@@ -810,8 +815,6 @@ uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_r
       *seq_reset = 1;
       res = decode_uint_loop(&q, q+10, &tid); // SendingTime
       res = decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
-    } else if (tid == 120) { // Reset
-      *seq_reset = 1;
     } else if (last_seqno && abs(last_seqno - seq) > 1) {
       //printf("Seq gap (tid=%ld) last=%ld seq=%ld\n", tid, last_seqno, seq);
     }
