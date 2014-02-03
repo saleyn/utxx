@@ -34,7 +34,7 @@
 typedef enum {UNDEFINED = -1, FORTS = 'f', MICEX = 'm'} data_fmt_t;
 
 struct address {
-  const char*           iface_name;
+  char                  iface_name[64];
   in_addr_t             iface;
   in_addr_t             mcast_addr;
   in_addr_t             src_addr;
@@ -50,7 +50,6 @@ struct address {
 sigjmp_buf  jbuf;
 struct address  addrs[128];
 struct address* addrs_idx[1024]; // Maps fd -> addrs*
-char        addrbuf[256];
 int         addrs_count = 0;
 int         verbose     = 0;
 int         terminate   = 0;
@@ -69,7 +68,7 @@ void usage(const char* program) {
          "Usage: %s [-c ConfigAddrs]\n"
          "          [-a Addr] [-m Mcastaddr -p Port [-s SourceAddr]] [-v] [-q] [-e]\n"
          "          [-i ReportingIntervalSec] [-d DurationSec] [-b RecvBufSize]\n"
-         "          [-l ReportingLabel]\n\n"
+         "          [-l ReportingLabel] [-o OutputFile]\n\n"
          "      -c CfgAddrs - Filename containing list of addresses to process\n"
          "      -a Addr     - Optional interface address or multicast address\n"
          "                    in the form: [MARKET+]udp://SrcIp@McastIp:Port\n"
@@ -88,6 +87,7 @@ void usage(const char* program) {
          "      -v          - Verbose (use -vv for more detailed output\n"
          "      -m MaxCount - Terminate after receiving this number of packets\n"
          "      -q          - Quiet (no output)\n\n"
+         "      -o Filename - Output log file\n\n"
          "If there is no incoming data, press several Ctrl-C to break\n\n"
          "Return code: = 0  - if the process received at least one packet\n"
          "             > 0  - if no packets were received or there was an error\n\n"
@@ -184,7 +184,7 @@ void inc_addrs() {
 void parse_addr(const char* s) {
   const char*   pif, *q;
   char          a[512];
-  const char**  addr        = &addrs[addrs_count].iface_name;
+  char*         addr        =  addrs[addrs_count].iface_name;
   in_addr_t*    iface       = &addrs[addrs_count].iface;
   in_addr_t*    mcast_addr  = &addrs[addrs_count].mcast_addr;
   in_addr_t*    src_addr    = &addrs[addrs_count].src_addr;
@@ -194,7 +194,7 @@ void parse_addr(const char* s) {
   addrs[addrs_count].last_seqno = 0;
   addrs[addrs_count].seq_gap_count = 0;
 
-  *addr         = NULL;
+  *addr         = '\0';
   *iface        = INADDR_NONE;
   *mcast_addr   = INADDR_NONE;
   *src_addr     = INADDR_NONE;
@@ -217,7 +217,7 @@ void parse_addr(const char* s) {
   if (verbose > 2)
     printf("Address: %s\n", s);
   if (strncmp(s, "udp://", 6)) {
-    *addr = s;
+    strncpy(addr, s, 64);
   } else {
     s += 6;
     char* p = strchr(s, '@');
@@ -241,7 +241,7 @@ void parse_addr(const char* s) {
     }
     *p++ = '\0';
     if (pif)
-      *addr = pif;
+      strncpy(addr, pif, 64);
     *mcast_addr = inet_addr(q);
     *port = atoi(p);
     if (verbose > 2) {
@@ -250,8 +250,8 @@ void parse_addr(const char* s) {
     }
 
     if (verbose > 1) {
-      printf("Adding iface=%x, mcast=%x, src=%x, port=%d\n",
-        *addr ? *addr : "any",
+      printf("Adding iface=%s, mcast=%x, src=%x, port=%d\n",
+        *addr ? addr : "any",
         addrs[addrs_count].mcast_addr,
         addrs[addrs_count].src_addr,
         addrs[addrs_count].port);
@@ -269,6 +269,7 @@ void main(int argc, char *argv[])
   int                   bsize = 0;
   struct timeval        tv;
   int                   use_epoll = 0, efd = -1;
+  const char*           output_file = NULL;
 
   char*                 iaddr       = NULL;
   char*                 imcast_addr = NULL;
@@ -297,7 +298,13 @@ void main(int argc, char *argv[])
         exit(1);
       }
       while (fgets(buf, sizeof(buf), file)) {
-        parse_addr(buf);
+        char* p = buf;
+        while(*p == ' ' || *p == '\t') p++;
+        if (strlen(p) && *p != '#') {
+          if (verbose > 1)
+            printf("Parsing address: %s\n", p);
+          parse_addr(p);
+        }
       }
       fclose(file);
     } else if (!strcmp(argv[i], "-a") && i < argc-1)
@@ -314,6 +321,8 @@ void main(int argc, char *argv[])
       interval = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-m") && i < argc-1)
       max_pkts = atoi(argv[++i]);
+    else if (!strcmp(argv[i], "-o") && i < argc-1)
+      output_file = argv[++i];
     else if (!strcmp(argv[i], "-d") && i < argc-1) {
       gettimeofday(&tv, NULL);
       alarm(atoi(argv[++i]));
@@ -338,6 +347,18 @@ void main(int argc, char *argv[])
     addrs[addrs_count].fd         = -1;
 
     inc_addrs();
+  }
+
+  if (output_file) {
+    fflush(stdout);
+    efd = open(output_file, O_APPEND | O_WRONLY);
+    if (efd < 0) {
+      fprintf(stderr, "Cannot open file '%s' for writing: %s\n",
+        output_file, strerror(errno));
+      exit(1);
+    }
+    dup2(efd, 1);
+    close(efd);
   }
 
   if (use_epoll) {
@@ -403,7 +424,7 @@ void main(int argc, char *argv[])
     /* Figure out which network interface to use */
     if (!addrs[i].iface_name) {
       addrs[i].iface = INADDR_ANY;
-      if (verbose)
+      if (verbose > 1)
         printf("Using INADDR_ANY interface\n");
     } else if (strlen(addrs[i].iface_name) == 0) {
       char buf[256], obuf[256], mc[32], via[32], src[32];
@@ -420,17 +441,16 @@ void main(int argc, char *argv[])
         exit(1);
       }
       fclose(file);
-      if (verbose)
+      if (verbose > 1)
         printf("Executed: '%s' ->\n  %s\n", buf, obuf);
       if (sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
-          mc, via, addrbuf, src) != 4) {
+          mc, via, addrs[i].iface_name, src) != 4) {
         fprintf(stderr, "Couldn't parse output of 'ip route get'\n");
         exit(2);
       }
-      addrs[i].iface_name = addrbuf;
       if (inet_aton(src, (struct in_addr*)&addrs[i].iface) == 0) {
         fprintf(stderr, "Cannot parse address of interface '%s' %s\n",
-          addrbuf, src);
+          addrs[i].iface_name, src);
         exit(3);
       }
     } else {
@@ -623,7 +643,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
       int diff = seqno - addr->last_seqno;
       if (!seq_reset) {
         if (diff < 0) {
-          if (verbose)
+          if (verbose > 1)
             printf("  Out of order seqno (last=%ld, now=%ld): %d\n",
               addr->last_seqno, seqno, diff);
           addr->ooo_count++;
@@ -633,7 +653,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
           addr->seq_gap_count++;
           tot_seq_gap_count++;
           seq_gap_count++;
-          if (verbose)
+          if (verbose > 1)
             printf("  Gap detected in seqno (last=%ld, now=%ld): %d\n",
               addr->last_seqno, seqno, diff);
         }
@@ -645,7 +665,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
   if (pkts >= max_pkts)
     terminate = 1;
 
-  if (verbose > 1)
+  if (verbose > 2)
     printf("Received %6d bytes, %ld packets\n", n, tot_pkts);
 
   if (!quiet && (interval || verbose) && now_time >= next_time) {
@@ -678,6 +698,8 @@ void process_packet(struct address* addr, const char* buf, int n) {
     seq_gap_count = 0;
     last_time     = now_time;
     next_time     = now_time + interval*1000000;
+
+    fflush(stdout);
   }
 }
 
