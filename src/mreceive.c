@@ -351,7 +351,7 @@ void main(int argc, char *argv[])
 
   if (output_file) {
     fflush(stdout);
-    efd = open(output_file, O_APPEND | O_WRONLY);
+    efd = open(output_file, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
     if (efd < 0) {
       fprintf(stderr, "Cannot open file '%s' for writing: %s\n",
         output_file, strerror(errno));
