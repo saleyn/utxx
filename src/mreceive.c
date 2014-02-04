@@ -3,6 +3,13 @@
  * This program can be used to test presence of multicast traffic
  * and monitor its incoming rate.
  *
+ * Here is a sample output it produces:
+ *
+ * #S|Sok:  21| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT|  MBytes| KPakets|OutOfOrd|TotGapsK|Lat N  Avg Mn   Max|
+ * II|16:49:45|    149.4|   864|     0|    0| 2| 0| 0|TOT|   451.5|    3626|       0|       0|  455  3.6  1    14|
+ * II|16:49:50|    181.9|  1374|     0|    0| 2| 0| 0|TOT|   452.4|    3633|       0|       0|  694  3.3  1    12|
+ * II|16:49:55|    134.4|  1004|     0|    0| 2| 0| 0|TOT|   453.1|    3638|       0|       0|  475  3.3  1    14|
+ *
  * Copyright (c) 2014 Serge Aleynikov
  * Created: 2014-01-27
  * License: BSD open source
@@ -33,7 +40,9 @@
 #include <unistd.h>
 
 typedef enum {
-  UNDEFINED = 0, FORTS = 'f', MICEX = 'm'
+  UNDEFINED = 0,
+  FORTS     = 'f',
+  MICEX     = 'm'
 } data_fmt_t;
 
 typedef enum {
@@ -59,17 +68,25 @@ struct address {
   data_fmt_t            data_format;    /* (m)icex, (f)orts */
   long                  last_data_time; /* time of the last gap detected */
   long                  last_seqno;
-  long                  last_gap_seqno; /* seqno of last detected gap */
+  long                  last_ooo_time;  /* time of the last gap detected */
   long                  last_gap_time;  /* time of the last gap detected */
 
-  long                  last_pkt_count;
-  long                  last_ooo_count;
-  long                  last_gap_count;
-
-  long                  bytes_cnt;
-  int                   pkt_count;
-  int                   gap_count;
+  long                  bytes_cnt;      /* total byte count */
+  int                   pkt_count;      /* total pkt count  */
+  int                   gap_count;      /* number of lost packets (due to seq gaps) */
   int                   ooo_count;      /* out-of-order packet count */
+
+  // Total summary reports
+  int                   last_srep_pkt_count;
+  int                   last_srep_ooo_count;
+  int                   last_srep_gap_count;
+
+  // Individual channel summary reports
+  int                   last_crep_pkt_count;
+  int                   last_crep_ooo_count;
+  int                   last_crep_gap_count;
+  int                   last_crep_pkt_changed;
+
   src_state_t           state;          /* state of gap detector */
   struct epoll_event    event;
 };
@@ -94,15 +111,17 @@ long        tot_ooo_count = 0, tot_gap_count = 0;
 long        ooo_count     = 0, gap_count = 0;
 long        tot_bytes     = 0, tot_pkts      = 0, max_pkts = LONG_MAX;
 int         last_bytes    = 0, bytes         = 0, pkts     = 0, last_pkts = 0;
-int         output_lines_count = 0, next_legend_count = 1;
-int         next_sock_report_lines = 5;
+int         output_lines_count          = 0;
+int         next_legend_count           = 1;
+int         next_sock_report_lines      = 5;
+int         max_channel_report_lines    = 10;
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
          "Usage: %s [-c ConfigAddrs]\n"
          "          [-a Addr] [-n Mcastaddr -p Port [-s SourceAddr]] [-v] [-q] [-e false]\n"
          "          [-i ReportingIntervalSec] [-I SockReportInterval]\n"
-         "          [-d DurationSec] [-b RecvBufSize]\n"
+         "          [-d DurationSec] [-b RecvBufSize] [-L MaxChannelReportLines]\n"
          "          [-l ReportingLabel] [-o OutputFile]\n\n"
          "      -c CfgAddrs - Filename containing list of addresses to process\n"
          "                    (use \"-\" for stdin)\n"
@@ -119,6 +138,7 @@ void usage(const char* program) {
          "      -b Size     - Socket receive buffer size\n"
          "      -i Sec      - Reporting interval (default: 5s)\n"
          "      -I Lines    - Socket reporting interval (default: 50)\n"
+         "      -L Lines    - Max number of channel-level report lines (default: 10)\n"
          "      -d Sec      - Execution time in sec (default: infinity)\n"
          "      -l Label    - Title to include in the output report\n"
          "      -v          - Verbose (use -vv for more detailed output\n"
@@ -202,12 +222,32 @@ const char* scale_suffix(long n, long multiplier) {
 
 uint32_t decode_forts_seqno(const char* buf, int n, long last_seqno, int* seq_reset);
 
-long get_seqno(data_fmt_t fmt, const char* buf, int n, long last_seqno, int* seq_reset) {
-  switch (fmt) {
+long get_seqno(struct address* addr, const char* buf, int n, long last_seqno, int* seq_reset) {
+  switch (addr->data_format) {
     case MICEX: {
-      uint32_t a = buf[0], b = buf[1], c = buf[2], d = a << 24 | b << 16 | c << 8 | buf[3];
-      assert( d == htonl(*(uint32_t*)buf));
-      return d;
+      /*
+      uint32_t a = (uint8_t)buf[0],
+               b = (uint8_t)buf[1],
+               c = (uint8_t)buf[2],
+               d = (uint8_t)buf[3],
+               m = a << 24 | b << 16 | c << 8 | d;
+      */
+      uint32_t t = htonl(*(uint32_t*)buf);
+      /*
+      if (m != t) {
+        int i; fprintf(stderr, "  Buffer:\n   {");
+        for (i=0; i < n; i++) {
+          if (i && (i % 16)) fprintf(stderr, "\n     %s", i < n-1 ? ", " : "");
+          fprintf(stderr, "%s0x%02x", i < n-1 ? "," : "", (uint8_t)buf[i]);
+        }
+        fprintf(stderr, "};\n%s (Last seqno: %ld)\n", addr->title, last_seqno);
+        fprintf(stderr, "Seqno decoding: %08x =/= %08x (%u =/= %u)\n"
+                        "  a=0x%x, b=0x%x, c=0x%x, d=0x%x\n",
+                        m, t, m, t, a, b, c, d);
+        assert( m == t );
+      }
+      */
+      return t;
     }
     case FORTS: return decode_forts_seqno(buf, n, last_seqno, seq_reset);
   }
@@ -390,6 +430,8 @@ void main(int argc, char *argv[])
       interval = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-I") && i < argc-1)
       next_sock_report_lines = sock_interval = atoi(argv[++i]);
+    else if (!strcmp(argv[i], "-L") && i < argc-1)
+      max_channel_report_lines = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-n") && i < argc-1)
       max_pkts = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-o") && i < argc-1)
@@ -757,6 +799,16 @@ void main(int argc, char *argv[])
 inline int intcmpa(long a, long b) { return a < b ? -1 : a > b; }
 inline int intcmpd(long a, long b) { return a > b ? -1 : a < b; }
 
+inline int crep_ooo_count(const struct address* a) {
+  return a->ooo_count - a->last_crep_ooo_count;
+}
+inline int crep_gap_count(const struct address* a) {
+  return a->gap_count - a->last_crep_gap_count;
+}
+inline int crep_pkt_count(const struct address* a) {
+  return a->pkt_count - a->last_crep_pkt_count;
+}
+
 int sort_by_bytes(const void* a, const void* b) {
   struct address* lhs = *(struct address**)a;
   struct address* rhs = *(struct address**)b;
@@ -774,14 +826,18 @@ int sort_by_packets(const void* a, const void* b) {
 int sort_by_ooo(const void* a, const void* b) {
   struct address* lhs = *(struct address**)a;
   struct address* rhs = *(struct address**)b;
-  int n = intcmpd(lhs->ooo_count, rhs->ooo_count);
+  int x = crep_ooo_count(lhs);
+  int y = crep_ooo_count(rhs);
+  int n = intcmpd(x, y);
   return n ? n : intcmpa(lhs->port, rhs->port);
 }
 
 int sort_by_gaps(const void* a, const void* b) {
   struct address* lhs = *(struct address**)a;
   struct address* rhs = *(struct address**)b;
-  int n = intcmpd(lhs->gap_count, rhs->gap_count);
+  int x = crep_gap_count(lhs);
+  int y = crep_gap_count(rhs);
+  int n = intcmpd(x, y);
   return n ? n : intcmpa(lhs->port, rhs->port);
 }
 
@@ -792,14 +848,20 @@ void report_socket_stats() {
   };
   static const char SEP[] = "================================"
                             "================================"
+                            "================================"
+                            "================================"
+                            "================================"
+                            "================================"
+                            "================================"
+                            "================================"
+                            "================================"
                             "================================";
   static const char BAR[] = "********************************";
   static const int graph_width = 15;
-  static const int max_lines   = 10;
   const        int pad_title   = max_title_width - 5;
 
   int i, max_ooo_count = 0, max_pkt_count = 0, max_bytes = 0, max_gap_count = 0;
-  int n = addrs_count > max_lines ? max_lines : addrs_count;
+  int n = addrs_count > max_channel_report_lines ? max_channel_report_lines : addrs_count;
 
   for(i = 0; i < addrs_count; i++) {
     struct address* p = addrs + i;
@@ -819,6 +881,8 @@ void report_socket_stats() {
   for(i=0; i < n; i++) {
     struct address* pbytes = sorted_addrs[0][i];
     struct address* ppkts  = sorted_addrs[1][i];
+    if (!pbytes->bytes_cnt && !ppkts->pkt_count)
+      break;
     int gbytes = max_bytes     ? (int)(graph_width * pbytes->bytes_cnt / max_bytes) : 0;
     int gpkts  = max_pkt_count ? (int)(graph_width * ppkts->pkt_count / max_pkt_count) : 0;
 
@@ -829,22 +893,65 @@ void report_socket_stats() {
       gpkts, gpkts, BAR, graph_width - gpkts, "");
   }
 
-  printf("#c|%*.*sTitle|====Gaps|%*.*sGapsGraph|%*.*sTitle|==OutOrdr|%*.*sOutOfOrdGraph|\n",
-    pad_title, pad_title, SEP, graph_width-9,  graph_width-9,  SEP,
-    pad_title, pad_title, SEP, graph_width-13, graph_width-13, SEP);
+  // Has any non-zero data?
+  if (crep_ooo_count(sorted_addrs[2][0]) || crep_gap_count(sorted_addrs[3][0]))
+    printf("#c|%*.*sTitle|====Gaps|%*.*sGapsGraph|%*.*sTitle|==OutOrdr|%*.*sOutOfOrdGraph|\n",
+      pad_title, pad_title, SEP, graph_width-9,  graph_width-9,  SEP,
+      pad_title, pad_title, SEP, graph_width-13, graph_width-13, SEP);
 
   for(i=0; i < n; i++) {
     struct address* pooo   = sorted_addrs[2][i];
     struct address* pgaps  = sorted_addrs[3][i];
-    int ggaps = max_gap_count ? (int)(graph_width * pgaps->gap_count / max_gap_count) : 0;
-    int gooos = max_ooo_count ? (int)(graph_width * pgaps->ooo_count / max_ooo_count) : 0; 
+    int ooo_count = crep_ooo_count(pooo);
+    int gap_count = crep_gap_count(pgaps);
+    if (ooo_count || gap_count) {
+      int ggaps = max_gap_count ? (int)(graph_width * gap_count / max_gap_count) : 0;
+      int gooos = max_ooo_count ? (int)(graph_width * ooo_count / max_ooo_count) : 0; 
 
-    printf("#c|%*s|%8d|%*.*s%*s|%*s|%9d|%*.*s%*s|\n",
-      max_title_width, pgaps ->title, pgaps->gap_count,
-      ggaps, ggaps, BAR, graph_width - ggaps, "",
-      max_title_width, pooo  ->title, pooo->ooo_count,
-      gooos, gooos, BAR, graph_width - gooos, "");
+      printf("#c|%*s|%8d|%*.*s%*s|%*s|%9d|%*.*s%*s|\n",
+        max_title_width, gap_count ? pgaps ->title : "", gap_count,
+        ggaps, ggaps, BAR, graph_width - ggaps, "",
+        max_title_width, ooo_count ? pooo  ->title : "", ooo_count,
+        gooos, gooos, BAR, graph_width - gooos, "");
+    }
   }
+
+  int width = max_title_width+1+8+graph_width+1+max_title_width+1+9+graph_width+2;
+  int nodata_count = 0;
+
+  for(i=0; i < addrs_count; i++)
+    if (!crep_pkt_count(&addrs[i]) && addrs[i].last_crep_pkt_changed)
+      nodata_count++;
+
+  if (nodata_count) {
+    printf("#E|EmptyChanged%*.*s|\n", width-12, width-12, SEP);
+
+    int half = addrs_count / 2 + addrs_count % 2;
+
+    for(i=0; i < half; i += 2) {
+      int j, e, t = 0;
+      for (j=i, e=addrs_count; j < e; j += half) {
+        struct address* a = &addrs[j];
+        int          pkts = crep_pkt_count(a);
+        if (!pkts && a->last_crep_pkt_changed) {
+          if (!t) printf("#e|");
+          printf("   [%02d] %-*s (%d)", a->id, max_title_width, a->title, pkts);
+          t++;
+        }
+      }
+      if (t) printf("\n");
+    }
+  }
+
+  for(i=0; i < addrs_count; i++) {
+    struct address* a = &addrs[i];
+    a->last_crep_pkt_changed = crep_pkt_count(a) > 0;
+    a->last_crep_ooo_count = a->ooo_count;
+    a->last_crep_gap_count = a->gap_count;
+    a->last_crep_pkt_count = a->pkt_count;
+  }
+
+  printf("#C|%*.*s|\n", width, width, SEP);
 }
 
 void print_report() {
@@ -859,40 +966,41 @@ void print_report() {
   if (quiet || !(interval && verbose))
     return;
 
-  double sec = (double)(now_time - last_time)/1000000;
-  struct tm* tm  = localtime(&tv.tv_sec);
-  double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count : 0.0;
-  int socks_with_gaps = 0, socks_with_ooo = 0, socks_with_nodata = 0;
+  int output = output_lines_count++;
 
-  for(i = 0; i < addrs_count; i++) {
-    struct address* addr = addrs + i;
-    if (addr->ooo_count - addr->last_ooo_count)  socks_with_ooo++;
-    if (addr->gap_count - addr->last_gap_count)  socks_with_gaps++;
-    if (!(addr->pkt_count-addr->last_pkt_count)) socks_with_nodata++;
-
-    addr->last_ooo_count = addr->ooo_count;
-    addr->last_gap_count = addr->gap_count;
-    addr->last_pkt_count = addr->pkt_count;
+  if (output >= next_sock_report_lines) {
+    report_socket_stats();
+    next_sock_report_lines = output_lines_count + sock_interval;
   }
 
-  if (sec == 0.0) sec = 1.0;
+  if (output >= next_legend_count) {
+    printf(
+      "#S|Sok:%4d| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT"
+      "|  MBytes| KPakets|OutOfOrd|TotGapsK|Lat N  Avg Mn   Max|\n",
+      addrs_count);
+    next_legend_count = output_lines_count + 50;
+  }
 
   // We skip first reporting period as it may be skewed due
   // to slow subscription startup
-  if (output_lines_count++) {
-    if (output_lines_count >= next_sock_report_lines) {
-      report_socket_stats();
-      next_sock_report_lines = output_lines_count + sock_interval;
+  if (output) {
+    double sec = (double)(now_time - last_time)/1000000;
+    struct tm* tm  = localtime(&tv.tv_sec);
+    double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count : 0.0;
+    int socks_with_gaps = 0, socks_with_ooo = 0, socks_with_nodata = 0;
+
+    for(i = 0; i < addrs_count; i++) {
+      struct address* addr = addrs + i;
+      if (addr->ooo_count - addr->last_srep_ooo_count)    socks_with_ooo++;
+      if (addr->gap_count - addr->last_srep_gap_count)    socks_with_gaps++;
+      if (!(addr->pkt_count - addr->last_srep_pkt_count)) socks_with_nodata++;
+
+      addr->last_srep_ooo_count = addr->ooo_count;
+      addr->last_srep_gap_count = addr->gap_count;
+      addr->last_srep_pkt_count = addr->pkt_count;
     }
 
-    if (output_lines_count >= next_legend_count) {
-
-      printf(
-        "#S|Sok:%4d| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT"
-        "|  MBytes| KPakets|OutOfOrd|TotGapsK|Lat N  Avg Mn   Max|\n",
-        addrs_count);
-      next_legend_count = output_lines_count + 50;
-    }
+    if (sec == 0.0) sec = 1.0;
 
     printf("II|%02d:%02d:%02d|%9.1f|%6d|%6d|%5d|%2d|%2d|%2d|TOT|"
            "%8.1f|%8ld|%8d|%8d|%5d%5.1f %2d %5d|\n",
@@ -937,6 +1045,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
     pkt_time_count++;
   }
 
+  addr->last_data_time = now_time;
   addr->bytes_cnt += n;
   addr->pkt_count++;
 
@@ -946,25 +1055,27 @@ void process_packet(struct address* addr, const char* buf, int n) {
   pkts++;
 
   int seq_reset;
-  seqno = get_seqno(addr->data_format, buf, n, addr->last_seqno, &seq_reset);
+  seqno = get_seqno(addr, buf, n, addr->last_seqno, &seq_reset);
   if (seqno) {
     if (addr->last_seqno) {
       int diff = seqno - addr->last_seqno;
       if (!seq_reset) {
         if (diff < 0) {
           if (verbose > 1)
-            printf("  Out of order seqno (last=%ld, now=%ld): %d (%s)\n",
-              addr->last_seqno, seqno, diff, addr->title);
+            printf("  %02d Out of order seqno (last=%ld, now=%ld): %d (%s)\n",
+              addr->id, addr->last_seqno, seqno, diff, addr->title);
+          addr->last_ooo_time = now_time;
           addr->ooo_count++;
           tot_ooo_count++;  /* out of order */
           ooo_count++;
         } else if (diff > 1) {
+          addr->last_gap_time = now_time;
           addr->gap_count++;
           tot_gap_count++;
           gap_count++;
           if (verbose > 1)
-            printf("  Gap detected in seqno (last=%ld, now=%ld): %d (%s)\n",
-              addr->last_seqno, seqno, diff, addr->title);
+            printf("  %02d Gap detected in seqno (last=%ld, now=%ld): %d (%s)\n",
+              addr->id, addr->last_seqno, seqno, diff, addr->title);
         }
 
       }
@@ -1080,8 +1191,6 @@ uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_r
       *seq_reset = 1;
       res = decode_uint_loop(&q, q+10, &tid); // SendingTime
       res = decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
-    } else if (last_seqno && abs(last_seqno - seq) > 1) {
-      //printf("Seq gap (tid=%ld) last=%ld seq=%ld\n", tid, last_seqno, seq);
     }
 
     return seq;
