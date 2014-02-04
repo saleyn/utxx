@@ -53,8 +53,9 @@ TEST_UTXX_SRCS = \
 example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp
 
-generated/test_config_validator.generated.hpp: test_config_validator.xml generated
-	$(PYTHON) ../bin/config_validator_codegen.py -f $< -o $@ --overwrite
+generated/test_config_validator.generated.hpp: \
+	   	test_config_validator.xml $(top_srcdir)/test/generated
+	$(PYTHON) $(top_srcdir)/bin/config_validator_codegen.py -f $< -o $@ --overwrite
 
 # XSLT transform is deprecated
 #generated/test_config_validator.generated.hpp: test_config_validator.xml \
@@ -66,8 +67,8 @@ generated/test_config_validator.generated.hpp: test_config_validator.xml generat
 
 test_config_validator.cpp: generated/test_config_validator.generated.hpp
 
-generated:
-	mkdir $@
+$(top_srcdir)/test/generated:
+	mkdir -v $@
 
 if Ix86
 test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
@@ -75,9 +76,9 @@ else
 test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
-test_utxx_CPPFLAGS 	= $(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
-					  -I$(srcdir)/../include -DBOOST_TEST_DYN_LINK \
-					  $(BOOST_CPPFLAGS)
+test_utxx_CPPFLAGS 	= \
+	$(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
+	-I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(BOOST_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
 
 test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
@@ -92,7 +93,7 @@ test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
 test_utxx_DATA 		= test_config_validator.xml
 
 
-example_repeating_timer_CPPFLAGS = -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+example_repeating_timer_CPPFLAGS = -I$(top_srcdir)/include $(BOOST_CPPFLAGS)
 example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
                                    $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
@@ -108,7 +109,7 @@ example_delegate_LDFLAGS    = $(BOOST_LDFLAGS)
 example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) -lboost_timer
 
 #test_cm_SOURCES 	= test_clustered_map.cpp
-#test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+#test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(top_srcdir)/include $(BOOST_CPPFLAGS)
 #test_cm_LDFLAGS     = $(BOOST_LDFLAGS)
 
-EXTRA_DIST = test_config_validator.xml ../bin/config_validator_codegen.py
+EXTRA_DIST = test_config_validator.xml $(top_src_dir)/bin/config_validator_codegen.py

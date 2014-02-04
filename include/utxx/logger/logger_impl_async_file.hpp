@@ -53,8 +53,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/types.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#include <utxx/container/concurrent_stack.hpp>
-#include <utxx/alloc_cached.hpp>
+#include <utxx/multi_file_async_logger.hpp>
+//#include <utxx/alloc_cached.hpp>
 
 namespace utxx {
 
@@ -65,42 +65,30 @@ class logger_impl_async_file: public logger_impl {
     bool        m_timestamp;
     int         m_levels;
     mode_t      m_mode;
-    int         m_fd;
     bool        m_show_location;
     bool        m_show_ident;
     std::string m_error;
 
-    typedef container::blocking_versioned_stack<> stack_t;
-    struct timespec                 m_timeout;
-    stack_t                         m_stack;
-    bool                            m_terminated;
-    boost::barrier*                 m_barrier;
-    boost::thread*                  m_thread;
-    memory::cached_allocator<char>  m_allocator;
+//     struct logger_traits: public multi_file_async_logger_traits {
+//         typedef memory::cached_allocator<char> allocator;
+//     };
+
+//    typedef basic_multi_file_async_logger<logger_traits> async_logger_engine;
+    typedef basic_multi_file_async_logger<> async_logger_engine;
+
+    async_logger_engine                     m_engine;
+    struct timespec                         m_timeout;
+    typename async_logger_engine::file_id   m_fd;
 
     logger_impl_async_file(const char* a_name)
         : m_name(a_name), m_append(true), m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
-        , m_mode(0644), m_fd(-1), m_show_location(true), m_show_ident(false)
-        , m_terminated(false), m_barrier(NULL), m_thread(NULL)
+        , m_mode(0644), m_show_location(true), m_show_ident(false)
     {
         m_timeout.tv_sec = 2; m_timeout.tv_nsec = 0;
     }
 
-    struct async_data : public stack_t::node_t {
-        unsigned short size;
-        log_level level;
-
-        char*       data() { return reinterpret_cast<char*>(this + 1); } 
-        async_data* next() { return reinterpret_cast<async_data*>(stack_t::node_t::next); }
-        static size_t allocation_size(size_t sz) {
-            return sz + sizeof(async_data) - stack_t::header_size();
-        }
-        static async_data* to_node(void* p) { return reinterpret_cast<async_data*>(p)-1; } 
-    };
-
     void send_data(log_level level, const char* msg, size_t size) throw(io_error);
 
-    int  write_data(async_data* p);
     void finalize();
 public:
     static logger_impl_async_file* create(const char* a_name) {

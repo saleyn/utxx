@@ -9,8 +9,8 @@ AM_INIT_AUTOMAKE([foreign -Wall -Wno-portability])
 AC_SUBST([utxxdir], [$libdir])
 
 # Default prefix
-AC_PREFIX_DEFAULT(`pwd`)
-AC_SUBST([default_prefix], [${PWD}/install])
+AC_PREFIX_DEFAULT(${top_srcdir})
+AC_SUBST([default_prefix], [${abs_srcdir}/install])
 test "$prefix" = "NONE" && prefix="$default_prefix"
 test "$sysconfdir" = "\${prefix}/etc" && sysconfdir='../etc'
 test "$scriptdir" = "" && scriptdir='../lib'

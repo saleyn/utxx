@@ -227,6 +227,9 @@ public:
     /// Stop asynchronous file writering thread
     void stop();
 
+    /// Returns true if the async logger's thread is running
+    bool running() { return !m_cancel && m_thread; }
+
     /// Start a new log file
     file_id open_file(const std::string& a_filename, bool a_append = true,
                       int a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP );
@@ -331,7 +334,7 @@ start() {
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 stop() {
-    if (!m_thread || m_cancel)
+    if (!running())
         return;
     m_cancel = true;
     ASYNC_TRACE(("Stopping async logger (head %p)\n", m_head));

@@ -26,14 +26,30 @@
 #include <sys/socket.h>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/timerfd.h>
 #include <sys/types.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
 
-typedef enum {UNDEFINED = -1, FORTS = 'f', MICEX = 'm'} data_fmt_t;
+typedef enum {
+  UNDEFINED = 0, FORTS = 'f', MICEX = 'm'
+} data_fmt_t;
+
+typedef enum {
+  OK = 0,
+  NODATA_OFF    =  1, NODATA_ON = 2,
+  OOO_OFF       =  4, OOO_ON    = 8,
+  GAP_OFF       = 16, GAP_ON    = 32
+} src_state_t;
+
+const int MEGABYTE = 1024*1024;
+const int MILLION  = 1000000;
 
 struct address {
+  int                   id;             /* url order in the config */
+  char                  url[256];
+  char*                 title;
   char                  iface_name[64];
   in_addr_t             iface;
   in_addr_t             mcast_addr;
@@ -41,58 +57,79 @@ struct address {
   int                   port;
   int                   fd;
   data_fmt_t            data_format;    /* (m)icex, (f)orts */
-  int                   last_seqno;
-  int                   seq_gap_count;
+  long                  last_data_time; /* time of the last gap detected */
+  long                  last_seqno;
+  long                  last_gap_seqno; /* seqno of last detected gap */
+  long                  last_gap_time;  /* time of the last gap detected */
+
+  long                  last_pkt_count;
+  long                  last_ooo_count;
+  long                  last_gap_count;
+
+  long                  bytes_cnt;
+  int                   pkt_count;
+  int                   gap_count;
   int                   ooo_count;      /* out-of-order packet count */
+  src_state_t           state;          /* state of gap detector */
   struct epoll_event    event;
 };
 
 sigjmp_buf  jbuf;
-struct address  addrs[128];
-struct address* addrs_idx[1024]; // Maps fd -> addrs*
-int         addrs_count = 0;
-int         verbose     = 0;
-int         terminate   = 0;
-long        interval    = 5;
-int         quiet       = 0;
-long        start_time, next_time, now_time, last_time, pkt_time;
+struct address   addrs[128];
+struct address*  addrs_idx[1024];   // Maps fd -> addrs*
+struct address** sorted_addrs[4];   // For report stats sorting
+
+const char* label         = NULL;
+int         addrs_count   = 0;
+int         verbose       = 0;
+int         terminate     = 0;
+long        interval      = 5;
+long        sock_interval = 50;
+int         quiet         = 0;
+int         max_title_width = 0;
+long        start_time, now_time, last_time, pkt_time;
 long        min_pkt_time=LONG_MAX, max_pkt_time=0, sum_pkt_time=0;
 long        pkt_time_count=0, pkt_ooo_count=0;
-long        tot_ooo_count = 0, tot_seq_gap_count = 0;
-long        ooo_count   = 0, seq_gap_count = 0;
-long        tot_bytes   = 0, tot_pkts      = 0, max_pkts = LONG_MAX;
-int         last_bytes  = 0, bytes         = 0, pkts     = 0, last_pkts = 0;
+long        tot_ooo_count = 0, tot_gap_count = 0;
+long        ooo_count     = 0, gap_count = 0;
+long        tot_bytes     = 0, tot_pkts      = 0, max_pkts = LONG_MAX;
+int         last_bytes    = 0, bytes         = 0, pkts     = 0, last_pkts = 0;
+int         output_lines_count = 0, next_legend_count = 1;
+int         next_sock_report_lines = 5;
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
          "Usage: %s [-c ConfigAddrs]\n"
-         "          [-a Addr] [-m Mcastaddr -p Port [-s SourceAddr]] [-v] [-q] [-e]\n"
-         "          [-i ReportingIntervalSec] [-d DurationSec] [-b RecvBufSize]\n"
+         "          [-a Addr] [-n Mcastaddr -p Port [-s SourceAddr]] [-v] [-q] [-e false]\n"
+         "          [-i ReportingIntervalSec] [-I SockReportInterval]\n"
+         "          [-d DurationSec] [-b RecvBufSize]\n"
          "          [-l ReportingLabel] [-o OutputFile]\n\n"
          "      -c CfgAddrs - Filename containing list of addresses to process\n"
+         "                    (use \"-\" for stdin)\n"
          "      -a Addr     - Optional interface address or multicast address\n"
-         "                    in the form: [MARKET+]udp://SrcIp@McastIp:Port\n"
-         "                             or: [MARKET+]udp://SrcIp@McastIp;IfAddr:Port\n"
+         "                    in the form:\n"
+         "                        [MARKET+]udp://SrcIp@McastIp[;IfAddr]:Port[/TITLE]\n"
          "                    The MARKET label determines data format. Currently\n"
          "                    supported values are:\n"
          "                          micex, forts\n"
          "                    If interface address is not provided, it'll be\n"
          "                    determined automatically by a call to\n"
          "                       'ip route get...'\n"
-         "      -e          - Use epoll()\n"
+         "      -e false    - Don't use epoll() (default: true)\n"
          "      -b Size     - Socket receive buffer size\n"
          "      -i Sec      - Reporting interval (default: 5s)\n"
+         "      -I Lines    - Socket reporting interval (default: 50)\n"
          "      -d Sec      - Execution time in sec (default: infinity)\n"
          "      -l Label    - Title to include in the output report\n"
          "      -v          - Verbose (use -vv for more detailed output\n"
-         "      -m MaxCount - Terminate after receiving this number of packets\n"
+         "      -n MaxCount - Terminate after receiving this number of packets\n"
          "      -q          - Quiet (no output)\n\n"
          "      -o Filename - Output log file\n\n"
          "If there is no incoming data, press several Ctrl-C to break\n\n"
          "Return code: = 0  - if the process received at least one packet\n"
          "             > 0  - if no packets were received or there was an error\n\n"
          "Example:\n"
-         "  %s -a micex+udp://91.203.253.233@239.195.4.11:26011 -v -i 1 -d 3\n\n",
+         "  %s -a \"micex+udp://91.203.253.233@239.195.4.11:26011/RTS-5\" -v -i 1 -d 3\n\n",
          program, program);
   exit(1);
 }
@@ -139,6 +176,7 @@ char* data_fmt_string(data_fmt_t fmt, char* pfx, char* sfx, char* def) {
   return buf;
 }
 
+void print_report();
 void process_packet(struct address* addr, const char* buf, int n);
 
 double scale(long n, long multiplier) {
@@ -164,10 +202,13 @@ const char* scale_suffix(long n, long multiplier) {
 
 uint32_t decode_forts_seqno(const char* buf, int n, long last_seqno, int* seq_reset);
 
-uint32_t get_seqno(data_fmt_t fmt, const char* buf, int n, long last_seqno, int* seq_reset) {
+long get_seqno(data_fmt_t fmt, const char* buf, int n, long last_seqno, int* seq_reset) {
   switch (fmt) {
-    case MICEX: *seq_reset = 0;
-                return htonl(*(uint32_t*)buf);
+    case MICEX: {
+      uint32_t a = buf[0], b = buf[1], c = buf[2], d = a << 24 | b << 16 | c << 8 | buf[3];
+      assert( d == htonl(*(uint32_t*)buf));
+      return d;
+    }
     case FORTS: return decode_forts_seqno(buf, n, last_seqno, seq_reset);
   }
   return 0;
@@ -184,24 +225,50 @@ void inc_addrs() {
 void parse_addr(const char* s) {
   const char*   pif, *q;
   char          a[512];
+  char*         url         =  addrs[addrs_count].url;
+  char**        title       = &addrs[addrs_count].title;
   char*         addr        =  addrs[addrs_count].iface_name;
   in_addr_t*    iface       = &addrs[addrs_count].iface;
   in_addr_t*    mcast_addr  = &addrs[addrs_count].mcast_addr;
   in_addr_t*    src_addr    = &addrs[addrs_count].src_addr;
   int*          port        = &addrs[addrs_count].port;
   data_fmt_t*   data_format = &addrs[addrs_count].data_format;
-  addrs[addrs_count].fd = -1;
-  addrs[addrs_count].last_seqno = 0;
-  addrs[addrs_count].seq_gap_count = 0;
 
-  *addr         = '\0';
+  memset(addrs+addrs_count, 0, sizeof(struct address));
+
+  addrs[addrs_count].id = addrs_count;
+  addrs[addrs_count].fd = -1;
   *iface        = INADDR_NONE;
   *mcast_addr   = INADDR_NONE;
   *src_addr     = INADDR_NONE;
   *port         = -1;
-  *data_format  = UNDEFINED;
 
-  snprintf(a, sizeof(a), "%s", s);
+  snprintf(a,   sizeof(a), "%s", s);
+  snprintf(url, sizeof(((struct address*)0)->url), "%s", s);
+
+  if (verbose > 2)
+    printf("Address: %s\n", s);
+
+  {
+    char* p;
+    /* Remove the title from url */
+    if ((p = strchr(url, ':')) && 
+        (p = strchr(p+1, ':')) &&
+        (p = strchr(p+1, '/'))) {
+      a[p - url] = '\0';
+      *p++ = '\0';
+      while (*p == ' ') p++;
+      *title = p;
+      for (; *p; p++)
+        if (*p == '\n') {
+          *p = '\0';
+          break;
+        }
+      int n = strlen(*title);
+      if (n > max_title_width) max_title_width = n;
+    }
+  }
+
   char* label = strchr(s, '+');
   if (label) {
     data_fmt_t code = (data_fmt_t)s[0];
@@ -214,8 +281,6 @@ void parse_addr(const char* s) {
     }
     s = label+1;
   }
-  if (verbose > 2)
-    printf("Address: %s\n", s);
   if (strncmp(s, "udp://", 6)) {
     strncpy(addr, s, 64);
   } else {
@@ -241,15 +306,15 @@ void parse_addr(const char* s) {
     }
     *p++ = '\0';
     if (pif)
-      strncpy(addr, pif, 64);
+      snprintf(addr, sizeof(((struct address*)0)->iface_name), "%s", pif);
     *mcast_addr = inet_addr(q);
     *port = atoi(p);
     if (verbose > 2) {
-      printf("  %d: mcast=%s port=%d iface=%s",
-        addrs_count, q, *port, pif ? pif : "any");
+      printf("  %d: mcast=%s port=%d iface=%s title='%s'\n",
+        addrs_count, q, *port, pif ? pif : "any", *title);
     }
 
-    if (verbose > 1) {
+    if (verbose > 2) {
       printf("Adding iface=%s, mcast=%x, src=%x, port=%d\n",
         *addr ? addr : "any",
         addrs[addrs_count].mcast_addr,
@@ -265,10 +330,10 @@ void main(int argc, char *argv[])
   struct ip_mreq        group;
   struct ip_mreq_source group_s;
   struct epoll_event    events[256];
-  const char*           label = NULL;
   int                   bsize = 0;
   struct timeval        tv;
-  int                   use_epoll = 0, efd = -1;
+  int                   use_epoll = 1, efd = -1, tfd = -1;
+  struct epoll_event    timer_event;
   const char*           output_file = NULL;
 
   char*                 iaddr       = NULL;
@@ -283,14 +348,20 @@ void main(int argc, char *argv[])
   if (argc < 3)
     usage(argv[0]);
 
-  memset(addrs_idx, 0, sizeof(addrs_idx));
+  memset(addrs_idx,    0, sizeof(addrs_idx));
+  memset(sorted_addrs, 0, sizeof(sorted_addrs));
 
   /* Parse command-line arguments */
+
+  for (i=1; i < argc; ++i)
+    if (!strncmp(argv[i], "-v", 2))
+      verbose += strlen(argv[i])-1;
 
   for (i=1; i < argc; ++i) {
 
     if (!strcmp(argv[i], "-c") && i < argc-1) {
-      FILE* file = fopen(argv[++i], "r");
+      const char* cfgfile = argv[++i];
+      FILE* file = strcmp("-", cfgfile) ? fopen(cfgfile, "r") : stdin;
       char buf[512];
       if (!file) {
         fprintf(stderr, "Error opening config file '%s': %s\n",
@@ -300,13 +371,11 @@ void main(int argc, char *argv[])
       while (fgets(buf, sizeof(buf), file)) {
         char* p = buf;
         while(*p == ' ' || *p == '\t') p++;
-        if (strlen(p) && *p != '#') {
-          if (verbose > 1)
-            printf("Parsing address: %s\n", p);
+        if (strlen(p) && *p != '#')
           parse_addr(p);
-        }
       }
-      fclose(file);
+      if (fileno(file))
+        fclose(file);
     } else if (!strcmp(argv[i], "-a") && i < argc-1)
       parse_addr(argv[++i]);
     else if (!strcmp(argv[i], "-p") && i < argc-1)
@@ -319,7 +388,9 @@ void main(int argc, char *argv[])
       bsize = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-i") && i < argc-1)
       interval = atoi(argv[++i]);
-    else if (!strcmp(argv[i], "-m") && i < argc-1)
+    else if (!strcmp(argv[i], "-I") && i < argc-1)
+      next_sock_report_lines = sock_interval = atoi(argv[++i]);
+    else if (!strcmp(argv[i], "-n") && i < argc-1)
       max_pkts = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-o") && i < argc-1)
       output_file = argv[++i];
@@ -327,10 +398,13 @@ void main(int argc, char *argv[])
       gettimeofday(&tv, NULL);
       alarm(atoi(argv[++i]));
     } else if (!strncmp(argv[i], "-v", 2))
-      verbose += strlen(argv[i])-1;
-    else if (!strncmp(argv[i], "-e", 2))
-      use_epoll = 1;
-    else if (!strncmp(argv[i], "-q", 2))
+      (void)0;
+    else if (!strncmp(argv[i], "-e", 2)) {
+      if (i < argc-1 && !strcmp(argv[i+1], "false")) {
+        i++;
+        use_epoll = 0;
+      }
+    } else if (!strncmp(argv[i], "-q", 2))
       quiet = 1;
     else if (!strcmp(argv[i], "-l") && i < argc-1)
       label = argv[++i];
@@ -338,6 +412,7 @@ void main(int argc, char *argv[])
       usage(argv[0]);
   }
 
+  /* No "-c" and "-a" options given: obtain address from other parameters */
   if (!addrs_count) {
     if (!imcast_addr || !iport)
       usage(argv[0]);
@@ -349,6 +424,7 @@ void main(int argc, char *argv[])
     inc_addrs();
   }
 
+  /* Setup output */
   if (output_file) {
     fflush(stdout);
     efd = open(output_file, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
@@ -361,15 +437,34 @@ void main(int argc, char *argv[])
     close(efd);
   }
 
+  if (addrs_count > 1 && !use_epoll) {
+    if (verbose)
+      printf("Enabling epoll since more than one url provided!\n");
+    use_epoll = 1;
+  }
+
   if (use_epoll) {
     efd = epoll_create1(0);
     if (efd < 0) {
       perror("epoll_create1");
       exit(1);
     }
-  } else if (addrs_count > 1) {
-    fprintf(stderr, "Cannot specify more than one address without using epoll (-e)!");
-    exit(1);
+
+    /* Create reporting timer */
+    if (interval) {
+      tfd = timerfd_create(CLOCK_REALTIME, TFD_NONBLOCK);
+      if (tfd < 0) {
+        perror("timerfd_create");
+        exit(1);
+      }
+      timer_event.data.fd = tfd;
+      timer_event.events  = EPOLLIN | EPOLLET | EPOLLPRI;
+
+      if (epoll_ctl(efd, EPOLL_CTL_ADD, tfd, &timer_event) < 0) {
+        perror("epoll_ctl(timer_event)");
+        exit(1);
+      }
+    }
   }
 
   /* Initialize all sockets */
@@ -385,7 +480,7 @@ void main(int argc, char *argv[])
     if (addrs[i].fd < 0) {
         perror("opening datagram socket");
         exit(1);
-    } else if (verbose > 1) {
+    } else if (verbose > 2) {
       printf(" Addr#%d opened fd = %d\n", i, addrs[i].fd);
     }
 
@@ -424,7 +519,7 @@ void main(int argc, char *argv[])
     /* Figure out which network interface to use */
     if (!addrs[i].iface_name) {
       addrs[i].iface = INADDR_ANY;
-      if (verbose > 1)
+      if (verbose > 2)
         printf("Using INADDR_ANY interface\n");
     } else if (strlen(addrs[i].iface_name) == 0) {
       char buf[256], obuf[256], mc[32], via[32], src[32];
@@ -441,7 +536,7 @@ void main(int argc, char *argv[])
         exit(1);
       }
       fclose(file);
-      if (verbose > 1)
+      if (verbose > 2)
         printf("Executed: '%s' ->\n  %s\n", buf, obuf);
       if (sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
           mc, via, addrs[i].iface_name, src) != 4) {
@@ -507,12 +602,12 @@ void main(int argc, char *argv[])
       snprintf(mcast, sizeof(mcast), "%s", inet_ntoa(*((struct in_addr*)&addrs[i].mcast_addr)));
       snprintf(src,   sizeof(src),   "%s", inet_ntoa(*((struct in_addr*)&addrs[i].src_addr)));
 
-      printf("Joining %smulticast %s%s%s on interface %s:%d%s\n",
-        addrs[i].src_addr != INADDR_NONE ? "source-specific " : "",
+      printf("#%02d Join %smcast %s%s%s on iface %s:%d %s\n", addrs[i].id,
+        addrs[i].src_addr != INADDR_NONE ? "src-spec " : "",
         addrs[i].src_addr != INADDR_NONE ? src : "",
         addrs[i].src_addr ? "@" : "",
         mcast, iface, addrs[i].port,
-        data_fmt_string(addrs[i].data_format, " (", ")", ""));
+        addrs[i].title);
     }
 
     if (addrs[i].src_addr != INADDR_NONE) {
@@ -541,7 +636,36 @@ void main(int argc, char *argv[])
 
   gettimeofday(&tv, NULL);
   start_time = now_time = last_time = tv.tv_sec * 1000000 + tv.tv_usec;
-  next_time  = start_time + interval * 1000000;
+
+  /* Set up reporting timeout */
+
+  if (tfd > 0) {
+    struct itimerspec timeout;
+    long rem = 5000000 - ((tv.tv_sec % 5) * 1000000 + tv.tv_usec);
+    long next_time  = now_time + rem;
+    memset(&timeout, 0, sizeof(timeout));
+    timeout.it_value.tv_sec     = next_time / 1000000;
+    timeout.it_value.tv_nsec    = next_time % 1000000;
+    timeout.it_interval.tv_sec  = interval;
+    timeout.it_interval.tv_nsec = 0;
+
+    struct itimerspec oldt;
+    if (tfd >= 0 && timerfd_settime(tfd, TFD_TIMER_ABSTIME, &timeout, &oldt) < 0) {
+      perror("timerfd_settime");
+      exit(1);
+    }
+
+    if (verbose > 2)
+      printf("Reporting timer setup in %ld seconds\n",
+        timeout.it_value.tv_sec - now_time/1000000);
+
+    for (i=0; i < sizeof(sorted_addrs) / sizeof(sorted_addrs[0]); i++) {
+      int j, sz = addrs_count * sizeof(struct address*);
+      sorted_addrs[i] = malloc(sz);
+      for (j=0; j < addrs_count; j++)
+        sorted_addrs[i][j] = &addrs[j];
+    }
+  }
 
   /*----------------------------------------------------------------------
    * Main data loop
@@ -555,9 +679,9 @@ void main(int argc, char *argv[])
     int events_count, n = -1, i;
 
     if (use_epoll) {
-      if (verbose > 2) printf("  Calling epoll(%d)...\n", efd);
+      if (verbose > 4) printf("  Calling epoll(%d)...\n", efd);
       events_count = epoll_wait(efd, events, sizeof(events)/sizeof(events[0]), -1);
-      if (verbose > 2) printf("  epoll() -> %d\n", events_count);
+      if (verbose > 4) printf("  epoll() -> %d\n", events_count);
 
       if (events_count < 0) {
         if (errno == EINTR)
@@ -568,15 +692,27 @@ void main(int argc, char *argv[])
       n = 0;
     } else {
       int fd = addrs[0].fd;
-      if (verbose > 2) printf("  Calling read(%d, size=%d)...\n", fd, sizeof(databuf));
+      if (verbose > 4) printf("  Calling read(%d, size=%d)...\n", fd, sizeof(databuf));
       n = read(fd, databuf, sizeof(databuf));
-      if (verbose > 2) printf("  Got %d bytes\n", n);
+      if (verbose > 4) printf("  Got %d bytes\n", n);
       events_count = 1;
       events[0].data.fd = fd;
       events[0].events  = EPOLLIN;
     }
 
     for (i=0; i < events_count; ++i) {
+      if (events[i].data.fd == tfd) {
+        // Reporting timeout
+        uint64_t exp;
+        while ((n = read(tfd, &exp, sizeof(exp))) > 0 || errno == EINTR);
+        if (errno != EAGAIN) {
+          perror("read(timerfd-descriptor)");
+          exit(1);
+        }
+        print_report();
+        continue;
+      }
+
       struct address* addr = addrs_idx[events[i].data.fd];
 
       do {
@@ -608,15 +744,185 @@ void main(int argc, char *argv[])
       tot_bytes / 1024 / sec, (int)(tot_pkts / sec),
       (long)scale(tot_bytes, 1024), scale_suffix(tot_bytes, 1024),
       (long)scale(tot_pkts,  1000), scale_suffix(tot_pkts,  1000),
-      tot_ooo_count, tot_seq_gap_count);
+      tot_ooo_count, tot_gap_count);
   }
+
+  for (i=0; i < sizeof(sorted_addrs) / sizeof(sorted_addrs[0]); i++)
+    if (sorted_addrs[i])
+      free(sorted_addrs[i]);
 
   exit(tot_pkts ? 0 : 1);
 }
 
+inline int intcmpa(long a, long b) { return a < b ? -1 : a > b; }
+inline int intcmpd(long a, long b) { return a > b ? -1 : a < b; }
+
+int sort_by_bytes(const void* a, const void* b) {
+  struct address* lhs = *(struct address**)a;
+  struct address* rhs = *(struct address**)b;
+  int n = intcmpd(lhs->bytes_cnt, rhs->bytes_cnt);
+  return n ? n : intcmpa(lhs->port, rhs->port);
+}
+
+int sort_by_packets(const void* a, const void* b) {
+  struct address* lhs = *(struct address**)a;
+  struct address* rhs = *(struct address**)b;
+  int n = intcmpd(lhs->pkt_count, rhs->pkt_count);
+  return n ? n : intcmpa(lhs->port, rhs->port);
+}
+
+int sort_by_ooo(const void* a, const void* b) {
+  struct address* lhs = *(struct address**)a;
+  struct address* rhs = *(struct address**)b;
+  int n = intcmpd(lhs->ooo_count, rhs->ooo_count);
+  return n ? n : intcmpa(lhs->port, rhs->port);
+}
+
+int sort_by_gaps(const void* a, const void* b) {
+  struct address* lhs = *(struct address**)a;
+  struct address* rhs = *(struct address**)b;
+  int n = intcmpd(lhs->gap_count, rhs->gap_count);
+  return n ? n : intcmpa(lhs->port, rhs->port);
+}
+
+void report_socket_stats() {
+  typedef int (*compar_fun)(const void*, const void*);
+  static const compar_fun sort_funs[] = {
+    &sort_by_bytes, &sort_by_packets, &sort_by_ooo, &sort_by_gaps
+  };
+  static const char SEP[] = "================================"
+                            "================================"
+                            "================================";
+  static const char BAR[] = "********************************";
+  static const int graph_width = 15;
+  static const int max_lines   = 10;
+  const        int pad_title   = max_title_width - 5;
+
+  int i, max_ooo_count = 0, max_pkt_count = 0, max_bytes = 0, max_gap_count = 0;
+  int n = addrs_count > max_lines ? max_lines : addrs_count;
+
+  for(i = 0; i < addrs_count; i++) {
+    struct address* p = addrs + i;
+    if (p->bytes_cnt > max_bytes    ) max_bytes     = p->bytes_cnt;
+    if (p->pkt_count > max_pkt_count) max_pkt_count = p->pkt_count;
+    if (p->ooo_count > max_ooo_count) max_ooo_count = p->ooo_count;
+    if (p->gap_count > max_gap_count) max_gap_count = p->gap_count;
+  }
+
+  for (i=0; i < sizeof(sort_funs)/sizeof(sort_funs[0]); i++)
+    qsort(sorted_addrs[i], addrs_count, sizeof(struct address*), sort_funs[i]);
+
+  printf("#C|%*.*sTitle|==MBytes|%*.*sBytesGraph|%*.*sTitle|==Packets|%*.*sPacketsGraph|\n",
+    pad_title, pad_title, SEP, graph_width-10, graph_width-10, SEP,
+    pad_title, pad_title, SEP, graph_width-12, graph_width-12, SEP);
+
+  for(i=0; i < n; i++) {
+    struct address* pbytes = sorted_addrs[0][i];
+    struct address* ppkts  = sorted_addrs[1][i];
+    int gbytes = max_bytes     ? (int)(graph_width * pbytes->bytes_cnt / max_bytes) : 0;
+    int gpkts  = max_pkt_count ? (int)(graph_width * ppkts->pkt_count / max_pkt_count) : 0;
+
+    printf("#C|%*s|%8.1f|%*.*s%*s|%*s|%9d|%*.*s%*s|\n",
+      max_title_width, pbytes->title, (double)pbytes->bytes_cnt/MEGABYTE,
+      gbytes, gbytes, BAR, graph_width - gbytes, "",
+      max_title_width, ppkts ->title, ppkts->pkt_count,
+      gpkts, gpkts, BAR, graph_width - gpkts, "");
+  }
+
+  printf("#c|%*.*sTitle|====Gaps|%*.*sGapsGraph|%*.*sTitle|==OutOrdr|%*.*sOutOfOrdGraph|\n",
+    pad_title, pad_title, SEP, graph_width-9,  graph_width-9,  SEP,
+    pad_title, pad_title, SEP, graph_width-13, graph_width-13, SEP);
+
+  for(i=0; i < n; i++) {
+    struct address* pooo   = sorted_addrs[2][i];
+    struct address* pgaps  = sorted_addrs[3][i];
+    int ggaps = max_gap_count ? (int)(graph_width * pgaps->gap_count / max_gap_count) : 0;
+    int gooos = max_ooo_count ? (int)(graph_width * pgaps->ooo_count / max_ooo_count) : 0; 
+
+    printf("#c|%*s|%8d|%*.*s%*s|%*s|%9d|%*.*s%*s|\n",
+      max_title_width, pgaps ->title, pgaps->gap_count,
+      ggaps, ggaps, BAR, graph_width - ggaps, "",
+      max_title_width, pooo  ->title, pooo->ooo_count,
+      gooos, gooos, BAR, graph_width - gooos, "");
+  }
+}
+
+void print_report() {
+  struct timeval tv;
+  int i, seqno;
+
+  gettimeofday(&tv, NULL);
+
+  if (verbose > 3)
+    printf("%06d Reporting event\n", tv.tv_sec % 86400);
+
+  if (quiet || !(interval && verbose))
+    return;
+
+  double sec = (double)(now_time - last_time)/1000000;
+  struct tm* tm  = localtime(&tv.tv_sec);
+  double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count : 0.0;
+  int socks_with_gaps = 0, socks_with_ooo = 0, socks_with_nodata = 0;
+
+  for(i = 0; i < addrs_count; i++) {
+    struct address* addr = addrs + i;
+    if (addr->ooo_count - addr->last_ooo_count)  socks_with_ooo++;
+    if (addr->gap_count - addr->last_gap_count)  socks_with_gaps++;
+    if (!(addr->pkt_count-addr->last_pkt_count)) socks_with_nodata++;
+
+    addr->last_ooo_count = addr->ooo_count;
+    addr->last_gap_count = addr->gap_count;
+    addr->last_pkt_count = addr->pkt_count;
+  }
+
+  if (sec == 0.0) sec = 1.0;
+
+  // We skip first reporting period as it may be skewed due
+  // to slow subscription startup
+  if (output_lines_count++) {
+    if (output_lines_count >= next_sock_report_lines) {
+      report_socket_stats();
+      next_sock_report_lines = output_lines_count + sock_interval;
+    }
+
+    if (output_lines_count >= next_legend_count) {
+
+      printf(
+        "#S|Sok:%4d| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT"
+        "|  MBytes| KPakets|OutOfOrd|TotGapsK|Lat N  Avg Mn   Max|\n",
+        addrs_count);
+      next_legend_count = output_lines_count + 50;
+    }
+
+    printf("II|%02d:%02d:%02d|%9.1f|%6d|%6d|%5d|%2d|%2d|%2d|TOT|"
+           "%8.1f|%8ld|%8d|%8d|%5d%5.1f %2d %5d|\n",
+        tm->tm_hour, tm->tm_min, tm->tm_sec,
+        (double)bytes / 1024 / sec, (int)(pkts / sec),
+        ooo_count, gap_count,
+        socks_with_nodata, socks_with_gaps, socks_with_ooo,
+        (double)tot_bytes / MEGABYTE, (long)(tot_pkts / 1000),
+        (long)tot_ooo_count, (long)(tot_gap_count / 1024),
+        pkt_time_count, avg_lat,
+        pkt_time_count ? min_pkt_time : 0,
+        max_pkt_time);
+  }
+
+  min_pkt_time  = LONG_MAX;
+  max_pkt_time  = 0;
+  sum_pkt_time  = 0;
+  pkt_time_count= 0;
+  last_pkts     = pkts;
+  bytes = pkts  = 0;
+  ooo_count     = 0;
+  gap_count     = 0;
+  last_time     = now_time;
+
+  fflush(stdout);
+}
+
 void process_packet(struct address* addr, const char* buf, int n) {
   struct timeval tv;
-  int seqno;
+  long seqno;
 
   gettimeofday(&tv, NULL);
   now_time = tv.tv_sec * 1000000 + tv.tv_usec;
@@ -631,6 +937,9 @@ void process_packet(struct address* addr, const char* buf, int n) {
     pkt_time_count++;
   }
 
+  addr->bytes_cnt += n;
+  addr->pkt_count++;
+
   tot_bytes += n;
   tot_pkts++;
   bytes += n;
@@ -644,63 +953,30 @@ void process_packet(struct address* addr, const char* buf, int n) {
       if (!seq_reset) {
         if (diff < 0) {
           if (verbose > 1)
-            printf("  Out of order seqno (last=%ld, now=%ld): %d\n",
-              addr->last_seqno, seqno, diff);
+            printf("  Out of order seqno (last=%ld, now=%ld): %d (%s)\n",
+              addr->last_seqno, seqno, diff, addr->title);
           addr->ooo_count++;
           tot_ooo_count++;  /* out of order */
           ooo_count++;
         } else if (diff > 1) {
-          addr->seq_gap_count++;
-          tot_seq_gap_count++;
-          seq_gap_count++;
+          addr->gap_count++;
+          tot_gap_count++;
+          gap_count++;
           if (verbose > 1)
-            printf("  Gap detected in seqno (last=%ld, now=%ld): %d\n",
-              addr->last_seqno, seqno, diff);
+            printf("  Gap detected in seqno (last=%ld, now=%ld): %d (%s)\n",
+              addr->last_seqno, seqno, diff, addr->title);
         }
+
       }
     }
     addr->last_seqno = seqno;
   }
 
-  if (pkts >= max_pkts)
+  if (tot_pkts >= max_pkts)
     terminate = 1;
 
   if (verbose > 2)
-    printf("Received %6d bytes, %ld packets\n", n, tot_pkts);
-
-  if (!quiet && (interval || verbose) && now_time >= next_time) {
-    double sec = (double)(now_time - last_time)/1000000;
-    struct tm* tm  = localtime(&tv.tv_sec);
-    double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count : 0.0;
-    if (sec == 0.0) sec = 1.0;
-    printf("%02d:%02d:%02d|%6.1f K/s %6d p/s|o: %4d %s|gap: %4d %s|"
-           "Tot: %5d %s %6d %sp|o: %4d %s|gap: %4d %s|"
-           "Lat:%6d @ %6.1fus (%d..%d)\n",
-        tm->tm_hour, tm->tm_min, tm->tm_sec,
-        scale(bytes, 1024) / sec, (int)(pkts / sec),
-        (int)scale(ooo_count,         1000), scale_suffix(ooo_count,        1000),
-        (int)scale(seq_gap_count,     1000), scale_suffix(seq_gap_count,    1000),
-        (int)scale(tot_bytes,         1024), scale_suffix(tot_bytes,        1024),
-        (int)scale(tot_pkts,          1000), scale_suffix(tot_pkts,         1000),
-        (int)scale(tot_ooo_count,     1000), scale_suffix(tot_ooo_count,    1000),
-        (int)scale(tot_seq_gap_count, 1000), scale_suffix(tot_seq_gap_count,1000),
-        pkt_time_count, avg_lat,
-        pkt_time_count ? min_pkt_time : 0,
-        max_pkt_time);
-
-    min_pkt_time  = LONG_MAX;
-    max_pkt_time  = 0;
-    sum_pkt_time  = 0;
-    pkt_time_count= 0;
-    last_pkts     = pkts;
-    bytes = pkts  = 0;
-    ooo_count     = 0;
-    seq_gap_count = 0;
-    last_time     = now_time;
-    next_time     = now_time + interval*1000000;
-
-    fflush(stdout);
-  }
+    printf("Received %6d bytes, %ld packets (%s)\n", n, tot_pkts, addr->title);
 }
 
 static inline int u32_to_size (uint32_t n)
@@ -716,38 +992,6 @@ static inline int u32_to_size (uint32_t n)
   return s_table[first_bit];
 }
 
-/*
-uint32_t decode_uint32(const char** pbytes, const char* end)
-{
-  static const uint64_t s_mask = 0x8080808080808080;
-  const uint64_t* pval = *(const uint64_t**)bytes;
-  uint64_t stop = *pval & s_mask;
-  int      bits = stop ? __builtin_clzl(stop) : -1;
-  int     bytes = (bits >> 3) + 1;
-  uint64_t  res = (*pval >> (56-bits)) & 0x7F7F7F7F7F7F7F7F;
-
-  switch (bytes) {
-    case 1: return res;
-    case 2: return res       & 0x0000007F
-                | (res >> 1) & 0x00003F80;
-    case 3: return res       & 0x0000007F
-                | (res >> 1) & 0x00003F80
-                | (res >> 2) & 0x003Fc000;
-    case 3: return res       & 0x0000007F
-                | (res >> 1) & 0x00003F80
-                | (res >> 2) & 0x003Fc000
-                | (res >> 3) & 0x;
-  assert(bits >= 0);
-
-  *pbytes += (n >> 8);
-
-  const uint8_t* p;
-
-  if (0 == nbytes)  return 0;
-
-}
-*/
-
 int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
   const char* p = *buff;
   int i;
@@ -756,7 +1000,6 @@ int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
   for (i=0; p != end; i += 7) {
     uint64_t m = (uint64_t)(*p & 0x7F) << i;
     n |= m;
-    //printf("    i=%d, p=%02x, m=%016x, n=%016x\n", i, *(uint8_t*)p, m, n);
     if (*p++ & 0x80) {
         *val  = n;
         n     = p - *buff;

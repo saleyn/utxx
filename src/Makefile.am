@@ -28,18 +28,18 @@ libutxx_la_SOURCES  = $(UTXX64_SRCS) $(UTXX_SRCS)
 endif
 libutxx_la_LTADD    = -version-info 1:0:0 -shared
 libutxx_la_LIBS     = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB)
-libutxx_la_CXXFLAGS = -I../include $(BOOST_CPPFLAGS)
+libutxx_la_CXXFLAGS = -I${abs_top_srcdir}/include $(BOOST_CPPFLAGS)
 
 mreceive_SOURCES    = mreceive.c
 mreceive_CFLAGS     = -g
 
 nobase_include_HEADERS = \
-	$(sort ../include/@PACKAGE@/config_validator.xsl \
-		   ../bin/config_validator_codegen.py \
+	$(sort ${abs_top_srcdir}/include/@PACKAGE@/config_validator.xsl \
+		   ${abs_top_srcdir}/bin/config_validator_codegen.py \
 		$(foreach d, \
-			$(shell find ../include/@PACKAGE@ -type d -print),\
+			$(shell find ${abs_top_srcdir}/include/@PACKAGE@ -type d -print0),\
 		  	$(wildcard $(d)/*.?pp)))
 
-nodist_libutxx_la_SOURCES = ../config.h
+nodist_libutxx_la_SOURCES = ${abs_top_srcdir}/config.h
 
 EXTRA_DIST = config_validator.xsl

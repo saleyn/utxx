@@ -46,16 +46,8 @@ static logger_impl_mgr::registrar reg("async_file", f);
 
 void logger_impl_async_file::finalize()
 {
-    m_terminated = true;
-    atomic::memory_barrier();
-    m_stack.signal();
-    if (m_thread) {
-        m_thread->join();
-        m_thread = NULL;
-    }
-    if (m_fd)
-        fsync(m_fd);
-    close(m_fd);
+    if (!m_engine.running())
+        m_engine.stop();
 }
 
 std::ostream& logger_impl_async_file::dump(std::ostream& out,
@@ -90,10 +82,8 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
     m_levels = logger::parse_log_levels(
         a_config.get<std::string>("logger.async_file.levels", logger::default_log_levels));
 
-    m_fd = open(m_filename.c_str(),
-                m_append ? O_CREAT|O_APPEND|O_WRONLY|O_LARGEFILE
-                         : O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE,
-                m_mode);
+    m_fd = m_engine.open_file(m_filename.c_str(), m_append, m_mode);
+
     unsigned long timeout = m_timeout.tv_sec * 1000 + m_timeout.tv_nsec / 1000000ul;
 
     m_show_location   = a_config.get<bool>("logger.async_file.show_location",
@@ -120,34 +110,8 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
         on_bin_delegate_t::from_method<
             logger_impl_async_file, &logger_impl_async_file::log_bin>(this));
 
-    m_error.clear();
-    m_terminated = false;
-    m_thread     = new boost::thread(boost::ref(*this));
+    m_engine.start();
     return true;
-}
-
-void logger_impl_async_file::operator()()
-{
-    if (m_barrier)
-        m_barrier->wait();
-
-    while (1) {
-        async_data* nd = static_cast<async_data*>(
-            m_terminated ? m_stack.try_reset(true) : m_stack.reset(&m_timeout, true)
-        );
-        if (nd == NULL) {
-            if (m_terminated)
-                break;
-            else
-                continue;
-        }
-        if (write_data(nd) < 0) {
-            m_terminated = true;
-            char buf[128];
-            m_error = std::string("Error writing to file: ")
-                    + (strerror_r(errno, buf, sizeof(buf)) == 0 ? buf : "unknown");
-        }
-    }
 }
 
 void logger_impl_async_file::log_msg(
@@ -169,51 +133,20 @@ void logger_impl_async_file::log_bin(const char* msg, size_t size)
 void logger_impl_async_file::send_data(log_level level, const char* msg, size_t size)
     throw(io_error)
 {
-    if (m_terminated)
+    if (!m_engine.running())
         throw io_error(m_error.empty() ? "Logger terminated!" : m_error.c_str());
 
-    size_t alloc_sz = async_data::allocation_size(size);
-    void* pdat      = m_allocator.allocate(alloc_sz);
-    async_data* p   = static_cast<async_data*>(memory::cached_allocator<char>::to_node(pdat));
+    char* p = m_engine.allocate(size);
 
-    if (p == NULL) {
+    if (!p) {
         std::stringstream s("Out of memory allocating ");
         s << size << " bytes!";
-        m_error = s.str();
-        m_terminated = true;
         throw io_error(m_error);
     }
 
-    p->size  = size;
-    p->level = level;
-    memcpy(p->data(), msg, size);
+    memcpy(p, msg, size);
 
-    m_stack.push(p);
-}
-
-int logger_impl_async_file::write_data(async_data* p)
-{
-    struct iovec iov[IOV_MAX];
-    size_t n = 0, size = 0;
-
-    while (p != NULL) {
-        iov[n].iov_base = p->data();
-        iov[n].iov_len  = p->size;
-        async_data* nxt = p->next();
-        size += p->size;
-        p = nxt;
-        if (++n == IOV_MAX || p == NULL) {
-            int res = writev(m_fd, iov, n);
-            for (size_t i=0; i < n; ++i)
-                m_allocator.free_node(async_data::to_node(iov[i].iov_base));
-            if (res < 0)
-                return res;
-            n = 0;
-        }
-    }
-
-    //fsync(m_fd);
-    return 0;
+    m_engine.write(m_fd, p, size);
 }
 
 } // namespace utxx
