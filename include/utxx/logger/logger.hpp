@@ -274,10 +274,11 @@ public:
     void log(const log_msg_info& info, const char* fmt, va_list args) {
         if (is_enabled(info.level()))
             try {
-                timestamp l_ts;
-                l_ts.update();
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+
                 m_sig_msg[level_to_signal_slot(info.level())](
-                    on_msg_delegate_t::invoker_type(info, l_ts, fmt, args));
+                    on_msg_delegate_t::invoker_type(info, &tv, fmt, args));
             } catch (std::runtime_error& e) {
                 if (m_error)
                     m_error(e.what());

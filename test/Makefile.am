@@ -84,8 +84,7 @@ test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
 test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
 					  $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
 					  $(BOOST_DATE_TIME_LIB) \
-					  -lboost_timer \
-					  $(BOOST_CHRONO_LIB) \
+					  $(BOOST_TIMER_LIB) \
 					  $(BOOST_FILESYSTEM_LIB) \
 					  $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
 					  $(RTLIB)
@@ -106,7 +105,7 @@ example_delegate_CPPFLAGS 	= $(if $(debug),\
                                 $(if $(optimize),-O$(optimize))) \
 					          -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
 example_delegate_LDFLAGS    = $(BOOST_LDFLAGS)
-example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_CHRONO_LIB) -lboost_timer
+example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB)
 
 #test_cm_SOURCES 	= test_clustered_map.cpp
 #test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(top_srcdir)/include $(BOOST_CPPFLAGS)

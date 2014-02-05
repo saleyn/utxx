@@ -115,7 +115,7 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
 }
 
 void logger_impl_async_file::log_msg(
-    const log_msg_info& info, const timestamp& a_tv, const char* fmt, va_list args)
+    const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
     throw(std::runtime_error)
 {
     char buf[logger::MAX_MESSAGE_SIZE];

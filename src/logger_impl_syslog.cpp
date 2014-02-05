@@ -121,7 +121,7 @@ bool logger_impl_syslog::init(const variant_tree& a_config)
 int get_priority(log_level level);
 
 void logger_impl_syslog::log_msg(
-    const log_msg_info& info, const timestamp&, const char* fmt, va_list args)
+    const log_msg_info& info, const timeval*, const char* fmt, va_list args)
     throw(io_error) 
 {
     int priority = get_priority(info.level());

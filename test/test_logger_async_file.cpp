@@ -219,22 +219,32 @@ struct latency_worker {
     int              iterations;
     boost::barrier&  barrier;
     perf_histogram*  histogram;
+    double*          elapsed;
 
-    latency_worker(int a_id, int it, boost::barrier& b, perf_histogram* h)
-        : id(a_id), iterations(it), barrier(b), histogram(h)
+    latency_worker(int a_id, int it, boost::barrier& b, perf_histogram* h, double* time)
+        : id(a_id), iterations(it), barrier(b), histogram(h), elapsed(time)
     {}
 
     void operator() () {
         barrier.wait();
-        histogram->reset();
+        histogram->reset(to_string("Hist", id).c_str());
+        bool no_histogram = getenv("NOHISTOGRAM");
+
+        time_val start = time_val::universal_time();
 
         for (int i=0; i < iterations; i++) {
-            histogram->start();
+            if (!no_histogram) histogram->start();
             LOG_ERROR  (("%d %9d This is an error #123", id, i));
-            histogram->stop();
+            if (!no_histogram) histogram->stop();
         }
+
+        *elapsed = time_val::universal_time().now_diff(start);
+
         if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
-            fprintf(stdout, "Performance thread %d finished\n", id);
+            fprintf(stdout,
+                    "Performance thread %d finished (speed=%7d ops/s, lat=%.3f us)\n",
+                    id, (int)((double)iterations / *elapsed),
+                    *elapsed * 1000000 / iterations);
     }
 };
 
@@ -271,28 +281,42 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     boost::shared_ptr<latency_worker>   workers[threads];
     boost::shared_ptr<boost::thread>    thread [threads];
+    double                              elapsed[threads];
     perf_histogram                      histograms[threads];
 
     for (int i=0; i < threads; i++) {
         workers[i] = boost::shared_ptr<latency_worker>(
-                        new latency_worker(++id, iterations, barrier, &histograms[i]));
-        thread[i]  = boost::shared_ptr<boost::thread>(new boost::thread(boost::ref(*workers[i])));
+                        new latency_worker(++id, iterations, barrier,
+                                           &histograms[i], &elapsed[i]));
+        thread[i]  = boost::shared_ptr<boost::thread>(
+                        new boost::thread(boost::ref(*workers[i])));
     }
 
     barrier.wait();
 
     perf_histogram totals("Total logger_async_file performance");
+    double sum_time = 0;
 
     for (int i=0; i < threads; i++) {
         thread[i]->join();
         totals += histograms[i];
+        sum_time += elapsed[i];
     }
 
     log.finalize();
 
-    totals.dump(std::cout);
 
-    verify_result(filename, threads, iterations, 1);
+    if (verbosity::level() >= utxx::VERBOSE_DEBUG) {
+        sum_time /= threads;
+        printf("Avg speed = %8d it/s, latency = %.3f us\n",
+               (int)((double)iterations / sum_time),
+               sum_time * 1000000 / iterations);
+        if (!getenv("NOHISTOGRAM"))
+            totals.dump(std::cout);
+    }
+
+    if (!getenv("NOVERIFY"))
+        verify_result(filename, threads, iterations, 1);
 
     ::unlink(filename);
 }

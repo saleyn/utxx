@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 #include <utxx/logger/logger.hpp>
+#include <utxx/time_val.hpp>
 
 namespace utxx {
 
@@ -70,11 +71,11 @@ void logger_impl::add_bin_logger(on_bin_delegate_t subscriber)
 int logger_impl::format_message(
     char* buf, size_t size, bool add_new_line,
     bool a_show_ident, bool a_show_location,
-    const timestamp& a_tv,
+    const timeval* a_tv,
     const log_msg_info& info, const char* fmt, va_list args
 ) throw (badarg_error)
 {
-    int len = a_tv.write(m_log_mgr->timestamp_type(), buf, size);
+    int len = timestamp::format(m_log_mgr->timestamp_type(), a_tv, buf, size);
     const char* end = buf + size - 2;
     const char* q   = logger::log_level_to_str(info.level());
     char* p = buf + len;

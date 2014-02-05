@@ -100,7 +100,7 @@ struct logger_impl {
     /// @param a_show_ident if true <a_logger.ident()> will be included in the output.
     /// @param a_show_location if true <info.src_location> will be included in
     ///                        the output.
-    /// @param timestamp current timestamp value
+    /// @param a_ts current timestamp value
     /// @param a_logger the logger object calling on_message callback.
     /// @param info msg log level and source line details
     /// @param fmt format string
@@ -108,13 +108,13 @@ struct logger_impl {
     int format_message(
         char* buf, size_t size, bool add_new_line,
         bool a_show_ident, bool a_show_location,
-        const timestamp& a_ts, const log_msg_info& info,
+        const timeval* a_ts, const log_msg_info& info,
         const char* fmt, va_list args
     ) throw (badarg_error);
 
     typedef delegate<
         void (const log_msg_info&,
-              const timestamp&,
+              const timeval*,
               const char*, /* format */
               va_list      /* args */) throw(std::runtime_error)
     > on_msg_delegate_t;

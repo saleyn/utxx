@@ -114,7 +114,7 @@ public:
 };
 
 void logger_impl_file::log_msg(
-    const log_msg_info& info, const timestamp& a_tv, const char* fmt, va_list args)
+    const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
     throw(io_error) 
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.

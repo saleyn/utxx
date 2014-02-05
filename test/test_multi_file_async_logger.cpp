@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
     unlink();
 
     logger_t::file_id l_fds[s_file_num];
-    
+
     logger_t l_logger;
 
     for (size_t i = 0; i < s_file_num; i++) {
@@ -239,7 +239,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
             BOOST_REQUIRE( !file.fail() );
             BOOST_REQUIRE_EQUAL( st, sg );
         }
-        
+
         std::getline(file, st);
         BOOST_REQUIRE(file.fail());
         BOOST_REQUIRE(file.eof());

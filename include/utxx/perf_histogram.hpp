@@ -47,7 +47,8 @@ namespace utxx {
 
 struct perf_histogram {
     enum clock_type {
-          REALTIME      = CLOCK_REALTIME
+          DEFAULT       = 0
+        , REALTIME      = CLOCK_REALTIME
         , MONOTONIC     = CLOCK_MONOTONIC
         , HIGH_RES      = CLOCK_PROCESS_CPUTIME_ID
         , THREAD_SPEC   = CLOCK_THREAD_CPUTIME_ID
@@ -60,12 +61,12 @@ private:
         , BUCKETS = MAX_RES+1
     };
 
-    int                 m_latencies[BUCKETS];
-    double              m_minTime, m_maxTime, m_sumTime;
-    struct timespec     m_last_start;
-    int                 m_count;
-    const std::string   m_header;
-    const clock_type    m_clock_type;
+    int             m_latencies[BUCKETS];
+    double          m_minTime, m_maxTime, m_sumTime;
+    struct timespec m_last_start;
+    int             m_count;
+    std::string     m_header;
+    clock_type      m_clock_type;
 
     static int to_bucket(double d) 
     {
@@ -91,15 +92,17 @@ public:
         ~sample() { h.stop(); }
     };
 
-    perf_histogram(const std::string& header = std::string(), clock_type ct = HIGH_RES)
+    perf_histogram(const std::string& header = std::string(), clock_type ct = DEFAULT)
         : m_header(header)
-        , m_clock_type(ct)
+        , m_clock_type(ct ? ct : MONOTONIC)
     {
         reset();
     }
 
     /// Reset internal statistics counters
-    void reset() {
+    void reset(const char* a_header = NULL, clock_type a_type = DEFAULT) {
+        if (a_header) m_header      = a_header;
+        if (a_type)   m_clock_type  = a_type;
         m_count   = 0;
         m_minTime = 9999999;
         m_maxTime = m_sumTime = 0;
