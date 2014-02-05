@@ -263,25 +263,27 @@ void inc_addrs() {
 }
 
 void parse_addr(const char* s) {
-  const char*   pif, *q;
-  char          a[512];
-  char*         url         =  addrs[addrs_count].url;
-  char**        title       = &addrs[addrs_count].title;
-  char*         addr        =  addrs[addrs_count].iface_name;
-  in_addr_t*    iface       = &addrs[addrs_count].iface;
-  in_addr_t*    mcast_addr  = &addrs[addrs_count].mcast_addr;
-  in_addr_t*    src_addr    = &addrs[addrs_count].src_addr;
-  int*          port        = &addrs[addrs_count].port;
-  data_fmt_t*   data_format = &addrs[addrs_count].data_format;
+  const char*       pif, *q;
+  char              a[512];
+  struct address*   paddr       = &addrs[addrs_count];
+  char*             url         =  paddr->url;
+  char**            title       = &paddr->title;
+  char*             addr        =  paddr->iface_name;
+  in_addr_t*        iface       = &paddr->iface;
+  in_addr_t*        mcast_addr  = &paddr->mcast_addr;
+  in_addr_t*        src_addr    = &paddr->src_addr;
+  int*              port        = &paddr->port;
+  data_fmt_t*       data_format = &paddr->data_format;
 
-  memset(addrs+addrs_count, 0, sizeof(struct address));
+  memset(paddr, 0, sizeof(struct address));
 
-  addrs[addrs_count].id = addrs_count;
-  addrs[addrs_count].fd = -1;
-  *iface        = INADDR_NONE;
-  *mcast_addr   = INADDR_NONE;
-  *src_addr     = INADDR_NONE;
-  *port         = -1;
+  paddr->id                     = addrs_count;
+  paddr->fd                     = -1;
+  *iface                        = INADDR_NONE;
+  *mcast_addr                   = INADDR_NONE;
+  *src_addr                     = INADDR_NONE;
+  *port                         = -1;
+  paddr->last_crep_pkt_changed  = -1;
 
   snprintf(a,   sizeof(a), "%s", s);
   snprintf(url, sizeof(((struct address*)0)->url), "%s", s);
@@ -357,9 +359,9 @@ void parse_addr(const char* s) {
     if (verbose > 2) {
       printf("Adding iface=%s, mcast=%x, src=%x, port=%d\n",
         *addr ? addr : "any",
-        addrs[addrs_count].mcast_addr,
-        addrs[addrs_count].src_addr,
-        addrs[addrs_count].port);
+        paddr->mcast_addr,
+        paddr->src_addr,
+        paddr->port);
     }
     inc_addrs();
   }
