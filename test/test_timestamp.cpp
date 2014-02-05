@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/high_res_timer.hpp>
+#include <utxx/string.hpp>
 #include <stdio.h>
 #include <sstream>
 #include <iostream>
@@ -94,14 +95,13 @@ struct test1 {
         const time_val& tv = hr.elapsed_time();
         timestamp::format(TIME_WITH_USEC, tv, buf[0], sizeof(buf[0]));
 
-        if (verbosity::level() > VERBOSE_NONE) {
+        {
             std::stringstream s; s.precision(6);
             s << "Thread" << id << " timestamp: hrcalls=" << timestamp::hrcalls()
               << ", syscalls=" << timestamp::syscalls()
               << ", speed=" << std::fixed << ((double)iterations / tv.seconds())
-              << ", latency=" << (1000000000.0*tv.seconds()/iterations) << " ns"
-              << std::endl;
-            std::cout << s.str();
+              << ", latency=" << (1000000000.0*tv.seconds()/iterations) << " ns";
+            BOOST_MESSAGE(s.str());
         }
     }
 };
@@ -130,17 +130,16 @@ struct test2 {
             }
             time_val end; end.now();
             end -= start;
-            ;
-            if (verbosity::level() > VERBOSE_NONE) {
-                std::stringstream s; s.precision(1);
-                s << "Thread" << id << ' ' << name << '\n'
-                  << "    speed=" << std::fixed << ((double)n / end.seconds())
-                  << " calls/s,";
-                s.precision(3);
-                s << " latency=" << (1000000.0*end.seconds()/n) << " us"
-                  << std::endl;
-                std::cout << s.str();
-            }
+
+            std::stringstream s; s.precision(1);
+            s << "Thread" << id << ' '
+              << std::left << std::setw(40) << name << std::right
+              << "    speed=" << std::fixed
+              << std::setw(6) << ((double)n / end.seconds() / 1000000)
+              << " Mcalls/s,";
+            s.precision(3);
+            s << " latency=" << (1000000.0*end.seconds()/n) << " us";
+            BOOST_MESSAGE(s.str());
         }
     };
 
@@ -170,16 +169,14 @@ struct test2 {
         timestamp::buf_type buf;
         timestamp::format(TIME_WITH_USEC, tv, buf, sizeof(buf));
 
-        if (verbosity::level() > VERBOSE_NONE) {
-            std::stringstream s; s.precision(1);
-            s << "Thread" << id << " timestamp::now() " << buf
-              << ", speed=" << std::fixed << ((double)iterations / tv.seconds())
-              << " calls/s,";
-            s.precision(3);
-            s << " latency=" << (1000000.0*tv.seconds()/iterations) << " us"
-              << std::endl;
-            std::cout << s.str();
-        }
+        std::stringstream s; s.precision(1);
+        s << "Thread" << id << " timestamp::now() " << buf
+          << ", speed=" << std::fixed << ((double)iterations / tv.seconds())
+          << " calls/s,";
+        s.precision(3);
+        s << " latency=" << (1000000.0*tv.seconds()/iterations) << " us"
+          << std::endl;
+        BOOST_MESSAGE(s.str());
 
         // Testing gettimeofday speed
         {
@@ -205,23 +202,39 @@ struct test2 {
             //test(&boost::posix_time::microsec_clock::local_time);
             test(&w::time);
         }
-        // Testing boost::local_time speed
+        // Testing CLOCK_REALTIME speed
         {
+            struct option { clockid_t type; const char* desc; };
+            const option options[] = {
+                { CLOCK_REALTIME,           "CLOCK_REALTIME" },
+                { CLOCK_MONOTONIC,          "CLOCK_MONOTONIC" },
+                { CLOCK_PROCESS_CPUTIME_ID, "CLOCK_PROCESS_CPUTIME_ID" },
+                { CLOCK_THREAD_CPUTIME_ID,  "CLOCK_THREAD_CPUTIME_ID" }
+            };
+
+            static clockid_t clock_type;
             struct w {
                 static int time() {
                     struct timespec ts;
-                    return clock_gettime( CLOCK_REALTIME, &ts );
+                    return clock_gettime( clock_type, &ts );
                 }
             };
-            boost::posix_time::microsec_clock::local_time();
-            caller test(id, "clock_gettime(CLOCK_REALTIME)", iterations);
-            //test(&boost::posix_time::microsec_clock::local_time);
-            test(&w::time);
+
+            for (int i=0; i < sizeof(options)/sizeof(option); i++) {
+                std::string title = to_string("clock_gettime(", options[i].desc, ")");
+                caller test(id, title.c_str(), iterations);
+                clock_type = options[i].type;
+                test(w::time);
+            }
         }
         // Testing gettimeofday speed
         {
             caller test(id, "timestamp::cached_time()", iterations);
             test(&timestamp::cached_time);
+        }
+        {
+            caller test(id, "timestamp::update()", iterations);
+            test(&timestamp::update);
         }
 
     }
@@ -345,7 +358,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 
 }
 
-BOOST_AUTO_TEST_CASE( test_timestamp_gettimeofday )
+BOOST_AUTO_TEST_CASE( test_time_latency )
 {
     if (nthreads > 0) {
         boost::shared_ptr<boost::thread> thread[nthreads];
@@ -439,5 +452,3 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
 
     BOOST_REQUIRE_EQUAL(expect_local_sec_since_midnight, got);
 }
-
-
