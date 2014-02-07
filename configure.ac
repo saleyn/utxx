@@ -102,11 +102,14 @@ if test x"$ac_boost_path" != x; then
     for ac_boost_path_tmp in $libsubdirs; do
         if test -d "$ac_boost_path"/"$ac_boost_path_tmp" ; then
             BOOST_LIBDIR="$ac_boost_path/$ac_boost_path_tmp"
-            AC_SUBST([BOOST_LIBDIR])
             break
         fi
     done
+else
+    BOOST_LIBDIR="/usr"
 fi
+
+AC_SUBST([BOOST_LIBDIR])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdlib.h string.h sys/time.h])
