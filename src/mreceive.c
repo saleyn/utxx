@@ -727,7 +727,7 @@ void main(int argc, char *argv[])
       n = 0;
     } else {
       int fd = addrs[0].fd;
-      if (verbose > 4) printf("  Calling read(%d, size=%d)...\n", fd, sizeof(databuf));
+      if (verbose > 4) printf("  Calling read(%d, size=%ld)...\n", fd, sizeof(databuf));
       n = read(fd, databuf, sizeof(databuf));
       if (verbose > 4) printf("  Got %d bytes\n", n);
       events_count = 1;
@@ -774,7 +774,7 @@ void main(int argc, char *argv[])
   if (!quiet) {
     double sec = (double)(tv.tv_sec * 1000000 + tv.tv_usec - start_time)/1000000;
     if (sec == 0.0) sec = 1.0;
-    printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %sB %9ld %spkts | OutOfSeq %d | Lost: %d\n",
+    printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %sB %9ld %spkts | OutOfSeq %ld | Lost: %ld\n",
       label ? label : "TOTAL",
       tot_bytes / 1024 / sec, (int)(tot_pkts / sec),
       (long)scale(tot_bytes, 1024), scale_suffix(tot_bytes, 1024),
@@ -879,7 +879,7 @@ void report_socket_stats() {
     int gbytes = max_bytes     ? (int)(seqno_width * pbytes->bytes_cnt / max_bytes) : 0;
     int gpkts  = max_pkt_count ? (int)(seqno_width * ppkts->pkt_count / max_pkt_count) : 0;
 
-    printf("#C|%*s|%8.1f|%*d|%*s|%9d|%*d|\n",
+    printf("#C|%*s|%8.1f|%*ld|%*s|%9d|%*ld|\n",
       max_title_width, pbytes->title, (double)pbytes->bytes_cnt/MEGABYTE,
       seqno_width, pbytes->last_seqno,
       max_title_width, ppkts ->title, ppkts->pkt_count,
@@ -901,7 +901,7 @@ void report_socket_stats() {
       int ggaps = max_gap_count ? (int)(seqno_width * gap_count / max_gap_count) : 0;
       int gooos = max_ooo_count ? (int)(seqno_width * ooo_count / max_ooo_count) : 0; 
 
-      printf("#c|%*s|%8d|%*d|%*s|%9d|%*d|\n",
+      printf("#c|%*s|%8d|%*ld|%*s|%9d|%*ld|\n",
         max_title_width, gap_count ? pgaps ->title : "", gap_count,
         seqno_width, pgaps->last_seqno,
         max_title_width, ooo_count ? pooo  ->title : "", ooo_count,
@@ -996,7 +996,7 @@ void print_report() {
     if (sec == 0.0) sec = 1.0;
 
     printf("II|%02d:%02d:%02d|%9.1f|%6d|%6d|%5d|%2d|%2d|%2d|TOT|"
-           "%8.1f|%8ld|%8d|%8d|%5d%5.1f %2d %5d|\n",
+           "%8.1f|%8ld|%8ld|%8ld|%5d%5.1f %2d %5d|\n",
         tm->tm_hour, tm->tm_min, tm->tm_sec,
         (double)bytes / 1024 / sec, (int)(pkts / sec),
         ooo_count, gap_count,
@@ -1086,7 +1086,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
       }
     }
     if (verbose > 3)
-      printf("%02d -> %d (last_seqno=%d)\n", addr->id, seqno, addr->last_seqno);
+      printf("%02d -> %d (last_seqno=%ld)\n", addr->id, seqno, addr->last_seqno);
 
     addr->last_seqno = seqno;
   }
