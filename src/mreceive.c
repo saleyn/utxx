@@ -39,6 +39,9 @@
 #include <time.h>
 #include <unistd.h>
 
+#define unlikely(expr) __builtin_expect(!!(expr), 0)
+#define likely(expr)   __builtin_expect(!!(expr), 1)
+
 typedef enum {
   UNDEFINED = 0,
   FORTS     = 'f',
@@ -115,6 +118,7 @@ int         output_lines_count          = 0;
 int         next_legend_count           = 1;
 int         next_sock_report_lines      = 5;
 int         max_channel_report_lines    = 10;
+int         display_packets             = 0;
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
@@ -122,7 +126,7 @@ void usage(const char* program) {
          "          [-a Addr] [-n Mcastaddr -p Port [-s SourceAddr]] [-v] [-q] [-e false]\n"
          "          [-i ReportingIntervalSec] [-I SockReportInterval]\n"
          "          [-d DurationSec] [-b RecvBufSize] [-L MaxChannelReportLines]\n"
-         "          [-l ReportingLabel] [-o OutputFile]\n\n"
+         "          [-l ReportingLabel] [-r PrintPacketSize] [-o OutputFile]\n\n"
          "      -c CfgAddrs - Filename containing list of addresses to process\n"
          "                    (use \"-\" for stdin)\n"
          "      -a Addr     - Optional interface address or multicast address\n"
@@ -143,7 +147,8 @@ void usage(const char* program) {
          "      -l Label    - Title to include in the output report\n"
          "      -v          - Verbose (use -vv for more detailed output\n"
          "      -n MaxCount - Terminate after receiving this number of packets\n"
-         "      -q          - Quiet (no output)\n\n"
+         "      -r [Size]   - Print packet up to Size bytes\n"
+         "      -q          - Quiet (no output)\n"
          "      -o Filename - Output log file\n\n"
          "If there is no incoming data, press several Ctrl-C to break\n\n"
          "Return code: = 0  - if the process received at least one packet\n"
@@ -220,36 +225,20 @@ const char* scale_suffix(long n, long multiplier) {
          " ";
 }
 
+void test_forts_decode();
 uint32_t decode_forts_seqno(const char* buf, int n, long last_seqno, int* seq_reset);
 
 long get_seqno(struct address* addr, const char* buf, int n, long last_seqno, int* seq_reset) {
   switch (addr->data_format) {
     case MICEX: {
-      /*
       uint32_t a = (uint8_t)buf[0],
                b = (uint8_t)buf[1],
                c = (uint8_t)buf[2],
-               d = (uint8_t)buf[3],
-               m = a << 24 | b << 16 | c << 8 | d;
-      */
-      uint32_t t = htonl(*(uint32_t*)buf);
-      /*
-      if (m != t) {
-        int i; fprintf(stderr, "  Buffer:\n   {");
-        for (i=0; i < n; i++) {
-          if (i && (i % 16)) fprintf(stderr, "\n     %s", i < n-1 ? ", " : "");
-          fprintf(stderr, "%s0x%02x", i < n-1 ? "," : "", (uint8_t)buf[i]);
-        }
-        fprintf(stderr, "};\n%s (Last seqno: %ld)\n", addr->title, last_seqno);
-        fprintf(stderr, "Seqno decoding: %08x =/= %08x (%u =/= %u)\n"
-                        "  a=0x%x, b=0x%x, c=0x%x, d=0x%x\n",
-                        m, t, m, t, a, b, c, d);
-        assert( m == t );
-      }
-      */
-      return t;
+               d = (uint8_t)buf[3];
+      return (uint32_t)d << 24 | (uint32_t)c << 16 | (uint32_t)b << 8 | a;
     }
-    case FORTS: return decode_forts_seqno(buf, n, last_seqno, seq_reset);
+    case FORTS:
+      return decode_forts_seqno(buf, n, last_seqno, seq_reset);
   }
   return 0;
 }
@@ -448,7 +437,9 @@ void main(int argc, char *argv[])
         i++;
         use_epoll = 0;
       }
-    } else if (!strncmp(argv[i], "-q", 2))
+    } else if (!strncmp(argv[i], "-r", 2))
+      display_packets = (i < argc-1) ? atoi(argv[++i]) : 512;
+    else if (!strncmp(argv[i], "-q", 2))
       quiet = 1;
     else if (!strcmp(argv[i], "-l") && i < argc-1)
       label = argv[++i];
@@ -1058,6 +1049,18 @@ void process_packet(struct address* addr, const char* buf, int n) {
 
   int seq_reset;
   seqno = get_seqno(addr, buf, n, addr->last_seqno, &seq_reset);
+
+  if (display_packets) {
+    fprintf(stderr, "  %02d (fmt=%c) seqno=%ld (pkt size=%d):\n   {",
+      addr->id, addr->data_format, seqno, n);
+    int i, e = n > display_packets ? display_packets : n;
+    for (i=0; i < e; i++) {
+      fprintf(stderr, "%s0x%02x", i ? "," : "", (uint8_t)buf[i]);
+      if (((i+1) % 16) == 0) fprintf(stderr, "\n   ");
+    }
+    fprintf(stderr, "};\n");
+  }
+
   if (seqno) {
     if (addr->last_seqno) {
       int diff = seqno - addr->last_seqno;
@@ -1082,6 +1085,9 @@ void process_packet(struct address* addr, const char* buf, int n) {
 
       }
     }
+    if (verbose > 3)
+      printf("%02d -> %d (last_seqno=%d)\n", addr->id, seqno, addr->last_seqno);
+
     addr->last_seqno = seqno;
   }
 
@@ -1105,23 +1111,48 @@ static inline int u32_to_size (uint32_t n)
   return s_table[first_bit];
 }
 
+inline int find_stopbit_byte(const char* buff, const char* end) {
+    const uint64_t s_mask = 0x8080808080808080ul;
+    const uint64_t*     p = (const uint64_t*)buff;
+
+    uint64_t unmasked = *p & s_mask;
+    int pos;
+
+    if (likely(unmasked)) {
+        pos = __builtin_ffsl(unmasked) >> 3;
+    } else {
+        // In case the stop bit is not found in 64 bits,
+        // we need to check next bytes
+        unmasked = *(++p) & s_mask;
+        pos = 8 + __builtin_ffsl(unmasked) >> 3;
+    }
+
+    if (buff + pos < end)
+      return pos;
+
+    return 0;
+}
+
+
 int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
+  const char* rend = *buff - 1;
   const char* p = *buff;
-  int i;
+  int e, i = 0;
   uint64_t n = 0;
 
-  for (i=0; p != end; i += 7) {
+  int len = find_stopbit_byte(p, end);
+
+  //printf("find_stopbit_byte(%02x) -> %d\n", (uint8_t)*p, len);
+
+  for (p += len-1, e = len*7; i < e; i += 7, --p) {
     uint64_t m = (uint64_t)(*p & 0x7F) << i;
     n |= m;
-    if (*p++ & 0x80) {
-        *val  = n;
-        n     = p - *buff;
-        *buff = p;
-        return n;
-    }
+    //printf(" %2d| 0x%02x, m=%lu, n=%lu\n", i / 7, (uint8_t)*p, m, n);
   }
 
-  return 0;
+  *val  = n;
+  *buff += len;
+  return len;
 }
 
 int unmask_7bit_uint56(const char** buff, const char* end, uint64_t* value) {
@@ -1144,30 +1175,6 @@ int unmask_7bit_uint56(const char** buff, const char* end, uint64_t* value) {
     return 0;
 }
 
-inline int find_stopbit_byte(const char** buff, const char* end) {
-    const uint64_t s_mask = 0x8080808080808080ul;
-    const char*     start = *buff;
-
-    uint64_t v = *(const uint64_t*)start;
-    uint64_t stop = v & s_mask;
-    int pos;
-
-    if (stop) {
-        pos = __builtin_ffsl(stop) >> 3;
-        *buff += pos;
-    } else {
-        // In case the stop bit is not found in 64 bits,
-        // we need to check next bytes
-        const char* p = *buff + 8;
-        if (p > end) p = end;
-        pos = find_stopbit_byte(&p, end);
-        *buff = p;
-    }
-
-    return pos;
-}
-
-
 //-------------------------------------------------------------------------//
 // Extracting "PMap" and TemplateID:                                       //
 //-------------------------------------------------------------------------//
@@ -1177,15 +1184,16 @@ inline int find_stopbit_byte(const char** buff, const char* end) {
 // for processing Sequences):
 //
 uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_reset) {
-    int res, len = find_stopbit_byte(&buff, buff+n);
+    int res, len = 0;
     const char* q = buff;
-    uint64_t  tid, seq = 0;
+    uint64_t  tid = 120, seq = 0, pmap;
 
-    res = decode_uint_loop(&q, q+5, &tid);
+    while (tid == 120) { // reset
+      res = decode_uint_loop(&q, q+5, &pmap); 
+      res = decode_uint_loop(&q, q+5, &tid);
+    }
 
-    if (tid == 120) // reset
-      return last_seqno;
-
+    //printf("PMAP=%x, TID=%d, *p=0x%02x\n", pmap, tid, (uint8_t)*q);
     res = decode_uint_loop(&q, q+5, &seq);
 
     // If sequence reset, parse new seqno
@@ -1198,3 +1206,52 @@ uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_r
     return seq;
 }
 
+void test_forts_decode() {
+  const uint8_t buffers0[] = 
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xd8,0x23,0x63,0x2d,0x12,0x54,0x66,0x6d,0xf4,0x87,0x98
+    ,0xb1,0x30,0x2d,0x44,0xc7,0x22,0xec,0x0f,0x0a,0xc8,0x95,0x82,0x80,0xff,0x00,0x62
+    ,0xa7,0x89,0x80,0x00,0x52,0x11,0x55,0xeb,0x80,0x80,0x80,0x80,0x80,0xc0,0x81,0xb1
+    ,0x81,0x0f,0x0a,0xc9,0x83,0x80,0xff,0x00,0x62,0xa8,0x00,0xf1,0x80,0x80,0x80,0x80
+    ,0x80,0x80,0x80,0x80,0xb1,0x81,0x0f,0x0a,0xca,0x85,0x80,0xff,0x00,0x62,0xaa,0x00
+    ,0xe5,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0xb1,0x74,0x03,0x32,0x80,0x15,0x4f
+    ,0xec,0x83,0x80,0x82,0x00,0x68,0x9f,0x89,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80
+    ,0xb1,0x81,0x15,0x4f,0xed,0x84,0x80,0x82,0x00,0x68,0xa0,0x8d,0x80,0x81,0x80,0x80
+    ,0x80,0x80,0x80,0x80,0xb1,0x81,0x15,0x4f,0xee,0x85,0x80,0x82,0x00,0x68,0xa1,0x88
+    ,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0xb1,0x0f,0x0e,0x52,0x81,0x1c,0x21,0xc4
+    ,0x82,0x80,0x81,0x00,0x4c,0x9b,0x8c,0x80,0x80,0x80,0x80,0x80,0x80,0x80};
+
+  const uint8_t buffers1[] =
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xd9,0x23,0x63,0x2d,0x12,0x54,0x66,0x6e,0x82,0x81,0xd8
+    ,0x81,0xb1,0x33,0x3f,0x48,0xc7,0x22,0xec,0x1c,0x21,0xc5,0x95,0x82,0x80,0x81,0x00
+    ,0x4c,0x9b,0x8b,0x80,0x00,0x52,0x11,0x55,0xfd,0x80,0x80,0x80,0x80,0x80};
+
+  const uint8_t buffers2[] =
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xda,0x23,0x63,0x2d,0x12,0x54,0x66,0x6e,0x90,0x85,0xd8
+    ,0x82,0xb1,0x33,0x3f,0x48,0xc7,0x22,0xec,0x1c,0x21,0xc6,0x95,0x82,0x80,0x81,0x00
+    ,0x4c,0x9b,0x81,0x80,0x00,0x52,0x11,0x55,0xfd,0x80,0x80,0x80,0x80,0x80,0xc0,0x80
+    ,0xb1,0x81,0x1c,0x21,0xc7,0x95,0x80,0x81,0x00,0x4c,0xaf,0x04,0xaa,0x80,0x7f,0x0b
+    ,0x6d,0xb6,0x80,0x80,0x80,0x80,0x80,0x80,0xb0,0x7c,0x6d,0x74,0x80,0x1e,0x6b,0xef
+    ,0x82,0x80,0x82,0x00,0x73,0xf1,0x87,0x80,0x00,0x74,0x12,0xda,0x80,0x80,0x80,0x80
+    ,0x80,0x80,0xb0,0x81,0x1e,0x6b,0xf0,0x83,0x80,0x82,0x00,0x73,0xf0,0x86,0x80,0xfc
+    ,0x80,0x80,0x80,0x80,0x80,0xc0,0x81,0xb0,0x81,0x1e,0x6b,0xf1,0x84,0x80,0x82,0x00
+    ,0x73,0xef,0x89,0x80,0x84,0x80,0x80,0x80,0x80,0x80};
+
+  const uint8_t buffers3[] =
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xdb,0x23,0x63,0x2d,0x12,0x54,0x66,0x6e,0xd9,0x82,0xd8
+    ,0x82,0xb0,0x30,0x2d,0x3c,0xc7,0x22,0xec,0x1e,0x6b,0xf2,0x95,0x83,0x80,0x82,0x00
+    ,0x73,0xf0,0x81,0x80,0x00,0x52,0x11,0x56,0xdb,0x80,0x80,0x80,0x80,0x80,0xc0,0x80
+    ,0xb0,0x81,0x1e,0x6b,0xf3,0x95,0x80,0x82,0x00,0x71,0xe5,0x82,0x80,0x72,0x7b,0x1a
+    ,0xde,0x80,0x80,0x80,0x80,0x80};
+
+  const uint8_t* buffers[] = {buffers0, buffers1, buffers2, buffers3};
+
+  int i;
+  for (i=0; i < sizeof(buffers)/sizeof(buffers[0]); i++) {
+    const char* q = (const char*)buffers[i];
+    uint64_t k;
+    long last;
+    int seq_reset;
+    uint32_t res = decode_forts_seqno(q, 40, last, &seq_reset);
+    printf("#%d res=%d\n", i, res);
+  }
+}

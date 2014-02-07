@@ -225,15 +225,59 @@ int GetInteger(const char** buf, const char* end, uint64_t* res) {
   }
 
 
+inline int find_stopbit_byte(const char* buff, const char* end) {
+    const uint64_t s_mask = 0x8080808080808080ul;
+    const uint64_t*     p = (const uint64_t*)buff;
+
+    uint64_t unmasked = *p & s_mask;
+    int pos;
+
+    if (likely(unmasked)) {
+        pos = __builtin_ffsl(unmasked) >> 3;
+    } else {
+        // In case the stop bit is not found in 64 bits,
+        // we need to check next bytes
+        unmasked = *(++p) & s_mask;
+        pos = 8 + __builtin_ffsl(unmasked) >> 3;
+    }
+
+    if (buff + pos < end)
+      return pos;
+
+    return 0;
+}
+
+
+int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
+  const char* rend = *buff - 1;
+  const char* p = *buff;
+  int e, i = 0;
+  uint64_t n = 0;
+
+  int len = find_stopbit_byte(p, end);
+
+  //printf("find_stopbit_byte(%02x) -> %d\n", (uint8_t)*p, len);
+
+  for (p += len-1, e = len*7; i < e; i += 7, --p) {
+    uint64_t m = (uint64_t)(*p & 0x7F) << i;
+    n |= m;
+    //printf(" %2d| 0x%02x, m=%lu, n=%lu\n", i / 7, (uint8_t)*p, m, n);
+  }
+
+  *val  = n;
+  *buff += len;
+  return len;
+}
+
 int unmask_7bit_uint56(const char** buff, const char* end, uint64_t* value) {
     static const uint64_t s_mask   = 0x8080808080808080ul;
     static const uint64_t s_unmask = 0x7F7F7F7F7F7F7F7Ful;
 
     uint64_t v    = *(const uint64_t*)*buff;
     uint64_t stop = v & s_mask;
-    if (stop) {
+    if (likely(stop)) {
         int      pos  = __builtin_ffsl(stop);
-        uint64_t shft = pos == 64 ? -1ul : (1ul << pos)-1;
+        uint64_t shft = unlikely(pos == 64) ? -1ul : (1ul << pos)-1;
         pos  >>= 3;
         *value = v & s_unmask & shft;
         *buff += pos;
@@ -243,61 +287,8 @@ int unmask_7bit_uint56(const char** buff, const char* end, uint64_t* value) {
     *value = v & s_unmask;
     *buff += 8;
     return 0;
-    /*
-    printf("=[%d]==> 0x", num);
-    for (const char* q = buff; q != end; ++q)
-        printf("%02x", *(uint8_t*)q);
-    printf(" -> %d (%d) *p=%02x\n", pos >> 3, pos, *(uint8_t*)p);
-    printf("=[%d]==> 0x%-016lx\n"
-           "(mask v=0x%-016lx) shft=0x%-016lx\n",
-        num, v, v & 0x7F7F7F7F7F7F7F7Ful & shft, shft);
-    v &= 0x7F7F7F7F7F7F7F7Ful & shft;
-    uint64_t pmap = v;
-    //uint64_t pmap = utxx::cast64be((const char*)&v);
-    */
 }
 
-inline int find_stopbit_byte(const char** buff, const char* end) {
-    const uint64_t s_mask = 0x8080808080808080ul;
-    const char*     start = *buff;
-
-    uint64_t v = *(const uint64_t*)start;
-    uint64_t stop = v & s_mask;
-    int pos;
-
-    if (likely(stop)) {
-        pos = __builtin_ffsl(stop) >> 3;
-        *buff += pos;
-    } else {
-        // In case the stop bit is not found in 64 bits,
-        // we need to check next bytes
-        const char* p = *buff + 8;
-        if (p > end) p = end;
-        pos = find_stopbit_byte(&p, end);
-        *buff = p;
-    }
-
-    return pos;
-}
-
-int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
-  const char* p = *buff;
-  uint64_t n = 0;
-
-  for (int i=0; p != end; i += 7) {
-    uint64_t m = (uint64_t)(*p & 0x7F) << i;
-    n |= m;
-    //printf("    i=%d, p=%02x, m=%016x, n=%016x\n", i, *(uint8_t*)p, m, n);
-    if (*p++ & 0x80) {
-        *val  = n;
-        n     = p - *buff;
-        *buff = p;
-        return n;
-    }
-  }
-
-  return 0;
-}
 
 inline uint64_t decode_uint_p1(uint64_t v) {
     return v;
@@ -478,31 +469,38 @@ BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
     }
 }
 
-
-uint32_t decode_forts_seqno(const char* buff, int n, int num) {
-    int len = find_stopbit_byte(&buff, buff+n);
+uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_reset) {
+    int res, len = 0;
     const char* q = buff;
-    uint64_t  tid, seq = 0;
-    int      tres = decode_uint_loop(&q, q+5, &tid);
-    int      sres = decode_uint_loop(&q, q+5, &seq);
+    uint64_t  tid = 120, seq = 0, pmap;
 
-    /*
-    printf("  stop=0x%-016lx, pmap=%-016lx, ", stop, pmap);
-    printf("len=%d, seq=%08x (res=%d)\n",  q-p, seq, res);
-    assert(pos >= 0);
-    assert(!tres);
-    assert(!sres);
-    */
+    while (tid == 120) { // reset
+      res = decode_uint_loop(&q, q+5, &pmap); 
+      res = decode_uint_loop(&q, q+5, &tid);
+    }
+
+    //printf("PMAP=%x, TID=%d, *p=0x%02x\n", pmap, tid, (uint8_t)*q);
+    res = decode_uint_loop(&q, q+5, &seq);
+
+    // If sequence reset, parse new seqno
+    if (tid == 49) {
+      *seq_reset = 1;
+      res = decode_uint_loop(&q, q+10, &tid); // SendingTime
+      res = decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
+    }
+
     return seq;
 }
+
 
 BOOST_AUTO_TEST_CASE( test_pmap_seqno )
 {
     const char s[] = "abc";
+    int new_seqno;
     std::cout << "Length of s: " << length(s) << std::endl;
 
     for (int i=0; i < utxx::length(test_set); i++)
-        uint32_t n = decode_forts_seqno(test_set[i], 8, i);
+        uint32_t n = decode_forts_seqno(test_set[i], 8, i, &new_seqno);
 }
 
 
