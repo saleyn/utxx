@@ -148,7 +148,7 @@ struct Test {
                 << ((double)(elapsed.user+elapsed.system) / ITERS / 1000)
                 << " us/call" << std::endl;
         }
-        
+
         for (bind_iter it=sig.begin(), e=sig.end(); it != e; ++it)
             delete (*it);
     }

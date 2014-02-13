@@ -543,7 +543,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator_def )
         BOOST_REQUIRE_EQUAL("test.country.name", e.path());
     }
     try {
-        const variant& v = l_validator.default_value("", "test.country.name");
+        l_validator.default_value("", "test.country.name");
     } catch (config_error& e) {
         BOOST_REQUIRE_EQUAL("test.country.name", e.path());
     }

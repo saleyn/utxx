@@ -126,11 +126,11 @@ void logger_impl_file::log_msg(
     int len = logger_impl::format_message(buf, sizeof(buf), true, 
                 m_show_ident, m_show_location, a_tv, info, fmt, args);
     if (write(m_fd, buf, len) < 0)
-        io_error("Error writing to file:", m_filename, ' ',
-            (info.has_src_location() ? info.src_location() : ""));
+        io_error("Error writing to file:", m_filename, ' ', info.src_location());
 }
 
-void logger_impl_file::log_bin(const char* msg, size_t size) throw(io_error) 
+void logger_impl_file::log_bin(
+    const char* a_category, const char* msg, size_t size) throw(io_error)
 {
     guard g(m_mutex, m_use_mutex);
 

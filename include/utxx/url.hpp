@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_URL_HPP_
 #define _UTXX_URL_HPP_
 
+#include <stdlib.h>     /* atoi */
 #include <string>
 
 namespace utxx {
@@ -59,7 +60,13 @@ namespace utxx {
 
         bool is_ipv4() const { return m_is_ipv4; }
 
+        int  port_int() const { return atoi(port.c_str()); }
+
         std::string to_string() const;
+
+        friend inline std::ostream& operator<< (std::ostream& out, const addr_info& a) {
+            return out << a.to_string();
+        }
     private:
         bool m_is_ipv4;
     };

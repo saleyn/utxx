@@ -35,6 +35,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/convert.hpp>
 #include <utxx/verbosity.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/format.hpp>
+#ifdef HAVE_CONFIG_H
+#include <utxx/config.h>
+#endif
 #ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
 #endif
@@ -314,16 +318,87 @@ __attribute__ ((noinline)) void atoi2(const std::string& s, long& n) {
 
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
 {
+    struct utest { const char* test; long expected; bool fatoi_success; };
+    const utest tests[] = {
+        { "123456989012345678",   123456989012345678, true },   // 0
+        { "-123456989012345678", -123456989012345678, true },   // 1
+        { "   123",               123,               false },   // 2
+        { "123ABC",               123,               false },   // 3
+        { "123   ",               123,               false },   // 4
+        { "\0\0\000123",          123,               false },   // 5
+        { "-123ABC",              -123,              false },   // 6
+        { "-123   ",              -123,              false },   // 7
+        { "\0\0\000-123",         -123,              false },   // 5
+    };
+
+    typedef const char* (*fun_u)(const char*, uint64_t&);
+    typedef const char* (*fun_s)(const char*, int64_t&);
+
+    static const fun_s fun_signed[] = {
+        NULL,
+        &unsafe_fixed_atol<1>,
+        &unsafe_fixed_atol<2>,
+        &unsafe_fixed_atol<3>,
+        &unsafe_fixed_atol<4>,
+        &unsafe_fixed_atol<5>,
+        &unsafe_fixed_atol<6>,
+        &unsafe_fixed_atol<7>,
+        &unsafe_fixed_atol<8>,
+        &unsafe_fixed_atol<9>,
+        &unsafe_fixed_atol<10>,
+        &unsafe_fixed_atol<11>,
+        &unsafe_fixed_atol<12>,
+        &unsafe_fixed_atol<13>,
+        &unsafe_fixed_atol<14>,
+        &unsafe_fixed_atol<15>,
+        &unsafe_fixed_atol<16>,
+        &unsafe_fixed_atol<17>,
+        &unsafe_fixed_atol<18>,
+        &unsafe_fixed_atol<19>
+    };
+    static const fun_u fun_unsigned[] = {
+        NULL,
+        &unsafe_fixed_atoul<1>,
+        &unsafe_fixed_atoul<2>,
+        &unsafe_fixed_atoul<3>,
+        &unsafe_fixed_atoul<4>,
+        &unsafe_fixed_atoul<5>,
+        &unsafe_fixed_atoul<6>,
+        &unsafe_fixed_atoul<7>,
+        &unsafe_fixed_atoul<8>,
+        &unsafe_fixed_atoul<9>,
+        &unsafe_fixed_atoul<10>,
+        &unsafe_fixed_atoul<11>,
+        &unsafe_fixed_atoul<12>,
+        &unsafe_fixed_atoul<13>,
+        &unsafe_fixed_atoul<14>,
+        &unsafe_fixed_atoul<15>,
+        &unsafe_fixed_atoul<16>,
+        &unsafe_fixed_atoul<17>,
+        &unsafe_fixed_atoul<18>,
+        &unsafe_fixed_atoul<19>
+    };
+
     long n;
-    BOOST_REQUIRE(fast_atoi( "123456989012345678", n));
-    BOOST_REQUIRE_EQUAL( 123456989012345678, n);
+    unsigned long u;
 
-    BOOST_REQUIRE(fast_atoi( "-123456989012345678", n));
-    BOOST_REQUIRE_EQUAL(-123456989012345678, n);
+    for (uint32_t i=0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
+        BOOST_REQUIRE_EQUAL(tests[i].fatoi_success, fast_atoi(tests[i].test, n));
+        if (tests[i].fatoi_success) BOOST_REQUIRE_EQUAL(tests[i].expected, n);
 
-    BOOST_REQUIRE(!fast_atoi( "        123", n));
-    BOOST_REQUIRE(fast_atoi_skip_ws( "        123", n));
-    BOOST_REQUIRE_EQUAL(123, n);
+        BOOST_REQUIRE(tests[i].test + strlen(tests[i].test) ==
+            fun_signed[strlen(tests[i].test)](tests[i].test, n));
+        if (tests[i].expected != n)
+            BOOST_MESSAGE("Test #" << i << " failed");
+        BOOST_REQUIRE_EQUAL(tests[i].expected, n);
+
+        if (tests[i].expected >= 0) {
+            BOOST_REQUIRE(tests[i].test+strlen(tests[i].test) ==
+                fun_unsigned[strlen(tests[i].test)](tests[i].test, u));
+            BOOST_REQUIRE_EQUAL(tests[i].expected, u);
+        }
+
+    }
 
     BOOST_REQUIRE(!fast_atoi("123ABC", n));
     BOOST_REQUIRE(fast_atoi( "123ABC", n, false));
@@ -355,8 +430,6 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
     
 }
 
-#ifdef HAVE_BOOST_TIMER_TIMER_HPP
-
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
 {
     using boost::timer::cpu_timer;
@@ -365,6 +438,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
 
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
 
+    BOOST_MESSAGE(       "             iterations: " << ITERATIONS);
     {
         cpu_timer t;
         const std::string buf("1234567890");
@@ -378,11 +452,33 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        if (verbosity::level() > utxx::VERBOSE_NONE) {
-            printf("    fast_atoi  iterations: %ld\n", ITERATIONS);
-            printf("    fast_atoi  time      : %.3fs (%.3fus/call)\n",
-                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
+        std::stringstream s;
+        s << boost::format("         fast_atoi time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+        BOOST_MESSAGE(s.str());
+    }
+    {
+        cpu_timer t;
+        const std::string buf("1234567890");
+        const char* p = buf.c_str();
+        long n = unsafe_fixed_atoul<10>(p);
+        BOOST_REQUIRE_EQUAL(1234567890, n);
+
+        for (int i = 0; i < ITERATIONS; i++) {
+            p = buf.c_str();
+            unsafe_fixed_atoul<10>(p);
+            // Trick the compiler into thinking that p changed to prevent loop opimization
+            asm volatile("" : "+g"(p));
         }
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        std::stringstream s;
+        s << boost::format("unsafe_fixed_atoul time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+
+        BOOST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
@@ -396,35 +492,12 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
-        if (verbosity::level() > utxx::VERBOSE_NONE) {
-            printf("          atoi iterations: %ld\n", ITERATIONS);
-            printf("          atoi time      : %.3fs (%.3fus/call)\n",
-                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
-        }
+        std::stringstream s;
+        s << boost::format("              atoi time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+        BOOST_MESSAGE(s.str());
     }
-
-    /*
-    {
-        cpu_timer t;
-        const char buf[] = "1234567890";
-        long n;
-
-        for (int i = 0; i < ITERATIONS; i++)
-            unsafe_atoi<long, sizeof(buf)>(buf, n);
-
-        cpu_times elapsed_times(t.elapsed());
-        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
-
-        if (verbosity::level() > utxx::VERBOSE_NONE) {
-            printf("   unsafe_atoi iterations: %ld (n = %ld)\n", ITERATIONS, n);
-            printf("          atoi time      : %.3fs (%.3fus/call)\n",
-                (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
-        }
-    }
-    */
 }
-
-#endif
 
 BOOST_AUTO_TEST_CASE( test_convert_skip_left )
 {
@@ -519,3 +592,6 @@ BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )
     BOOST_REQUIRE_EQUAL("0001", (itoa_right<int, 4>(1, '0')));
     BOOST_REQUIRE_EQUAL("1", (itoa_right<int, 10>(1)));
 }
+
+
+

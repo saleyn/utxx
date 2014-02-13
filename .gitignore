@@ -17,6 +17,7 @@ src/mreceive
 test/test_utxx
 test/example_repeating_timer
 test/example_delegate
+test/example_scribe
 test/generated
 test/config_test_data/config_options.hpp
 test/config_test_data/test_conf.hpp

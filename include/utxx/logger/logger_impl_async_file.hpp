@@ -62,12 +62,10 @@ class logger_impl_async_file: public logger_impl {
     std::string m_name;
     std::string m_filename;
     bool        m_append;
-    bool        m_timestamp;
     int         m_levels;
     mode_t      m_mode;
     bool        m_show_location;
     bool        m_show_ident;
-    std::string m_error;
 
 //     struct logger_traits: public multi_file_async_logger_traits {
 //         typedef memory::cached_allocator<char> allocator;
@@ -80,14 +78,10 @@ class logger_impl_async_file: public logger_impl {
     struct timespec                         m_timeout;
     typename async_logger_engine::file_id   m_fd;
 
-    logger_impl_async_file(const char* a_name)
-        : m_name(a_name), m_append(true), m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
-        , m_mode(0644), m_show_location(true), m_show_ident(false)
-    {
-        m_timeout.tv_sec = 2; m_timeout.tv_nsec = 0;
-    }
+    logger_impl_async_file(const char* a_name);
 
-    void send_data(log_level level, const char* msg, size_t size) throw(io_error);
+    void send_data(log_level a_level, const char* a_category,
+                   const char* a_msg, size_t a_size) throw(io_error);
 
     void finalize();
 public:
@@ -107,10 +101,8 @@ public:
 
     void log_msg(const log_msg_info& info, const timeval* a_tv,
         const char* fmt, va_list args) throw (std::runtime_error);
-    void log_bin(const char* msg, size_t size)
+    void log_bin(const char* a_category, const char* msg, size_t size)
         throw (std::runtime_error);
-
-    void operator() ();     // Thread functor
 };
 
 } // namespace utxx

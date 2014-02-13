@@ -35,6 +35,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
+#ifdef HAVE_CONFIG_H
+#include <utxx/config.h>
+#endif
 #ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
 #endif

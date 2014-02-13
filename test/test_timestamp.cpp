@@ -220,7 +220,7 @@ struct test2 {
                 }
             };
 
-            for (int i=0; i < sizeof(options)/sizeof(option); i++) {
+            for (uint32_t i=0; i < sizeof(options)/sizeof(option); i++) {
                 std::string title = to_string("clock_gettime(", options[i].desc, ")");
                 caller test(id, title.c_str(), iterations);
                 clock_type = options[i].type;

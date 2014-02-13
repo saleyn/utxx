@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/assert.hpp>
 #include <string>
 #include <utxx/meta.hpp>
+#include <utxx/bits.hpp>
 #include <stdint.h>
 
 namespace utxx {
@@ -150,7 +151,7 @@ namespace detail {
 
         inline static void save_itoa(Char*& bytes, long n, Char a_pad) {
             BOOST_ASSERT(n / 10 == 0);
-            *bytes-- = int_to_char(n % 10);
+            *bytes-- = int_to_char(n % 11);
         }
 
         static uint64_t load_atoi(const Char*& bytes, uint64_t acc) {
@@ -320,82 +321,78 @@ namespace detail {
         }
     };
 
-    /*
+    //-------------------------------------------------------------------------
     // Similar but simplier approach with no error checking
     // The number is assumed to be right-justified.
-    template <int N, typename T>
-    class unsafe_atoi {
-        inline static void _atoi(const char*& c, T& n) {
-            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
-            // N & 0xF treats '0' and ' ' the same
-            n = n*10 + *(c++) & 0xF;
-            unsafe_atoi<N-1, T>::_atoi(c, *(c++) & 0xF, n);
+    template <int N>
+    struct unrolled_loop_atoul {
+        inline static void convert(const char*& p, uint64_t& n) {
+            //BOOST_ASSERT(*p >= '0' && *p <= '9' || *p == ' ');
+            n = n*10 + (*(p++) & 0x0f);  // ' ' is treated the same as '0'
+            unrolled_loop_atoul<N-1>::convert(p, n);
         }
-    public:
-        inline static const char* _atoi(const char* c, T& n) {
-            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
-            n = *(c++) & 0xF;
-            unsafe_atoi<N-1, T>::_atoi(c, n);
-            return c;
+        inline static uint64_t convert(const char*& p) {
+            //BOOST_ASSERT(*p >= '0' && *p <= '9' || *p == ' ');
+            uint64_t n = *p++ & 0x0f;
+            unrolled_loop_atoul<N-1>::convert(p, n);
+            return n;
         }
-        inline static const char* _atoi_sgn(const char* c, T& n) {
-            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ' || *c == '-');
-            switch (*c) {
-                case ' ': { unsafe_atoi<N-1, T>::_atoi_sgn(++c, n); return c; }
-                case '-': { const char* p = unsafe_atoi<N-1, T>::_atoi(++c, n); n = -n; return p; }
-                default:  { unsafe_atoi<N, T>::_atoi(c, n); return c; }
-            }
+        inline static int64_t convert_signed(const char*& p) {
+            if (*p == '-')
+                return -static_cast<int64_t>(unrolled_loop_atoul<N-1>::convert(++p));
+            return unrolled_loop_atoul<N>::convert(p);
         }
     };
 
-    template <typename T>
-    class unsafe_atoi<1, T> {
-        inline static void _atoi(const char*& c, T& n) {
-            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
-            n *= 10;
-            n += *(c++) & 0xF;
+    template <>
+    struct unrolled_loop_atoul<1> {
+        inline static void convert(const char*& p, uint64_t& n) {
+            //BOOST_ASSERT(*p >= '0' && *p <= '9' || *p == ' ');
+            n = n*10 + (*p++ & 0x0f);
         }
-    public:
-        inline static const char* _atoi(const char* c, T& n) {
-            BOOST_ASSERT((*c >= '0' && *c <= '9') || *c == ' ');
-            n = *(c++) & 0xF;
-            return c;
+        inline static uint64_t convert(const char*& p) {
+            //BOOST_ASSERT(*p >= '0' && *p <= '9' || *p == ' ');
+            return *p++ & 0x0f;
         }
-        inline static const char* _atoi_sgn(const char* c, T& n) {
-            _atoi(c, n);
-            return c;
+        inline static int64_t convert_signed(const char*& p) {
+            return convert(p);
         }
     };
 
-    template <bool T> struct sgn {};
-
-    template <int N, typename T>
-    const char* atoi(const char* c, T& n, sgn<false>) {
-        return unsafe_atoi<N, T>::unsafe_atoi(c, n);
-    }
-
-    template <int N, typename T>
-    const char* atoi(const char* c, T& n, sgn<true>) {
-        return unsafe_atoi<N, T>::unsafe_atoi_sgn(c, n);
-    }
-    */
+    template <>
+    struct unrolled_loop_atoul<0>;
 
 } // namespace detail
 
-/*
-/// Skips leading '0' and ' ' and converts an ASCII string to number.
-/// The buffer size N must be statically known. Assign the result to
-/// a signed integer for additional checking for leading '-'.
-template <typename T, int N>
-const char* unsafe_atoi(const char* c, T& n) {
-    return detail::atoi<N, T>(c, detail::sgn<std::numeric_limits<T>::is_signed>());
+/// This function converts a fixed-length string to integer.
+/// The integer must be left padded with spaces or zeros.
+/// Note: It performs no error checking!!!
+template <int N>
+inline uint64_t unsafe_fixed_atoul(const char*& p) {
+    return detail::unrolled_loop_atoul<N>::convert(p);
 }
 
-template <typename T, int N>
-const char* unsafe_atoi(const char*(&a_buf)[N], T& n) {
-    return detail::atoi<N, T>(a_buf, detail::sgn<std::numeric_limits<T>::is_signed>());
+template <int N>
+inline const char* unsafe_fixed_atoul(const char* p, uint64_t& value) {
+    const char* q = p;
+    value = detail::unrolled_loop_atoul<N>::convert(q);
+    return q;
 }
-*/
+
+/// This function converts a fixed-length string to integer.
+/// The integer must be left padded with spaces or zeros.
+/// Note: It performs no error checking!!!
+template <int N>
+inline int64_t unsafe_fixed_atol(const char*& p) {
+    return detail::unrolled_loop_atoul<N>::convert_signed(p);
+}
+
+template <int N>
+inline const char* unsafe_fixed_atol(const char* p, int64_t& value) {
+    const char* q = p;
+    value = detail::unrolled_loop_atoul<N>::convert_signed(q);
+    return q;
+}
 
 
 /**
@@ -534,16 +531,50 @@ inline bool fast_atoi(const char* a_str, const char* a_end, long& result, bool t
     do {
         const int c = *a_str - '0';
         if (c < 0 || c > 9) {
-           if (till_eol)
+            if (till_eol)
                return false;
-            else
-                break;
+            break;
         }
         x = (x << 3) + (x << 1) + c;
     } while (++a_str != a_end);
 
     result = l_neg ? -x : x;
     return true;
+}
+
+/// Convert a number to string
+///
+/// Note: the function doesn't perform boundary checking. Make sure there's enough
+/// space in the \a result buffer (10 bytes for 32bit, and 20 bytes for 64bit)
+/// @return pointer to the end
+template <typename T>
+char* itoa(T value, char*& result, int base = 10) {
+    BOOST_ASSERT(base >= 2 || base <= 36);
+
+    char* p = result, *q = p;
+    T tmp;
+
+    do {
+        tmp = value;
+        value /= base;
+        *p++ = "zyxwvutsrqponmlkjihgfedcba987654321"
+              "0123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp - value * base)];
+    } while ( value );
+
+    if (tmp < 0) *p++ = '-';
+    *p-- = '\0';
+
+    char* begin = result;
+    result = p;
+
+    // Reverse the string
+    while(q < p) {
+        char c = *p;
+        *p--= *q;
+        *q++ = c;
+    }
+
+    return begin;
 }
 
 inline bool fast_atoi_skip_ws(const char* a_str, size_t a_sz, long& result,

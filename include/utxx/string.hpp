@@ -81,6 +81,9 @@ namespace utxx {
         return result;
     }
 
+    /// Fast implementation of strlen()
+    size_t xstrlen(const char* s);
+
     /// Perform wildcard matching of a string. The pattern argument can
     /// contain any letters including '*', '?', and "[]". In case of the brackets
     /// the character set must not exceed 255 chars.
@@ -135,17 +138,16 @@ namespace utxx {
         return s;
     }
 
-    inline std::string to_bin_string(const char* buf, size_t sz, bool hex = false) {
-        std::stringstream out; out << "<<";
-        const char* begin = buf, *end = buf + sz;
-        for(const char* p = begin; p != end; ++p) {
-            out << (p == begin ? "" : ",");
-            if (hex) out << std::hex;
-            out << (int)*(unsigned char*)p;
-        }
-        out << ">>";
-        return out.str();
-    }
+    /// Convert a buffer to an Erlang-like binary string of bytes in the
+    /// form: <<123,234,12,18>>
+    /// @param buf      is the string buffer to convert
+    /// @param sz       is the length of buffer
+    /// @param hex      output hex numbers
+    /// @param readable if true prints buffer as a readable string if it
+    ///                 contains all printable bytes. If false - binary
+    ///                 list is printed
+    std::string to_bin_string(const char* buf, size_t sz,
+                              bool hex = false, bool readable = true);
 
     template <class T1>
     inline std::string to_string(T1 a1) {

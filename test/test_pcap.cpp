@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE( test_pcap_reader )
     BOOST_REQUIRE_EQUAL(77u,         reader.packet().incl_len);
     BOOST_REQUIRE_EQUAL(77u,         reader.packet().orig_len);
 
-    while ( (p - reinterpret_cast<const char*>(s_buffer)) < sizeof(s_buffer) ) {
+    while ( (p - reinterpret_cast<const char*>(s_buffer)) < (int)sizeof(s_buffer) ) {
         size_t n = reader.packet().incl_len;
         p += n;
         if (verbosity::level() >= VERBOSE_DEBUG)

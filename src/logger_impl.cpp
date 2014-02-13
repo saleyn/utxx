@@ -31,6 +31,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <utxx/logger/logger.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/convert.hpp>
+#include <boost/filesystem/path.hpp>
+#include <algorithm>
 
 namespace utxx {
 
@@ -75,6 +78,9 @@ int logger_impl::format_message(
     const log_msg_info& info, const char* fmt, va_list args
 ) throw (badarg_error)
 {
+    // Format the message in the form:
+    // Timestamp|Ident|Level|Category|Message|File:Line
+
     int len = timestamp::format(m_log_mgr->timestamp_type(), a_tv, buf, size);
     const char* end = buf + size - 2;
     const char* q   = logger::log_level_to_str(info.level());
@@ -85,22 +91,40 @@ int logger_impl::format_message(
     while (p < e) *p++ = ' ';
     *p++ = '|';
     if (a_show_ident) {
-        q = info.get_logger().ident().c_str();
+        q = info.get_logger()->ident().c_str();
         while (*q) *p++ = *q++;
-        *p++ = '|';
     }
+    *p++ = '|';
+    if (info.category()) {
+        int n = std::min((long)strlen(info.category()), end-p);
+        strncpy(p, info.category(), n);
+        p += n;
+    }
+    *p++ = '|';
+
     int n = vsnprintf(p, end - p, fmt, args);
 
     if (n < 0)
         throw badarg_error("Error formatting string:", fmt, ' ',
-            (info.has_src_location() ? info.src_location() : ""));
+            (info.has_src_location() ? info.src_file() : ""));
     p += n;
 
     if (info.has_src_location() && a_show_location) {
-        q = info.src_location();
-        while (*q && p != end) *p++ = *q++;
-        if (add_new_line) *p++ = '\n';
-    } else if (add_new_line)
+        static const char s_sep = boost::filesystem::path("/").native().c_str()[0];
+        *p++ = '|';
+        q = strrchr(info.src_file(), s_sep);
+        q = q ? q+1 : info.src_file();
+        int len = info.src_file() + info.src_file_len() - q;
+
+        if (q+len+12 < end) {
+            strncpy(p, q, len);
+            p += len;
+            *p++ = ':';
+            itoa(info.src_line(), p);
+        }
+    }
+
+    if (add_new_line)
         *p++ = '\n';
     *p = '\0';
     len = p - buf;

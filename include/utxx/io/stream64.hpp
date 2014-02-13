@@ -109,7 +109,7 @@ public:
                                             | O_WRONLY| O_LARGEFILE)
     {
         if (a_mode & (std::ios_base::ate | std::ios_base::app))
-            a_flags = a_flags & ~O_TRUNC | O_APPEND;
+            a_flags &= ~O_TRUNC | O_APPEND;
         int fd = ::open(a_filename, a_flags, a_perm);
         if (fd > -1)
             do_open(fd, a_mode, a_buf_sz);

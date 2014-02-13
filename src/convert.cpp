@@ -126,7 +126,7 @@ double atof(const char* p, const char* end)
 }
 
 /* For internal use by sys_double_to_chars_fast() */
-static char* find_first_trailing_zero(char* p)
+static inline char* find_first_trailing_zero(char* p)
 {
     for (; *(p-1) == '0'; --p);
     if (*(p-1) == '.') ++p;

@@ -140,6 +140,7 @@ namespace utxx
         /// \endcode
         int connect(sink_type a_sink) {
             m_sinks.push_back(wrapper(++m_count, a_sink));
+            return m_count;
         }
 
         /// Disconnect an event sink from this signal

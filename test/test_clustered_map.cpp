@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
     }
 
     int n = 0;
-    for (cmap::iterator it = m.begin(), e = m.end(); it != m.end(); ++it, ++n) {
+    for (cmap::iterator it = m.begin(), e = m.end(); it != e; ++it, ++n) {
         BOOST_REQUIRE_EQUAL(s_data[n][0], it.key());
         BOOST_REQUIRE_EQUAL(s_data[n][1], it.data());
     }

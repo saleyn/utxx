@@ -40,6 +40,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
 
+#ifdef HAVE_CONFIG_H
+#include <utxx/config.h>
+#endif
+
 #if __SIZEOF_LONG__ == 8
 #   define UTXX_QorL_SUFFIX "q"
 #else

@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   logger_impl_syslog.hpp
+/// \file   logger_impl_scribe.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Back-end plugin implementating synchronous file writer for the
@@ -15,7 +15,7 @@
 /// to a file descriptor open without O_APPEND flag must be protected by a 
 /// mutex.  In our testing it seemed that the Linux kernel implementation of 
 /// the write(2) function in presence of the O_APPEND flag is using proper
-/// synchronization.  As a workaround for this oddity, the <logger_impl_file>
+/// synchronization.  As a workaround for this oddity, the <logger_impl_scribe>
 /// uses a mutex to guard the write(2) call when "logger.file.append" option
 /// is <false> and doesn't use the mutex otherwise.  This has a rather drastic
 /// impact on performance (up to 10x in latency hit).
@@ -52,45 +52,89 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_LOGGER_FILE_HPP_
-#define _UTXX_LOGGER_FILE_HPP_
+#ifndef _UTXX_LOGGER_SCRIBE_HPP_
+#define _UTXX_LOGGER_SCRIBE_HPP_
+
+#include <utxx/config.h>
+
+#ifdef HAVE_THRIFT_H
 
 #include <utxx/logger.hpp>
-#include <sys/stat.h>
+#include <utxx/logger/logger_impl.hpp>
+#include <utxx/multi_file_async_logger.hpp>
+#include <utxx/url.hpp>
 #include <sys/types.h>
-#include <boost/thread.hpp>
+
+#undef PACKAGE
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_URL
+#undef PACKAGE_VERSION
+#undef VERSION
+#include <thrift/protocol/TBinaryProtocol.h>
+#include <thrift/transport/TSocket.h>
+#include <thrift/transport/TSocketPool.h>
+#include <thrift/transport/TServerSocket.h>
+#include <thrift/transport/TTransportUtils.h>
+#include <thrift/transport/TFileTransport.h>
+#include <thrift/transport/TBufferTransports.h>
+#include <thrift/transport/TSimpleFileTransport.h>
 
 namespace utxx {
 
-class logger_impl_file: public logger_impl {
+class logger_impl_scribe: public logger_impl {
+
+//     struct logger_traits: public multi_file_async_logger_traits {
+//         typedef memory::cached_allocator<char> allocator;
+//     };
+
+//    typedef basic_multi_file_async_logger<logger_traits> async_logger_engine;
+    typedef basic_multi_file_async_logger<> async_logger_engine;
+    typedef typename async_logger_engine::stream_state_base stream_state_base;
+
+    enum {
+        DEFAULT_PORT    = 1463,
+        DEFAULT_TIMEOUT = 7500,
+    };
+
     std::string  m_name;
-    std::string  m_filename;
-    bool         m_append;
-    bool         m_use_mutex;
-    bool         m_timestamp;
+    addr_info    m_server_addr;
+    int          m_server_timeout;
     int          m_levels;
-    mode_t       m_mode;
-    int          m_fd;
     bool         m_show_location;
     bool         m_show_ident;
     boost::mutex m_mutex;
 
-    logger_impl_file(const char* a_name)
-        : m_name(a_name), m_append(true), m_use_mutex(false)
-        , m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
-        , m_mode(0644), m_fd(-1)
-        , m_show_location(true), m_show_ident(false)
-    {}
+    async_logger_engine                     m_engine;
+    typename async_logger_engine::file_id   m_fd;
 
-    void finalize() {
-        if (m_fd > -1) { close(m_fd); m_fd = -1; }
-    }
+    boost::shared_ptr<apache::thrift::transport::TSocket>           m_socket;
+    boost::shared_ptr<apache::thrift::transport::TFramedTransport>  m_transport;
+    boost::shared_ptr<apache::thrift::protocol::TBinaryProtocol>    m_protocol;
+
+    logger_impl_scribe(const char* a_name);
+
+    void send_data(log_level level, const char* a_category,
+                   const char* a_msg, size_t a_size) throw(io_error);
+
+    void finalize();
+
+
+    bool connected() const { return m_transport && m_transport->isOpen(); }
+    void connect();
+    void disconnect();
+
+    int writev(int a_fd, const char* a_categories[], const iovec* a_data, size_t size);
+    int write_string(const char* a_str, int a_size);
+
 public:
-    static logger_impl_file* create(const char* a_name) {
-        return new logger_impl_file(a_name);
+    static logger_impl_scribe* create(const char* a_name) {
+        return new logger_impl_scribe(a_name);
     }
 
-    virtual ~logger_impl_file() {
+    virtual ~logger_impl_scribe() {
         finalize();
     }
 
@@ -104,11 +148,14 @@ public:
 
     void log_msg(const log_msg_info& info, const timeval* a_tv,
         const char* fmt, va_list args) throw(io_error);
-    void log_bin(const char* a_category, const char* msg, size_t size)
+    void log_bin(const char* a_category, const char* a_msg, size_t a_size)
         throw(io_error);
 };
 
 } // namespace utxx
 
-#endif
+#endif // HAVE_THRIFT_H
+
+#endif // _UTXX_LOGGER_SCRIBE_HPP_
+
 

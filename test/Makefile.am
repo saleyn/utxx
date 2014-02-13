@@ -4,7 +4,8 @@ test_utxxdir        = ${exec_prefix}/test
 
 bin_PROGRAMS       	= test_utxx \
 					  example_delegate \
-			  		  example_repeating_timer
+			  		  example_repeating_timer \
+					  example_scribe
 
 TEST_UTXX64_SRCS = \
 	test_atomic.cpp \
@@ -29,6 +30,7 @@ TEST_UTXX_SRCS = \
 	test_iovector.cpp \
 	test_logger.cpp \
 	test_logger_async_file.cpp \
+	test_logger_scribe.cpp \
 	test_logger_syslog.cpp \
 	test_math.cpp \
 	test_multi_file_async_logger.cpp \
@@ -77,8 +79,8 @@ test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
 test_utxx_CPPFLAGS 	= \
-	$(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize))) \
-	-I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(BOOST_CPPFLAGS)
+	$(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS)) \
+	-I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
 
 test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
@@ -87,28 +89,31 @@ test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
 					  $(BOOST_TIMER_LIB) \
 					  $(BOOST_FILESYSTEM_LIB) \
 					  $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
+					  $(THRIFT_LDFLAGS) \
 					  $(RTLIB)
 
 test_utxx_DATA 		= test_config_validator.xml
 
 
-example_repeating_timer_CPPFLAGS = -I$(top_srcdir)/include $(BOOST_CPPFLAGS)
+example_repeating_timer_CPPFLAGS = -I$(top_srcdir)/include
 example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
                                    $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
                                    $(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB) \
-                                   $(BOOST_TIMER_LIB)
+                                   $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
 
 example_delegate_SOURCES	= example_delegate.cpp
 example_delegate_CPPFLAGS 	= $(if $(debug),\
                                 -g $(if $(optimize),-O$(optimize),-O0),\
                                 $(if $(optimize),-O$(optimize))) \
-					          -DUTXX_STANDALONE -I$(srcdir)/../include $(BOOST_CPPFLAGS)
+					          -DUTXX_STANDALONE -I$(srcdir)/../include
 example_delegate_LDFLAGS    = $(BOOST_LDFLAGS)
-example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB)
+example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
 
-#test_cm_SOURCES 	= test_clustered_map.cpp
-#test_cm_CPPFLAGS	= -g -O0 -DUTXX_STANDALONE -I$(top_srcdir)/include $(BOOST_CPPFLAGS)
-#test_cm_LDFLAGS     = $(BOOST_LDFLAGS)
+example_scribe_SOURCES 		= test_logger_scribe.cpp
+example_scribe_CXXFLAGS		= -DUTXX_STANDALONE -I$(srcdir)/../include
+example_scribe_LDFLAGS		= $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
+example_scribe_LDADD    	= $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+							  $(srcdir)/../src/.libs/libutxx.la 
 
 EXTRA_DIST = test_config_validator.xml $(top_src_dir)/bin/config_validator_codegen.py

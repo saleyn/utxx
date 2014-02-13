@@ -98,11 +98,11 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         strncpy(p, s_str1, sizeof(s_str1));
         strncpy(q, s_str3, sizeof(s_str3));
         perf.start();
-        int n = l_logger.write(l_fds[0], p, sizeof(s_str1));
+        int n = l_logger.write(l_fds[0], NULL, p, sizeof(s_str1));
         perf.stop();
         BOOST_REQUIRE_EQUAL(0, n);
         perf.start();
-        int m = l_logger.write(l_fds[1], q, sizeof(s_str3));
+        int m = l_logger.write(l_fds[1], NULL, q, sizeof(s_str3));
         perf.stop();
         BOOST_REQUIRE_EQUAL(0, m);
     }
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
         int n = snprintf(buf, sizeof(buf), s_str1, i);
         char* p = l_logger.allocate(n);
         strncpy(p, buf, n);
-        n = l_logger.write(l_fd, p, n);
+        n = l_logger.write(l_fd, NULL, p, n);
         BOOST_REQUIRE_EQUAL(0, n);
     }
 
@@ -175,7 +175,7 @@ namespace {
 
         const std::string& prefix() const { return m_prefix; }
 
-        iovec operator() (iovec& a_msg) {
+        iovec operator() (const char* a_category, iovec& a_msg) {
             size_t n = a_msg.iov_len + m_prefix.size();
             char* p = m_logger.allocate(n);
             memcpy(p, m_prefix.c_str(), m_prefix.size());
@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
     std::string s = std::string(s_str2) + '\n';
 
     for (int i = 0; i < ITERATIONS; i++) {
-        int n = l_logger.write(l_fd, s);
+        int n = l_logger.write(l_fd, NULL, s);
         BOOST_REQUIRE_EQUAL(0, n);
     }
 

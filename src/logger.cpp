@@ -205,11 +205,10 @@ void logger::init(const variant_tree& config)
                 // We need to caLEVEL_ implementation's init function that may throw,
                 // so use RAII to guarantee proper cleanup.
                 logger_impl_mgr::impl_callback_t& f = it->second;
-                std::auto_ptr<logger_impl> impl( f(it->first.c_str()) );
+                impl impl( f(it->first.c_str()) );
                 impl->set_log_mgr(this);
                 impl->init(config);
-                m_implementations.push_back(&*impl);
-                impl.release();
+                m_implementations.push_back(impl);
             }
         }
     } catch (std::runtime_error& e) {
@@ -222,10 +221,9 @@ void logger::init(const variant_tree& config)
 
 void logger::finalize()
 {
-    for(std::vector<logger_impl*>::reverse_iterator it=m_implementations.rbegin();
-        it != m_implementations.rend(); ++it) {
-        delete *it;
-    }
+    //for(implementations_vector::reverse_iterator it=m_implementations.rbegin();
+    //        it != m_implementations.rend(); ++it)
+    //    it->reset();
     m_implementations.clear();
 }
 

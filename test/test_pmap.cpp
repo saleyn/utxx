@@ -1,6 +1,4 @@
 //----------------------------------------------------------------------------
-/// \file  test_bitmap.cpp
-//----------------------------------------------------------------------------
 /// \brief This is a test file for validating bitmap.hpp functionality.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
@@ -29,9 +27,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
+#ifndef UTXX_STANDALONE
 //#define BOOST_TEST_MODULE bitmap_test 
-
 #include <boost/test/unit_test.hpp>
+#else
+#define BOOST_AUTO_TEST_CASE( X ) void X()
+#define BOOST_MESSAGE( X ) std::cout << X << std::endl;
+#define BOOST_REQUIRE( X ) do { \
+        if (!(X)) { std::cout << "Required !" << ##X << ":" << (X) << std::end; exit(1); } \
+    } while(0)
+#define BOOST_REQUIRE_EQUAL( X,Y ) do { \
+        if ((X) != (Y)) { std::cout << (X) << " =/= " << (Y) << std::end; exit(1); } \
+    } while(0)
+#endif
+
 #include <utxx/bits.hpp>
 #include <utxx/string.hpp>
 #include <limits>
@@ -56,75 +65,142 @@ static const char* test_set[] = {
   /* 7 */  "\x1f\x2f\x3f\x4f\x5c\x6d\x7e\xFf\x81\x1e\x2d\x3c\x99"
 };
 
-static void test1(bool output) {
-    const uint64_t mask = 0x8080808080808080ul;
+static const uint8_t buffers0[] = 
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xd8,0x23,0x63,0x2d,0x12,0x54,0x66,0x6d,0xf4,0x87,0x98
+    ,0xb1,0x30,0x2d,0x44,0xc7,0x22,0xec,0x0f,0x0a,0xc8,0x95,0x82,0x80,0xff,0x00,0x62
+    ,0xa7,0x89,0x80,0x00,0x52,0x11,0x55,0xeb,0x80,0x80,0x80,0x80,0x80,0xc0,0x81,0xb1
+    ,0x81,0x0f,0x0a,0xc9,0x83,0x80,0xff,0x00,0x62,0xa8,0x00,0xf1,0x80,0x80,0x80,0x80
+    ,0x80,0x80,0x80,0x80,0xb1,0x81,0x0f,0x0a,0xca,0x85,0x80,0xff,0x00,0x62,0xaa,0x00
+    ,0xe5,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0xb1,0x74,0x03,0x32,0x80,0x15,0x4f
+    ,0xec,0x83,0x80,0x82,0x00,0x68,0x9f,0x89,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80
+    ,0xb1,0x81,0x15,0x4f,0xed,0x84,0x80,0x82,0x00,0x68,0xa0,0x8d,0x80,0x81,0x80,0x80
+    ,0x80,0x80,0x80,0x80,0xb1,0x81,0x15,0x4f,0xee,0x85,0x80,0x82,0x00,0x68,0xa1,0x88
+    ,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0x80,0xb1,0x0f,0x0e,0x52,0x81,0x1c,0x21,0xc4
+    ,0x82,0x80,0x81,0x00,0x4c,0x9b,0x8c,0x80,0x80,0x80,0x80,0x80,0x80,0x80};
 
-    for (int i=0; i < utxx::length(test_set); ++i) {
-        const uint64_t v = *(const uint64_t*)test_set[i];
-        uint64_t stop = v & mask;
-        int      pos  = stop ? utxx::bits::bit_scan_forward(stop) : -1;
-        if (output)
-            printf("%16lx -> %d\n", v, pos < 0 ? pos : (pos >> 3)+1);
-    }
+static const uint8_t buffers1[] =
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xd9,0x23,0x63,0x2d,0x12,0x54,0x66,0x6e,0x82,0x81,0xd8
+    ,0x81,0xb1,0x33,0x3f,0x48,0xc7,0x22,0xec,0x1c,0x21,0xc5,0x95,0x82,0x80,0x81,0x00
+    ,0x4c,0x9b,0x8b,0x80,0x00,0x52,0x11,0x55,0xfd,0x80,0x80,0x80,0x80,0x80};
+
+static const uint8_t buffers2[] =
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xda,0x23,0x63,0x2d,0x12,0x54,0x66,0x6e,0x90,0x85,0xd8
+    ,0x82,0xb1,0x33,0x3f,0x48,0xc7,0x22,0xec,0x1c,0x21,0xc6,0x95,0x82,0x80,0x81,0x00
+    ,0x4c,0x9b,0x81,0x80,0x00,0x52,0x11,0x55,0xfd,0x80,0x80,0x80,0x80,0x80,0xc0,0x80
+    ,0xb1,0x81,0x1c,0x21,0xc7,0x95,0x80,0x81,0x00,0x4c,0xaf,0x04,0xaa,0x80,0x7f,0x0b
+    ,0x6d,0xb6,0x80,0x80,0x80,0x80,0x80,0x80,0xb0,0x7c,0x6d,0x74,0x80,0x1e,0x6b,0xef
+    ,0x82,0x80,0x82,0x00,0x73,0xf1,0x87,0x80,0x00,0x74,0x12,0xda,0x80,0x80,0x80,0x80
+    ,0x80,0x80,0xb0,0x81,0x1e,0x6b,0xf0,0x83,0x80,0x82,0x00,0x73,0xf0,0x86,0x80,0xfc
+    ,0x80,0x80,0x80,0x80,0x80,0xc0,0x81,0xb0,0x81,0x1e,0x6b,0xf1,0x84,0x80,0x82,0x00
+    ,0x73,0xef,0x89,0x80,0x84,0x80,0x80,0x80,0x80,0x80};
+
+static const uint8_t buffers3[] =
+    {0xc0,0xf8,0xe0,0xca,0x6f,0x41,0xdb,0x23,0x63,0x2d,0x12,0x54,0x66,0x6e,0xd9,0x82,0xd8
+    ,0x82,0xb0,0x30,0x2d,0x3c,0xc7,0x22,0xec,0x1e,0x6b,0xf2,0x95,0x83,0x80,0x82,0x00
+    ,0x73,0xf0,0x81,0x80,0x00,0x52,0x11,0x56,0xdb,0x80,0x80,0x80,0x80,0x80,0xc0,0x80
+    ,0xb0,0x81,0x1e,0x6b,0xf3,0x95,0x80,0x82,0x00,0x71,0xe5,0x82,0x80,0x72,0x7b,0x1a
+    ,0xde,0x80,0x80,0x80,0x80,0x80};
+
+static const uint8_t* buffers[] = {buffers0, buffers1, buffers2, buffers3};
+
+int decode_uint_fast(const char** buff, const char* end, uint64_t* val);
+int decode_uint_fast2(const char** buff, const char* end, uint64_t* val);
+int decode_uint_loop(const char** buff, const char* end, uint64_t* val);
+int find_stopbit_byte(const char* buff, const char* end);
+
+static long test1(bool output, int i) {
+    uint64_t v;
+    const char* p = test_set[i];
+    int n = decode_uint_fast(&p, test_set[i]+strlen(test_set[i]), &v);
+    if (output)
+        printf("%16lx -> %d\n", v, n);
+    return n;
 }
 
-static void test2(bool output) {
+static long test2(bool output, int i) {
+    uint64_t v;
+    const char* p = test_set[i];
+    int n = decode_uint_fast2(&p, test_set[i]+strlen(test_set[i]), &v);
+    if (output)
+        printf("%16lx -> %d\n", v, n);
+    return n;
+}
+
+static long test3(bool output, int i) {
+    uint64_t v;
+    const char* p = test_set[i];
+    int n = decode_uint_loop(&p, test_set[i]+strlen(test_set[i]), &v);
+    if (output)
+        printf("%16lx -> %d\n", v, n);
+    return n;
+}
+
+static long test4(bool output, int j) {
     const int N = 8;
     char acc[N];     // Accumulator
 
-    for (int i=0; i < utxx::length(test_set); ++i) {
-        int  n      = 0;
-        bool done   = false;
-        for (char const* curr = test_set[i], *e=curr+8; curr < e && n < N && !done; ++curr, ++n)
-        {
-            char  c = *curr;
-            done    = (c & 0x80);     // Check the stop bit
-            acc[n]  = (c & 0x7f);     // Drop  the stop bit
-        }
-        if (output)
-            printf("%16lx -> %d\n", *(const uint64_t*)test_set[i], n);
+    int  n      = 0;
+    bool done   = false;
+    for (char const* curr = test_set[j], *e=curr+8; curr < e && n < N && !done; ++curr, ++n)
+    {
+        char  c = *curr;
+        done    = (c & 0x80);     // Check the stop bit
+        acc[n]  = (c & 0x7f);     // Drop  the stop bit
     }
-}
-/*
-  // How many entries have we got? Their bits will be stored in the HIGH part
-  // of the "PMap", and the low part filled with 0s;   initial "shift" is the
-  // bit size of the "0"s padding:
-  //
-  assert(n <= N);
-  int    shift  = 64 - 7 * n;
-  assert(shift >= 1);     // At least because 9 groups would use 63 bits!
+    //
+    // How many entries have we got? Their bits will be stored in the HIGH part
+    // of the "PMap", and the low part filled with 0s;   initial "shift" is the
+    // bit size of the "0"s padding:
+    //
+    //assert(n <= N);
+    int    shift  = 64 - 7 * n;
+    //assert(shift >= 1);     // At least because 9 groups would use 63 bits!
 
-  // Now store the "acc" bits in the reverse order, so that acc[0] would come
-  // to the highest part of "pmap:
-  //
-  pmap  = 0;
-  for (int i = n-1; i >= 0; --i, shift += 7)
-  {
-    uint64_t   tmp = acc[i];
-    tmp    <<= shift;
-    (*pmap) |= tmp;
-  }
-*/
+    // Now store the "acc" bits in the reverse order, so that acc[0] would come
+    // to the highest part of "pmap:
+    //
+    long pmap  = 0;
+    for (int i = n-1; i >= 0; --i, shift += 7)
+    {
+        uint64_t   tmp = acc[i];
+        tmp    <<= shift;
+        pmap |= tmp;
+    }
+    if (output)
+        printf("%16lx -> %ld\n", *(const uint64_t*)test_set[j], pmap);
+    return pmap;
+}
 
 BOOST_AUTO_TEST_CASE( test_pmap )
 {
     long ITERATIONS = getenv("ITERATIONS") ? atol(getenv("ITERATIONS")) : 10000000;
-    uint64_t value;
 
     BOOST_MESSAGE("Iterations: " << ITERATIONS);
 
-    boost::function<void(bool)> tests[] = { &test1, &test2 };
+    boost::function<int(bool, int)> tests[] = { &test1, &test2, &test3, &test4 };
 
-    for (int t=0; t < 2; t++)
+    for (int t=0; t < (int)length(test_set); ++t) {
+        long r1 = test1(false, t);
+        long r2 = test2(false, t);
+        long r3 = test3(false, t);
+        long r4 = test4(false, t);
+
+        BOOST_REQUIRE_EQUAL(r1, r4);
+        BOOST_REQUIRE_EQUAL(r2, r4);
+        BOOST_REQUIRE_EQUAL(r3, r4);
+    }
+
+    for (uint32_t t=0; t < sizeof(tests)/sizeof(tests[0]); t++)
     {
-        time_val start = time_val::universal_time();
+        timer start;
 
-        tests[t](verbosity::level() >= VERBOSE_DEBUG);
+        tests[t](verbosity::level() >= VERBOSE_DEBUG, 0);
 
         for (long i=0; i < ITERATIONS; ++i)
-            tests[t](false);
+            for (int j=0; j < (int)length(test_set); ++j)
+                tests[t](false, j);
 
-        double elapsed = time_val::universal_time().now_diff(start);
+        double elapsed = start.elapsed();
         int speed = (double)ITERATIONS / elapsed;
 
         printf("Speed: %d it/s, elapsed: %.6fs\n", speed, elapsed);
@@ -132,9 +208,8 @@ BOOST_AUTO_TEST_CASE( test_pmap )
 }
 
 int GetInteger(const char** buf, const char* end, uint64_t* res) {
-    bool        nullable;
+    const bool  nullable = true;
     char const* buff = *buf;
-    bool        is_null;
 
     // Here the result is accumulated from 7-bit bytes; maximum of N 7-bit
     // bytes for the size of type "T":
@@ -194,7 +269,11 @@ int GetInteger(const char** buf, const char* end, uint64_t* res) {
     }
 
     // Check for NULL and adjust nullable values:
-    is_null = false;
+    bool is_null = false;
+
+    if (unlikely(!is_null));  // Just to avoid compiler warning
+        throw std::runtime_error("Impossible happened");
+
     if (nullable)
     {
       if (n == 1 && !acc[0])
@@ -218,18 +297,17 @@ int GetInteger(const char** buf, const char* end, uint64_t* res) {
     *res = lres;
     assert(buff + n <= end);
 
-    //if (is_neg != NULL)
+    //if (is_neg != NULL && is_null)
     //  *is_neg = neg;
 
     return n;
-  }
+}
 
 
 inline int find_stopbit_byte(const char* buff, const char* end) {
-    const uint64_t s_mask = 0x8080808080808080ul;
     const uint64_t*     p = (const uint64_t*)buff;
 
-    uint64_t unmasked = *p & s_mask;
+    uint64_t unmasked = *p & 0x8080808080808080u;
     int pos;
 
     if (likely(unmasked)) {
@@ -237,19 +315,17 @@ inline int find_stopbit_byte(const char* buff, const char* end) {
     } else {
         // In case the stop bit is not found in 64 bits,
         // we need to check next bytes
-        unmasked = *(++p) & s_mask;
-        pos = 8 + __builtin_ffsl(unmasked) >> 3;
+        unmasked = *(++p) & 0x8080000000000000u;
+        if (unlikely(!unmasked))
+            return 0;
+        pos = 8 + (__builtin_ffsl(unmasked) >> 3);
     }
 
-    if (buff + pos < end)
-      return pos;
-
-    return 0;
+    return likely(buff + pos < end) ? pos : 0;
 }
 
 
 int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
-  const char* rend = *buff - 1;
   const char* p = *buff;
   int e, i = 0;
   uint64_t n = 0;
@@ -269,149 +345,170 @@ int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
   return len;
 }
 
-int unmask_7bit_uint56(const char** buff, const char* end, uint64_t* value) {
-    static const uint64_t s_mask   = 0x8080808080808080ul;
-    static const uint64_t s_unmask = 0x7F7F7F7F7F7F7F7Ful;
+namespace {
 
-    uint64_t v    = *(const uint64_t*)*buff;
-    uint64_t stop = v & s_mask;
-    if (likely(stop)) {
-        int      pos  = __builtin_ffsl(stop);
-        uint64_t shft = unlikely(pos == 64) ? -1ul : (1ul << pos)-1;
-        pos  >>= 3;
-        *value = v & s_unmask & shft;
-        *buff += pos;
-        return pos;
-    }
+    template <int I, int N>
+    struct unpack {
+        inline static uint64_t value(const char* v) {
+            return unpack<I-1,N>::value(v) | (((uint64_t)v[I] & 0x7F) << (N-I)*7);
+        }
+    };
 
-    *value = v & s_unmask;
-    *buff += 8;
-    return 0;
-}
+    template <>
+    struct unpack<0,0> {
+        inline static uint64_t value(const char* v) {
+            return (uint64_t)v[0] & 0x7F;
+        }
+    };
 
+    template <int N>
+    struct unpack<0,N> {
+        inline static uint64_t value(const char* v) {
+            return ((uint64_t)v[0] & 0x7F) << N*7;
+        }
+    };
 
-inline uint64_t decode_uint_p1(uint64_t v) {
-    return v;
-}
-inline uint64_t decode_uint_p2(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80;
-}
-inline uint64_t decode_uint_p3(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80
-         |(v >> 2) & 0x00000000001FC000;
-}
-inline uint64_t decode_uint_p4(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80
-         |(v >> 2) & 0x00000000001FC000
-         |(v >> 3) & 0x000000000FE00000;
-}
-inline uint64_t decode_uint_p5(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80
-         |(v >> 2) & 0x00000000001FC000
-         |(v >> 3) & 0x000000000FE00000
-         |(v >> 4) & 0x00000007F0000000;
-}
-inline uint64_t decode_uint_p6(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80
-         |(v >> 2) & 0x00000000001FC000
-         |(v >> 3) & 0x000000000FE00000
-         |(v >> 4) & 0x00000007F0000000
-         |(v >> 5) & 0x000003F800000000;
-}
-inline uint64_t decode_uint_p7(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80
-         |(v >> 2) & 0x00000000001FC000
-         |(v >> 3) & 0x000000000FE00000
-         |(v >> 4) & 0x00000007F0000000
-         |(v >> 5) & 0x000003F800000000
-         |(v >> 6) & 0x0001FC0000000000;
-}
-inline uint64_t decode_uint_p8(uint64_t v) {
-    return v       & 0x000000000000007F
-         |(v >> 1) & 0x0000000000003F80
-         |(v >> 2) & 0x00000000001FC000
-         |(v >> 3) & 0x000000000FE00000
-         |(v >> 4) & 0x00000007F0000000
-         |(v >> 5) & 0x000003F800000000
-         |(v >> 6) & 0x0001FC0000000000
-         |(v >> 7) & 0x00FE000000000000;
+    template <int N>
+    struct unpack<N,N> {
+        inline static uint64_t value(const char* v) {
+            return unpack<N-1,N>::value(v) | ((uint64_t)v[N] & 0x7F);
+        }
+    };
+
+    template <>
+    struct unpack<0,9> {
+        inline static uint64_t value(const char* v) {
+            return (uint64_t)(v[0] & 0x01) << (7*9);
+        }
+    };
+
+    template <int N>
+    struct unpacker {
+        static uint64_t value(const char* v) { return unpack<N,N>::value(v); }
+    };
 }
 
-int decode_uint_fast2(const char** buff, const char* end, uint64_t* val) {
-  int n = unmask_7bit_uint56(buff, end, val);
-  uint64_t v = *val;
-  typedef uint64_t (*fun_type)(uint64_t);
-  static const fun_type f[] = {
-      &decode_uint_p1,
-      &decode_uint_p2,
-      &decode_uint_p3,
-      &decode_uint_p4,
-      &decode_uint_p5,
-      &decode_uint_p6,
-      &decode_uint_p7,
-      &decode_uint_p8
-  };
-
-  if (v > length(f))
-      return 0;
-
-  *val = f[n](v);
-  return n;
+inline uint64_t decode_uint_p1(const char* v) {
+    return (uint64_t)v[0] & 0x7F;
+}
+inline uint64_t decode_uint_p2(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[1] & 0x7F));
+}
+inline uint64_t decode_uint_p3(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 14)
+        |  (((uint64_t)(v[1] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[2] & 0x7F));
+}
+inline uint64_t decode_uint_p4(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 21)
+        |  (((uint64_t)(v[1] & 0x7F)) << 14)
+        |  (((uint64_t)(v[2] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[3] & 0x7F));
+}
+inline uint64_t decode_uint_p5(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 28)
+        |  (((uint64_t)(v[1] & 0x7F)) << 21)
+        |  (((uint64_t)(v[2] & 0x7F)) << 14)
+        |  (((uint64_t)(v[3] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[4] & 0x7F));
+}
+inline uint64_t decode_uint_p6(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 35)
+        |  (((uint64_t)(v[1] & 0x7F)) << 28)
+        |  (((uint64_t)(v[2] & 0x7F)) << 21)
+        |  (((uint64_t)(v[3] & 0x7F)) << 14)
+        |  (((uint64_t)(v[4] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[5] & 0x7F));
+}
+inline uint64_t decode_uint_p7(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 42)
+        |  (((uint64_t)(v[1] & 0x7F)) << 35)
+        |  (((uint64_t)(v[2] & 0x7F)) << 28)
+        |  (((uint64_t)(v[3] & 0x7F)) << 21)
+        |  (((uint64_t)(v[4] & 0x7F)) << 14)
+        |  (((uint64_t)(v[5] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[6] & 0x7F));
+}
+inline uint64_t decode_uint_p8(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 49)
+        |  (((uint64_t)(v[1] & 0x7F)) << 42)
+        |  (((uint64_t)(v[2] & 0x7F)) << 35)
+        |  (((uint64_t)(v[3] & 0x7F)) << 28)
+        |  (((uint64_t)(v[4] & 0x7F)) << 21)
+        |  (((uint64_t)(v[5] & 0x7F)) << 14)
+        |  (((uint64_t)(v[6] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[7] & 0x7F));
+}
+inline uint64_t decode_uint_p9(const char* v) {
+    return (((uint64_t)(v[0] & 0x7F)) << 56)
+        |  (((uint64_t)(v[1] & 0x7F)) << 49)
+        |  (((uint64_t)(v[2] & 0x7F)) << 42)
+        |  (((uint64_t)(v[3] & 0x7F)) << 35)
+        |  (((uint64_t)(v[4] & 0x7F)) << 28)
+        |  (((uint64_t)(v[5] & 0x7F)) << 21)
+        |  (((uint64_t)(v[6] & 0x7F)) << 14)
+        |  (((uint64_t)(v[7] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[8] & 0x7F));
+}
+inline uint64_t decode_uint_p10(const char* v) {
+    return (((uint64_t)(v[0] & 0x01)) << 63)
+        |  (((uint64_t)(v[1] & 0x7F)) << 56)
+        |  (((uint64_t)(v[2] & 0x7F)) << 49)
+        |  (((uint64_t)(v[3] & 0x7F)) << 42)
+        |  (((uint64_t)(v[4] & 0x7F)) << 35)
+        |  (((uint64_t)(v[5] & 0x7F)) << 28)
+        |  (((uint64_t)(v[6] & 0x7F)) << 21)
+        |  (((uint64_t)(v[7] & 0x7F)) << 14)
+        |  (((uint64_t)(v[8] & 0x7F)) <<  7)
+        |   ((uint64_t)(v[9] & 0x7F));
 }
 
 int decode_uint_fast(const char** buff, const char* end, uint64_t* val) {
-  int n = unmask_7bit_uint56(buff, end, val);
-  uint64_t v = *val;
-  switch (n) {
-    case 1: break;
-    case 2: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80;
-            break;
-    case 3: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80
-                 |(v >> 2) & 0x00000000001FC000;
-            break;
-    case 4: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80
-                 |(v >> 2) & 0x00000000001FC000
-                 |(v >> 3) & 0x000000000FE00000;
-            break;
-    case 5: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80
-                 |(v >> 2) & 0x00000000001FC000
-                 |(v >> 3) & 0x000000000FE00000
-                 |(v >> 4) & 0x00000007F0000000;
-            break;
-    case 6: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80
-                 |(v >> 2) & 0x00000000001FC000
-                 |(v >> 3) & 0x000000000FE00000
-                 |(v >> 4) & 0x00000007F0000000
-                 |(v >> 5) & 0x000003F800000000;
-            break;
-    case 7: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80
-                 |(v >> 2) & 0x00000000001FC000
-                 |(v >> 3) & 0x000000000FE00000
-                 |(v >> 4) & 0x00000007F0000000
-                 |(v >> 5) & 0x000003F800000000
-                 |(v >> 6) & 0x0001FC0000000000;
-            break;
-    case 8: *val = v       & 0x000000000000007F
-                 |(v >> 1) & 0x0000000000003F80
-                 |(v >> 2) & 0x00000000001FC000
-                 |(v >> 3) & 0x000000000FE00000
-                 |(v >> 4) & 0x00000007F0000000
-                 |(v >> 5) & 0x000003F800000000
-                 |(v >> 6) & 0x0001FC0000000000
-                 |(v >> 7) & 0x00FE000000000000;
-            break;
+    int n = find_stopbit_byte(*buff, end);
+    typedef uint64_t (*fun_type)(const char*);
+    static const fun_type f[] = {
+        &decode_uint_p1,
+        &decode_uint_p2,
+        &decode_uint_p3,
+        &decode_uint_p4,
+        &decode_uint_p5,
+        &decode_uint_p6,
+        &decode_uint_p7,
+        &decode_uint_p8,
+        &decode_uint_p9,
+        &decode_uint_p10
+    };
+
+    if (likely(n)) {
+        *val  = f[n](*buff);
+        *buff += n;
+    }
+
+    return n;
+}
+
+int decode_uint_fast2(const char** buff, const char* end, uint64_t* val) {
+  int n = find_stopbit_byte(*buff, end);
+  typedef uint64_t (*fun_type)(const char*);
+  static const fun_type f[] = {
+      &unpacker<0>::value,
+      &unpacker<1>::value,
+      &unpacker<2>::value,
+      &unpacker<3>::value,
+      &unpacker<4>::value,
+      &unpacker<5>::value,
+      &unpacker<6>::value,
+      &unpacker<7>::value,
+      &unpacker<8>::value,
+      &unpacker<9>::value
+  };
+
+  //BOOST_ASSERT(n < length(f));
+
+  if (likely(n)) {
+      *val  = f[n](*buff);
+      *buff += n;
   }
 
   return n;
@@ -420,43 +517,37 @@ int decode_uint_fast(const char** buff, const char* end, uint64_t* val) {
 BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
 {
     long ITERATIONS = getenv("ITERATIONS") ? atol(getenv("ITERATIONS")) : 10000000;
-    uint64_t value;
 
-    for (int i=0; i < length(test_set); ++i) {
-        const uint64_t v = *(const uint64_t*)test_set[i];
-        uint64_t t1, t2, t3;
-        int r1, r2, r3;
+    for (int i=0; i < (int)length(test_set); ++i) {
+        uint64_t t1, t2;
         const char* p = test_set[i];
         const char* q = test_set[i];
-        const char* m = test_set[i];
-        BOOST_REQUIRE_EQUAL(decode_uint_loop(&p, p+8, &t1),
-                            decode_uint_fast(&q, q+8, &t2));
-        BOOST_REQUIRE_EQUAL(p, q);
+        //const char* m = test_set[i];
+        long r1 = decode_uint_loop(&p, p+8, &t1);
+        long r2 = decode_uint_fast(&q, q+8, &t2);
+        BOOST_REQUIRE_EQUAL(r1, r2);
         if (t1 != t2) {
-            for (int j=0; j < strlen(test_set[i]); j++)
+            for (int j=0; j < (int)strlen(test_set[i]); j++)
                 printf("%02x ", (uint8_t)test_set[i][j]);
             printf("\n  loop() -> %lx\n", t1);
             printf(  "  fast() -> %lx\n", t2);
         }
         BOOST_REQUIRE_EQUAL(t1, t2);
-/*
-        BOOST_REQUIRE_EQUAL(
-                            decode_uint_fast(&q, q+8, &t2));
-        BOOST_REQUIRE_EQUAL(p, q);
-        */
+
+        //BOOST_REQUIRE_EQUAL(decode_uint_fast(&q, q+8, &t2));
+        //BOOST_REQUIRE_EQUAL(p, q);
     }
 
     boost::function<int(const char**, const char*, uint64_t*)> tests[] = {
         &decode_uint_loop, &decode_uint_fast, &decode_uint_fast2, &GetInteger
     };
 
-    for (int t=0; t < length(tests); t++)
+    for (int t=0; t < (int)length(tests); t++)
     {
         time_val start = time_val::universal_time();
 
         for (long i=0; i < ITERATIONS; ++i)
-            for (int i=0; i < length(test_set); ++i) {
-                const uint64_t v = *(const uint64_t*)test_set[i];
+            for (int i=0; i < (int)length(test_set); ++i) {
                 uint64_t res;
                 const char* p = test_set[i];
                 tests[t](&p, p+8, &res);
@@ -470,13 +561,14 @@ BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
 }
 
 uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_reset) {
-    int res, len = 0;
+    int res;
     const char* q = buff;
     uint64_t  tid = 120, seq = 0, pmap;
 
     while (tid == 120) { // reset
       res = decode_uint_loop(&q, q+5, &pmap); 
       res = decode_uint_loop(&q, q+5, &tid);
+      BOOST_REQUIRE(res);
     }
 
     //printf("PMAP=%x, TID=%d, *p=0x%02x\n", pmap, tid, (uint8_t)*q);
@@ -487,6 +579,7 @@ uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_r
       *seq_reset = 1;
       res = decode_uint_loop(&q, q+10, &tid); // SendingTime
       res = decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
+      BOOST_REQUIRE(res);
     }
 
     return seq;
@@ -499,8 +592,30 @@ BOOST_AUTO_TEST_CASE( test_pmap_seqno )
     int new_seqno;
     std::cout << "Length of s: " << length(s) << std::endl;
 
-    for (int i=0; i < utxx::length(test_set); i++)
+    for (int i=0; i < (int)length(test_set); i++) {
         uint32_t n = decode_forts_seqno(test_set[i], 8, i, &new_seqno);
+        BOOST_REQUIRE(n);
+    }
+
+    for (int i=0; i < (int)length(buffers); i++) {
+        const char* p   = (const char*)buffers[i], *q = p;
+        const char* end = p + strlen((const char*)buffers[i]);
+        for (int j=0; j < 3; j++) {
+            uint64_t v1, v2;
+            int n1 = GetInteger(&p, end, &v1);
+            int n2 = decode_uint_fast(&q, end, &v2);
+            BOOST_REQUIRE_EQUAL(n1, n2);
+            BOOST_REQUIRE_EQUAL(v1, v2);
+        }
+    }
 }
 
-
+#ifdef UTXX_STANDALONE
+int main()
+{
+    test_pmap();
+    test_pmap_decode_int();
+    test_pmap_seqno();
+    return 0;
+}
+#endif

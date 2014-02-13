@@ -44,24 +44,28 @@ namespace utxx {
 static logger_impl_mgr::impl_callback_t f = &logger_impl_async_file::create;
 static logger_impl_mgr::registrar reg("async_file", f);
 
+logger_impl_async_file::logger_impl_async_file(const char* a_name)
+    : m_name(a_name), m_append(true), m_levels(LEVEL_NO_DEBUG)
+    , m_mode(0644), m_show_location(true), m_show_ident(false)
+{}
+
 void logger_impl_async_file::finalize()
 {
     if (!m_engine.running())
         m_engine.stop();
 }
 
-std::ostream& logger_impl_async_file::dump(std::ostream& out,
-        const std::string& a_prefix) const
+std::ostream& logger_impl_async_file::dump(
+    std::ostream& out, const std::string& a_pfx) const
 {
-    out << a_prefix << "logger." << name() << '\n'
-        << a_prefix << "    filename       = " << m_filename << '\n'
-        << a_prefix << "    append         = " << (m_append ? "true" : "false") << '\n'
-        << a_prefix << "    mode           = " << m_mode << '\n'
-        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_prefix << "    show_indent    = " << (m_show_ident    ? "true" : "false") << '\n' 
-        << a_prefix << "    timeout        = " << m_timeout.tv_sec << '.'
-                                               << (1.0 / 1000000000.0 * m_timeout.tv_nsec) << '\n';
+    out << a_pfx << "logger." << name() << '\n'
+        << a_pfx << "    filename       = " << m_filename << '\n'
+        << a_pfx << "    append         = " << (m_append ? "true" : "false") << '\n'
+        << a_pfx << "    mode           = " << m_mode << '\n'
+        << a_pfx << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
+        << a_pfx << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_pfx << "    show_indent    = " << (m_show_ident    ? "true" : "false")
+        << std::endl;
     return out;
 }
 
@@ -77,22 +81,16 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
         throw badarg_error("logger.async_file.filename not specified");
     }
 
-    m_append = a_config.get<bool>("logger.async_file.append", true);
-    m_mode   = a_config.get<int> ("logger.async_file.mode", 0644);
-    m_levels = logger::parse_log_levels(
-        a_config.get<std::string>("logger.async_file.levels", logger::default_log_levels));
-
-    m_fd = m_engine.open_file(m_filename.c_str(), m_append, m_mode);
-
-    unsigned long timeout = m_timeout.tv_sec * 1000 + m_timeout.tv_nsec / 1000000ul;
-
-    m_show_location   = a_config.get<bool>("logger.async_file.show_location",
-                                           this->m_log_mgr->show_location());
-    m_show_ident      = a_config.get<bool>("logger.async_file.show_ident",
-                                           this->m_log_mgr->show_ident());
-    timeout           = a_config.get<int> ("logger.async_file.timeout", timeout);
-    m_timeout.tv_sec  = timeout / 1000;
-    m_timeout.tv_nsec = timeout % 1000 * 1000000ul;
+    m_append        = a_config.get<bool>("logger.async_file.append", true);
+    m_mode          = a_config.get<int> ("logger.async_file.mode", 0644);
+    m_levels        = logger::parse_log_levels(
+                        a_config.get<std::string>("logger.async_file.levels",
+                                                  logger::default_log_levels));
+    m_fd            = m_engine.open_file(m_filename.c_str(), m_append, m_mode);
+    m_show_location = a_config.get<bool>("logger.async_file.show_location",
+                                         this->m_log_mgr->show_location());
+    m_show_ident    = a_config.get<bool>("logger.async_file.show_ident",
+                                         this->m_log_mgr->show_ident());
 
     if (m_fd < 0)
         throw io_error(errno, "Error opening file: ", m_filename);
@@ -119,34 +117,35 @@ void logger_impl_async_file::log_msg(
     throw(std::runtime_error)
 {
     char buf[logger::MAX_MESSAGE_SIZE];
-    int len = logger_impl::format_message(buf, sizeof(buf), true, 
+    int len = logger_impl::format_message(buf, sizeof(buf), true,
                 m_show_ident, m_show_location, a_tv, info, fmt, args);
-    send_data(info.level(), buf, len);
+    send_data(info.level(), info.category(), buf, len);
 }
 
-void logger_impl_async_file::log_bin(const char* msg, size_t size) 
-    throw(std::runtime_error) 
+void logger_impl_async_file::log_bin(const char* a_category, const char* msg, size_t size)
+    throw(std::runtime_error)
 {
-    send_data(LEVEL_LOG, msg, size);
+    send_data(LEVEL_LOG, a_category, msg, size);
 }
 
-void logger_impl_async_file::send_data(log_level level, const char* msg, size_t size)
+void logger_impl_async_file::send_data(
+    log_level level, const char* a_category, const char* a_msg, size_t a_size)
     throw(io_error)
 {
     if (!m_engine.running())
-        throw io_error(m_error.empty() ? "Logger terminated!" : m_error.c_str());
+        throw io_error("Logger terminated!");
 
-    char* p = m_engine.allocate(size);
+    char* p = m_engine.allocate(a_size);
 
     if (!p) {
         std::stringstream s("Out of memory allocating ");
-        s << size << " bytes!";
-        throw io_error(m_error);
+        s << a_size << " bytes!";
+        throw io_error(s.str());
     }
 
-    memcpy(p, msg, size);
+    memcpy(p, a_msg, a_size);
 
-    m_engine.write(m_fd, p, size);
+    m_engine.write(m_fd, a_category, p, a_size);
 }
 
 } // namespace utxx

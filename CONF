@@ -1,0 +1,5 @@
+#!/bin/bash
+
+TYPE=${1:-debug}
+
+./configure --enable-${TYPE} --with-boost=/opt/boost --prefix=/opt/utxx --with-thrift=/opt/thrift

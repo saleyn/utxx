@@ -163,6 +163,9 @@ namespace utxx {
             return *this;
         }
 
+        const time_val* ptr() const { return reinterpret_cast<const time_val*>(&m_tv); }
+        time_val*       ptr()       { return reinterpret_cast<time_val*>(&m_tv); }
+
         static double now_diff(const time_val& start) {
             time_val tv; tv.now(); tv -= start;
             return (double)tv.sec() + (double)tv.usec() / N10e6;
@@ -233,6 +236,35 @@ namespace utxx {
         BOOST_STATIC_ASSERT(sizeof(T) == sizeof(struct timeval));
         return reinterpret_cast<const time_val&>(tv);
     }
+
+    /// Simple timer for measuring interval of time
+    ///
+    /// Example usage1:
+    /// \code
+    ///     timer t; do_something(); double elapsed = t.elapsed();
+    /// \endcode
+    /// Example usage2:
+    /// \code
+    ///     time_val time;
+    ///     {
+    ///         timer t(time);
+    ///         do_something();
+    ///     }
+    ///     double elapsed = time.seconds();
+    /// \endcode
+    class timer {
+        time_val* m_result;
+        time_val  m_started;
+    public:
+        timer() : m_result(NULL), m_started(time_val::universal_time()) {}
+        timer(time_val& tv) : m_result(tv.ptr()), m_started(time_val::universal_time()) {}
+
+        ~timer() { if (m_result) *m_result = time_val::universal_time() - m_started; }
+
+        void   reset() { m_started = time_val::universal_time(); }
+
+        double elapsed() const { return time_val::universal_time().now_diff(m_started); }
+    };
 
 } // namespace utxx
 

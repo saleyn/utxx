@@ -850,7 +850,7 @@ void report_socket_stats() {
                             "================================"
                             "================================";
   static const char BAR[] = "********************************";
-  static const int graph_width = 15;
+  static const int seqno_width = 9;
   const        int pad_title   = max_title_width - 5;
 
   int i, max_ooo_count = 0, max_pkt_count = 0, max_bytes = 0, max_gap_count = 0;
@@ -867,30 +867,30 @@ void report_socket_stats() {
   for (i=0; i < sizeof(sort_funs)/sizeof(sort_funs[0]); i++)
     qsort(sorted_addrs[i], addrs_count, sizeof(struct address*), sort_funs[i]);
 
-  printf("#C|%*.*sTitle|==MBytes|%*.*sBytesGraph|%*.*sTitle|==Packets|%*.*sPacketsGraph|\n",
-    pad_title, pad_title, SEP, graph_width-10, graph_width-10, SEP,
-    pad_title, pad_title, SEP, graph_width-12, graph_width-12, SEP);
+  printf("#C|%*.*sTitle|==MBytes|%*.*sLastSeqno|%*.*sTitle|==Packets|%*.*sLastSeqno|\n",
+    pad_title, pad_title, SEP, seqno_width-9, seqno_width-9, SEP,
+    pad_title, pad_title, SEP, seqno_width-9, seqno_width-9, SEP);
 
   for(i=0; i < n; i++) {
     struct address* pbytes = sorted_addrs[0][i];
     struct address* ppkts  = sorted_addrs[1][i];
     if (!pbytes->bytes_cnt && !ppkts->pkt_count)
       break;
-    int gbytes = max_bytes     ? (int)(graph_width * pbytes->bytes_cnt / max_bytes) : 0;
-    int gpkts  = max_pkt_count ? (int)(graph_width * ppkts->pkt_count / max_pkt_count) : 0;
+    int gbytes = max_bytes     ? (int)(seqno_width * pbytes->bytes_cnt / max_bytes) : 0;
+    int gpkts  = max_pkt_count ? (int)(seqno_width * ppkts->pkt_count / max_pkt_count) : 0;
 
-    printf("#C|%*s|%8.1f|%*.*s%*s|%*s|%9d|%*.*s%*s|\n",
+    printf("#C|%*s|%8.1f|%*s|%*s|%9d|%*s|\n",
       max_title_width, pbytes->title, (double)pbytes->bytes_cnt/MEGABYTE,
-      gbytes, gbytes, BAR, graph_width - gbytes, "",
+      seqno_width, pbytes->last_seqno,
       max_title_width, ppkts ->title, ppkts->pkt_count,
-      gpkts, gpkts, BAR, graph_width - gpkts, "");
+      seqno_width, ppkts->last_seqno);
   }
 
   // Has any non-zero data?
   if (crep_ooo_count(sorted_addrs[2][0]) || crep_gap_count(sorted_addrs[3][0]))
-    printf("#c|%*.*sTitle|====Gaps|%*.*sGapsGraph|%*.*sTitle|==OutOrdr|%*.*sOutOfOrdGraph|\n",
-      pad_title, pad_title, SEP, graph_width-9,  graph_width-9,  SEP,
-      pad_title, pad_title, SEP, graph_width-13, graph_width-13, SEP);
+    printf("#c|%*.*sTitle|====Gaps|%*.*sLastSeqno|%*.*sTitle|==OutOrdr|%*.*sLastSeqno|\n",
+      pad_title, pad_title, SEP, seqno_width-9, seqno_width-9,  SEP,
+      pad_title, pad_title, SEP, seqno_width-9, seqno_width-9, SEP);
 
   for(i=0; i < n; i++) {
     struct address* pooo   = sorted_addrs[2][i];
@@ -898,18 +898,18 @@ void report_socket_stats() {
     int ooo_count = crep_ooo_count(pooo);
     int gap_count = crep_gap_count(pgaps);
     if (ooo_count || gap_count) {
-      int ggaps = max_gap_count ? (int)(graph_width * gap_count / max_gap_count) : 0;
-      int gooos = max_ooo_count ? (int)(graph_width * ooo_count / max_ooo_count) : 0; 
+      int ggaps = max_gap_count ? (int)(seqno_width * gap_count / max_gap_count) : 0;
+      int gooos = max_ooo_count ? (int)(seqno_width * ooo_count / max_ooo_count) : 0; 
 
-      printf("#c|%*s|%8d|%*.*s%*s|%*s|%9d|%*.*s%*s|\n",
+      printf("#c|%*s|%8d|%*s|%*s|%9d|%*s|\n",
         max_title_width, gap_count ? pgaps ->title : "", gap_count,
-        ggaps, ggaps, BAR, graph_width - ggaps, "",
+        seqno_width, pgaps->last_seqno,
         max_title_width, ooo_count ? pooo  ->title : "", ooo_count,
-        gooos, gooos, BAR, graph_width - gooos, "");
+        seqno_width, pooo->last_seqno);
     }
   }
 
-  int width = max_title_width+1+8+graph_width+1+max_title_width+1+9+graph_width+2;
+  int width = max_title_width+1+8+seqno_width+1+max_title_width+1+9+seqno_width+2;
   int nodata_count = 0;
 
   for(i=0; i < addrs_count; i++)

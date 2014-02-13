@@ -37,23 +37,126 @@ namespace utxx {
 
 template <int N>
 inline log_msg_info::log_msg_info(
-    logger& a_logger, log_level lv, const char (&filename)[N], size_t ln)
-    : m_logger(a_logger)
-    , m_level(lv)
+    logger& a_logger, log_level a_lv, const char (&a_filename)[N], size_t a_ln)
+    : m_logger(&a_logger)
+    , m_level(a_lv)
+    , m_category(NULL)
+    , m_src_file_len(N)
+    , m_src_file(a_filename)
+    , m_src_line(a_ln)
+    /*
     , m_src_location_len(
             m_logger.show_location()
             ? snprintf(m_src_location, sizeof(m_src_location), " [%s:%zd]",
                 path::basename(filename, filename+N), ln)
             : 0
       )
-{
-}
+    */
+{}
+
+template <int N>
+inline log_msg_info::log_msg_info(
+    log_level a_lv, const char* a_category, const char (&a_filename)[N], size_t a_ln)
+    : m_logger(&logger::instance())
+    , m_level(a_lv)
+    , m_category(a_category)
+    , m_src_file_len(N)
+    , m_src_file(a_filename)
+    , m_src_line(0)
+{}
+
+inline log_msg_info::log_msg_info(
+    log_level   a_lv,
+    const char* a_category)
+    : m_logger(NULL)
+    , m_level(a_lv)
+    , m_category(a_category)
+    , m_src_file_len(0)
+    , m_src_file("")
+    , m_src_line(0)
+{}
 
 inline void log_msg_info::log(const char* fmt, ...) {
     va_list args; va_start(args, fmt);
     BOOST_SCOPE_EXIT( (&args) ) { va_end(args); } BOOST_SCOPE_EXIT_END;
-    m_logger.log(*this, fmt, args);
+    logger* l = m_logger ? m_logger : &logger::instance();
+    l->log(*this, fmt, args);
 }
+
+//-----------------------------------------------------------------------------
+// logger
+//-----------------------------------------------------------------------------
+
+template <int N>
+inline void logger::log(logger& a_logger, log_level a_level, const char* a_category,
+    const char (&a_filename)[N], size_t a_line,
+    const char* a_fmt, va_list args)
+{
+    log_msg_info info(a_logger, a_level, a_category, a_filename, a_line);
+    a_logger.log(info, a_fmt, args);
+}
+
+inline void logger::log(const log_msg_info& a_info, const char* a_fmt, va_list args) {
+    if (is_enabled(a_info.level()))
+        try {
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+
+            m_sig_msg[level_to_signal_slot(a_info.level())](
+                on_msg_delegate_t::invoker_type(a_info, &tv, a_fmt, args));
+        } catch (std::runtime_error& e) {
+            if (m_error)
+                m_error(e.what());
+            else
+                throw;
+        }
+}
+
+inline void logger::log(
+    log_level a_level, const char* a_category, const char* a_fmt, va_list args)
+{
+    if (is_enabled(a_level))
+        try {
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+
+            log_msg_info info(a_level, a_category);
+            m_sig_msg[level_to_signal_slot(info.level())](
+                on_msg_delegate_t::invoker_type(info, &tv, a_fmt, args));
+        } catch (std::runtime_error& e) {
+            if (m_error)
+                m_error(e.what());
+            else
+                throw;
+        }
+}
+
+inline void logger::log(const char* a_category, const std::string& a_msg)
+{
+    if (likely(is_enabled(LEVEL_LOG)))
+        try {
+            m_sig_bin(on_bin_delegate_t::invoker_type(
+                a_category, a_msg.c_str(), a_msg.size()));
+        } catch (std::runtime_error& e) {
+            if (m_error)
+                m_error(e.what());
+            else
+                throw;
+        }
+}
+
+inline void logger::log(const char* a_category, const char* a_buf, size_t a_size) {
+    if (likely(is_enabled(LEVEL_LOG)))
+        try {
+            m_sig_bin(on_bin_delegate_t::invoker_type(a_category, a_buf, a_size));
+        } catch (std::runtime_error& e) {
+            if (m_error)
+                m_error(e.what());
+            else
+                throw;
+        }
+}
+
 
 } // namespace utxx
 

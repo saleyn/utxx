@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdarg.h>
 #include <stdio.h>
 #include <boost/thread/mutex.hpp>
+#include <boost/format.hpp>
 #include <utxx/delegate.hpp>
 #include <utxx/event.hpp>
 #include <utxx/time_val.hpp>
@@ -50,24 +51,42 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx { 
 
-/// Temporary stores msg source location information given to the logger.
+/// Temporarily stores msg source location information given to the logger.
 class log_msg_info {
-    logger&         m_logger;
+    logger*         m_logger;
     log_level       m_level;
-    size_t          m_src_location_len;
-    char            m_src_location[40];
+    const char*     m_category;
+    size_t          m_src_file_len;
+    const char*     m_src_file;
+    size_t          m_src_line;
 public:
 
     template <int N>
-    log_msg_info(logger& a_logger, log_level lv, const char (&filename)[N], size_t ln);
+    log_msg_info(logger& a_logger, log_level lv,
+                 const char (&filename)[N], size_t ln);
 
-    logger&     get_logger()        const { return m_logger; }
+    template <int N>
+    log_msg_info(log_level a_lv, const char* a_category,
+                 const char (&a_filename)[N], size_t a_ln);
+
+    log_msg_info(log_level a_lv, const char* a_category);
+
+    logger*     get_logger()        const { return m_logger; }
     log_level   level()             const { return m_level; }
-    const char* src_location()      const { return m_src_location; }
-    size_t      src_location_len()  const { return m_src_location_len; }
-    bool        has_src_location()  const { return m_src_location_len > 0; }
+    const char* category()          const { return m_category; }
+    const char* src_file()          const { return m_src_file; }
+    size_t      src_file_len()      const { return m_src_file_len; }
+    size_t      src_line()          const { return m_src_line; }
+    bool        has_src_location()  const { return m_src_file; }
 
-    // See logger_impl.hxx for implementation.
+    void category(const char* a_category) { m_category = a_category; }
+
+    std::string src_location() const {
+        return has_src_location()
+            ? (boost::format("[%s:%d]") % src_file() % src_line()).str() : std::string();
+    }
+
+    // Helper function for LOG_* macros. See logger_impl.ipp for implementation.
     void inline log(const char* fmt, ...);
 };
 
@@ -120,7 +139,8 @@ struct logger_impl {
     > on_msg_delegate_t;
 
     typedef delegate<
-        void (const char* /* msg */,
+        void (const char* /* category */,
+              const char* /* msg */,
               size_t      /* size */) throw(std::runtime_error)
     > on_bin_delegate_t;
 

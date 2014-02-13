@@ -54,6 +54,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/scope_exit.hpp>
 //#include <utxx/singleton.hpp>
 #include <boost/thread/mutex.hpp>
+
 #include <utxx/logger/logger_impl.hpp>
 #ifndef _MSC_VER
 #   include <utxx/synch.hpp>
@@ -65,17 +66,29 @@ namespace utxx {
 
 #ifdef _MSC_VER
 
-#define LOG_TRACE5(FmtArgs)  
+#define LOG_TRACE5(FmtArgs)
 #define LOG_TRACE4(FmtArgs)
 #define LOG_TRACE3(FmtArgs)
 #define LOG_TRACE2(FmtArgs)
 #define LOG_TRACE1(FmtArgs)
 #define LOG_DEBUG(FmtArgs)      printf FmtArgs;
-#define LOG_INFO(FmtArgs)       printf FmtArgs;    
+#define LOG_INFO(FmtArgs)       printf FmtArgs;
 #define LOG_WARNING(FmtArgs)    printf FmtArgs;
 #define LOG_ERROR(FmtArgs)      printf FmtArgs;
 #define LOG_FATAL(FmtArgs)      printf FmtArgs;
 #define LOG_ALERT(FmtArgs)      printf FmtArgs;
+
+#define LOG_CAT_TRACE5(Cat, FmtArgs)
+#define LOG_CAT_TRACE4(Cat, FmtArgs)
+#define LOG_CAT_TRACE3(Cat, FmtArgs)
+#define LOG_CAT_TRACE2(Cat, FmtArgs)
+#define LOG_CAT_TRACE1(Cat, FmtArgs)
+#define LOG_CAT_DEBUG (Cat, FmtArgs)     printf FmtArgs;
+#define LOG_CAT_INFO  (Cat, FmtArgs)     printf FmtArgs;
+#define LOG_CAT_WARNING(Cat, FmtArgs)    printf FmtArgs;
+#define LOG_CAT_ERROR (Cat, FmtArgs)     printf FmtArgs;
+#define LOG_CAT_FATAL (Cat, FmtArgs)     printf FmtArgs;
+#define LOG_CAT_ALERT (Cat, FmtArgs)     printf FmtArgs;
 
 #else
 
@@ -116,6 +129,30 @@ typedef log_msg_info _lim;
 #define LOG_ALERT(FmtArgs)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_ALERT  , \
         __FILE__, __LINE__).log FmtArgs; } while(0)
+
+#define LOG_CAT_TRACE5(Cat, FmtArgs)  do { \
+    utxx::_lim(Cat, utxx::LEVEL_TRACE5 , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_TRACE4(Cat, FmtArgs)  do { \
+    utxx::_lim(Cat, utxx::LEVEL_TRACE4 , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_TRACE3(Cat, FmtArgs)  do { \
+    utxx::_lim(Cat, utxx::LEVEL_TRACE3 , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_TRACE2(Cat, FmtArgs)  do { \
+    utxx::_lim(Cat, utxx::LEVEL_TRACE2 , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_TRACE1(Cat, FmtArgs)  do { \
+    utxx::_lim(Cat, utxx::LEVEL_TRACE1 , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_DEBUG(Cat, FmtArgs)   do { \
+    utxx::_lim(Cat, utxx::LEVEL_DEBUG  , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_INFO(Cat, FmtArgs)    do { \
+    utxx::_lim(Cat, utxx::LEVEL_INFO   , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_WARNING(Cat, FmtArgs) do { \
+    utxx::_lim(Cat, utxx::LEVEL_WARNING, __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_ERROR(Cat, FmtArgs)   do { \
+    utxx::_lim(Cat, utxx::LEVEL_ERROR  , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_FATAL(Cat, FmtArgs)   do { \
+    utxx::_lim(Cat, utxx::LEVEL_FATAL  , __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_ALERT(Cat, FmtArgs)   do { \
+    utxx::_lim(Cat, utxx::LEVEL_ALERT  , __FILE__, __LINE__).log FmtArgs; } while(0)
+
 #endif
 
 #endif
@@ -132,10 +169,11 @@ public:
     /// Convert a <level> to the slot number in the <m_sig_msg> array
     static log_level   signal_slot_to_level(int slot) throw(badarg_error);
 
-    typedef std::vector<logger_impl*>      implementations_vector;
+    typedef boost::shared_ptr<logger_impl>  impl;
+    typedef std::vector<impl>               implementations_vector;
 
-    typedef logger_impl::on_msg_delegate_t on_msg_delegate_t;
-    typedef logger_impl::on_bin_delegate_t on_bin_delegate_t;
+    typedef logger_impl::on_msg_delegate_t  on_msg_delegate_t;
+    typedef logger_impl::on_bin_delegate_t  on_bin_delegate_t;
 
 private:
     signal<on_msg_delegate_t>       m_sig_msg[logger_impl::NLEVELS];
@@ -176,14 +214,27 @@ private:
     /// To be called by <logger_impl> child to unregister a delegate
     void remove_bin_logger(int a_id);
 
+    /// Signal info/warning/error/fatal/alert level message to registered
+    /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_level is the log level.
+    /// @param a_category is the category of the message
+    /// @param a_filename is the content of __FILE__ variable.
+    /// @param a_line is the content of __LINE__ variable.
+    /// @param a_fmt is the format string passed to <sprintf()>
+    /// @param args is the list of optional arguments passed to <args>
+    template <int N>
+    static void log(logger& a_logger, log_level a_level, const char* a_category,
+        const char (&a_filename)[N], size_t a_line,
+        const char* a_fmt, va_list args);
+
+    friend class log_msg_info;
+
 public:
     static logger& instance() {
         return singleton<logger>::instance();
     }
 
-    enum defaults {
-        MAX_MESSAGE_SIZE = 512
-    };
+    enum defaults { MAX_MESSAGE_SIZE = 512 };
 
     logger() 
         : m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
@@ -221,24 +272,22 @@ public:
     /// Set an error handler delegate to fire when there is an error
     /// instead of throwing run-time exceptions.  Note that the handler
     /// may be called from different threads so it has to be thread-safe.
-    void set_error_handler(boost::function<void (const char*)>& eh) {
-        m_error = eh;
-    }
+    void set_error_handler(boost::function<void (const char*)>& eh) { m_error = eh; }
 
     /// Set the timestamp type to use in log files.
     /// @param ts the timestamp type.
     void timestamp_type(stamp_type ts) { m_timestamp_type = ts; }
 
     /// @return format type of timestamp written to log
-    stamp_type timestamp_type() const { return m_timestamp_type; }
+    stamp_type  timestamp_type() const { return m_timestamp_type; }
 
     /// @return true if ident display is enabled by default.
-    bool show_ident()          const { return m_show_ident; }
+    bool        show_ident()     const { return m_show_ident; }
     /// @return true if source location display is enabled by default.
-    bool show_location()       const { return m_show_location; }
+    bool        show_location()  const { return m_show_location; }
 
     /// Get program identifier to be used in the log output.
-    const std::string& ident() const { return m_ident; }
+    const std::string&  ident()  const { return m_ident; }
 
     /// Converts a string (e.g. "DEBUG | INFO | WARNING") sizeof(m_timestamp)-1to a bitmask of
     /// corresponding levels.  This method is used for configuration parsing
@@ -252,55 +301,30 @@ public:
 
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
-    /// @param a_level is the log level.
-    /// @param filename is the content of __FILE__ variable.
-    /// @param line is the content of __LINE__ variable.
-    /// @param fmt is the format string passed to <sprintf()>
+    /// @param a_info is an object containing log level, and msg source location.
+    /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    template <int N>
-    static void log(logger& a_logger, log_level a_level,
-        const char (&filename)[N], size_t line,
-        const char* fmt, va_list args)
-    {
-        log_msg_info info(a_logger, a_level, filename, line);
-        a_logger.log(info, fmt, args);
-    }
+    void log(const log_msg_info& a_info, const char* a_fmt, va_list args);
 
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
-    /// @param info is an object containing log level, and msg source location.
-    /// @param fmt is the format string passed to <sprintf()>
+    /// @param a_level is the log level to record
+    /// @param a_category is a category of the message (use NULL if undefined).
+    /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    void log(const log_msg_info& info, const char* fmt, va_list args) {
-        if (is_enabled(info.level()))
-            try {
-                struct timeval tv;
-                gettimeofday(&tv, NULL);
+    void log(log_level a_level, const char* a_category, const char* a_fmt, va_list args);
 
-                m_sig_msg[level_to_signal_slot(info.level())](
-                    on_msg_delegate_t::invoker_type(info, &tv, fmt, args));
-            } catch (std::runtime_error& e) {
-                if (m_error)
-                    m_error(e.what());
-                else
-                    throw;
-            }
-    }
+    /// Signal info/warning/error/fatal/alert level message to registered
+    /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_category is a category of the message (use NULL if undefined).
+    /// @param a_msg is the message to be logged
+    void log(const char* a_category, const std::string& a_msg);
 
     /// Signal binary message to registered implementations using <LEVEL_LOG> level.
-    /// @param buf is message buffer.
-    /// @param size is the size of the message.
-    void log(const char* buf, size_t size) {
-        if (likely(is_enabled(LEVEL_LOG)))
-            try {
-                m_sig_bin(on_bin_delegate_t::invoker_type(buf, size));
-            } catch (std::runtime_error& e) {
-                if (m_error)
-                    m_error(e.what());
-                else
-                    throw;
-            }
-    }
+    /// @param a_category is a category of the message (use NULL if undefined).
+    /// @param a_buf is message buffer.
+    /// @param a_size is the size of the message.
+    void log(const char* a_category, const char* a_buf, size_t a_size);
 };
 
 } // namespace utxx

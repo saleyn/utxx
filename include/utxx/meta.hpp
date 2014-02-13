@@ -64,15 +64,15 @@ public:
 
 /// Given the size N and alignment size get the number of padding and aligned 
 /// space needed to hold the structure of N bytes.
-template<int N, int Size>                                                       
-class align {                                                                    
-    static const int multiplier = Size / N;                                     
-    static const int remainder  = Size % N;                                     
-public:                                                                          
-    static const int size       = remainder > 0 ? (multiplier+1) * N : Size;    
-    static const int padding    = size - Size;                                  
-};                                                                               
-                                                                                     
+template<int N, int Size>
+class align {
+    static const int multiplier = Size / N;
+    static const int remainder  = Size % N;
+public:
+    static const int size       = remainder > 0 ? (multiplier+1) * N : Size;
+    static const int padding    = size - Size;
+};
+
 
 } // namespace utxx
 
