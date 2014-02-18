@@ -27,11 +27,12 @@ namespace utxx {
  * \brief this class implements node of the trie
  * \tparam Store node store facility
  * \tparam Data node payload type
- * \tparam SArray type of collection of child nodes
+ * \tparam Coll collection of child nodes
  *
- * The Store and SArray types are themself templates
+ * The Store and Coll types are themself templates
+ * defining rebind<T>::other type
  */
-template <typename Store, typename Data, typename SArray>
+template<typename Store, typename Data, typename Coll>
 class pnode {
     // prevent copying
     pnode(const pnode&);
@@ -42,40 +43,32 @@ public:
     typedef typename store_t::pointer_t ptr_t;
 
     // sparse storage types
-    typedef typename SArray::template rebind<ptr_t>::other sarray_t;
+    typedef typename Coll::template rebind<ptr_t>::other sarray_t;
     typedef typename sarray_t::symbol_t symbol_t;
 
     // constructor
     pnode() {}
 
-    // write node to file
-    template <typename T, typename F>
-    T write_to_file(const store_t& a_store, F a_f, std::ofstream& a_ofs) const {
+    // write node to output store, return store pointer type
+    template<typename T, typename F>
+    typename T::addr_type write_to_store(const store_t& store, F func,
+            typename T::store_type& out) const {
 
-        // write data payload, get encoded reference
-        typename Data::template ext_header<T> l_data;
-        m_data.write_to_file(l_data, a_store, a_ofs);
+        // encode data payload
+        typename T::data_encoder data_encoder;
+        data_encoder.store(m_data, store, out);
 
-        // write children encoded, get encoded reference
-        typename sarray_t::template ext_header<T> l_children;
-        m_children.write_to_file(l_children, a_f, a_ofs);
+        // encode children
+        typename T::coll_encoder children_encoder;
+        children_encoder.store(m_children, store, func, out);
 
-        // save offset of the node encoded
-        T l_ret = boost::numeric_cast<T, std::streamoff>(a_ofs.tellp());
-
-        // write encoded data reference
-        l_data.write_to_file(a_ofs);
-
-        // write encoded children reference
-        l_children.write_to_file(a_ofs);
-
-        // return offset of the node encoded
-        return l_ret;
+        // store sequence of buffers as single memory chunk, return address
+        return out.store(data_encoder.buff(), children_encoder.buff());
     }
 
     // no cross-links to update - empty method
-    template <typename F>
-    void write_links(const store_t&, F, std::ofstream&) {}
+    template <typename T, typename F>
+    void store_links(const store_t&, F, typename T::store_type&) {}
 
     // node data payload
     const Data& data() const { return m_data; }

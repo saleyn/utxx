@@ -17,51 +17,33 @@
 
 #include <utxx/simple_node_store.hpp>
 #include <utxx/svector.hpp>
+#include <utxx/sarray.hpp>
 #include <utxx/pnode.hpp>
 #include <utxx/ptrie.hpp>
 
-// offset type in external data representation
-typedef uint32_t offset_t;
-
-// external string representation will be an offset in file
-// referencing actual null-terminated string
-//
-struct exportable_string : public std::string {
-    exportable_string() {}
-    exportable_string(const char *s) : std::string(s) {}
-
-    // data header of external string representation
-    template<typename OffsetType> struct ext_header {
-        // offset to variable-length payload
-        OffsetType offset;
-        // write data header to file
-        void write_to_file(std::ofstream& a_ofs) const {
-            a_ofs.write((const char *) &offset, sizeof(offset));
-        }
-    };
-
-    // write nested data payload to file, fill header
-    template<typename OffsetType, typename Store>
-    void write_to_file(ext_header<OffsetType>& hdr, const Store&,
-            std::ofstream& f) const {
-        size_t n = size();
-        if (n > 0) {
-            hdr.offset =
-                boost::numeric_cast<OffsetType, std::streamoff>(f.tellp());
-            f.write((const char *) c_str(), n + 1);
-        } else
-            hdr.offset = 0;
-    }
-};
+#include "string_codec.hpp"
+#include "file_store.hpp"
 
 // payload type
-typedef exportable_string data_t;
+typedef std::string data_t;
 
 // trie node type
 typedef utxx::pnode<utxx::simple_node_store<>, data_t, utxx::svector<> > node_t;
 
 // trie type
 typedef utxx::ptrie<node_t> trie_t;
+
+template<typename AddrType>
+struct MyTraits {
+    typedef AddrType addr_type;
+    typedef file_store<addr_type> store_type;
+    typedef typename string_codec<addr_type>::writer data_encoder;
+    typedef typename utxx::sarray<addr_type>::encoder coll_encoder;
+    typedef trie_t::encoder<addr_type> trie_encoder;
+};
+
+// offset type in external data representation
+typedef MyTraits<uint32_t> store_traits;
 
 int main() {
     trie_t trie;
@@ -72,7 +54,8 @@ int main() {
     trie.store("12345", "five");
 
     // write (export) trie to the file in external format
-    trie.write_to_file<offset_t>("trie.bin");
+    store_traits::store_type store("trie.bin");
+    trie.store_trie<store_traits>(store);
 
     return 0;
 }

@@ -45,12 +45,12 @@ template<> struct meta<void> {};
  * \brief this class implements node of the trie
  * \tparam Store node store facility
  * \tparam Data node payload type
- * \tparam SArray type of collection of child nodes
+ * \tparam Coll type of collection of child nodes
  * \tparam Offset offset type for writing or void
  *
- * The Store and SArray types are themself templates
+ * The Store and Coll types are themself templates
  */
-template<typename Store, typename Data, typename SArray, typename Offset = void>
+template<typename Store, typename Data, typename Coll, typename Offset = void>
 class pnode_ss {
     // prevent copying
     pnode_ss(const pnode_ss&);
@@ -62,7 +62,7 @@ public:
     typedef uint8_t shift_t;
 
     // sparse storage types
-    typedef typename SArray::template rebind<ptr_t>::other sarray_t;
+    typedef typename Coll::template rebind<ptr_t>::other sarray_t;
     typedef typename sarray_t::symbol_t symbol_t;
 
     // metadata to support cross-links writing
@@ -71,58 +71,53 @@ public:
     // constructor
     pnode_ss() : m_suffix(store_t::null), m_shift(0) {}
 
-    // write node to file
-    template <typename T, typename F>
-    T write_to_file(const store_t& a_store, F a_f, std::ofstream& a_ofs) const {
+    // write node to output store, return store pointer type
+    template<typename T, typename F>
+    typename T::addr_type write_to_store(const store_t& store, F func,
+            typename T::store_type& out) const {
 
-        // write data payload, get encoded reference
-        typename Data::template ext_header<T> l_data;
-        m_data.write_to_file(l_data, a_store, a_ofs);
+        // encode data payload
+        typename T::data_encoder data_encoder;
+        data_encoder.store(m_data, store, out);
+        const buf_t& data_buff = data_encoder.buff();
 
-        // write children encoded, get encoded reference
-        typename sarray_t::template ext_header<T> l_children;
-        m_children.write_to_file(l_children, a_f, a_ofs);
-
-        // save offset of the node encoded
-        T l_ret = boost::numeric_cast<T, std::streamoff>(a_ofs.tellp());
-
-        // write encoded data reference
-        l_data.write_to_file(a_ofs);
+        // encode children
+        typename T::coll_encoder children_encoder;
+        children_encoder.store(m_children, store, func, out);
+        const buf_t& coll_buff = children_encoder.buff();
 
         // save offset to the suffix link
-        m_meta.link = boost::numeric_cast<T, std::streamoff>(a_ofs.tellp());
+        m_meta.link = data_buff.second;
 
-        // reserve space for the suffix link, fill it with zero
-        T l_link = 0;
-        a_ofs.write((const char *)&l_link, sizeof(l_link));
+        // encode empty suffix link (reserve space)
+        Offset l_link = 0;
+        link_buff.first = &l_link;
+        link_buff.second = sizeof(l_link);
 
-        // write shift
-        a_ofs.write((const char *)&m_shift, sizeof(m_shift));
+        // encode shift
+        shift_buff.first = &m_shift;
+        shift_buff.second = sizeof(m_shift);
 
-        // write encoded children reference
-        l_children.write_to_file(a_ofs);
+        // store sequence of buffers as single memory chunk, return address,
+        // save it as node reference (to populate blue links in the 2nd pass)
+        m_meta.node = out.store(data_buff, link_buff, shift_buff, coll_buff);
 
-        // save node reference (to populate blue links in the 2nd pass)
-        m_meta.node = l_ret;
-
-        // return offset of the node encoded
-        return l_ret;
+        return m_meta.node;
     }
 
-    // export cross-links and related info
-    template <typename F>
-    void write_links(const store_t& a_store, F a_f, std::ofstream& a_ofs) {
+    template<typename T, typename F>
+    void store_links(const store_t& store, F f, typename T::store_type& out) {
         // first process children
-        m_children.foreach_value(a_f);
+        m_children.foreach_value(f);
         // suffix node reference
         if (m_suffix == store_t::null)
             return;
-        pnode_ss *l_ptr = a_store.template native_pointer<pnode_ss>(m_suffix);
+        pnode_ss *l_ptr = store.template native_pointer<pnode_ss>(m_suffix);
         if (!l_ptr)
             throw std::invalid_argument("bad suffix pointer");
+        buf_t l_buf(&l_ptr->m_meta.node, sizeof(m_meta.node));
         // write suffix node offset at specific position
-        a_ofs.seekp(m_meta.link);
-        a_ofs.write((const char *)&l_ptr->m_meta.node, sizeof(m_meta.node));
+        out.store_at(m_meta.node, m_meta.link, l_buf);
     }
 
     // node data payload
@@ -148,6 +143,10 @@ private:
     sarray_t m_children;
 
     mutable meta_t m_meta; ///< node metadata if any
+
+    // interim data
+    typedef std::pair<const void *, size_t> buf_t;
+    mutable buf_t link_buff, shift_buff;
 };
 
 } // namespace utxx

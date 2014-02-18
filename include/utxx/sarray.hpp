@@ -33,6 +33,22 @@ class sarray {
     Data m_array[0];
     static IdxMap m_map;
 
+    // key to key-val functor adapter
+    template<typename T, typename F>
+    class k2kv {
+        const T *a_;
+        F& f_;
+        index_t i_;
+    public:
+        k2kv(const T *a, F& f) : a_(a), f_(f) {
+            i_ = 0;
+        }
+        template<typename U>
+        void operator()(U k) {
+            f_(k, a_[i_++]);
+        }
+    };
+
 public:
     typedef typename IdxMap::symbol_t symbol_t;
     typedef typename IdxMap::bad_symbol bad_symbol;
@@ -52,26 +68,58 @@ public:
             return 0;
     }
 
-    // key to key-val functor adapter
-    template<typename T, typename F>
-    class k2kv {
-        const T *a_;
-        F& f_;
-        index_t i_;
-    public:
-        k2kv(const T *a, F& f) : a_(a), f_(f) {
-            i_ = 0;
-        }
-        template<typename U>
-        void operator()(U k) {
-            f_(k, a_[i_++]);
-        }
-    };
-
     // call functor for each key-value pair
     template<typename F> void foreach_keyval(F f) const {
         IdxMap::foreach(m_mask, k2kv<Data, F>(m_array, f));
     }
+
+    // collection writer preparing data for reading by sarray
+    //
+    struct encoder {
+        typedef std::pair<void *, size_t> buf_t;
+        enum { capacity = IdxMap::capacity };
+
+        struct {
+            mask_t mask;
+            Data elements[capacity];
+        } body;
+
+        unsigned cnt;
+
+        encoder() : cnt(0) { body.mask = 0; }
+
+        template<typename K, typename V, typename F, typename S>
+        void store_it(K k, V v, F& func, S& out) {
+            int i = k - '0';
+            if (i < 0 || i > 9)
+                throw std::out_of_range("element key");
+            body.mask |= 1 << i;
+            if (cnt == capacity)
+                throw std::out_of_range("number of elements");
+            body.elements[cnt++] = func(v);
+        }
+
+        template<typename T, typename S, typename F, typename O>
+        void store(const T& coll, const S&, F func, O& out) {
+            coll.foreach_keyval(ftor<encoder, F, O>(*this, func, out));
+            buf.first = &body;
+            buf.second = sizeof(body) - (capacity - cnt) * sizeof(Data);
+        }
+
+        const buf_t& buff() const { return buf; }
+
+    private:
+        template<typename T, typename F, typename O>
+        struct ftor {
+            ftor(T& ftor, F& f, O& o) : t_(ftor), f_(f), o_(o) {}
+            T& t_; F& f_; O& o_;
+            template<typename K, typename V>
+            void operator()(K k, V v) { t_.store_it(k, v, f_, o_); }
+        };
+
+        buf_t buf;
+    };
+
 };
 
 template <typename Data, typename IdxMap>

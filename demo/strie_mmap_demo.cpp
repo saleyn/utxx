@@ -20,30 +20,13 @@
 #include <utxx/pnode_ro.hpp>
 #include <utxx/mmap_ptrie.hpp>
 
+#include "string_codec.hpp"
+
 // offset type in external data representation
 typedef uint32_t offset_t;
 
-// external string representation - offset in file pointing to actual string
-class encoded_string {
-    offset_t ptr;
-
-public:
-    template<typename Store>
-    bool empty() const { return ptr == Store::null; }
-
-    template<typename Store>
-    const char *str(const Store& store) const {
-        if (empty<Store>())
-            return "";
-        const char *s = store.template native_pointer<const char>(ptr);
-        if (s == NULL)
-            throw std::runtime_error("bad store pointer");
-        return s;
-    }
-};
-
 // payload type
-typedef encoded_string data_t;
+typedef string_codec<offset_t>::data data_t;
 
 // trie node type
 typedef utxx::pnode_ro<
@@ -70,7 +53,7 @@ typedef typename trie_t::position_t pos_t;
 // fold functor example
 static bool fun(const char *& acc, const data_t& data, const store_t& store,
         pos_t, bool) {
-    if (data.empty<store_t>())
+    if (data.empty())
         return true;
     acc = data.str(store);
     std::cout << acc << std::endl;
@@ -80,7 +63,7 @@ static bool fun(const char *& acc, const data_t& data, const store_t& store,
 // foreach functor example
 static void enumerate(const std::string& key, const node_t& node,
         store_t store) {
-    const encoded_string& data = node.data();
+    const data_t& data = node.data();
     std::cout << "'" << key << "' -> '" << data.str(store) << "'" << std::endl;
 }
 

@@ -97,7 +97,7 @@ public:
     };
 
     // call functor for each key-value pair
-    template<typename F> void foreach_keyval(F f) {
+    template<typename F> void foreach_keyval(F f) const {
         IdxMap::foreach(m_mask, k2kv<array_t, F>(m_array, f));
     }
 

@@ -18,7 +18,6 @@
 #ifndef _UTXX_PTRIE_HPP_
 #define _UTXX_PTRIE_HPP_
 
-#include <fstream>
 #include <stdexcept>
 #include <vector>
 #include <boost/bind.hpp>
@@ -232,7 +231,7 @@ public:
     }
 
     // fold through trie nodes following key components
-    template <typename Key, typename A, typename F>
+    template<typename Key, typename A, typename F>
     void fold(const Key& key, A& acc, F proc) {
         typename Traits::template cursor<Key>::type cursor(key);
         node_t *node = &m_root;
@@ -250,7 +249,7 @@ public:
     }
 
     // fold through trie nodes following key components and suffix links
-    template <typename Key, typename A, typename F>
+    template<typename Key, typename A, typename F>
     void fold_full(const Key& key, A& acc, F proc) {
         typename Traits::template cursor<Key>::type cursor(key);
         node_t *node = &m_root;
@@ -297,53 +296,32 @@ public:
         }
     }
 
-    // write trie to file
-    template <typename T>
-    void write_to_file(const char *a_fname) {
-        ofile l_file(a_fname);
-        std::ofstream& l_ofs = l_file.ofs();
-        // avoid null store reference by writing a byte
-        char l_fake = 'F'; l_ofs.write(&l_fake, sizeof(l_fake));
-        // write nodes
-        T l_root = write_nodes<T>(l_ofs);
-        // write root node reference (default trie header)
-        l_ofs.write((const char *)&l_root, sizeof(l_root));
-    }
-
-    // write nodes to file, can be used by custom writers
-    template <typename T>
-    T write_nodes(std::ofstream& a_ofs) {
-        // write nodes
-        T ret = m_root.write_to_file<T>(m_store, boost::bind(
-            &ptrie::template write_child<T>, this, _1, _2), a_ofs);
-        // update cross-reference links
-        m_root.write_links(m_store, boost::bind(
-            &ptrie::write_links, this, boost::ref(a_ofs), _1), a_ofs);
-        // restore end-of-file position
-        a_ofs.seekp(0, std::ios_base::end);
-        // return root node offset
-        return ret;
-    }
-
-    // RAII-wrapper for std::ofstream
-    // can't just rely on std::ofstream destructor due to enabled exceptions
-    // which could be thrown while in std::ofstream destructor...
-    class ofile {
-        std::ofstream m_ofs;
+    // default trie encoder
+    template<typename AddrType>
+    class encoder {
+        typedef std::pair<const void *, size_t> buf_t;
+        AddrType root;
+        buf_t buf;
     public:
-        ofile(const char *a_fname) {
-            m_ofs.exceptions(std::ofstream::failbit | std::ofstream::badbit);
-            m_ofs.open(a_fname, std::ofstream::out |
-                std::ofstream::binary | std::ofstream::trunc);
+        template<typename F, typename S>
+        void store(F f, S&) {
+            // store trie nodes, get root node address
+            root = f();
+            // fill output buffer with root node address
+            buf.first = &root;
+            buf.second = sizeof(root);
         }
-        ~ofile() {
-            try {
-                m_ofs.close();
-            } catch (...) {
-            }
-        }
-        std::ofstream& ofs() { return m_ofs; }
+        const buf_t& buff() const { return buf; }
     };
+
+    // write whole trie to output store
+    template<typename T>
+    void store_trie(typename T::store_type& out) const {
+        typename T::trie_encoder encoder;
+        encoder.store(boost::bind(
+            &ptrie::template store_nodes<T>, this, boost::ref(out)), out);
+        out.store(encoder.buff());
+    }
 
 protected:
     // use external root reference
@@ -439,19 +417,6 @@ protected:
         return p_ptr ? *p_ptr : store_t::null;
     }
 
-    // used by sarray_t writer
-    template <typename T>
-    T write_child(ptr_t a_child, std::ofstream& a_ofs) const {
-        return node_ptr(a_child)->write_to_file<T>(m_store, boost::bind(
-            &ptrie::template write_child<T>, this, _1, _2), a_ofs);
-    }
-
-    // write node to file - 2nd pass wrapper for a child
-    void write_links(std::ofstream& a_ofs, ptr_t a_child) const {
-        node_ptr(a_child)->write_links(m_store, boost::bind(
-            &ptrie::write_links, this, boost::ref(a_ofs), _1), a_ofs);
-    }
-
     // convert store pointer to native pointer to node or 0
     node_t *node_ptr_or_null(ptr_t a_pointer) const {
         return a_pointer == store_t::null ? 0 : to_native(a_pointer);
@@ -470,6 +435,32 @@ protected:
         if (!l_ptr)
             throw std::invalid_argument("bad store pointer");
         return l_ptr;
+    }
+
+    // write trie nodes to output store
+    template<typename T>
+    typename T::addr_type store_nodes(typename T::store_type& out) const {
+        // store nodes
+        typename T::addr_type ret = m_root.template write_to_store<T>(m_store,
+            boost::bind(&ptrie::template store_child<T>, this, _1,
+            boost::ref(out)), out);
+        // update cross-reference links
+        m_root.store_links<T>(m_store, boost::bind(&ptrie::store_links<T>, this,
+            _1, boost::ref(out)), out);
+        // return root node address
+        return ret;
+    }
+
+    template<typename T> typename T::addr_type
+    store_child(ptr_t addr, typename T::store_type& out) const {
+        return node_ptr(addr)->template write_to_store<T>(m_store, boost::bind(
+            &ptrie::template store_child<T>, this, _1, boost::ref(out)), out);
+    }
+
+    template<typename T>
+    void store_links(ptr_t addr, typename T::store_type& out) const {
+        node_ptr(addr)->template store_links<T>(m_store, boost::bind(
+            &ptrie::store_links<T>, this, _1, boost::ref(out)), out);
     }
 
     // class fields
