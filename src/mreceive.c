@@ -5,7 +5,7 @@
  *
  * Here is a sample output it produces:
  *
- * #S|Sok:  21| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT|  MBytes| KPakets|OutOfOrd|TotGapsK|Lat N  Avg Mn   Max|
+ * #S|Sok:  21| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT|  MBytes| KPakets|OutOfOrd| TotGaps|Lat N  Avg Mn   Max|
  * II|16:49:45|    149.4|   864|     0|    0| 2| 0| 0|TOT|   451.5|    3626|       0|       0|  455  3.6  1    14|
  * II|16:49:50|    181.9|  1374|     0|    0| 2| 0| 0|TOT|   452.4|    3633|       0|       0|  694  3.3  1    12|
  * II|16:49:55|    134.4|  1004|     0|    0| 2| 0| 0|TOT|   453.1|    3638|       0|       0|  475  3.3  1    14|
@@ -902,10 +902,10 @@ void report_socket_stats() {
       int gooos = max_ooo_count ? (int)(seqno_width * ooo_count / max_ooo_count) : 0; 
 
       printf("#c|%*s|%8d|%*ld|%*s|%9d|%*ld|\n",
-        max_title_width, gap_count ? pgaps ->title : "", gap_count,
-        seqno_width, pgaps->last_seqno,
-        max_title_width, ooo_count ? pooo  ->title : "", ooo_count,
-        seqno_width, pooo->last_seqno);
+        max_title_width,    gap_count ? pgaps ->title     : "", gap_count,
+        seqno_width,        gap_count ? pgaps->last_seqno : 0,
+        max_title_width,    ooo_count ? pooo  ->title     : "", ooo_count,
+        seqno_width,        ooo_count ? pooo->last_seqno  : 0);
     }
   }
 
@@ -969,7 +969,7 @@ void print_report() {
   if (output >= next_legend_count) {
     printf(
       "#S|Sok:%4d| KBytes/s|Pkts/s|OutOfO|SqGap|Es|Gs|Os|TOT"
-      "|  MBytes| KPakets|OutOfOrd|TotGapsK|Lat N  Avg Mn   Max|\n",
+      "|  MBytes| KPakets|OutOfOrd| TotGaps|Lat N| Avg|Mn|  Max|\n",
       addrs_count);
     next_legend_count = output_lines_count + 50;
   }
@@ -996,13 +996,13 @@ void print_report() {
     if (sec == 0.0) sec = 1.0;
 
     printf("II|%02d:%02d:%02d|%9.1f|%6d|%6d|%5d|%2d|%2d|%2d|TOT|"
-           "%8.1f|%8ld|%8ld|%8ld|%5d%5.1f %2d %5d|\n",
+           "%8.1f|%8ld|%8ld|%8ld|%5d|%4.1f|%2d|%5d|\n",
         tm->tm_hour, tm->tm_min, tm->tm_sec,
         (double)bytes / 1024 / sec, (int)(pkts / sec),
         ooo_count, gap_count,
         socks_with_nodata, socks_with_gaps, socks_with_ooo,
         (double)tot_bytes / MEGABYTE, (long)(tot_pkts / 1000),
-        (long)tot_ooo_count, (long)(tot_gap_count / 1024),
+        tot_ooo_count,  tot_gap_count,
         pkt_time_count, avg_lat,
         pkt_time_count ? min_pkt_time : 0,
         max_pkt_time);
