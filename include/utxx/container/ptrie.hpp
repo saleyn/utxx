@@ -1,7 +1,7 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief s-trie with persistency
+ * \brief trie with persistency support
  *
  * \author Dmitriy Kargapolov
  * \since 03 October 2013
@@ -15,15 +15,17 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_PTRIE_HPP_
-#define _UTXX_PTRIE_HPP_
+#ifndef _UTXX_CONTAINER_PTRIE_HPP_
+#define _UTXX_CONTAINER_PTRIE_HPP_
 
 #include <stdexcept>
 #include <vector>
+#include <stdint.h>
 #include <boost/bind.hpp>
 #include <boost/range.hpp>
 
 namespace utxx {
+namespace container {
 
 // direction of traversing the trie
 enum dir_t { up, down };
@@ -75,8 +77,8 @@ public:
         m_key.push_back(a_sym);
     }
 
-    template<typename K, typename V>
-    void operator()(K k, V v) {
+    template<typename V>
+    void operator()(symbol_t k, V v) {
         if (v == store_t::null)
             throw std::invalid_argument("null store pointer");
         node_t *l_ptr = m_store.template native_pointer<node_t>(v);
@@ -469,6 +471,7 @@ protected:
      node_t& m_root;     // root node reference
 };
 
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_PTRIE_HPP_
+#endif // _UTXX_CONTAINER_PTRIE_HPP_

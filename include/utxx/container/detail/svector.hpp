@@ -5,7 +5,7 @@
  *
  * This is vector based expandable implementation of sparse array
  * with write-to-file support. Read-only counterpart of this class
- * is utxx::sarray.
+ * is utxx::container::detail::sarray.
  *
  * \author Dmitriy Kargapolov
  * \since 12 May 2013
@@ -19,20 +19,31 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_SVECTOR_HPP_
-#define _UTXX_SVECTOR_HPP_
+#ifndef _UTXX_CONTAINER_DETAIL_SVECTOR_HPP_
+#define _UTXX_CONTAINER_DETAIL_SVECTOR_HPP_
 
-#include <utxx/idxmap.hpp>
+#include <utxx/container/detail/idxmap.hpp>
+#include <utxx/container/detail/scollitbase.hpp>
 #include <vector>
 #include <boost/foreach.hpp>
-#include <fstream>
 
 namespace utxx {
+namespace container {
+namespace detail {
 
 template <typename Data = char, typename IdxMap = idxmap<1>,
           typename Alloc = std::allocator<char> >
 class svector {
+public:
+    typedef Data data_t;
     typedef typename IdxMap::mask_t mask_t;
+    typedef typename IdxMap::symbol_t symbol_t;
+    typedef typename IdxMap::bad_symbol bad_symbol;
+    enum { MaxMask = IdxMap::maxmask };
+
+    typedef std::pair<const symbol_t, Data> value_type;
+
+private:
     typedef typename IdxMap::index_t index_t;
     typedef std::vector<Data, Alloc> array_t;
 
@@ -43,13 +54,15 @@ class svector {
     static IdxMap m_map;
 
 public:
-    typedef typename IdxMap::symbol_t symbol_t;
-    typedef typename IdxMap::bad_symbol bad_symbol;
-
     template<typename U>
     struct rebind { typedef svector<U, IdxMap, Alloc> other; };
 
+    typedef typename array_t::const_iterator data_iter_t;
+
     svector() : m_mask(0) {}
+
+    const mask_t& mask() const { return m_mask; }
+    const data_iter_t data() const { return m_array.begin(); }
 
     // find an element by symbol
     const Data* get(symbol_t a_symbol) const {
@@ -75,73 +88,32 @@ public:
         return m_array.at(l_index);
     }
 
+    typedef iterator_base<svector, false> iterator;
+    typedef iterator_base<svector, true> const_iterator;
+
+    iterator begin() { return iterator(*this); }
+    const_iterator begin() const { return const_iterator(*this); }
+
+    iterator end() { return iterator(); }
+    const_iterator end() const { return const_iterator(); }
+
     // call functor for each value
     template<typename F> void foreach_value(F f) {
         BOOST_FOREACH(const Data& data, m_array) f(data);
     }
 
-    // key to key-val functor adapter
-    template<typename T, typename F>
-    class k2kv {
-        const T& a_;
-        F& f_;
-        typename T::const_iterator i_;
-    public:
-        k2kv(const T& a, F& f) : a_(a), f_(f) {
-            i_ = a_.begin();
-        }
-        template<typename U>
-        void operator()(U k) {
-            f_(k, *i_); ++i_;
-        }
-    };
-
     // call functor for each key-value pair
     template<typename F> void foreach_keyval(F f) const {
-        IdxMap::foreach(m_mask, k2kv<array_t, F>(m_array, f));
-    }
-
-    template <typename OffsetType>
-    struct ext_header {
-        // header data to export
-        struct {
-            mask_t mask;
-            OffsetType children[capacity];
-        } data;
-
-        // number of children - not exported directly
-        unsigned cnt;
-
-        // write header to file
-        void write_to_file(std::ofstream& a_ofs) const {
-            if (cnt > capacity)
-                throw std::out_of_range("invalid number of node children");
-            a_ofs.write((const char *)&data,
-                sizeof(data) - (capacity - cnt) * sizeof(OffsetType));
-        }
-    };
-
-    // write children to file, form header
-    template<typename OffsetType, typename WriteChildF>
-    void write_to_file(ext_header<OffsetType>& a_ext_header,
-            WriteChildF write_child_f, std::ofstream& a_ofs) const {
-        // fill mask
-        a_ext_header.data.mask = m_mask;
-        // write children, fill offsets
-        unsigned i = 0;
-        BOOST_FOREACH(const Data& data, m_array) {
-            if (i == capacity)
-                throw std::out_of_range("number of children");
-            a_ext_header.data.children[i++] = write_child_f(data, a_ofs);
-        }
-        // save number of children
-        a_ext_header.cnt = i;
+        for (const_iterator it = begin(), e = end(); it != e; ++it)
+            f(it->first, it->second);
     }
 };
 
 template <typename Data, typename IdxMap, typename Alloc>
 IdxMap svector<Data, IdxMap, Alloc>::m_map;
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_SVECTOR_HPP_
+#endif // _UTXX_CONTAINER_DETAIL_SVECTOR_HPP_

@@ -1,7 +1,7 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief s-trie read-only memory-mapped node with suffix and shift fields
+ * \brief trie read-only memory-mapped node with suffix and shift fields
  *
  * \author Dmitriy Kargapolov
  * \since 03 October 2013
@@ -21,16 +21,18 @@
 #include <stdint.h>
 
 namespace utxx {
+namespace container {
+namespace detail {
 
 /**
  * \brief this class implements node of the trie
  * \tparam Store node store facility
  * \tparam Data node payload type
- * \tparam SArray type of collection of child nodes
+ * \tparam Coll type of collection of child nodes
  *
- * The Store and SArray types are themself templates
+ * The Store and Coll types are themself templates
  */
-template <typename Store, typename Data, typename SArray>
+template <typename Store, typename Data, typename Coll>
 class pnode_ss_ro {
     // prevent copying
     pnode_ss_ro(const pnode_ss_ro&);
@@ -42,7 +44,7 @@ public:
     typedef uint8_t shift_t;
 
     // sparse storage types
-    typedef typename SArray::template rebind<ptr_t>::other sarray_t;
+    typedef typename Coll::template rebind<ptr_t>::other sarray_t;
     typedef typename sarray_t::symbol_t symbol_t;
 
     // constructor
@@ -73,6 +75,8 @@ private:
     char b[sizeof(Data) + sizeof(ptr_t) + sizeof(shift_t) + sizeof(sarray_t)];
 };
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
 #endif // _UTXX_PNODE_SS_RO_HPP_

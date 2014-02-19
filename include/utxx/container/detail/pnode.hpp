@@ -1,7 +1,7 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief s-trie writable node
+ * \brief trie writable node
  *
  * \author Dmitriy Kargapolov
  * \since 03 October 2013
@@ -15,13 +15,12 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_PNODE_HPP_
-#define _UTXX_PNODE_HPP_
-
-#include <fstream>
-#include <boost/numeric/conversion/cast.hpp>
+#ifndef _UTXX_CONTAINER_DETAIL_PNODE_HPP_
+#define _UTXX_CONTAINER_DETAIL_PNODE_HPP_
 
 namespace utxx {
+namespace container {
+namespace detail {
 
 /**
  * \brief this class implements node of the trie
@@ -83,6 +82,8 @@ private:
     sarray_t m_children;
 };
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_PNODE_HPP_
+#endif // _UTXX_CONTAINER_DETAIL_PNODE_HPP_

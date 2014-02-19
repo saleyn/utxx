@@ -20,13 +20,15 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_SIMPLE_NODE_STORE_HPP_
-#define _UTXX_SIMPLE_NODE_STORE_HPP_
+#ifndef _UTXX_CONTAINER_DETAIL_SIMPLE_NODE_STORE_HPP_
+#define _UTXX_CONTAINER_DETAIL_SIMPLE_NODE_STORE_HPP_
 
 #include <memory>
 #include <cstddef>
 
 namespace utxx {
+namespace container {
+namespace detail {
 
 /**
  * \brief this class implements node store facility
@@ -116,6 +118,8 @@ template<typename Node, typename Allocator>
 const typename simple_node_store<Node, Allocator>::pointer_t
                simple_node_store<Node, Allocator>::null = 0;
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_SIMPLE_NODE_STORE_HPP_
+#endif // _UTXX_CONTAINER_DETAIL_SIMPLE_NODE_STORE_HPP_

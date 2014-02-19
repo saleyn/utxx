@@ -15,12 +15,15 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <utxx/flat_data_store.hpp>
-#include <utxx/sarray.hpp>
-#include <utxx/pnode_ro.hpp>
-#include <utxx/mmap_ptrie.hpp>
+#include <utxx/container/detail/flat_data_store.hpp>
+#include <utxx/container/detail/sarray.hpp>
+#include <utxx/container/detail/pnode_ro.hpp>
+#include <utxx/container/mmap_ptrie.hpp>
 
 #include "string_codec.hpp"
+
+namespace ct = utxx::container;
+namespace dt = utxx::container::detail;
 
 // offset type in external data representation
 typedef uint32_t offset_t;
@@ -29,12 +32,12 @@ typedef uint32_t offset_t;
 typedef string_codec<offset_t>::data data_t;
 
 // trie node type
-typedef utxx::pnode_ro<
-        utxx::flat_data_store</*Node*/void, offset_t>, data_t, utxx::sarray<>
+typedef dt::pnode_ro<
+        dt::flat_data_store</*Node*/void, offset_t>, data_t, dt::sarray<>
 > node_t;
 
 // trie type
-typedef utxx::mmap_ptrie<node_t> trie_t;
+typedef ct::mmap_ptrie<node_t> trie_t;
 
 // concrete trie store type
 typedef typename trie_t::store_t store_t;
@@ -76,8 +79,8 @@ int main() {
     std::cout << "lookup result: " << (ret ? ret : "not found") << std::endl;
 
     // traverse all the nodes
-    trie.foreach<utxx::up, std::string>(enumerate);
-    trie.foreach<utxx::down, std::string>(enumerate);
+    trie.foreach<ct::up, std::string>(enumerate);
+    trie.foreach<ct::down, std::string>(enumerate);
 
     return 0;
 }

@@ -15,25 +15,30 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_IDXMAP_HPP_
-#define _UTXX_IDXMAP_HPP_
+#ifndef _UTXX_CONTAINER_DETAIL_IDXMAP_HPP_
+#define _UTXX_CONTAINER_DETAIL_IDXMAP_HPP_
 
 #include <stdint.h>
 #include <stdexcept>
 
 namespace utxx {
+namespace container {
+namespace detail {
 
 // special table to map symbol and mask to index
 // in context of simple trie implementation
 template <int Pack>
 class idxmap {
-    static const int NElem = 1024 / Pack * 10;
+    enum {
+        MaxMask = 1024,
+        NElem = MaxMask / Pack * 10
+    };
 
 public:
     typedef int8_t index_t;
     typedef char symbol_t;
     typedef uint16_t mask_t;
-    enum { capacity = 10 };
+    enum { maxmask = MaxMask, capacity = 10 };
 
     class bad_symbol : public std::invalid_argument {
         symbol_t m_symbol;
@@ -54,7 +59,7 @@ public:
     template<typename F>
     static void foreach(mask_t mask, F f) {
         symbol_t s = '0';
-        for (mask_t m=1; m<1024; ++s, m<<=1) {
+        for (mask_t m=1; m<MaxMask; ++s, m<<=1) {
             if ((m & mask) != 0)
                 f(s);
         }
@@ -67,7 +72,7 @@ private:
 template <>
 inline idxmap<1>::idxmap() {
     for (mask_t i=0, sm=1u; i<10; ++i, sm<<=1) {
-        for (mask_t mask=0; mask<1024; ++mask) {
+        for (mask_t mask=0; mask<MaxMask; ++mask) {
             // find number of i-th 1 in the mask
             index_t idx = 0;
             for (mask_t m = 1u; m != sm; m <<= 1)
@@ -80,7 +85,7 @@ inline idxmap<1>::idxmap() {
 template <>
 inline idxmap<2>::idxmap() {
     for (mask_t i=0, sm=1u; i<10; ++i, sm<<=1) {
-        for (mask_t mask=0; mask<1024; ++mask) {
+        for (mask_t mask=0; mask<MaxMask; ++mask) {
             // find number of i-th 1 in the mask
             index_t idx = 0;
             for (mask_t m = 1u; m != sm; m <<= 1)
@@ -127,6 +132,8 @@ inline void idxmap<2>::index(mask_t a_mask, symbol_t a_symbol,
         a_ret_index = m_maps[m >> 1] & 0x0f;
 }
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_IDXMAP_HPP_
+#endif // _UTXX_CONTAINER_DETAIL_IDXMAP_HPP_

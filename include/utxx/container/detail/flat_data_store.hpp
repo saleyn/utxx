@@ -15,12 +15,14 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_FLAT_DATA_STORE_HPP_
-#define _UTXX_FLAT_DATA_STORE_HPP_
+#ifndef _UTXX_CONTAINER_DETAIL_FLAT_DATA_STORE_HPP_
+#define _UTXX_CONTAINER_DETAIL_FLAT_DATA_STORE_HPP_
 
 #include <stdexcept>
 
 namespace utxx {
+namespace container {
+namespace detail {
 
 // flat memory region abstract strie node and data store
 //
@@ -61,6 +63,8 @@ template<typename T, typename A>
 const typename flat_data_store<T, A>::pointer_t
                flat_data_store<T, A>::null = 0;
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_FLAT_DATA_STORE_HPP_
+#endif // _UTXX_CONTAINER_DETAIL_FLAT_DATA_STORE_HPP_

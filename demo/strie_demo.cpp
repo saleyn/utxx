@@ -15,21 +15,24 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <utxx/simple_node_store.hpp>
-#include <utxx/svector.hpp>
-#include <utxx/pnode.hpp>
-#include <utxx/ptrie.hpp>
+#include <utxx/container/detail/simple_node_store.hpp>
+#include <utxx/container/detail/svector.hpp>
+#include <utxx/container/detail/pnode.hpp>
+#include <utxx/container/ptrie.hpp>
 
 #include <iostream>
+
+namespace ct = utxx::container;
+namespace dt = utxx::container::detail;
 
 // payload type
 typedef std::string data_t;
 
 // trie node type
-typedef utxx::pnode<utxx::simple_node_store<>, data_t, utxx::svector<> > node_t;
+typedef dt::pnode<dt::simple_node_store<>, data_t, dt::svector<> > node_t;
 
 // trie type
-typedef utxx::ptrie<node_t> trie_t;
+typedef ct::ptrie<node_t> trie_t;
 
 // concrete trie store type
 typedef trie_t::store_t store_t;
@@ -67,8 +70,8 @@ int main() {
         << std::endl;
 
     // traverse all the nodes
-    trie.foreach<utxx::up, std::string>(enumerate);
-    trie.foreach<utxx::down, std::string>(enumerate);
+    trie.foreach<ct::up, std::string>(enumerate);
+    trie.foreach<ct::down, std::string>(enumerate);
 
     return 0;
 }

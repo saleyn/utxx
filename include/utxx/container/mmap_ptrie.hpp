@@ -15,15 +15,16 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_MMAP_PTRIE_HPP_
-#define _UTXX_MMAP_PTRIE_HPP_
+#ifndef _UTXX_CONTAINER_MMAP_PTRIE_HPP_
+#define _UTXX_CONTAINER_MMAP_PTRIE_HPP_
 
-#include <utxx/ptrie.hpp>
+#include <utxx/container/ptrie.hpp>
 
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 
 namespace utxx {
+namespace container {
 
 namespace { namespace bip = boost::interprocess; }
 
@@ -80,6 +81,7 @@ public:
     }
 };
 
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_MMAP_PTRIE_HPP_
+#endif // _UTXX_CONTAINER_MMAP_PTRIE_HPP_

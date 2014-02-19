@@ -14,14 +14,15 @@
  */
 
 #include <config.h>
-#include <utxx/pnode.hpp>
-#include <utxx/pnode_ro.hpp>
-#include <utxx/ptrie.hpp>
-#include <utxx/mmap_ptrie.hpp>
-#include <utxx/simple_node_store.hpp>
-#include <utxx/flat_data_store.hpp>
-#include <utxx/svector.hpp>
-#include <utxx/sarray.hpp>
+#include <utxx/container/detail/pnode.hpp>
+#include <utxx/container/detail/pnode_ro.hpp>
+#include <utxx/container/ptrie.hpp>
+#include <utxx/container/mmap_ptrie.hpp>
+#include <utxx/container/detail/simple_node_store.hpp>
+#include <utxx/container/detail/flat_data_store.hpp>
+#include <utxx/container/detail/svector.hpp>
+#include <utxx/container/detail/sarray.hpp>
+#include <utxx/container/detail/file_store.hpp>
 #include <utxx/memstat_alloc.hpp>
 
 #include <boost/test/unit_test.hpp>
@@ -34,6 +35,9 @@
 #include <map>
 
 namespace ptrie_test {
+
+namespace ct = utxx::container;
+namespace dt = utxx::container::detail;
 
 #if defined HAVE_BOOST_CHRONO
 typedef boost::chrono::high_resolution_clock clock;
@@ -100,14 +104,14 @@ struct f0 {
     typedef utxx::memstat_alloc<char, memstat<cTrie> > trie_alloc;
 
     // expandable trie node type
-    typedef utxx::pnode<
-        utxx::simple_node_store<void, node_alloc>,
+    typedef dt::pnode<
+        dt::simple_node_store<void, node_alloc>,
         data_t,
-        utxx::svector<char, utxx::idxmap<1>, trie_alloc>
+        dt::svector<char, dt::idxmap<1>, trie_alloc>
     > node_t;
 
     // expandable trie type
-    typedef utxx::ptrie<node_t> trie_t;
+    typedef ct::ptrie<node_t> trie_t;
 
     // node store type
     typedef typename trie_t::store_t store_t;
@@ -127,41 +131,41 @@ struct f1 {
         std::string str;
         data() : str("") {}
         data(const char *s) : str(s) {}
-        bool empty() const { return str.empty(); }
 
-        // data header in exported format
-        template<typename OffsetType> struct ext_header {
-            // offset to variable-length payload
-            OffsetType offset;
-            // write data header to file
-            void write_to_file(std::ofstream& a_ofs) const {
-                a_ofs.write((const char *)&offset, sizeof(offset));
+        // data encoder
+        template<typename AddrType>
+        struct encoder {
+            typedef std::pair<const void *, size_t> buf_t;
+            template<typename Store, typename Out>
+            void store(const data& v, const Store&, Out& out) {
+                uint8_t n = v.str.size();
+                addr = n > 0 ? out.store( buf_t(&n, sizeof(n)),
+                    buf_t(v.str.c_str(), n + 1) ) : out.null();
+                buf.first = &addr;
+                buf.second = sizeof(addr);
             }
+            const buf_t& buff() const { return buf; }
+        private:
+            AddrType addr;
+            buf_t buf;
         };
-
-        // write nested data payload to file, fill header
-        template<typename OffsetType, typename Store>
-        void write_to_file(ext_header<OffsetType>& hdr, const Store&,
-                std::ofstream& f) const {
-            uint8_t n = str.size();
-            if (n > 0) {
-                hdr.offset =
-                    boost::numeric_cast<OffsetType, std::streamoff>(f.tellp());
-                f.write((const char *)&n, sizeof(n));
-                f.write((const char *)str.c_str(), n + 1);
-            } else {
-                hdr.offset = 0;
-            }
-        }
     };
 
     // expandable trie with export functions
-    typedef utxx::pnode<
-        utxx::simple_node_store<>, data, utxx::svector<>
+    typedef dt::pnode<
+        dt::simple_node_store<>, data, dt::svector<>
     > node_t;
 
     // expandable trie type with export functions
-    typedef utxx::ptrie<node_t> trie_t;
+    typedef ct::ptrie<node_t> trie_t;
+
+    struct store_traits {
+        typedef offset_t addr_type;
+        typedef dt::file_store<addr_type> store_type;
+        typedef data::encoder<addr_type> data_encoder;
+        typedef typename dt::sarray<addr_type>::encoder coll_encoder;
+        typedef trie_t::encoder<addr_type> trie_encoder;
+    };
 };
 
 struct f2 {
@@ -169,12 +173,11 @@ struct f2 {
         uint8_t m_len;
         char m_str[0];
         bool empty() const { return false; }
-        bool empty(bool exact) const { return !exact; }
     };
-    typedef utxx::pnode_ro<
-        utxx::flat_data_store<void, offset_t>, offset_t, utxx::sarray<>
+    typedef dt::pnode_ro<
+        dt::flat_data_store<void, offset_t>, offset_t, dt::sarray<>
     > node_t;
-    typedef utxx::mmap_ptrie<node_t> trie_t;
+    typedef ct::mmap_ptrie<node_t> trie_t;
     typedef typename trie_t::store_t store_t;
 
     static offset_t root(const void *m_addr, size_t m_size) {
@@ -330,7 +333,7 @@ BOOST_FIXTURE_TEST_CASE( write_read_test, f0 )
 
 BOOST_FIXTURE_TEST_CASE( compact_test, f1 )
 {
-    trie_t l_data;
+    trie_t l_trie;
 
     int l_total = NSAMPLES;
     srand(1);
@@ -338,12 +341,11 @@ BOOST_FIXTURE_TEST_CASE( compact_test, f1 )
     for (int i=0; i<l_total; ++i) {
         const char *l_num = make_number<5>();
         // insert data into s-trie
-        l_data.store(l_num, data(l_num));
+        l_trie.store(l_num, data(l_num));
     }
 
-    BOOST_REQUIRE_NO_THROW((
-        l_data.write_to_file<offset_t>("lalala")
-    ));
+    store_traits::store_type store("lalala");
+    BOOST_REQUIRE_NO_THROW(( l_trie.store_trie<store_traits>(store) ));
 }
 
 BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )

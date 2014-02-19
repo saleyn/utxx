@@ -14,16 +14,18 @@
  */
 
 #include <config.h>
-#include <utxx/pnode_ss.hpp>
-#include <utxx/pnode_ss_ro.hpp>
-#include <utxx/ptrie.hpp>
-#include <utxx/mmap_ptrie.hpp>
-#include <utxx/simple_node_store.hpp>
-#include <utxx/flat_data_store.hpp>
-#include <utxx/svector.hpp>
-#include <utxx/sarray.hpp>
+#include <utxx/container/detail/pnode_ss.hpp>
+#include <utxx/container/detail/pnode_ss_ro.hpp>
+#include <utxx/container/ptrie.hpp>
+#include <utxx/container/mmap_ptrie.hpp>
+#include <utxx/container/detail/simple_node_store.hpp>
+#include <utxx/container/detail/flat_data_store.hpp>
+#include <utxx/container/detail/svector.hpp>
+#include <utxx/container/detail/sarray.hpp>
+#include <utxx/container/detail/file_store.hpp>
 
 #include <set>
+#include <boost/numeric/conversion/cast.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -32,6 +34,9 @@
 #endif
 
 namespace actrie_test {
+
+namespace ct = utxx::container;
+namespace dt = utxx::container::detail;
 
 #if defined HAVE_BOOST_CHRONO
 typedef boost::chrono::high_resolution_clock clock;
@@ -64,12 +69,12 @@ typedef uint32_t offset_t;
 
 struct f0 {
     // expandable aho-corasick trie node (with suffix link and shift field)
-    typedef utxx::pnode_ss<
-        utxx::simple_node_store<>, std::string, utxx::svector<>
+    typedef dt::pnode_ss<
+        dt::simple_node_store<>, std::string, dt::svector<>
     > node_t;
 
     // expandable aho-corasick trie type
-    typedef utxx::ptrie<node_t> trie_t;
+    typedef ct::ptrie<node_t> trie_t;
 
     // node store type
     typedef typename trie_t::store_t store_t;
@@ -84,46 +89,39 @@ struct f0 {
 };
 
 struct f1 {
-    // export variant
-    struct data {
-        std::string str;
-        data() : str("") {}
-        data(const char *s) : str(s) {}
-        bool empty() const { return str.empty(); }
-
-        // data header in exported format
-        template<typename OffsetType> struct ext_header {
-            // offset to variable-length payload
-            OffsetType offset;
-            // write data header to file
-            void write_to_file(std::ofstream& a_ofs) const {
-                a_ofs.write((const char *)&offset, sizeof(offset));
-            }
-        };
-
-        // write nested data payload to file, fill header
-        template<typename OffsetType, typename Store>
-        void write_to_file(ext_header<OffsetType>& hdr, const Store&,
-                std::ofstream& f) const {
+    // data encoder
+    template<typename AddrType>
+    struct encoder {
+        typedef std::pair<const void *, size_t> buf_t;
+        template<typename Store, typename Out>
+        void store(const std::string& str, const Store&, Out& out) {
             uint8_t n = str.size();
-            if (n > 0) {
-                hdr.offset =
-                    boost::numeric_cast<OffsetType, std::streamoff>(f.tellp());
-                f.write((const char *)&n, sizeof(n));
-                f.write((const char *)str.c_str(), n + 1);
-            } else {
-                hdr.offset = 0;
-            }
+            addr = n > 0 ? out.store( buf_t(&n, sizeof(n)),
+                buf_t(str.c_str(), n + 1) ) : out.null();
+            buf.first = &addr;
+            buf.second = sizeof(addr);
         }
+        const buf_t& buff() const { return buf; }
+    private:
+        AddrType addr;
+        buf_t buf;
     };
 
     // expandable trie with export functions
-    typedef utxx::pnode_ss<
-        utxx::simple_node_store<>, data, utxx::svector<>, offset_t
+    typedef dt::pnode_ss<
+        dt::simple_node_store<>, std::string, dt::svector<>, offset_t
     > node_t;
 
     // expandable trie type with export functions
-    typedef utxx::ptrie<node_t> trie_t;
+    typedef ct::ptrie<node_t> trie_t;
+
+    struct store_traits {
+        typedef offset_t addr_type;
+        typedef dt::file_store<addr_type> store_type;
+        typedef encoder<addr_type> data_encoder;
+        typedef typename dt::sarray<addr_type>::encoder coll_encoder;
+        typedef trie_t::encoder<addr_type> trie_encoder;
+    };
 };
 
 struct f2 {
@@ -131,10 +129,10 @@ struct f2 {
         uint8_t len;
         char str[0];
     };
-    typedef utxx::pnode_ss_ro<
-        utxx::flat_data_store<void, offset_t>, offset_t, utxx::sarray<>
+    typedef dt::pnode_ss_ro<
+        dt::flat_data_store<void, offset_t>, offset_t, dt::sarray<>
     > node_t;
-    typedef utxx::mmap_ptrie<node_t> trie_t;
+    typedef ct::mmap_ptrie<node_t> trie_t;
     typedef typename trie_t::store_t store_t;
 
     static offset_t root(const void *m_addr, size_t m_size) {
@@ -153,7 +151,7 @@ struct f2 {
         data *ptr = store.native_pointer<data>(off);
         if (ptr == NULL)
             throw std::runtime_error("bad store pointer");
-        ret.push_back(ptr->str);
+        ret.push_back(&ptr->str[0]);
         return true;
     }
 
@@ -261,6 +259,7 @@ BOOST_FIXTURE_TEST_CASE( random_test, f0 )
         BOOST_CHECK_EQUAL_COLLECTIONS ( ret.begin(), ret.end(),
                 exp.begin(), exp.end() );
         if (exp.size() != ret.size()) {
+            std::cout << "string: " << num << std::endl;
             std::cout << "returned: ";
             std::copy(ret.begin(), ret.end(),
                 std::ostream_iterator<std::string>(std::cout, " "));
@@ -281,12 +280,13 @@ BOOST_FIXTURE_TEST_CASE( prepare_and_write_test, f1 )
     srand(1);
     for (int i=0; i<NTAGS; ++i) {
         const char *num = make_number<4>();
-        trie.store(num, data(num));
+        trie.store(num, num);
     }
     trie.make_links();
 
     BOOST_TEST_MESSAGE( "writing actrie to file" );
-    BOOST_REQUIRE_NO_THROW(( trie.write_to_file<offset_t>("pepepe") ));
+    store_traits::store_type store("pepepe");
+    trie.store_trie<store_traits>(store);
 }
 
 BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
@@ -319,6 +319,7 @@ BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
         BOOST_CHECK_EQUAL_COLLECTIONS ( ret.begin(), ret.end(),
                 exp.begin(), exp.end() );
         if (exp.size() != ret.size()) {
+            std::cout << "string: " << num << std::endl;
             std::cout << "returned: ";
             std::copy(ret.begin(), ret.end(),
                 std::ostream_iterator<std::string>(std::cout, " "));

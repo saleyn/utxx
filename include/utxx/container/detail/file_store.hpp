@@ -1,24 +1,29 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief file store demo
+ * \brief simple output file store for persistent trie
  *
  * \author Dmitriy Kargapolov
- * \since 17 February 2013
+ * \since 17 February 2014
  *
  */
 
 /*
- * Copyright (C) 2013 Dmitriy Kargapolov <dmitriy.kargapolov@gmail.com>
+ * Copyright (C) 2014 Dmitriy Kargapolov <dmitriy.kargapolov@gmail.com>
  * Use, modification and distribution are subject to the Boost Software
  * License, Version 1.0 (See accompanying file LICENSE_1_0.txt or copy
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _FILE_STORE_HPP_
-#define _FILE_STORE_HPP_
+#ifndef _UTXX_CONTAINER_DETAIL_FILE_STORE_HPP_
+#define _UTXX_CONTAINER_DETAIL_FILE_STORE_HPP_
 
+#include <fstream>
 #include <boost/numeric/conversion/cast.hpp>
+
+namespace utxx {
+namespace container {
+namespace detail {
 
 // plain file writable data store
 //
@@ -81,9 +86,15 @@ public:
     }
 
     void store_at(pointer_t addr, pointer_t off, const buf_t& buff) {
+        std::streamoff save = m_ofs.tellp();
         m_ofs.seekp(addr + off);
         store(buff);
+        m_ofs.seekp(save);
     }
 };
 
-#endif // _FILE_STORE_HPP_
+} // namespace detail
+} // namespace container
+} // namespace utxx
+
+#endif // _UTXX_CONTAINER_DETAIL_FILE_STORE_HPP_

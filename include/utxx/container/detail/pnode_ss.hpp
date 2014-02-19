@@ -1,7 +1,7 @@
 // ex: ts=4 sw=4 ft=cpp et indentexpr=
 /**
  * \file
- * \brief s-trie writable node with suffix and shift fields
+ * \brief trie writable node with suffix and shift fields
  *
  * \author Dmitriy Kargapolov
  * \since 03 October 2013
@@ -15,17 +15,17 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#ifndef _UTXX_PNODE_SS_HPP_
-#define _UTXX_PNODE_SS_HPP_
+#ifndef _UTXX_CONTAINER_DETAIL_PNODE_SS_HPP_
+#define _UTXX_CONTAINER_DETAIL_PNODE_SS_HPP_
 
 #include <stdint.h>
-#include <fstream>
 #include <stdexcept>
-#include <boost/numeric/conversion/cast.hpp>
 
 namespace utxx {
-
+namespace container {
 namespace detail {
+
+namespace {
 
 /**
  * \brief optional node metadata
@@ -66,7 +66,7 @@ public:
     typedef typename sarray_t::symbol_t symbol_t;
 
     // metadata to support cross-links writing
-    typedef detail::meta<Offset> meta_t;
+    typedef meta<Offset> meta_t;
 
     // constructor
     pnode_ss() : m_suffix(store_t::null), m_shift(0) {}
@@ -149,6 +149,8 @@ private:
     mutable buf_t link_buff, shift_buff;
 };
 
+} // namespace detail
+} // namespace container
 } // namespace utxx
 
-#endif // _UTXX_PNODE_SS_HPP_
+#endif // _UTXX_CONTAINER_DETAIL_PNODE_SS_HPP_

@@ -28,7 +28,7 @@ struct string_codec {
     typedef AddrType addr_t;
 
     // external string representation - offset in file pointing to actual string
-    // used by readers based on utxx::mmap_ptrie
+    // used by readers based on utxx::container::mmap_ptrie
     class data {
         addr_t ptr;
 
@@ -46,7 +46,7 @@ struct string_codec {
         }
     };
 
-    // data writer - used by utxx::ptrie writer
+    // data writer - used by utxx::container::ptrie writer
     struct writer {
         addr_t addr;
         typedef std::pair<const void *, size_t> buf_t;

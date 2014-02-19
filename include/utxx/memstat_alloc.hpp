@@ -19,7 +19,6 @@
 #ifndef _UTXX_MEMSTAT_ALLOC_HPP_
 #define _UTXX_MEMSTAT_ALLOC_HPP_
 
-
 #include <memory>
 #include <cstdlib>
 

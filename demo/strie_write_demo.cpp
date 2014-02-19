@@ -15,30 +15,33 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <utxx/simple_node_store.hpp>
-#include <utxx/svector.hpp>
-#include <utxx/sarray.hpp>
-#include <utxx/pnode.hpp>
-#include <utxx/ptrie.hpp>
+#include <utxx/container/detail/simple_node_store.hpp>
+#include <utxx/container/detail/file_store.hpp>
+#include <utxx/container/detail/svector.hpp>
+#include <utxx/container/detail/sarray.hpp>
+#include <utxx/container/detail/pnode.hpp>
+#include <utxx/container/ptrie.hpp>
 
 #include "string_codec.hpp"
-#include "file_store.hpp"
+
+namespace ct = utxx::container;
+namespace dt = utxx::container::detail;
 
 // payload type
 typedef std::string data_t;
 
 // trie node type
-typedef utxx::pnode<utxx::simple_node_store<>, data_t, utxx::svector<> > node_t;
+typedef dt::pnode<dt::simple_node_store<>, data_t, dt::svector<> > node_t;
 
 // trie type
-typedef utxx::ptrie<node_t> trie_t;
+typedef ct::ptrie<node_t> trie_t;
 
 template<typename AddrType>
 struct MyTraits {
     typedef AddrType addr_type;
-    typedef file_store<addr_type> store_type;
+    typedef dt::file_store<addr_type> store_type;
     typedef typename string_codec<addr_type>::writer data_encoder;
-    typedef typename utxx::sarray<addr_type>::encoder coll_encoder;
+    typedef typename dt::sarray<addr_type>::encoder coll_encoder;
     typedef trie_t::encoder<addr_type> trie_encoder;
 };
 
