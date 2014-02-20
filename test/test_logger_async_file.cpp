@@ -238,7 +238,7 @@ struct latency_worker {
             if (!no_histogram) histogram->stop();
         }
 
-        *elapsed = time_val::universal_time().now_diff(start);
+        *elapsed = time_val::now_diff(start);
 
         if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stdout,

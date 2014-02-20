@@ -36,8 +36,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 /// Create one instance of a class on demand.
-                                                                                     
-template <class T>                                                                   
+
+template <class T>
 class singleton : private T {
 private:
     singleton()  {}

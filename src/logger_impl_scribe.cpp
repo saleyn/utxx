@@ -43,6 +43,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/format.hpp>
 #include <utxx/url.hpp>
 
+#include <thrift/Thrift.h>
+#include <thrift/TApplicationException.h>
+#include <thrift/protocol/TProtocol.h>
+#include <thrift/transport/TTransport.h>
+
 namespace utxx {
 
 static logger_impl_mgr::impl_callback_t f = &logger_impl_scribe::create;
@@ -92,9 +97,7 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     m_server_timeout= a_config.get<int>("logger.scribe.timeout", DEFAULT_TIMEOUT);
 
     // See comments in the beginning of the logger_impl_scribe.hpp on
-    // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
-    // Use the "use_mutex=false" option to inhibit this behavior if your
-    // platform has thread-safe write(2) call.
+    // thread safety.
     m_levels        = logger::parse_log_levels(a_config.get<std::string>(
                         "logger.scribe.levels", logger::default_log_levels));
     m_show_location = a_config.get<bool>(
@@ -116,18 +119,18 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
             log_level level = logger::signal_slot_to_level(lvl);
             if ((m_levels & static_cast<int>(level)) != 0)
                 this->add_msg_logger(level,
-                    on_msg_delegate_t::from_method<logger_impl_scribe, &logger_impl_scribe::log_msg>(this));
+                    on_msg_delegate_t::from_method<
+                        logger_impl_scribe, &logger_impl_scribe::log_msg>(this));
         }
         // Install log_bin callback
         this->add_bin_logger(
-            on_bin_delegate_t::from_method<logger_impl_scribe, &logger_impl_scribe::log_bin>(this));
+            on_bin_delegate_t::from_method<
+                logger_impl_scribe, &logger_impl_scribe::log_bin>(this));
     }
 
     m_fd = m_engine.open_stream(m_name.c_str(),
-                                boost::bind(&logger_impl_scribe::writev, this,
-                                            _1, _2, _3, _4),
-                                NULL
-                               );
+                                boost::bind(&logger_impl_scribe::writev,
+                                            this->shared_from_this(), _1, _2, _3, _4));
     if (!m_fd)
         throw std::runtime_error("Error opening scribe logging stream!");
 
@@ -225,49 +228,152 @@ int logger_impl_scribe::write_string(const char* a_str, int a_size)
     return result;
 }
 
-int logger_impl_scribe::writev(int a_fd, const char* a_categories[],
-                               const iovec* a_data, size_t a_size)
+int logger_impl_scribe::write_items(
+    const char* a_categories[], const iovec* a_data, size_t a_size)
 {
     namespace atp = ::apache::thrift::protocol;
 
-    int32_t cseqid = 0;
-    int32_t xfer = m_protocol->writeMessageBegin("Log", atp::T_CALL, cseqid);
+    uint32_t xfer = m_protocol->writeListBegin(atp::T_STRUCT, a_size);
+    for (uint32_t i=0; i < a_size; ++i) {
+        xfer += m_protocol->writeStructBegin("LogEntry");
 
-    {
-        xfer += m_protocol->writeStructBegin("scribe_Log_pargs");
-        xfer += m_protocol->writeFieldBegin("messages", atp::T_LIST, 1);
-        {
-            xfer += m_protocol->writeListBegin(atp::T_STRUCT, a_size);
-            for (uint32_t i=0; i < a_size; ++i) {
-                xfer += m_protocol->writeStructBegin("LogEntry");
+        xfer += m_protocol->writeFieldBegin("category", atp::T_STRING, 1);
+        xfer += write_string(
+            a_categories[i], a_categories[i] ? strlen(a_categories[i]) : 0);
+        xfer += m_protocol->writeFieldEnd();
 
-                xfer += m_protocol->writeFieldBegin("category", atp::T_STRING, 1);
-                xfer += write_string(
-                    a_categories[i], a_categories[i] ? strlen(a_categories[i]) : 0);
-                xfer += m_protocol->writeFieldEnd();
-
-                xfer += m_protocol->writeFieldBegin("message", atp::T_STRING, 2);
-                xfer += write_string(
-                    static_cast<const char*>(a_data[i].iov_base), a_data[i].iov_len);
-                xfer += m_protocol->writeFieldEnd();
-
-                xfer += m_protocol->writeFieldStop();
-                xfer += m_protocol->writeStructEnd();
-                return xfer;
-            }
-            xfer += m_protocol->writeListEnd();
-        }
+        xfer += m_protocol->writeFieldBegin("message", atp::T_STRING, 2);
+        xfer += write_string(
+            static_cast<const char*>(a_data[i].iov_base), a_data[i].iov_len);
         xfer += m_protocol->writeFieldEnd();
 
         xfer += m_protocol->writeFieldStop();
         xfer += m_protocol->writeStructEnd();
     }
+    xfer += m_protocol->writeListEnd();
+    return (int)xfer;
+}
 
-    xfer += m_protocol->writeMessageEnd();
-    xfer += m_protocol->getTransport()->writeEnd();
-    m_protocol->getTransport()->flush();
+int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
+                               const char* a_categories[],
+                               const iovec* a_data, size_t a_size)
+{
+    namespace atp = ::apache::thrift::protocol;
+    int32_t xfer = 0;
+
+    try {
+        int32_t cseqid = 0;
+        xfer = m_protocol->writeMessageBegin("Log", atp::T_CALL, cseqid);
+
+        {
+            xfer += m_protocol->writeStructBegin("scribe_Log_pargs");
+            xfer += m_protocol->writeFieldBegin("messages", atp::T_LIST, 1);
+
+            xfer += write_items(a_categories, a_data, a_size);
+
+            xfer += m_protocol->writeFieldEnd();
+
+            xfer += m_protocol->writeFieldStop();
+            xfer += m_protocol->writeStructEnd();
+        }
+
+        xfer += m_protocol->writeMessageEnd();
+        xfer += m_protocol->getTransport()->writeEnd();
+        m_protocol->getTransport()->flush();
+
+        // Wait for ack
+        recv_log_reply();
+        return xfer;
+    } catch (std::exception& e) {
+        LOG_ERROR(("Error writing data to scribe: %s", e.what()));
+        m_transport->close();
+        return -1;
+    }
+}
+
+logger_impl_scribe::scribe_result_code
+logger_impl_scribe::recv_log_reply()
+{
+    namespace atp = ::apache::thrift::protocol;
+    int32_t rseqid = 0;
+    std::string fname;
+    atp::TMessageType mtype;
+
+    m_protocol->readMessageBegin(fname, mtype, rseqid);
+    if (mtype == atp::T_EXCEPTION) {
+        ::apache::thrift::TApplicationException x;
+        x.read(m_protocol.get());
+        m_protocol->readMessageEnd();
+        m_protocol->getTransport()->readEnd();
+        throw x;
+    }
+    if (mtype != atp::T_REPLY) {
+        m_protocol->skip(atp::T_STRUCT);
+        m_protocol->readMessageEnd();
+        m_protocol->getTransport()->readEnd();
+    }
+    if (fname.compare("Log") != 0) {
+        m_protocol->skip(atp::T_STRUCT);
+        m_protocol->readMessageEnd();
+        m_protocol->getTransport()->readEnd();
+    }
+    scribe_result_code rc;
+    bool is_set;
+    read_scribe_result(rc, is_set);
+    m_protocol->readMessageEnd();
+    m_protocol->getTransport()->readEnd();
+
+    if (is_set)
+        return rc;
+
+    throw ::apache::thrift::TApplicationException(
+        ::apache::thrift::TApplicationException::MISSING_RESULT,
+        "Scribe log failed: unknown result");
+}
+
+uint32_t logger_impl_scribe::read_scribe_result(scribe_result_code& a_rc, bool& a_is_set)
+{
+    namespace atp = ::apache::thrift::protocol;
+    uint32_t xfer = 0;
+    std::string fname;
+    atp::TType ftype;
+    int16_t fid;
+
+    a_is_set = false;
+
+    xfer += m_protocol->readStructBegin(fname);
+
+    using atp::TProtocolException;
+
+    while (true)
+    {
+        xfer += m_protocol->readFieldBegin(fname, ftype, fid);
+        if (ftype == atp::T_STOP) {
+            break;
+        }
+        switch (fid) {
+        case 0:
+            if (ftype == atp::T_I32) {
+                int32_t ecast7;
+                xfer += m_protocol->readI32(ecast7);
+                a_rc = (scribe_result_code)ecast7;
+                a_is_set = true;
+            } else {
+                xfer += m_protocol->skip(ftype);
+            }
+            break;
+        default:
+            xfer += m_protocol->skip(ftype);
+            break;
+        }
+        xfer += m_protocol->readFieldEnd();
+    }
+
+    xfer += m_protocol->readStructEnd();
+
     return xfer;
 }
+
 
 } // namespace utxx
 

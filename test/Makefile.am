@@ -111,7 +111,8 @@ example_delegate_LDFLAGS    = $(BOOST_LDFLAGS)
 example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
 
 example_scribe_SOURCES 		= test_logger_scribe.cpp
-example_scribe_CXXFLAGS		= -DUTXX_STANDALONE -I$(srcdir)/../include
+example_scribe_CXXFLAGS		= -DUTXX_STANDALONE -I$(srcdir)/../include $(THRIFT_CPPFLAGS) \
+							  -I${top_srcdir}/src -I$(THRIFT_DIR)/include/thrift/fb303
 example_scribe_LDFLAGS		= $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
 example_scribe_LDADD    	= $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
 							  $(srcdir)/../src/.libs/libutxx.la 

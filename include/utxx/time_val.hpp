@@ -263,7 +263,7 @@ namespace utxx {
 
         void   reset() { m_started = time_val::universal_time(); }
 
-        double elapsed() const { return time_val::universal_time().now_diff(m_started); }
+        double elapsed() const { return time_val::now_diff(m_started); }
     };
 
 } // namespace utxx

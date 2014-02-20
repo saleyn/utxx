@@ -64,6 +64,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/multi_file_async_logger.hpp>
 #include <utxx/url.hpp>
 #include <sys/types.h>
+#include <boost/enable_shared_from_this.hpp>
 
 #undef PACKAGE
 #undef PACKAGE_BUGREPORT
@@ -75,28 +76,36 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #undef VERSION
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/transport/TSocket.h>
-#include <thrift/transport/TSocketPool.h>
-#include <thrift/transport/TServerSocket.h>
-#include <thrift/transport/TTransportUtils.h>
-#include <thrift/transport/TFileTransport.h>
 #include <thrift/transport/TBufferTransports.h>
-#include <thrift/transport/TSimpleFileTransport.h>
 
 namespace utxx {
 
-class logger_impl_scribe: public logger_impl {
-
+class logger_impl_scribe
+    : public logger_impl
+    , public boost::enable_shared_from_this<logger_impl_scribe>
+{
 //     struct logger_traits: public multi_file_async_logger_traits {
 //         typedef memory::cached_allocator<char> allocator;
 //     };
 
 //    typedef basic_multi_file_async_logger<logger_traits> async_logger_engine;
-    typedef basic_multi_file_async_logger<> async_logger_engine;
+
+    struct log_item {
+        std::string category;
+        std::string message;
+    };
+
+    typedef basic_multi_file_async_logger<>                 async_logger_engine;
     typedef typename async_logger_engine::stream_state_base stream_state_base;
 
     enum {
         DEFAULT_PORT    = 1463,
         DEFAULT_TIMEOUT = 7500,
+    };
+
+    enum scribe_result_code {
+        OK = 0,
+        TRY_LATER = 1
     };
 
     std::string  m_name;
@@ -126,8 +135,13 @@ class logger_impl_scribe: public logger_impl {
     void connect();
     void disconnect();
 
-    int writev(int a_fd, const char* a_categories[], const iovec* a_data, size_t size);
+    int writev(typename async_logger_engine::stream_info& a_si,
+               const char* a_categories[], const iovec* a_data, size_t size);
     int write_string(const char* a_str, int a_size);
+    uint32_t read_scribe_result(scribe_result_code& a_rc, bool& a_is_set);
+    scribe_result_code recv_log_reply();
+
+    int write_items(const char* a_categories[], const iovec* a_data, size_t a_size);
 
 public:
     static logger_impl_scribe* create(const char* a_name) {

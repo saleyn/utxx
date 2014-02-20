@@ -22,7 +22,7 @@ UTXX_SRCS = \
 	synch.cpp \
 	timestamp.cpp \
 	url.cpp
-#	$(filter %.cpp,$(SCRIBE_GENERATED))
+	$(filter %.cpp,$(SCRIBE_GENERATED))
 
 THRIFT 				= 
 if Ix86
@@ -32,7 +32,8 @@ libutxx_la_SOURCES  = $(UTXX64_SRCS) $(UTXX_SRCS)
 endif
 libutxx_la_LTADD    = -version-info 1:0:0 -shared
 libutxx_la_LIBS     = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(THRIFT_LDFLAGS)
-libutxx_la_CXXFLAGS = -I${top_srcdir}/include $(THRIFT_CPPFLAGS)
+libutxx_la_CXXFLAGS = -I${top_srcdir}/include $(THRIFT_CPPFLAGS) \
+					  -I${top_srcdir}/src -I$(THRIFT_DIR)/include/thrift/fb303
 
 mreceive_SOURCES    = mreceive.c
 mreceive_CFLAGS     = -g
@@ -42,18 +43,18 @@ nobase_include_HEADERS = \
 		   	${top_srcdir}/bin/config_validator_codegen.py \
 			$(foreach d, \
 				$(shell find ${top_srcdir}/include/@PACKAGE@ -type d -print0),\
-				$(wildcard $(d)/*.?pp)))
-#			$(filter %.h,$(SCRIBE_GENERATED))
+				$(wildcard $(d)/*.?pp)) \
+			$(filter %.h,$(SCRIBE_GENERATED)))
 
 nodist_libutxx_la_SOURCES = ${top_srcdir}/config.h
 
-#SCRIBE_GENERATED_FILES = scribe.h scribe.cpp scribe_constants.cpp \
-#						 scribe_constants.h scribe_server.skeleton.cpp \
-#						 scribe_types.cpp scribe_types.h
-#SCRIBE_GENERATED = $(SCRIBE_GENERATED_FILES:%=$(top_srcdir)/src/generated/%)
+SCRIBE_GENERATED_FILES = scribe.h scribe.cpp scribe_constants.cpp \
+						 scribe_constants.h scribe_server.skeleton.cpp \
+						 scribe_types.cpp scribe_types.h
+SCRIBE_GENERATED = $(SCRIBE_GENERATED_FILES:%=$(top_srcdir)/src/generated/%)
 
-#scribe_generated: scribe.thrift $(top_srcdir)/src/generated $(SCRIBE_GENERATED)
-#	$(THRIFT_PROG) --gen cpp -out $(@D) -I /opt/thrift/share $<
+scribe_generated: scribe.thrift $(top_srcdir)/src/generated $(SCRIBE_GENERATED)
+	$(THRIFT_PROG) --gen cpp -out $(@D) -I /opt/thrift/share $<
 
 $(top_srcdir)/src/generated:
 	mkdir -p $@
