@@ -38,5 +38,10 @@ BOOST_AUTO_TEST_CASE( test_static_polymorphism )
 
     BOOST_REQUIRE_EQUAL("1", r);
 
+    //Interface* pi = reinterpret_cast<Interface*>(&p);
+
+    //std::string s = pi->to_string(2);
+    //BOOST_REQUIRE_EQUAL("2", r);
+
     //printer<Implementation2> p2;
 }
