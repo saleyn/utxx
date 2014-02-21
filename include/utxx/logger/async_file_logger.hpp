@@ -327,7 +327,7 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
             return -1;
         l_next = p->next();
         p->next(NULL);
-        ASYNC_TRACE(("Wrote (%d bytes): %p (next: %p): %s\n",
+        ASYNC_TRACE(("Wrote (%ld bytes): %p (next: %p): %s\n",
             p->size(), p, l_next, p->c_str()));
         delete p;
     }

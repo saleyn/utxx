@@ -89,28 +89,33 @@ class futex {
 
     /// Atomic dec of internal counter.
     /// @return 0 when value is different from old_value or someone updated
-    ///    it during wait_fast call. Otherwise current value is returned.
+    ///           it during wait_fast call.
+    ///       < 0 when current value is negative
+    ///        -1 when the thread should wait for another signal
     int wait_fast(int* old_value = NULL) {
-    	int val = m_count;
+        int val = m_count;
 
-        if (old_value && *old_value != val)
+        if (old_value && *old_value != val) {
+            if (old_value)
+                *old_value = val;
             return 0;
+        }
 
-    	// Don't decrement if already negative.
-    	if (val < 0) return val;
+        // Don't decrement if already negative.
+        if (val < 0) return val;
 
-    	//int cur_val = atomic::cmpxchg(&m_count, val, val-1);
+        //int cur_val = atomic::cmpxchg(&m_count, val, val-1);
         unsigned char eqz;
-        
+
         // decrement the counter and check if it's changed to 0.
-        // If so, it's an uncontended case - the operation is done.
-        // Otherwise, return -1 to indicate that the thread should
-        // wait for another thread to "up" the futex.
         __asm__ __volatile__(
             "lock; decl %0; sete %1"
             :"=m" (m_count), "=qm" (eqz)
             :"m"  (m_count) : "memory");
 
+        // If eqz - we know m_count is 0 - it's an uncontended case, waiting is done.
+        // Otherwise, return we have no way of knowing the value. Return -1 to
+        // indicate that the thread should wait for another thread to "up" the futex.
         return eqz ? 0 : -1;
     }
 
@@ -132,19 +137,19 @@ class futex {
 
     void commit(int n) {
         m_count = n;
-    	// Probably overkill, but some non-Intel clones support
+        // Probably overkill, but some non-Intel clones support
         // out-of-order stores, according to 2.5.5-pre1's
         // linux/include/asm-i386/system.h
-    	//__asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory");
-    	atomic::memory_barrier();
+        //__asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory");
+        atomic::memory_barrier();
     }
 
 public:
-    futex(bool initialize = true);
+    futex(int initialize = 1);
 
     /// This is mainly for debugging
     int  value() const { return m_count; }
-    void reset()       { commit(1); }
+    int  reset()       { commit(1); return 1; }
 
     #ifdef PERF_STATS
     unsigned int wake_count()      const { return m_wake_count; }
@@ -155,6 +160,8 @@ public:
 
     /// Signal the futex by incrementing the internal
     /// variable and optionally making a system call.
+    /// @return 0 if someone was waiting
+    ///         1 if a process was waken up by a futex system call
     int signal() {
         if (!signal_fast())
             return signal_slow();
@@ -179,8 +186,18 @@ public:
     /// Non-blocking attempt to wait for signal
     /// @return 0 - success, -1 - no pending signal
     int try_wait(int* old_val = NULL) {
-    	return wait_fast(old_val) == 0 ? 0 : -1;
+        return wait_fast(old_val) == 0 ? 0 : -1;
     }
+
+    /// Wait for signaled condition up to \a timeout. Note that
+    /// the call ignores spurious wakeups.
+    /// @param <old_val> - pointer to the old <value()> of futex
+    ///         known just before calling <wait()> function.
+    /// @return 0           - woken up or value changed before sleep
+    ///         -1          - timeout or some other error occured
+    ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
+    ///                                  being returned)
+    int wait(int* old_val = NULL) { return wait(NULL, old_val); }
 
     /// Wait for signaled condition up to \a timeout. Note that
     /// the call ignores spurious wakeups.
@@ -191,7 +208,7 @@ public:
     ///         -1          - timeout or some other error occured
     ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
     ///                                  being returned)
-    int wait(const struct timespec *timeout = NULL, int* old_val = NULL);
+    int wait(const struct timespec *timeout, int* old_val = NULL);
 
     /// Wait for signaled condition until \a wait_until_abs_time.
     /// \copydetails wait()
@@ -242,10 +259,10 @@ public:
     }
 
     int wait(int* old_val = NULL) {
-        #if 0
-        if (old_val && *old_val != m_count)
+        if (old_val && *old_val != m_count) {
+            *old_val = m_count;
             return 0;
-        #endif
+        }
         scoped_lock g(m_lock);
         try { m_cond.wait(g); } catch(...) { return -1; }
         return 0;
@@ -254,8 +271,10 @@ public:
 
     int wait(const boost::system_time& wait_until_abs_time, int* old_val = NULL) {
         #if 0
-        if (old_val && *old_val != m_count)
+        if (old_val && *old_val != m_count) {
+            *old_val = m_count;
             return 0;
+        }
         #endif
         scoped_lock g(m_lock);
         try {
@@ -271,84 +290,84 @@ public:
 /// Futex based read-write lock.  This is a 
 /// C++ implementation of Rusty Russell's furwock.
 class read_write_lock {
-	futex gate;           // Protects the data.
-	volatile int count;   // If writer waiting, gate held and
+    futex gate;           // Protects the data.
+    volatile int count;   // If writer waiting, gate held and
                           // counter = # readers - 1.
-	                      // Otherwise, counter = # readers.
-	futex wait;           // Simple downed semaphore for writer to sleep on.
+                          // Otherwise, counter = # readers.
+    futex wait;           // Simple downed semaphore for writer to sleep on.
 
     int dec_negative() {
-    	unsigned char r;
-    	__asm__ __volatile__(
+        unsigned char r;
+        __asm__ __volatile__(
               "lock; decl %0; setl %1"
-    		: "=m" (count), "=qm" (r)
-    		: "m" (count) : "memory");
-   		return r;
+            : "=m" (count), "=qm" (r)
+            : "m" (count) : "memory");
+        return r;
     }
 
     void commit(int n) {
         count = n;
-    	// Probably overkill, but some non-Intel clones support
+        // Probably overkill, but some non-Intel clones support
         // out-of-order stores, according to 2.5.5-pre1's
         // linux/include/asm-i386/system.h
-    	// __asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory");
-    	atomic::memory_barrier();
+        // __asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory");
+        atomic::memory_barrier();
     }
 
 public:
     read_write_lock(): count(0) {
         /* count 0 means "completely unlocked" */
-	    wait.try_wait();
+        wait.try_wait();
     }
 
     int read_lock() {
-    	int ret = gate.wait();
-    	if (ret == 0) {
-    		atomic::inc((volatile long*)&count);
-    		gate.signal();
-    	}
-    	return ret;
+        int ret = gate.wait();
+        if (ret == 0) {
+            atomic::inc((volatile long*)&count);
+            gate.signal();
+        }
+        return ret;
     }
 
     int try_read_lock() {
-    	int ret = gate.try_wait();
-    	if (ret == 0) {
-    		if (count >= 0)
-    			atomic::inc((volatile long*)&count);
-    		gate.signal();
-    	}
-    	return ret;
+        int ret = gate.try_wait();
+        if (ret == 0) {
+            if (count >= 0)
+                atomic::inc((volatile long*)&count);
+            gate.signal();
+        }
+        return ret;
     }
 
     void read_unlock() {
-    	/* Last one out wakes and writer waiting. */
-    	if (dec_negative())
-    		wait.signal();
+        /* Last one out wakes and writer waiting. */
+        if (dec_negative())
+            wait.signal();
     }
 
     int write_lock() {
-    	int ret = gate.wait();
-    	if (ret == 0) {
-    		if (dec_negative())
-    			return ret;
-    		wait.signal();
-    	}
-    	return ret;
+        int ret = gate.wait();
+        if (ret == 0) {
+            if (dec_negative())
+                return ret;
+            wait.signal();
+        }
+        return ret;
     }
 
     int try_write_lock() {
-    	int ret = gate.try_wait();
-    	if (ret == 0) {
-    		if (dec_negative())
-    			return ret;
-    		wait.signal();
-    	}
-    	return ret;
+        int ret = gate.try_wait();
+        if (ret == 0) {
+            if (dec_negative())
+                return ret;
+            wait.signal();
+        }
+        return ret;
     }
 
     void write_unlock() {
-    	commit(0);
-    	gate.signal();
+        commit(0);
+        gate.signal();
     }
 };
 

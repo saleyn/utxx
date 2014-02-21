@@ -28,7 +28,7 @@ CPPFLAGS=
 LDFLAGS=
 
 AC_ARG_ENABLE(debug,
-     AC_HELP_STRING([--enable-debug],[enable debug [[default=yes]]]),
+     AC_HELP_STRING([--enable-debug],[enable debug [default=yes]]),
      [ if test "x$enable_debug" = "xyes" -o -z "x$enable_debug"; then
            # CXXFLAGS="${CXXFLAGS% } -ggdb -O0 -Wall -fno-default-inline -fno-inline -fno-inline-functions"
            CXXFLAGS+=" -g -O0 -Wall"
@@ -37,7 +37,7 @@ AC_ARG_ENABLE(debug,
 )
 
 AC_ARG_ENABLE(optimize,
-     AC_HELP_STRING([--enable-optimize],[enable code optimization [[default=no]]]),
+     AC_HELP_STRING([--enable-optimize],[enable code optimization [default=no]]),
      [ if test "x$enable_optimize" = "xyes" ; then
            CXXFLAGS+=" -O3 -g"
        fi
@@ -45,11 +45,22 @@ AC_ARG_ENABLE(optimize,
 )
 
 AC_ARG_ENABLE(warnings,
-     AC_HELP_STRING([--enable-warnings],[enable Wall compiling [[default=yes]]]),
+     AC_HELP_STRING([--enable-warnings],[enable Wall compiling [default=yes]]),
      [ if test "x$enable_warnings" = "xyes" -o -z "$enable_warnings"; then
            CXXFLAGS+=" -Wall -Werror"
        fi
      ],
+)
+
+AC_ARG_ENABLE(cxx11,
+    AC_HELP_STRING([--disable-cxx11],[disable c++11 standard [default=no]]),
+    [ if test "x${enable_cxx11}" != "xno" -a -z "${disable_cxx11}"; then
+         CXXFLAGS+=" -std=c++11"
+      fi
+    ],
+    [
+        CXXFLAGS+=" -std=c++11"
+    ]
 )
 
 # libtool

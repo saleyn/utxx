@@ -184,21 +184,25 @@ private:
     // Invoked by the async thread
     void run();
     // Enqueues msg to internal queue
-    int  internal_enqueue(command_t* msg);
+    int  internal_enqueue(command_t* a_cmd);
+    // Writes data to internal queue
+    int  internal_write(const file_id& a_id, const char* a_category,
+                        char* a_data, size_t a_sz, bool copied);
 
-    void close();
-    void close(stream_info* p, int a_errno = 0);
+    void internal_close();
+    void internal_close(stream_info* p, int a_errno = 0);
 
     command_t* allocate_command(typename command_t::type_t a_tp, const stream_info* a_si) {
         command_t* p = m_cmd_allocator.allocate(1);
+        ASYNC_TRACE(("Allocated command (type=%d): %p\n", a_tp, p));
         new (p) command_t(a_tp, a_si);
         return p;
     }
 
     void deallocate_command(command_t* a_cmd);
 
-    int do_writev_and_free(stream_info* a_si,
-                           command_t*& a_begin, command_t* a_end,
+    // Write enqueued messages from a_si->begin() till a_end
+    int do_writev_and_free(stream_info* a_si, command_t* a_end,
                            const char* a_categories[],
                            const iovec* a_wr_iov, size_t a_sz);
 
@@ -297,7 +301,7 @@ public:
 
     /// @return last error of a given file
     int last_error(const file_id& a_id) const {
-        return check_range(a_id) ? m_files[a_id]->error : -1;
+        return check_range(a_id) ? m_files[a_id.fd()]->error : -1;
     }
 
     template <class T>
@@ -462,7 +466,7 @@ public:
                 }
                 m_pending_writes_head = m_pending_writes_tail = NULL;
             }
-            m_logger->close(this, 0);
+            m_logger->internal_close(this, 0);
             if (m_logger->check_range(lfd))
                 m_logger->m_files[lfd] = NULL;
         }
@@ -512,6 +516,9 @@ public:
             p->next = last;
             last    = p;
             p       = p->prev; // Former p->next
+
+            ASYNC_TRACE(("  FD[%d]: caching cmd (tp=%d) %p (prev=%p, next=%p)\n",
+                         fd, last->type, last, last->prev, last->next));
         }
 
         if (!last)
@@ -522,16 +529,23 @@ public:
         if (!m_pending_writes_head)
             m_pending_writes_head = last;
 
+        ASYNC_TRACE(("  FD=%d cache head=%p tail=%p\n", fd,
+                     m_pending_writes_head, m_pending_writes_tail));
+
         a_cmd = p;
 
         return n;
     }
 
     /// Returns true of internal queue is empty
-    bool pending_queue_empty()  const   { return !m_pending_writes_head; }
+    bool pending_queue_empty() const                { return !m_pending_writes_head; }
 
-    command_t*          begin()         { return m_pending_writes_head; }
-    const command_t*    begin() const   { return m_pending_writes_head; }
+    command_t*& begin()                             { return m_pending_writes_head; }
+
+    command_t*  pending_writes_head()               { return m_pending_writes_head; }
+    command_t*  pending_writes_tail()               { return m_pending_writes_tail; }
+    void        pending_writes_head(command_t* a)   { m_pending_writes_head = a; }
+    void        pending_writes_tail(command_t* a)   { m_pending_writes_tail = a; }
 
     /// Erase single \a item command from the internal queue
     void erase(command_t* item) {
@@ -545,7 +559,6 @@ public:
     void erase(command_t* first, const command_t* end) {
         for (command_t* p = first, *next; p != end; p = next) {
             next = p->next;
-            ASYNC_TRACE(("FD=%d, deallocating unprocessed message %p\n", a_fd, p));
             m_logger->deallocate_command(p);
         }
         if (end) end->prev = NULL;
@@ -582,6 +595,7 @@ basic_multi_file_async_logger(
     size_t a_max_files, int a_reconnect_msec, const msg_allocator& alloc)
     : m_msg_allocator(alloc), m_head(NULL), m_cancel(false)
     , m_max_queue_size(0)
+    , m_event(0)
     , m_active_count(0)
     , m_files(a_max_files, NULL)
     , m_last_version(0)
@@ -634,7 +648,10 @@ template<typename traits>
 void basic_multi_file_async_logger<traits>::
 run() {
     // Notify the caller that we are ready
-    m_cond_var.notify_all();
+    {
+        boost::mutex::scoped_lock lock(m_mutex);
+        m_cond_var.notify_all();
+    }
 
     ASYNC_TRACE(("Started async logging thread (cancel=%s)\n",
         m_cancel ? "true" : "false"));
@@ -643,17 +660,20 @@ run() {
         {traits::commit_timeout / 1000, (traits::commit_timeout % 1000) * 1000000 };
 
     while (1) {
-        int rc = commit(&ts);
+        #ifdef DEBUG_ASYNC_LOGGER
+        int rc =
+        #endif
+        commit(&ts);
 
         ASYNC_TRACE(( "Async thread commit result: %d (head: %p, cancel=%s)\n",
             rc, m_head, m_cancel ? "true" : "false" ));
 
-        if (rc || (!m_head && m_cancel))
+        if (!m_head && m_cancel)
             break;
     }
 
     ASYNC_TRACE(("Logger loop finished - calling close()\n"));
-    close();
+    internal_close();
     ASYNC_TRACE(("Logger notifying all of exiting\n"));
 
     m_thread.reset();
@@ -661,37 +681,39 @@ run() {
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
-close() {
+internal_close() {
     ASYNC_TRACE(("Logger is closing\n"));
     boost::mutex::scoped_lock lock(m_mutex);
     for (typename stream_info_vec::iterator it=m_files.begin(), e=m_files.end();
             it != e; ++it)
-        close(*it, 0);
+        internal_close(*it, 0);
 }
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
-close(stream_info* a_si, int a_errno) {
+internal_close(stream_info* a_si, int a_errno) {
     if (!a_si || a_si->fd < 0)
         return;
 
-    a_si->fd = -1;
     ::close(a_si->fd);
     if (a_errno)
         a_si->set_error(a_errno);
 
-    a_si->name.clear();
     atomic::dec(&m_active_count);
     close_event_type_ptr on_close = a_si->on_close;
-    ASYNC_TRACE(("close(%d, %d) %s (use_count=%ld) active=%ld\n",
-            a_si->fd, a_si->error,
-            l_on_close ? "notifying caller" : "will NOT notify caller",
-            l_on_close.use_count(), m_active_count));
+    ASYNC_TRACE(("----> close(%p, %d) (fd=%d) %s event_val=%d, use_count=%ld, active=%ld\n",
+            a_si, a_si->error, a_si->fd,
+            on_close ? "notifying caller" : "will NOT notify caller",
+            on_close ? on_close->value() : 0,
+            on_close.use_count(), m_active_count));
     if (on_close) {
-        ASYNC_TRACE(("Signaling on_close(%d) event\n", a_si->fd));
         on_close->signal();
         a_si->on_close.reset();
     }
+
+    m_files[a_si->fd] = NULL;
+    a_si->fd = -1;
+    a_si->name.clear();
 }
 
 template<typename traits>
@@ -809,31 +831,32 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
 
     if (!si->on_close)
         si->on_close.reset(new close_event_type());
-    close_event_type_ptr l_event = si->on_close;
+    close_event_type_ptr ev = si->on_close;
 
-    int l_event_val = l_event ? l_event->value() : 0;
+    int event_val = ev ? ev->value() : 0;
 
-    command_t* l_cmd = allocate_command(command_t::close, a_id.stream());
+    command_t* l_cmd = allocate_command(command_t::destroy_stream, a_id.stream());
     l_cmd->args.close.immediate = a_immediate;
     int n = internal_enqueue(l_cmd);
 
-    if (!n && l_event) {
-        ASYNC_TRACE(( "close_file(%d) is waiting for ack (%d)\n", a_id.fd(), a_wait_secs));
+    if (!n && ev) {
+        ASYNC_TRACE(("----> close_file(%d) is waiting for ack secs=%d (event_val={%d,%d})\n",
+                     a_id.fd(), a_wait_secs, event_val, ev->value()));
         if (m_thread && si->fd >= 0) {
-            if (a_wait_secs) {
+            if (a_wait_secs < 0)
+                n = ev->wait(&event_val);
+            else {
                 boost::posix_time::ptime l_now(
                     boost::posix_time::microsec_clock::universal_time() +
                     boost::posix_time::seconds(a_wait_secs));
-                n = l_event->wait(l_now, &l_event_val);
-            } else {
-                n = l_event->wait(&l_event_val);
+                n = ev->wait(l_now, &event_val);
             }
-            ASYNC_TRACE(( "close_file(%d) ack received %d (err=%d)\n",
-                    a_id.fd(), n, si->error));
+            ASYNC_TRACE(( "====> close_file(%d) ack received (res=%d, val=%d) (err=%d)\n",
+                    a_id.fd(), n, event_val, si->error));
         }
     } else {
-        ASYNC_TRACE(( "close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
-                a_id.fd(), n, (l_event ? "true" : "false")));
+        ASYNC_TRACE(( "====> close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
+                a_id.fd(), n, (ev ? "true" : "false")));
     }
     a_id.reset();
     return n;
@@ -841,34 +864,39 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-internal_enqueue(command_t* a_msg) {
-    BOOST_ASSERT(a_msg);
+internal_enqueue(command_t* a_cmd) {
+    BOOST_ASSERT(a_cmd);
 
     command_t* l_last_head;
 
     // Replace the head with msg
     do {
         l_last_head = const_cast<command_t*>(m_head);
-        a_msg->next = l_last_head;
-    } while( !atomic::cas(&m_head, l_last_head, a_msg) );
+        a_cmd->next = l_last_head;
+    } while( !atomic::cas(&m_head, l_last_head, a_cmd) );
 
     if (!l_last_head)
         m_event.signal();
 
-    ASYNC_TRACE(("internal_enqueue - cur head: %p, prev head: %p\n",
-        m_head, l_last_head));
+    ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%d) - cur head: %p, prev head: %p%s\n",
+        a_cmd, a_cmd->type, m_head, l_last_head, !l_last_head ? " (signaled)" : ""));
 
     return 0;
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-write(const file_id& a_id, const char* a_category, void* a_data, size_t a_sz) {
-    if (unlikely(!a_id.stream() || m_cancel))
+internal_write(const file_id& a_id, const char* a_category,
+               char* a_data, size_t a_sz, bool copied)
+{
+    if (unlikely(!a_id.stream() || m_cancel)) {
+        if (copied)
+            deallocate(a_data, a_sz);
         return -1;
+    }
 
     command_t* p = allocate_command(command_t::msg, a_id.stream());
-    ASYNC_TRACE(("->write(%p, %lu) - no copy\n", a_data, a_sz));
+    ASYNC_TRACE(("->write(%p, %lu) - %s\n", a_data, a_sz, copied ? "allocated" : "no copy"));
     p->set_category(a_category);
     p->args.msg.data.iov_base = a_data;
     p->args.msg.data.iov_len  = a_sz;
@@ -877,33 +905,32 @@ write(const file_id& a_id, const char* a_category, void* a_data, size_t a_sz) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
+write(const file_id& a_id, const char* a_category, void* a_data, size_t a_sz) {
+    return internal_write(a_id, a_category, static_cast<char*>(a_data), a_sz, false);
+}
+
+template<typename traits>
+int basic_multi_file_async_logger<traits>::
 write(const file_id& a_id, const char* a_category, const std::string& a_data) {
-    if (unlikely(!a_id.stream() || m_cancel))
-        return -1;
-
-    command_t* p = allocate_command(command_t::msg, a_id.stream());
-
     char* q = allocate(a_data.size());
     memcpy(q, a_data.c_str(), a_data.size());
-    p->set_category(a_category);
-    p->args.msg.data.iov_base = q;
-    p->args.msg.data.iov_len  = a_data.size();
-    ASYNC_TRACE(("->write(%p, %lu) - allocated copy\n", q, a_data.size()));
-    return internal_enqueue(p);
+
+    return internal_write(a_id, a_category, q, a_data.size(), false);
 }
 
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-do_writev_and_free(stream_info* a_si,
-                   command_t*& a_begin, command_t* a_end,
-                   const char** a_categories,
-                   const iovec* a_vec, size_t a_sz)
+do_writev_and_free(stream_info* a_si, command_t* a_end,
+                   const char** a_categories, const iovec* a_vec, size_t a_sz)
 {
     int n = a_sz ? a_si->on_write(*a_si, a_categories, a_vec, a_sz) : 0;
     if (n >= 0) {
-        a_si->erase(a_begin, a_end);
-        a_begin = a_end;
+        // Data was successfully written to stream - adjust internal queue's head/tail
+        a_si->erase(a_si->begin(), a_end);
+        a_si->pending_writes_head(a_end);
+        if (!a_end)
+            a_si->pending_writes_tail(a_end);
     } else if (!a_si->error) {
             a_si->set_error(errno);
         LOG_ERROR(("Error writing %u messages to stream '%s': %s\n",
@@ -925,6 +952,8 @@ deallocate_command(command_t* a_cmd) {
         default:
             break;
     }
+    ASYNC_TRACE(("FD=%d, deallocating command (type=%d) %p\n",
+                a_cmd->fd(), a_cmd->type, a_cmd));
     a_cmd->~command_t();
     m_cmd_allocator.deallocate(a_cmd, 1);
 }
@@ -935,10 +964,16 @@ commit(const struct timespec* tsp)
 {
     ASYNC_TRACE(("Committing head: %p\n", m_head));
 
-    int l_old_val = m_event.value();
+    int event_val = m_event.value();
 
     while (!m_head) {
-        l_old_val = m_event.wait(tsp, &l_old_val);
+        #ifdef DEBUG_ASYNC_LOGGER
+        int n =
+        #endif
+        m_event.wait(tsp, &event_val);
+
+        ASYNC_TRACE(("    COMMIT awakened (res=%d, val=%d, futex=%d), cancel=%d, head=%p\n",
+                     n, event_val, m_event.value(), m_cancel, m_head));
 
         if (m_cancel && !m_head)
             return 0;
@@ -951,7 +986,7 @@ commit(const struct timespec* tsp)
         l_cur_head = const_cast<command_t*>( m_head );
     } while( !atomic::cas(&m_head, l_cur_head, static_cast<command_t*>(NULL)) );
 
-    ASYNC_TRACE(( " --> cur head: %p, new head: %p\n", l_cur_head, m_head));
+    ASYNC_TRACE((" --> cur head: %p, new head: %p\n", l_cur_head, m_head));
 
     BOOST_ASSERT(l_cur_head);
 
@@ -971,11 +1006,11 @@ commit(const struct timespec* tsp)
         n = si->push(p);
         // Update the index of fds that have pending data
         m_pending_data_streams.insert(si);
-        ASYNC_TRACE(("Set fd[%d].pending_writes(%p) -> %d, next(%p)\n",
-                     si->fd, last, n, p));
+        ASYNC_TRACE(("Set stream %p fd[%d].pending_writes(%p) -> %d, next(%p)\n",
+                     si, si->fd, last, n, p));
     }
 
-    ASYNC_TRACE(("Total (%d).\n", l_count));
+    ASYNC_TRACE(("Processed total count: %d.\n", count));
 
     // Process each fd's pending command queue
     if (m_max_queue_size < count)
@@ -1004,7 +1039,7 @@ commit(const struct timespec* tsp)
             }
         }
 
-        ASYNC_TRACE(("Processing commands for fd=%d\n", si->fd));
+        ASYNC_TRACE(("Processing commands for stream %p (fd=%d)\n", si, si->fd));
 
         struct iovec iov [si->max_batch_sz];  // Contains pointers to write
         const  char* cats[si->max_batch_sz];  // List of message categories
@@ -1018,7 +1053,7 @@ commit(const struct timespec* tsp)
         int status = SI_OK;
 
         const command_t* p = si->begin();
-        command_t* begin = si->begin(), *end;
+        command_t* end;
 
         // Process commands in blocks of si->max_batch_sz
         for (; p && !si->error && ((status & SI_CLOSE) != SI_CLOSE); p = end) {
@@ -1028,23 +1063,26 @@ commit(const struct timespec* tsp)
                 iov[n]  = ffmt(p->args.msg.category, p->args.msg.data);
                 cats[n] = p->args.msg.category;
                 sz     += iov[n].iov_len;
-                ASYNC_TRACE(("FD=%d, Command %lu address %p write(%p, %lu) free(%p, %lu)\n",
-                        fd, n, p, iov[n].iov_base, iov[n].iov_len,
-                        p->args.msg.iov_base, p->args.msg.iov_len));
+                ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) write(%p, %lu) free(%p, %lu)\n",
+                        si->fd, si, p, n, iov[n].iov_base, iov[n].iov_len,
+                        p->args.msg.data.iov_base, p->args.msg.data.iov_len));
                 if (++n == si->max_batch_sz) {
-                    int ec = do_writev_and_free(si, begin, end, cats, iov, n);
+                    int ec = do_writev_and_free(si, end, cats, iov, n);
                     ASYNC_TRACE(("Written %d bytes to %s\n", ec, si->name.c_str()));
                     if (ec > 0)
                         n = 0;
                 }
             } else if (p->type == command_t::close) {
                 status |= p->args.close.immediate ? SI_CLOSE : SI_CLOSE_SCHEDULED;
-                ASYNC_TRACE(("FD=%d, Command %lu address %p (close)\n", fd, n, p));
+                ASYNC_TRACE(("FD=%d, Command %lu address %p (close)\n", si->fd, n, p));
                 si->erase(const_cast<command_t*>(p));
             } else if (p->type == command_t::destroy_stream) {
                 status |= SI_DESTROY;
                 si->erase(const_cast<command_t*>(p));
             } else {
+                ASYNC_TRACE(("Command %p has invalid message type: %d "
+                             "(stream=%p, prev=%p, next=%p)\n",
+                             p, p->type, p->stream, p->prev, p->next));
                 si->erase(const_cast<command_t*>(p));
                 BOOST_ASSERT(false); // This should never happen!
             }
@@ -1052,33 +1090,33 @@ commit(const struct timespec* tsp)
 
         if (si->error) {
             ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s with error: %s\n",
-                         sz, fd, si->name.c_str(), si->error_msg.c_str()));
+                         sz, si->fd, si->name.c_str(), si->error_msg.c_str()));
         } else if (n > 0) {
             #ifdef DEBUG_ASYNC_LOGGER
             int k =
             #endif
-            do_writev_and_free(si, begin, end, cats, iov, n);
+            do_writev_and_free(si, end, cats, iov, n);
             ASYNC_TRACE(("Written %d bytes to (fd=%d) %s (total = %lu)\n", k,
-                    fd, si->name.c_str(), sz));
+                    si->fd, si->name.c_str(), sz));
         } else {
             ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n",
-                         sz, fd, si->name.c_str()));
+                         sz, si->fd, si->name.c_str()));
         }
 
         // Close associated file descriptor
         if (si->error || status != SI_OK)
-            close(si, si->error);
+            internal_close(si, si->error);
 
         bool destroy_si = (status & SI_DESTROY) == SI_DESTROY;
 
         if (destroy_si || si->pending_queue_empty()) {
-            ASYNC_TRACE(("Removing %s (fd=%d) from list of pending data streams\n",
-                         si->name.c_str(), fd));
+            ASYNC_TRACE(("Removing %p (name=%s, fd=%d) from list of pending data streams\n",
+                         si, si->name.c_str(), si->fd));
             m_pending_data_streams.erase(si);
         }
 
         if (destroy_si) {
-            ASYNC_TRACE(("Destroying '%s' stream\n", si->name.c_str()));
+            ASYNC_TRACE(("Destroying %p stream\n", si));
             delete si;
         }
     }

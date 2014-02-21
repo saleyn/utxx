@@ -111,7 +111,6 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
     {
         int mean = 8;
-        time_t seed = time(0);
         double elapsed1, elapsed2;
 
         {
@@ -121,6 +120,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
             std::default_random_engine generator;
             std::normal_distribution<double> distribution(mean, 3);
             #else
+            time_t seed = time(0);
             boost::mt19937 generator(static_cast<unsigned>(seed));
             boost::normal_distribution<double> normal_distribution(mean, 3);
             boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> >
@@ -154,6 +154,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
             std::default_random_engine generator;
             std::normal_distribution<double> distribution(mean, 3);
             #else
+            time_t seed = time(0);
             boost::mt19937 generator(static_cast<unsigned>(seed));
             boost::normal_distribution<double> normal_distribution(mean, 3);
             boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> >

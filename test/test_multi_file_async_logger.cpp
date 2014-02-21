@@ -134,7 +134,8 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
 
     logger_t::file_id l_fd;
     BOOST_REQUIRE(!l_fd);
-    BOOST_REQUIRE_EQUAL(0, l_logger.close_file(l_fd));
+    int ec = l_logger.close_file(l_fd);
+    BOOST_REQUIRE_EQUAL(0, ec);
 
     l_fd = l_logger.open_file(s_filename[0], false);
     BOOST_REQUIRE(l_fd.fd() >= 0);
@@ -153,12 +154,15 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
         BOOST_REQUIRE_EQUAL(0, n);
     }
 
-    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+    ec = l_logger.last_error(l_fd);
+    BOOST_REQUIRE_EQUAL(0, ec);
 
     l_logger.close_file(l_fd, false);
 
-    BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
-    BOOST_REQUIRE_EQUAL(-1, l_logger.last_error(l_fd));
+    ec = l_logger.open_files_count();
+    BOOST_REQUIRE_EQUAL(0,  ec);
+    ec = l_logger.last_error(l_fd);
+    BOOST_REQUIRE_EQUAL(-1, ec);
 
     l_logger.stop();
     ::unlink(s_filename[0]);
