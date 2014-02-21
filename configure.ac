@@ -121,11 +121,18 @@ if test x"$ac_boost_path" != x; then
     for ac_boost_path_tmp in $libsubdirs; do
         if test -d "$ac_boost_path"/"$ac_boost_path_tmp" ; then
             BOOST_LIBDIR="$ac_boost_path/$ac_boost_path_tmp"
-            AC_SUBST([BOOST_LIBDIR])
             break
         fi
     done
+else
+    ac_boost_path="/usr"
+    BOOST_ROOT="$ac_boost_path"
+    BOOST_LIBDIR="$ac_boost_path/lib"
+fi
 
+AC_SUBST([BOOST_LIBDIR])
+
+if test -n "$ac_boost_path"; then
     # Checks for new (since 1.48) boost timer header and library
     CPPFLAGS_SAVED=$CPPFLAGS
     LDFLAGS_SAVED=$LDFLAGS
@@ -135,6 +142,8 @@ if test x"$ac_boost_path" != x; then
     AC_CHECK_HEADERS([boost/timer/timer.hpp], [
         BOOST_TIMER_LIB="-lboost_timer $BOOST_CHRONO_LIB"
         AC_SUBST(BOOST_TIMER_LIB)
+        AC_DEFINE([HAVE_BOOST_TIMER_TIMER_HPP], [1],
+                  [Define to 1 if boost/time/timer.hpp is available])
     ])
     AC_LANG_POP([C++])
     CPPFLAGS=$CPPFLAGS_SAVED
