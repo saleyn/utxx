@@ -156,6 +156,12 @@ struct logger_impl {
     ///         in the remove_msg_logger call to release the event sink.
     void add_bin_logger(on_bin_delegate_t subscriber);
 
+    friend bool operator==(const logger_impl& a, const logger_impl& b) {
+        return a.name() == b.name();
+    };
+    friend bool operator!=(const logger_impl& a, const logger_impl& b) {
+        return a.name() != b.name();
+    };
 protected:
     logger* m_log_mgr;
     int     m_msg_sink_id[NLEVELS]; // Message sink identifiers in the loggers' signal

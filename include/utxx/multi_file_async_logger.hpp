@@ -70,7 +70,7 @@ class function;
 namespace utxx {
 
 #ifdef DEBUG_ASYNC_LOGGER
-#   define ASYNC_TRACE(x) printf x
+#   define ASYNC_TRACE(x) do { printf x; fflush(stdout); } while(0)
 #else
 #   define ASYNC_TRACE(x)
 #endif
@@ -258,9 +258,11 @@ public:
     /// @param a_name   is the name of the stream
     /// @param a_writer a callback executed on writing messages to stream
     /// @param a_state  custom state available to the implementation's writer
+    /// @param a_fd     is an optional file descriptor associated with the stream
     file_id open_stream(const std::string&  a_name,
                         msg_writer          a_writer,
-                        stream_state_base*  a_state = NULL);
+                        stream_state_base*  a_state = NULL,
+                        int                 a_fd = -1);
 
     /// This callback will be called from within the logger's thread
     /// to format a message prior to writing it to a log file. The formatting
@@ -338,6 +340,9 @@ public:
 
 };
 
+/// Default implementation of multi_file_async_logger
+typedef basic_multi_file_async_logger<> multi_file_async_logger;
+
 //-----------------------------------------------------------------------------
 // Local classes
 //-----------------------------------------------------------------------------
@@ -395,6 +400,26 @@ command_t {
     }
 } __attribute__((aligned(CL_SIZE)));
 
+template<typename traits>
+class basic_multi_file_async_logger<traits>::
+file_id {
+    stream_info* m_stream;
+public:
+    file_id() { reset(); }
+    file_id(stream_info* a_si) : m_stream(a_si) {}
+    bool invalid() const    { return !m_stream || m_stream->fd < 0; }
+    int  version() const    { BOOST_ASSERT(m_stream); return m_stream->version; }
+    int  fd()      const    { BOOST_ASSERT(m_stream); return m_stream->fd; }
+
+    stream_info*        stream()        { return m_stream; }
+    const stream_info*  stream() const  { return m_stream; }
+
+    void                reset()         { m_stream = NULL; }
+    bool                operator==(const file_id& a) { return m_stream && a.m_stream; }
+
+    operator            bool()   const  { return !invalid(); }
+};
+
 /// Stream information associated with a file descriptor
 /// used internally by the async logger
 template<typename traits>
@@ -424,81 +449,23 @@ public:
     size_t               max_batch_sz;  // Max number of messages to be batched
     stream_state_base*   state;
 
-    explicit stream_info(stream_state_base* a_state = NULL)
-        : m_logger(NULL)
-        , m_pending_writes_head(NULL), m_pending_writes_tail(NULL)
-        , on_format(&stream_info::def_on_format)
-        , on_write(&basic_multi_file_async_logger<traits>::writev)
-        , fd(-1), error(0), version(0), max_batch_sz(IOV_MAX)
-        , state(a_state)
-    {}
+    explicit stream_info(stream_state_base* a_state = NULL);
 
     stream_info(basic_multi_file_async_logger<traits>* a_logger,
                 const std::string& a_name, int a_fd, int a_version,
                 msg_writer a_writer = &basic_multi_file_async_logger<traits>::writev,
-                stream_state_base* a_state = NULL)
-        : m_logger(a_logger)
-        , m_pending_writes_head(NULL), m_pending_writes_tail(NULL)
-        , on_format(&stream_info::def_on_format)
-        , on_write(a_writer)
-        , name(a_name), fd(a_fd), error(0)
-        , version(a_version), max_batch_sz(IOV_MAX)
-        , state(a_state)
-    {}
+                stream_state_base* a_state = NULL);
 
-    ~stream_info() {
-        reset();
-    }
+    ~stream_info() { reset(); }
 
     static iovec def_on_format(const char* a_category, iovec& a_msg) { return a_msg; }
 
-    void reset() {
-        int lfd = fd;
-        fd      = -1;
-        error   = 0;
-        state   = NULL;
-        error_msg.clear();
-        if (m_logger) {
-            if (!pending_queue_empty()) {
-                for (command_t* p = m_pending_writes_head, *next; p; p = next) {
-                    next = p->next;
-                    m_logger->deallocate_command(p);
-                }
-                m_pending_writes_head = m_pending_writes_tail = NULL;
-            }
-            m_logger->internal_close(this, 0);
-            if (m_logger->check_range(lfd))
-                m_logger->m_files[lfd] = NULL;
-        }
-    }
+    void reset();
 
     stream_info* reset(const std::string& a_name, msg_writer a_writer,
-                       stream_state_base* a_state, int a_fd) {
-        name    = a_name;
-        fd      = a_fd;
-        error   = 0;
-        state   = a_state;
-        on_write= a_writer;
-        return this;
-    }
+                       stream_state_base* a_state, int a_fd);
 
-    /*
-    file_id fd(int a_fd, int a_version = 0) {
-        fd = a_fd;
-        version = a_version;
-        return file_id(this);
-    }
-*/
-    void set_error(int a_errno, const char* a_err = NULL) {
-        if (a_err)
-            error_msg = a_err;
-        else {
-            char buf[128];
-            strerror_r(a_errno, buf, sizeof(buf));
-            error_msg = buf;
-        }
-        error = a_errno;
-    }
+    void set_error(int a_errno, const char* a_err = NULL);
 
     /// Push a list of commands to the internal pending queue in reverse order
     ///
@@ -507,86 +474,167 @@ public:
     /// @return number of commands enqueued. Upon return \a a_cmd is updated
     ///         with the first command not belonging to this stream or NULL if no
     ///         such command is found in the list
-    int push(const command_t*& a_cmd) {
-        int n = 0;
-        // Reverse the list
-        command_t* p = const_cast<command_t*>(a_cmd), *last = NULL;
-        for (; p && p->stream == this; ++n) {
-            p->prev = p->next;
-            p->next = last;
-            last    = p;
-            p       = p->prev; // Former p->next
-
-            ASYNC_TRACE(("  FD[%d]: caching cmd (tp=%d) %p (prev=%p, next=%p)\n",
-                         fd, last->type, last, last->prev, last->next));
-        }
-
-        if (!last)
-            return 0;
-
-        m_pending_writes_tail = const_cast<command_t*>(a_cmd);
-
-        if (!m_pending_writes_head)
-            m_pending_writes_head = last;
-
-        ASYNC_TRACE(("  FD=%d cache head=%p tail=%p\n", fd,
-                     m_pending_writes_head, m_pending_writes_tail));
-
-        a_cmd = p;
-
-        return n;
-    }
+    int push(const command_t*& a_cmd);
 
     /// Returns true of internal queue is empty
-    bool pending_queue_empty() const                { return !m_pending_writes_head; }
+    bool            pending_queue_empty() const         { return !m_pending_writes_head; }
 
-    command_t*& begin()                             { return m_pending_writes_head; }
+    command_t*&     pending_writes_head()               { return m_pending_writes_head; }
+    const command_t* pending_writes_tail() const        { return m_pending_writes_tail; }
+    void            pending_writes_head(command_t* a)   { m_pending_writes_head = a; }
+    void            pending_writes_tail(command_t* a)   { m_pending_writes_tail = a; }
 
-    command_t*  pending_writes_head()               { return m_pending_writes_head; }
-    command_t*  pending_writes_tail()               { return m_pending_writes_tail; }
-    void        pending_writes_head(command_t* a)   { m_pending_writes_head = a; }
-    void        pending_writes_tail(command_t* a)   { m_pending_writes_tail = a; }
+    const time_val& last_reconnect_attempt() const      { return m_last_reconnect_attempt; }
 
     /// Erase single \a item command from the internal queue
-    void erase(command_t* item) {
-        if (item->prev) item->prev->next = item->next;
-        if (item->next) item->next->prev = item->prev;
-        m_logger->deallocate_command(item);
-    }
+    void erase(command_t* item);
 
     /// Erase commands from \a first till \a end from the internal
     /// queue of pending commands
-    void erase(command_t* first, const command_t* end) {
-        for (command_t* p = first, *next; p != end; p = next) {
-            next = p->next;
-            m_logger->deallocate_command(p);
-        }
-        if (end) end->prev = NULL;
-    }
-};
-
-template<typename traits>
-class basic_multi_file_async_logger<traits>::
-file_id {
-    stream_info* m_stream;
-public:
-    file_id() { reset(); }
-    file_id(stream_info* a_si) : m_stream(a_si) {}
-    bool invalid() const    { return !m_stream || m_stream->fd < 0; }
-    int  version() const    { BOOST_ASSERT(m_stream); return m_stream->version; }
-    int  fd()      const    { BOOST_ASSERT(m_stream); return m_stream->fd; }
-
-    stream_info*        stream()        { return m_stream; }
-    const stream_info*  stream() const  { return m_stream; }
-
-    void                reset()         { m_stream = NULL; }
-    bool                operator==(const file_id& a) { return m_stream && a.m_stream; }
-
-    operator            bool()   const  { return !invalid(); }
+    void erase(command_t* first, const command_t* end);
 };
 
 //-----------------------------------------------------------------------------
-// I m p l e m e n t a t i o n
+// Implementation: stream_info
+//-----------------------------------------------------------------------------
+
+template<typename traits>
+basic_multi_file_async_logger<traits>::
+stream_info::stream_info(stream_state_base* a_state)
+    : m_logger(NULL)
+    , m_pending_writes_head(NULL), m_pending_writes_tail(NULL)
+    , on_format(&stream_info::def_on_format)
+    , on_write(&basic_multi_file_async_logger<traits>::writev)
+    , fd(-1), error(0), version(0), max_batch_sz(IOV_MAX)
+    , state(a_state)
+{}
+
+template<typename traits>
+basic_multi_file_async_logger<traits>::
+stream_info::stream_info(
+    basic_multi_file_async_logger<traits>* a_logger,
+    const std::string& a_name, int a_fd, int a_version,
+    msg_writer a_writer,
+    stream_state_base* a_state
+)   : m_logger(a_logger)
+    , m_pending_writes_head(NULL), m_pending_writes_tail(NULL)
+    , on_format(&stream_info::def_on_format)
+    , on_write(a_writer)
+    , name(a_name), fd(a_fd), error(0)
+    , version(a_version), max_batch_sz(IOV_MAX)
+    , state(a_state)
+{}
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+stream_info::reset() {
+    int lfd = fd;
+    fd      = -1;
+    error   = 0;
+    state   = NULL;
+    error_msg.clear();
+    if (m_logger) {
+        if (!pending_queue_empty()) {
+            for (command_t* p = m_pending_writes_head, *next; p; p = next) {
+                next = p->next;
+                m_logger->deallocate_command(p);
+            }
+            m_pending_writes_head = m_pending_writes_tail = NULL;
+        }
+        m_logger->internal_close(this, 0);
+        if (m_logger->check_range(lfd))
+            m_logger->m_files[lfd] = NULL;
+    }
+}
+
+template<typename traits>
+typename basic_multi_file_async_logger<traits>::stream_info*
+basic_multi_file_async_logger<traits>::
+stream_info::reset(const std::string& a_name, msg_writer a_writer,
+                   stream_state_base* a_state, int a_fd)
+{
+    name    = a_name;
+    fd      = a_fd;
+    error   = 0;
+    state   = a_state;
+    on_write= a_writer;
+    return this;
+}
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+stream_info::set_error(int a_errno, const char* a_err) {
+    if (a_err)
+        error_msg = a_err;
+    else {
+        char buf[128];
+        strerror_r(a_errno, buf, sizeof(buf));
+        error_msg = buf;
+    }
+    error = a_errno;
+}
+
+template<typename traits>
+int basic_multi_file_async_logger<traits>::
+stream_info::push(const command_t*& a_cmd) {
+    int n = 0;
+    // Reverse the list
+    command_t* p = const_cast<command_t*>(a_cmd), *last = NULL;
+    for (; p && p->stream == this; ++n) {
+        p->prev = p->next;
+        p->next = last;
+        last    = p;
+        p       = p->prev; // Former p->next
+
+        ASYNC_TRACE(("  FD[%d]: caching cmd (tp=%d) %p (prev=%p, next=%p)\n",
+                        fd, last->type, last, last->prev, last->next));
+    }
+
+    if (!last)
+        return 0;
+
+    last->prev = m_pending_writes_tail;
+
+    if (!m_pending_writes_head)
+        m_pending_writes_head = last;
+
+    if (m_pending_writes_tail)
+        m_pending_writes_tail->next = last;
+
+    m_pending_writes_tail = const_cast<command_t*>(a_cmd);
+
+    ASYNC_TRACE(("  FD=%d cache head=%p tail=%p\n", fd,
+                    m_pending_writes_head, m_pending_writes_tail));
+
+    a_cmd = p;
+
+    return n;
+}
+
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+stream_info::erase(command_t* item) {
+    if (item->prev) item->prev->next = item->next;
+    if (item->next) item->next->prev = item->prev;
+    m_logger->deallocate_command(item);
+}
+
+/// Erase commands from \a first till \a end from the internal
+/// queue of pending commands
+template<typename traits>
+void basic_multi_file_async_logger<traits>::
+stream_info::erase(command_t* first, const command_t* end) {
+    ASYNC_TRACE(("xxx stream %p purging items [%p .. %p) from queue\n",
+                 this, first, end));
+    for (command_t* p = first, *next; p != end; p = next) {
+        next = p->next;
+        m_logger->deallocate_command(p);
+    }
+    if (end) end->prev = NULL;
+}
+
+//-----------------------------------------------------------------------------
+// Implementation: basic_multi_file_async_logger
 //-----------------------------------------------------------------------------
 
 template<typename traits>
@@ -762,10 +810,11 @@ typename basic_multi_file_async_logger<traits>::file_id
 basic_multi_file_async_logger<traits>::
 open_stream(const std::string&  a_name,
             msg_writer          a_writer,
-            stream_state_base*  a_state)
+            stream_state_base*  a_state,
+            int                 a_fd)
 {
     // Reserve a valid file descriptor by allocating a socket
-    int n = socket(AF_INET, SOCK_DGRAM, 0);
+    int n = a_fd < 0 ? socket(AF_INET, SOCK_DGRAM, 0) : a_fd;
     return internal_register_stream(a_name, a_writer, a_state, n);
 }
 
@@ -927,7 +976,7 @@ do_writev_and_free(stream_info* a_si, command_t* a_end,
     int n = a_sz ? a_si->on_write(*a_si, a_categories, a_vec, a_sz) : 0;
     if (n >= 0) {
         // Data was successfully written to stream - adjust internal queue's head/tail
-        a_si->erase(a_si->begin(), a_end);
+        a_si->erase(a_si->pending_writes_head(), a_end);
         a_si->pending_writes_head(a_end);
         if (!a_end)
             a_si->pending_writes_tail(a_end);
@@ -1006,8 +1055,8 @@ commit(const struct timespec* tsp)
         n = si->push(p);
         // Update the index of fds that have pending data
         m_pending_data_streams.insert(si);
-        ASYNC_TRACE(("Set stream %p fd[%d].pending_writes(%p) -> %d, next(%p)\n",
-                     si, si->fd, last, n, p));
+        ASYNC_TRACE(("Set stream %p fd[%d].pending_writes(%p) -> %d, head(%p), next(%p)\n",
+                     si, si->fd, last, n, si->pending_writes_head(), p));
     }
 
     ASYNC_TRACE(("Processed total count: %d.\n", count));
@@ -1026,10 +1075,18 @@ commit(const struct timespec* tsp)
         // If there was an error on this stream try to reconnect the stream
         if (si->error && si->on_reconnect) {
             time_val now(time_val::universal_time());
+            double time_diff = now.diff(si->last_reconnect_attempt());
 
-            if (now.diff(si->m_last_reconnect_attempt) > m_reconnect_sec) {
+            if (time_diff > m_reconnect_sec) {
+                ASYNC_TRACE(("===> Trying to reconnect stream %p "
+                             "(prev reconnect %.3fs ago)\n",
+                             si, si->last_reconnect_attempt() ? time_diff : 0.0));
 
                 int fd = si->on_reconnect(*si);
+
+                ASYNC_TRACE(("     Stream %p %s\n",
+                             si, fd < 0 ? "not reconnected!"
+                                        : "reconnected successfully!"));
 
                 if (fd >= 0 && !internal_update_stream(si, fd))
                     LOG_ERROR(("Logger '%s' failed to register file descriptor %d!",
@@ -1052,7 +1109,7 @@ commit(const struct timespec* tsp)
 
         int status = SI_OK;
 
-        const command_t* p = si->begin();
+        const command_t* p = si->pending_writes_head();
         command_t* end;
 
         // Process commands in blocks of si->max_batch_sz
@@ -1063,9 +1120,10 @@ commit(const struct timespec* tsp)
                 iov[n]  = ffmt(p->args.msg.category, p->args.msg.data);
                 cats[n] = p->args.msg.category;
                 sz     += iov[n].iov_len;
-                ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) write(%p, %lu) free(%p, %lu)\n",
-                        si->fd, si, p, n, iov[n].iov_base, iov[n].iov_len,
-                        p->args.msg.data.iov_base, p->args.msg.data.iov_len));
+                ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) next(%p), "
+                             "write(%p, %lu) free(%p, %lu)\n",
+                             si->fd, si, p, n, p->next, iov[n].iov_base, iov[n].iov_len,
+                             p->args.msg.data.iov_base, p->args.msg.data.iov_len));
                 if (++n == si->max_batch_sz) {
                     int ec = do_writev_and_free(si, end, cats, iov, n);
                     ASYNC_TRACE(("Written %d bytes to %s\n", ec, si->name.c_str()));
@@ -1089,8 +1147,8 @@ commit(const struct timespec* tsp)
         }
 
         if (si->error) {
-            ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s with error: %s\n",
-                         sz, si->fd, si->name.c_str(), si->error_msg.c_str()));
+            ASYNC_TRACE(("Written total %lu bytes to %p (fd=%d) %s with error: %s\n",
+                         sz, si, si->fd, si->name.c_str(), si->error_msg.c_str()));
         } else if (n > 0) {
             #ifdef DEBUG_ASYNC_LOGGER
             int k =

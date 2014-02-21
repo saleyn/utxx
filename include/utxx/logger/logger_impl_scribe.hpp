@@ -115,6 +115,7 @@ class logger_impl_scribe
     bool         m_show_location;
     bool         m_show_ident;
     boost::mutex m_mutex;
+    int          m_reconnecting;
 
     async_logger_engine                     m_engine;
     typename async_logger_engine::file_id   m_fd;
@@ -132,11 +133,13 @@ class logger_impl_scribe
 
 
     bool connected() const { return m_transport && m_transport->isOpen(); }
-    void connect();
+    int  connect();
     void disconnect();
 
     int writev(typename async_logger_engine::stream_info& a_si,
                const char* a_categories[], const iovec* a_data, size_t size);
+    int on_reconnect(typename async_logger_engine::stream_info& a_si);
+
     int write_string(const char* a_str, int a_size);
     uint32_t read_scribe_result(scribe_result_code& a_rc, bool& a_is_set);
     scribe_result_code recv_log_reply();

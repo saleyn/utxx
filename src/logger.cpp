@@ -201,8 +201,23 @@ void logger::init(const variant_tree& config)
         {
             std::string path = std::string("logger.") + it->first;
             if (config.get_child_optional(path)) {
-                // A caLEVEL_ to it->second() creates a logger_impl* pointer.
-                // We need to caLEVEL_ implementation's init function that may throw,
+                // Determine if implementation of this type is already
+                // registered with the logger
+                bool found = false;
+                for(implementations_vector::iterator
+                        im = m_implementations.begin(), iend = m_implementations.end();
+                        im != iend; ++im)
+                    if (it->first == (*im)->name()) {
+                        found = true;
+                        break;
+                    }
+
+                if (found)
+                    throw badarg_error("Implementation '", it->first,
+                                       "' is already registered with the logger!");
+
+                // A call to it->second() creates a logger_impl* pointer.
+                // We need to call implementation's init function that may throw,
                 // so use RAII to guarantee proper cleanup.
                 logger_impl_mgr::impl_callback_t& f = it->second;
                 impl impl( f(it->first.c_str()) );
@@ -225,6 +240,16 @@ void logger::finalize()
     //        it != m_implementations.rend(); ++it)
     //    it->reset();
     m_implementations.clear();
+}
+
+void logger::delete_impl(const std::string& a_name)
+{
+    boost::lock_guard<boost::mutex> guard(logger_impl_mgr::instance().mutex());
+    for (implementations_vector::iterator
+            it = m_implementations.begin(), end = m_implementations.end();
+            it != end; ++it)
+        if ((*it)->name() == a_name)
+            m_implementations.erase(it);
 }
 
 int logger::parse_log_levels(const std::string& a_levels)

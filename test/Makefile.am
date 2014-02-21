@@ -44,9 +44,11 @@ TEST_UTXX_SRCS = \
 	test_robust_mutex.cpp \
 	test_running_stat.cpp \
 	test_shared_queue.cpp \
+	test_static_polymorphism.cpp \
 	test_stream64.cpp \
 	test_string.cpp \
 	test_throttler.cpp \
+	test_time_val.cpp \
 	test_timestamp.cpp \
 	test_url.cpp \
 	test_utxx.cpp \
@@ -72,15 +74,17 @@ test_config_validator.cpp: generated/test_config_validator.generated.hpp
 $(top_srcdir)/test/generated:
 	mkdir -v $@
 
+AM_CPPFLAGS = $(if $(debug),\
+				-g $(if $(optimize),-O$(optimize),-O0),\
+				$(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS))
+
 if Ix86
 test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
 else
 test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
-test_utxx_CPPFLAGS 	= \
-	$(if $(debug),-g $(if $(optimize),-O$(optimize),-O0),$(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS)) \
-	-I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK
+test_utxx_CXXFLAGS 	= -I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(THRIFT_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
 
 test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
@@ -95,7 +99,7 @@ test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
 test_utxx_DATA 		= test_config_validator.xml
 
 
-example_repeating_timer_CPPFLAGS = -I$(top_srcdir)/include
+example_repeating_timer_CXXFLAGS = -I$(top_srcdir)/include
 example_repeating_timer_LDFLAGS  = $(BOOST_LDFLAGS)
 example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
                                    $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
@@ -103,7 +107,7 @@ example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
                                    $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
 
 example_delegate_SOURCES	= example_delegate.cpp
-example_delegate_CPPFLAGS 	= $(if $(debug),\
+example_delegate_CXXFLAGS 	= $(if $(debug),\
                                 -g $(if $(optimize),-O$(optimize),-O0),\
                                 $(if $(optimize),-O$(optimize))) \
 					          -DUTXX_STANDALONE -I$(srcdir)/../include

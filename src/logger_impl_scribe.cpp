@@ -59,13 +59,15 @@ logger_impl_scribe::logger_impl_scribe(const char* a_name)
     , m_levels(LEVEL_NO_DEBUG)
     , m_show_location(true)
     , m_show_ident(false)
+    , m_reconnecting(0)
 {}
 
 void logger_impl_scribe::finalize()
 {
-    if (!m_engine.running())
+    if (!m_engine.running()) {
+        m_engine.close_file(m_fd);
         m_engine.stop();
-
+    }
     disconnect();
 }
 
@@ -81,10 +83,15 @@ std::ostream& logger_impl_scribe::dump(std::ostream& out,
     return out;
 }
 
+static void thrift_output(const char* a_msg) {
+    LOG_ERROR((a_msg));
+}
+
 bool logger_impl_scribe::init(const variant_tree& a_config)
     throw(badarg_error)
 {
-    BOOST_ASSERT(this->m_log_mgr);
+    ::apache::thrift::GlobalOutput.setOutputFunction(&thrift_output);
+
     finalize();
 
     std::stringstream str;
@@ -101,9 +108,11 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     m_levels        = logger::parse_log_levels(a_config.get<std::string>(
                         "logger.scribe.levels", logger::default_log_levels));
     m_show_location = a_config.get<bool>(
-                        "logger.scribe.show_location", this->m_log_mgr->show_location());
+                        "logger.scribe.show_location",
+                        this->m_log_mgr && this->m_log_mgr->show_location());
     m_show_ident    = a_config.get<bool>(
-                        "logger.scribe.show_ident",    this->m_log_mgr->show_ident());
+                        "logger.scribe.show_ident",
+                        this->m_log_mgr && this->m_log_mgr->show_ident());
 
     if (m_levels != NOLOGGING) {
         try {
@@ -114,32 +123,42 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
                     % m_server_addr % e.what()).str().c_str());
         }
 
-        // Install log_msg callbacks from appropriate levels
-        for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
-            log_level level = logger::signal_slot_to_level(lvl);
-            if ((m_levels & static_cast<int>(level)) != 0)
-                this->add_msg_logger(level,
-                    on_msg_delegate_t::from_method<
-                        logger_impl_scribe, &logger_impl_scribe::log_msg>(this));
+        // If this implementation started as part of the logging framework,
+        // install it in the slots of the logger for use with LOG_* macros
+        if (m_log_mgr) {
+            // Install log_msg callbacks from appropriate levels
+            for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
+                log_level level = logger::signal_slot_to_level(lvl);
+                if ((m_levels & static_cast<int>(level)) != 0)
+                    this->add_msg_logger(level,
+                        on_msg_delegate_t::from_method<
+                            logger_impl_scribe, &logger_impl_scribe::log_msg>(this));
+            }
+            // Install log_bin callback
+            this->add_bin_logger(
+                on_bin_delegate_t::from_method<
+                    logger_impl_scribe, &logger_impl_scribe::log_bin>(this));
         }
-        // Install log_bin callback
-        this->add_bin_logger(
-            on_bin_delegate_t::from_method<
-                logger_impl_scribe, &logger_impl_scribe::log_bin>(this));
     }
 
     m_fd = m_engine.open_stream(m_name.c_str(),
                                 boost::bind(&logger_impl_scribe::writev,
-                                            this->shared_from_this(), _1, _2, _3, _4));
+                                            this->shared_from_this(), _1, _2, _3, _4),
+                                NULL,
+                                m_socket->getSocketFD()
+                               );
     if (!m_fd)
         throw std::runtime_error("Error opening scribe logging stream!");
 
+    m_engine.set_reconnect(m_fd,
+                           boost::bind(&logger_impl_scribe::on_reconnect,
+                                       this->shared_from_this(), _1));
     m_engine.start();
 
     return true;
 }
 
-void logger_impl_scribe::connect() {
+int logger_impl_scribe::connect() {
     namespace at = apache::thrift;
 
     m_socket.reset(
@@ -174,6 +193,11 @@ void logger_impl_scribe::connect() {
     m_protocol->setStrict(false, false);
 
     m_transport->open();
+
+    int attempts = m_reconnecting;
+    m_reconnecting = 0;
+
+    return attempts;
 }
 
 void logger_impl_scribe::disconnect() {
@@ -181,12 +205,73 @@ void logger_impl_scribe::disconnect() {
         m_transport->close();
 }
 
+// Called by m_engine when writev() call resulted in an error
+int logger_impl_scribe::on_reconnect(typename async_logger_engine::stream_info& a_si)
+{
+    int res = -1;
+
+    try {
+        int attempts = connect();
+
+        if (m_reconnecting > 0)
+            LOG_INFO(("Successfully reconnected to scribe server at %s (attempts=%d)",
+                      m_server_addr.to_string().c_str(), attempts));
+
+        res = m_socket->getSocketFD();
+    } catch(std::exception& e) {
+        if (!m_reconnecting++) {
+            LOG_ERROR(("Failed to reconnect to scribe server at %s: %s",
+                       m_server_addr.to_string().c_str(), e.what()));
+        }
+    }
+
+    return res;
+}
+
+int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
+                               const char* a_categories[],
+                               const iovec* a_data, size_t a_size)
+{
+    namespace atp = ::apache::thrift::protocol;
+    int32_t xfer = 0;
+
+    try {
+        int32_t cseqid = 0;
+        xfer = m_protocol->writeMessageBegin("Log", atp::T_CALL, cseqid);
+
+        {
+            xfer += m_protocol->writeStructBegin("scribe_Log_pargs");
+            xfer += m_protocol->writeFieldBegin("messages", atp::T_LIST, 1);
+
+            xfer += write_items(a_categories, a_data, a_size);
+
+            xfer += m_protocol->writeFieldEnd();
+
+            xfer += m_protocol->writeFieldStop();
+            xfer += m_protocol->writeStructEnd();
+        }
+
+        xfer += m_protocol->writeMessageEnd();
+        xfer += m_protocol->getTransport()->writeEnd();
+        m_protocol->getTransport()->flush();
+
+        // Wait for ack
+        recv_log_reply();
+    } catch (std::exception& e) {
+        LOG_ERROR(("Error writing data to scribe: %s", e.what()));
+        m_transport.reset();
+        xfer = -1;
+    }
+
+    return xfer;
+}
+
 void logger_impl_scribe::log_msg(
     const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
-    throw(io_error) 
+    throw(io_error)
 {
     char buf[logger::MAX_MESSAGE_SIZE];
-    int len = logger_impl::format_message(buf, sizeof(buf), true, 
+    int len = logger_impl::format_message(buf, sizeof(buf), true,
                 m_show_ident, m_show_location, a_tv, info, fmt, args);
     send_data(info.level(), info.category(), buf, len);
 }
@@ -216,7 +301,6 @@ void logger_impl_scribe::send_data(
 
     m_engine.write(m_fd, a_category, p, a_size);
 }
-
 
 int logger_impl_scribe::write_string(const char* a_str, int a_size)
 {
@@ -252,43 +336,6 @@ int logger_impl_scribe::write_items(
     }
     xfer += m_protocol->writeListEnd();
     return (int)xfer;
-}
-
-int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
-                               const char* a_categories[],
-                               const iovec* a_data, size_t a_size)
-{
-    namespace atp = ::apache::thrift::protocol;
-    int32_t xfer = 0;
-
-    try {
-        int32_t cseqid = 0;
-        xfer = m_protocol->writeMessageBegin("Log", atp::T_CALL, cseqid);
-
-        {
-            xfer += m_protocol->writeStructBegin("scribe_Log_pargs");
-            xfer += m_protocol->writeFieldBegin("messages", atp::T_LIST, 1);
-
-            xfer += write_items(a_categories, a_data, a_size);
-
-            xfer += m_protocol->writeFieldEnd();
-
-            xfer += m_protocol->writeFieldStop();
-            xfer += m_protocol->writeStructEnd();
-        }
-
-        xfer += m_protocol->writeMessageEnd();
-        xfer += m_protocol->getTransport()->writeEnd();
-        m_protocol->getTransport()->flush();
-
-        // Wait for ack
-        recv_log_reply();
-        return xfer;
-    } catch (std::exception& e) {
-        LOG_ERROR(("Error writing data to scribe: %s", e.what()));
-        m_transport->close();
-        return -1;
-    }
 }
 
 logger_impl_scribe::scribe_result_code

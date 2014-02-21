@@ -258,6 +258,11 @@ public:
     /// Called on destruction/reinitialization of the logger.
     void finalize();
 
+    /// Delete logger back-end implementation identified by \a a_name
+    ///
+    /// This method is not thread-safe!
+    void delete_impl(const std::string& a_name);
+
     /// Set program identifier to be used in the log output.
     void set_ident(const char* ident) { m_ident = ident; }
 

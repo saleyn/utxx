@@ -239,7 +239,7 @@ public:
 struct test_timestamp : public timestamp {
     /// Use this function for testing when you need to set current time
     /// to times different from now.  Otherwise in production code
-    /// always use update() instead.
+    /// always use timestamp::update() instead.
     void update(const time_val& a_now, hrtime_t a_hrnow) {
         s_last_time = a_now.timeval();
 

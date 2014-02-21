@@ -96,13 +96,17 @@ namespace utxx {
             m_tv.tv_sec=a.tv_sec; m_tv.tv_usec=a.tv_usec; normalize();
         }
 
-        /// Set time to relative offset given by \a a time.
-        explicit time_val(const rel_time& a) {
+        /// Set time to abosolute time given by \a a
+        explicit time_val(const abs_time& a) {
             m_tv.tv_sec=a.sec; m_tv.tv_usec=a.usec; normalize();
         }
 
-        /// Set time to abosolute offset given by \a a time from now.
-        explicit time_val(const abs_time& a) { now(a.sec, a.usec); }
+        /// Set time to relative offset from now given by \a a time.
+        explicit time_val(const rel_time& a) { now(a.sec, a.usec); }
+
+        #if __cplusplus >= 201103L
+        time_val(time_val&& a) : m_tv(std::move(a.m_tv)) {}
+        #endif
 
         const struct timeval&   timeval() const { return m_tv; }
         struct timeval&         timeval()       { return m_tv; }
@@ -200,6 +204,14 @@ namespace utxx {
             m_tv.tv_usec += (_microsec - (n * N10e6));
             normalize();
         }
+
+        #if __cplusplus >= 201103L
+        time_val& operator=(time_val&& a_rhs) {
+            m_tv = a_rhs.m_tv;
+            return *this;
+        }
+        #endif
+
         void operator= (const time_val& t) {
             m_tv.tv_sec = t.sec(); m_tv.tv_usec = t.usec();
         }
@@ -223,6 +235,8 @@ namespace utxx {
         bool operator<= (const time_val& tv) const {
             return sec() < tv.sec() || (sec() == tv.sec() && usec() <= tv.usec());
         }
+
+        operator bool() const { return sec() == 0 && usec() == 0; }
     };
 
     template <typename T>
@@ -236,6 +250,9 @@ namespace utxx {
         BOOST_STATIC_ASSERT(sizeof(T) == sizeof(struct timeval));
         return reinterpret_cast<const time_val&>(tv);
     }
+
+    /// Same as gettimeofday() call
+    inline time_val now_utc() { return time_val::universal_time(); }
 
     /// Simple timer for measuring interval of time
     ///
