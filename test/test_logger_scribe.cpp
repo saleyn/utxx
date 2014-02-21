@@ -93,10 +93,16 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
     // Initialize scribe logging implementation with the logging framework
     log.init(pt);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         LOG_ERROR  (("This is an error %d #%d", i, 123));
         LOG_WARNING(("This is a %d %s", i, "warning"));
         LOG_FATAL  (("This is a %d %s", i, "fatal error"));
+    }
+
+    for (int i = 0; i < 2; i++) {
+        LOG_CAT_ERROR  ("Cat1", ("This is an error %d #%d", i, 456));
+        LOG_CAT_WARNING("Cat2", ("This is a %d %s", i, "warning"));
+        LOG_CAT_FATAL  ("Cat3", ("This is a %d %s", i, "fatal error"));
     }
 
     // Unregister scribe implementation from the logging framework

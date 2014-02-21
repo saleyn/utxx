@@ -130,7 +130,7 @@ void logger_impl_file::log_msg(
 }
 
 void logger_impl_file::log_bin(
-    const char* a_category, const char* msg, size_t size) throw(io_error)
+    const std::string& a_category, const char* msg, size_t size) throw(io_error)
 {
     guard g(m_mutex, m_use_mutex);
 

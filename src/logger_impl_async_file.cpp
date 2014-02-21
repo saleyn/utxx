@@ -122,14 +122,15 @@ void logger_impl_async_file::log_msg(
     send_data(info.level(), info.category(), buf, len);
 }
 
-void logger_impl_async_file::log_bin(const char* a_category, const char* msg, size_t size)
+void logger_impl_async_file::log_bin(
+    const std::string& a_category, const char* msg, size_t size)
     throw(std::runtime_error)
 {
     send_data(LEVEL_LOG, a_category, msg, size);
 }
 
 void logger_impl_async_file::send_data(
-    log_level level, const char* a_category, const char* a_msg, size_t a_size)
+    log_level level, const std::string& a_category, const char* a_msg, size_t a_size)
     throw(io_error)
 {
     if (!m_engine.running())

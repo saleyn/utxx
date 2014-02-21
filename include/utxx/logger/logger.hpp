@@ -131,27 +131,27 @@ typedef log_msg_info _lim;
         __FILE__, __LINE__).log FmtArgs; } while(0)
 
 #define LOG_CAT_TRACE5(Cat, FmtArgs)  do { \
-    utxx::_lim(Cat, utxx::LEVEL_TRACE5 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_TRACE5 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_TRACE4(Cat, FmtArgs)  do { \
-    utxx::_lim(Cat, utxx::LEVEL_TRACE4 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_TRACE4 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_TRACE3(Cat, FmtArgs)  do { \
-    utxx::_lim(Cat, utxx::LEVEL_TRACE3 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_TRACE3 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_TRACE2(Cat, FmtArgs)  do { \
-    utxx::_lim(Cat, utxx::LEVEL_TRACE2 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_TRACE2 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_TRACE1(Cat, FmtArgs)  do { \
-    utxx::_lim(Cat, utxx::LEVEL_TRACE1 , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_TRACE1 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_DEBUG(Cat, FmtArgs)   do { \
-    utxx::_lim(Cat, utxx::LEVEL_DEBUG  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_DEBUG  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_INFO(Cat, FmtArgs)    do { \
-    utxx::_lim(Cat, utxx::LEVEL_INFO   , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_INFO   , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_WARNING(Cat, FmtArgs) do { \
-    utxx::_lim(Cat, utxx::LEVEL_WARNING, __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_WARNING, Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_ERROR(Cat, FmtArgs)   do { \
-    utxx::_lim(Cat, utxx::LEVEL_ERROR  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_ERROR  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_FATAL(Cat, FmtArgs)   do { \
-    utxx::_lim(Cat, utxx::LEVEL_FATAL  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_FATAL  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_ALERT(Cat, FmtArgs)   do { \
-    utxx::_lim(Cat, utxx::LEVEL_ALERT  , __FILE__, __LINE__).log FmtArgs; } while(0)
+    utxx::_lim(utxx::LEVEL_ALERT  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 
 #endif
 
@@ -223,7 +223,7 @@ private:
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
     template <int N>
-    static void log(logger& a_logger, log_level a_level, const char* a_category,
+    static void log(logger& a_logger, log_level a_level, const std::string& a_category,
         const char (&a_filename)[N], size_t a_line,
         const char* a_fmt, va_list args);
 
@@ -314,22 +314,22 @@ public:
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
-    /// @param a_category is a category of the message (use NULL if undefined).
+    /// @param a_cat is a category of the message (use NULL if undefined).
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    void log(log_level a_level, const char* a_category, const char* a_fmt, va_list args);
+    void log(log_level a_level, const std::string& a_cat, const char* a_fmt, va_list args);
 
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_category is a category of the message (use NULL if undefined).
     /// @param a_msg is the message to be logged
-    void log(const char* a_category, const std::string& a_msg);
+    void log(const std::string& a_category, const std::string& a_msg);
 
     /// Signal binary message to registered implementations using <LEVEL_LOG> level.
     /// @param a_category is a category of the message (use NULL if undefined).
     /// @param a_buf is message buffer.
     /// @param a_size is the size of the message.
-    void log(const char* a_category, const char* a_buf, size_t a_size);
+    void log(const std::string& a_category, const char* a_buf, size_t a_size);
 };
 
 } // namespace utxx

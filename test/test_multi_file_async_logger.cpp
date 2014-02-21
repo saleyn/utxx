@@ -179,7 +179,7 @@ namespace {
 
         const std::string& prefix() const { return m_prefix; }
 
-        iovec operator() (const char* a_category, iovec& a_msg) {
+        iovec operator() (const std::string& a_category, iovec& a_msg) {
             size_t n = a_msg.iov_len + m_prefix.size();
             char* p = m_logger.allocate(n);
             memcpy(p, m_prefix.c_str(), m_prefix.size());

@@ -95,9 +95,9 @@ int logger_impl::format_message(
         while (*q) *p++ = *q++;
     }
     *p++ = '|';
-    if (info.category()) {
-        int n = std::min((long)strlen(info.category()), end-p);
-        strncpy(p, info.category(), n);
+    if (!info.category().empty()) {
+        int n = std::min((long)info.category().size(), end-p);
+        strncpy(p, info.category().c_str(), n);
         p += n;
     }
     *p++ = '|';

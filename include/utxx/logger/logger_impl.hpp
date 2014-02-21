@@ -55,7 +55,7 @@ namespace utxx {
 class log_msg_info {
     logger*         m_logger;
     log_level       m_level;
-    const char*     m_category;
+    std::string     m_category;
     size_t          m_src_file_len;
     const char*     m_src_file;
     size_t          m_src_line;
@@ -66,20 +66,20 @@ public:
                  const char (&filename)[N], size_t ln);
 
     template <int N>
-    log_msg_info(log_level a_lv, const char* a_category,
+    log_msg_info(log_level a_lv, const std::string& a_category,
                  const char (&a_filename)[N], size_t a_ln);
 
-    log_msg_info(log_level a_lv, const char* a_category);
+    log_msg_info(log_level a_lv, const std::string& a_category);
 
-    logger*     get_logger()        const { return m_logger; }
-    log_level   level()             const { return m_level; }
-    const char* category()          const { return m_category; }
-    const char* src_file()          const { return m_src_file; }
-    size_t      src_file_len()      const { return m_src_file_len; }
-    size_t      src_line()          const { return m_src_line; }
-    bool        has_src_location()  const { return m_src_file; }
+    logger*             get_logger()        const { return m_logger; }
+    log_level           level()             const { return m_level; }
+    const std::string&  category()          const { return m_category; }
+    const char*         src_file()          const { return m_src_file; }
+    size_t              src_file_len()      const { return m_src_file_len; }
+    size_t              src_line()          const { return m_src_line; }
+    bool                has_src_location()  const { return m_src_file; }
 
-    void category(const char* a_category) { m_category = a_category; }
+    void category(const std::string& a_category) { m_category = a_category; }
 
     std::string src_location() const {
         return has_src_location()
@@ -139,9 +139,9 @@ struct logger_impl {
     > on_msg_delegate_t;
 
     typedef delegate<
-        void (const char* /* category */,
-              const char* /* msg */,
-              size_t      /* size */) throw(std::runtime_error)
+        void (const std::string& /* category */,
+              const char*        /* msg */,
+              size_t             /* size */) throw(std::runtime_error)
     > on_bin_delegate_t;
 
     /// To be called by <logger_impl> child to register a delegate to be

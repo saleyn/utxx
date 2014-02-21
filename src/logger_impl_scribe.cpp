@@ -277,13 +277,13 @@ void logger_impl_scribe::log_msg(
 }
 
 void logger_impl_scribe::log_bin(
-    const char* a_category, const char* a_msg, size_t a_size) throw(io_error)
+    const std::string& a_category, const char* a_msg, size_t a_size) throw(io_error)
 {
     send_data(LEVEL_LOG, a_category, a_msg, a_size);
 }
 
 void logger_impl_scribe::send_data(
-    log_level level, const char* a_category, const char* a_msg, size_t a_size)
+    log_level level, const std::string& a_category, const char* a_msg, size_t a_size)
     throw(io_error)
 {
     if (!m_engine.running())

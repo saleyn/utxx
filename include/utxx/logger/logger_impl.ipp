@@ -40,7 +40,6 @@ inline log_msg_info::log_msg_info(
     logger& a_logger, log_level a_lv, const char (&a_filename)[N], size_t a_ln)
     : m_logger(&a_logger)
     , m_level(a_lv)
-    , m_category(NULL)
     , m_src_file_len(N)
     , m_src_file(a_filename)
     , m_src_line(a_ln)
@@ -56,7 +55,8 @@ inline log_msg_info::log_msg_info(
 
 template <int N>
 inline log_msg_info::log_msg_info(
-    log_level a_lv, const char* a_category, const char (&a_filename)[N], size_t a_ln)
+    log_level a_lv, const std::string& a_category,
+    const char (&a_filename)[N], size_t a_ln)
     : m_logger(&logger::instance())
     , m_level(a_lv)
     , m_category(a_category)
@@ -67,7 +67,7 @@ inline log_msg_info::log_msg_info(
 
 inline log_msg_info::log_msg_info(
     log_level   a_lv,
-    const char* a_category)
+    const std::string& a_category)
     : m_logger(NULL)
     , m_level(a_lv)
     , m_category(a_category)
@@ -88,7 +88,8 @@ inline void log_msg_info::log(const char* fmt, ...) {
 //-----------------------------------------------------------------------------
 
 template <int N>
-inline void logger::log(logger& a_logger, log_level a_level, const char* a_category,
+inline void logger::log(logger& a_logger, log_level a_level,
+    const std::string& a_category,
     const char (&a_filename)[N], size_t a_line,
     const char* a_fmt, va_list args)
 {
@@ -113,7 +114,7 @@ inline void logger::log(const log_msg_info& a_info, const char* a_fmt, va_list a
 }
 
 inline void logger::log(
-    log_level a_level, const char* a_category, const char* a_fmt, va_list args)
+    log_level a_level, const std::string& a_category, const char* a_fmt, va_list args)
 {
     if (is_enabled(a_level))
         try {
@@ -131,7 +132,7 @@ inline void logger::log(
         }
 }
 
-inline void logger::log(const char* a_category, const std::string& a_msg)
+inline void logger::log(const std::string& a_category, const std::string& a_msg)
 {
     if (likely(is_enabled(LEVEL_LOG)))
         try {
@@ -145,7 +146,7 @@ inline void logger::log(const char* a_category, const std::string& a_msg)
         }
 }
 
-inline void logger::log(const char* a_category, const char* a_buf, size_t a_size) {
+inline void logger::log(const std::string& a_category, const char* a_buf, size_t a_size) {
     if (likely(is_enabled(LEVEL_LOG)))
         try {
             m_sig_bin(on_bin_delegate_t::invoker_type(a_category, a_buf, a_size));

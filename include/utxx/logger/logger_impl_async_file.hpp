@@ -80,7 +80,7 @@ class logger_impl_async_file: public logger_impl {
 
     logger_impl_async_file(const char* a_name);
 
-    void send_data(log_level a_level, const char* a_category,
+    void send_data(log_level a_level, const std::string& a_category,
                    const char* a_msg, size_t a_size) throw(io_error);
 
     void finalize();
@@ -101,7 +101,7 @@ public:
 
     void log_msg(const log_msg_info& info, const timeval* a_tv,
         const char* fmt, va_list args) throw (std::runtime_error);
-    void log_bin(const char* a_category, const char* msg, size_t size)
+    void log_bin(const std::string& a_category, const char* msg, size_t size)
         throw (std::runtime_error);
 };
 

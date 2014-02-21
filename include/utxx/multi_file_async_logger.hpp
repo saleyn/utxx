@@ -107,7 +107,7 @@ struct basic_multi_file_async_logger {
     /// message buffer in a_msg using logger's allocate() and deallocate()
     /// functions.  The returned iovec will be used as the content written to disk.
     typedef boost::function<
-        iovec (const char* a_category, iovec& a_msg)
+        iovec (const std::string& a_category, iovec& a_msg)
     >                                               msg_formatter;
 
     /// Callback called on writing scattered array of iovec structures to stream
@@ -186,11 +186,21 @@ private:
     // Enqueues msg to internal queue
     int  internal_enqueue(command_t* a_cmd);
     // Writes data to internal queue
-    int  internal_write(const file_id& a_id, const char* a_category,
+    int  internal_write(const file_id& a_id, const std::string& a_category,
                         char* a_data, size_t a_sz, bool copied);
 
     void internal_close();
     void internal_close(stream_info* p, int a_errno = 0);
+
+    command_t* allocate_message(const stream_info* a_si, const std::string& a_category,
+                                const char* a_data, size_t a_size)
+    {
+        command_t* p = m_cmd_allocator.allocate(1);
+        ASYNC_TRACE(("Allocated message (category=%s, size=%lu): %p\n",
+                     a_category.c_str(), a_size, p));
+        new (p) command_t(a_si, a_category, a_data, a_size);
+        return p;
+    }
 
     command_t* allocate_command(typename command_t::type_t a_tp, const stream_info* a_si) {
         command_t* p = m_cmd_allocator.allocate(1);
@@ -328,10 +338,10 @@ public:
     /// previously allocated using the allocate() function.
     /// The logger will implicitely own the pointer and
     /// will have the deallocation responsibility.
-    int write(const file_id& a_id, const char* a_category, void* a_data, size_t a_sz);
+    int write(const file_id& a_id, const std::string& a_category, void* a_data, size_t a_sz);
 
     /// Write a copy of the string a_data to a file.
-    int write(const file_id& a_id, const char* a_category, const std::string& a_data);
+    int write(const file_id& a_id, const std::string& a_category, const std::string& a_data);
 
     /// @return max size of the commit queue
     const int max_queue_size()  const { return m_max_queue_size; }
@@ -359,12 +369,15 @@ command_t {
 
     union udata {
         struct {
-            mutable iovec data;
-            mutable char* category;
+            mutable iovec       data;
+            mutable std::string category;
         } msg;
         struct {
-            bool          immediate;
+            bool                immediate;
         } close;
+
+        udata()  {}
+        ~udata() {}
     };
 
     const type_t        type;
@@ -373,15 +386,22 @@ command_t {
     mutable command_t*  next;
     mutable command_t*  prev;
 
+    command_t(const stream_info* a_si, const std::string& a_category,
+              const char* a_data, size_t a_size)
+        : command_t(msg, a_si)
+    {
+        set_category(a_category);
+        args.msg.data.iov_base = (void*)a_data;
+        args.msg.data.iov_len  = a_size;
+    }
+
     command_t(type_t a_type, const stream_info* a_si)
         : type(a_type), stream(a_si), next(NULL), prev(NULL)
     {}
 
     ~command_t() {
-        if (type == msg && args.msg.category) {
-            free((void*)args.msg.category);
-            args.msg.category = NULL;
-        }
+        if (type == msg)
+            args.msg.category.~basic_string();
     }
 
     int fd() const { return stream->fd; }
@@ -390,13 +410,9 @@ command_t {
         if (prev) prev->next = next;
         if (next) next->prev = prev;
     }
-
-    void set_category(const char* a_category) {
-        if (a_category) {
-            args.msg.category = strdup(a_category);
-        } else {
-            args.msg.category = NULL;
-        }
+private:
+    void set_category(const std::string& a_category) {
+        new (&args.msg.category) std::string(a_category);
     }
 } __attribute__((aligned(CL_SIZE)));
 
@@ -458,7 +474,7 @@ public:
 
     ~stream_info() { reset(); }
 
-    static iovec def_on_format(const char* a_category, iovec& a_msg) { return a_msg; }
+    static iovec def_on_format(const std::string& a_category, iovec& a_msg) { return a_msg; }
 
     void reset();
 
@@ -935,7 +951,7 @@ internal_enqueue(command_t* a_cmd) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-internal_write(const file_id& a_id, const char* a_category,
+internal_write(const file_id& a_id, const std::string& a_category,
                char* a_data, size_t a_sz, bool copied)
 {
     if (unlikely(!a_id.stream() || m_cancel)) {
@@ -944,23 +960,20 @@ internal_write(const file_id& a_id, const char* a_category,
         return -1;
     }
 
-    command_t* p = allocate_command(command_t::msg, a_id.stream());
+    command_t* p = allocate_message(a_id.stream(), a_category, a_data, a_sz);
     ASYNC_TRACE(("->write(%p, %lu) - %s\n", a_data, a_sz, copied ? "allocated" : "no copy"));
-    p->set_category(a_category);
-    p->args.msg.data.iov_base = a_data;
-    p->args.msg.data.iov_len  = a_sz;
     return internal_enqueue(p);
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-write(const file_id& a_id, const char* a_category, void* a_data, size_t a_sz) {
+write(const file_id& a_id, const std::string& a_category, void* a_data, size_t a_sz) {
     return internal_write(a_id, a_category, static_cast<char*>(a_data), a_sz, false);
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-write(const file_id& a_id, const char* a_category, const std::string& a_data) {
+write(const file_id& a_id, const std::string& a_category, const std::string& a_data) {
     char* q = allocate(a_data.size());
     memcpy(q, a_data.c_str(), a_data.size());
 
@@ -1118,7 +1131,7 @@ commit(const struct timespec* tsp)
 
             if (p->type == command_t::msg) {
                 iov[n]  = ffmt(p->args.msg.category, p->args.msg.data);
-                cats[n] = p->args.msg.category;
+                cats[n] = p->args.msg.category.c_str();
                 sz     += iov[n].iov_len;
                 ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) next(%p), "
                              "write(%p, %lu) free(%p, %lu)\n",

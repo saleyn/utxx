@@ -126,7 +126,7 @@ class logger_impl_scribe
 
     logger_impl_scribe(const char* a_name);
 
-    void send_data(log_level level, const char* a_category,
+    void send_data(log_level level, const std::string& a_category,
                    const char* a_msg, size_t a_size) throw(io_error);
 
     void finalize();
@@ -165,7 +165,7 @@ public:
 
     void log_msg(const log_msg_info& info, const timeval* a_tv,
         const char* fmt, va_list args) throw(io_error);
-    void log_bin(const char* a_category, const char* a_msg, size_t a_size)
+    void log_bin(const std::string& a_category, const char* a_msg, size_t a_size)
         throw(io_error);
 };
 

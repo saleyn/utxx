@@ -39,7 +39,11 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
         LOG_ERROR  (("(%d) This is an error #%d", ++n, 123));
         LOG_WARNING(("(%d) This is a %s", ++n, "warning"));
         LOG_FATAL  (("(%d) This is a %s", ++n, "fatal error"));
+        LOG_CAT_ERROR  ("Cat1", ("(%d) This is an error #%d", ++n, 456));
+        LOG_CAT_WARNING("Cat2", ("(%d) This is a %s", ++n, "warning"));
+        LOG_CAT_FATAL  ("Cat3", ("(%d) This is a %s", ++n, "fatal error"));
     }
+
 
     log.finalize();
 
@@ -50,13 +54,22 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
         for (int i = 0, n = 0; i < iterations; i++) {
             char buf[128];
             getline(in, s);
-            sprintf(buf, "|ERROR  |(%d) This is an error #%d", ++n, 123); exp = buf;
+            sprintf(buf, "|ERROR  |||(%d) This is an error #%d", ++n, 123); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|WARNING|(%d) This is a %s", ++n, "warning"); exp = buf;
+            sprintf(buf, "|WARNING|||(%d) This is a %s", ++n, "warning"); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|FATAL  |(%d) This is a %s", ++n, "fatal error"); exp = buf;
+            sprintf(buf, "|FATAL  |||(%d) This is a %s", ++n, "fatal error"); exp = buf;
+            BOOST_REQUIRE_EQUAL(exp, s);
+            getline(in, s);
+            sprintf(buf, "|ERROR  ||Cat1|(%d) This is an error #%d", ++n, 456); exp = buf;
+            BOOST_REQUIRE_EQUAL(exp, s);
+            getline(in, s);
+            sprintf(buf, "|WARNING||Cat2|(%d) This is a warning", ++n); exp = buf;
+            BOOST_REQUIRE_EQUAL(exp, s);
+            getline(in, s);
+            sprintf(buf, "|FATAL  ||Cat3|(%d) This is a fatal error", ++n); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
         }
         BOOST_REQUIRE(!getline(in, s));
@@ -79,6 +92,7 @@ std::string get_data(std::ifstream& in, int& thread, int& num, struct tm& tm) {
     tm.tm_hour = strtol(end+1, &end, 10);
     tm.tm_min  = strtol(end+1, &end, 10);
     tm.tm_sec  = strtol(end+1, &end, 10);
+    end += 2; // Skip "||"
     const char* p = end + 16;
     thread = strtol(p, &end, 10);
     while(*end == ' ') end++;
@@ -117,7 +131,7 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
             n++;
             s = get_data(in, th, j, tm);
             int idx = j % thr_msgs;
-            sprintf(buf, "|%s|%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
+            sprintf(buf, "|%s|||%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
             exp = buf;
             if (exp != s) std::cerr << "File " << filename << ":" << n << std::endl;
             BOOST_REQUIRE_EQUAL(exp, s);
