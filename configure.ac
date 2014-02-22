@@ -70,6 +70,7 @@ LT_INIT([disable-static])
 AC_PROG_CXX
 AC_PROG_SED
 #AX_PROG_XSLTPROC
+AC_PATH_PROG(PYTHON, python2 python2.7 python2.6 python2.5 python)
 AM_PATH_PYTHON
 AX_PYTHON_MODULE(lxml.etree, fatal)
 
@@ -97,7 +98,6 @@ AC_CHECK_FUNCS(clock_gettime, [], [
 
 AX_BOOST_BASE([1.49.0], [], [AC_MSG_ERROR("BOOST library version >= 1.49.0 not found!")])
 AX_BOOST_SYSTEM
-AX_BOOST_ASIO
 AX_BOOST_DATE_TIME
 
 # workaround unexpected extra dependency on boost_system library (at least in 1.49)
@@ -113,6 +113,14 @@ AX_BOOST_UNIT_TEST_FRAMEWORK
 if test x"$ac_boost_path" != x; then
     BOOST_ROOT="$ac_boost_path"
     AC_SUBST([BOOST_ROOT])
+else
+    ac_boost_path="/usr"
+    BOOST_ROOT="$ac_boost_path"
+    BOOST_LIBDIR="$ac_boost_path/lib"
+fi
+if test x"$ac_boost_lib_path" != x; then
+    BOOST_LIBDIR="$ac_boost_lib_path"
+else
     libsubdirs="lib"
     ax_arch=`uname -m`
     if test $ax_arch = x86_64 -o $ax_arch = ppc64 -o $ax_arch = s390x -o $ax_arch = sparc64; then
@@ -124,12 +132,9 @@ if test x"$ac_boost_path" != x; then
             break
         fi
     done
-else
-    ac_boost_path="/usr"
-    BOOST_ROOT="$ac_boost_path"
-    BOOST_LIBDIR="$ac_boost_path/lib"
 fi
 
+AC_SUBST([BOOST_ROOT])
 AC_SUBST([BOOST_LIBDIR])
 
 if test -n "$ac_boost_path"; then
@@ -164,19 +169,30 @@ if test -z "${with_thrift}"; then
 else
     AC_DEFINE([HAVE_THRIFT_H], [1], [Define to 1 if Thrift library is available])
 fi
+
+AC_ARG_WITH([thrift-libdir],
+	AC_HELP_STRING([--with-thrift-libdir=PATH],
+	    [PATH to Thrift library directory installation (optional)]),
+	with_thrift_libdir=${withval%/},
+	with_thrift_libdir="${with_thrift}/lib")
+
 if test -z "${with_thrift}" -o ! -d "${with_thrift}" -o ! -f "$with_thrift/bin/thrift"; then
-    AC_MSG_NOTICE([no Thrift installation is found!])
+    AC_MSG_ERROR([no Thrift installation is found!])
+else
+if test ! -f "$with_thrift_libdir/libthrift.so"; then
+    AC_MSG_ERROR([no Thrift library is found!])
 else
     THRIFT_DIR="$with_thrift"
     THRIFT_PROG="$with_thrift/bin/thrift"
-    THRIFT_LDFLAGS="-L$with_thrift/lib -lthrift"
-    THRIFT_LIBDIR="$with_thrift/lib"
+    THRIFT_LDFLAGS="-L$with_thrift_libdir -rpath '$with_thrift_libdir' -lthrift"
+    THRIFT_LIBDIR="$with_thrift_libdir"
     THRIFT_CPPFLAGS="-I$with_thrift/include"
     AC_SUBST([THRIFT_PROG])
     AC_SUBST([THRIFT_DIR])
     AC_SUBST([THRIFT_LDFLAGS])
     AC_SUBST([THRIFT_LIBDIR])
     AC_SUBST([THRIFT_CPPFLAGS])
+fi
 fi
 
 # Checks for header files.
@@ -193,7 +209,7 @@ AC_TYPE_SIZE_T
 AC_CHECK_FUNCS([gettimeofday socket])
 
 CXXFLAGS+=" $BOOST_CPPFLAGS"
-LDFLAGS+=" -rpath '$BOOST_LIBDIR' -rpath '$THRIFT_LIBDIR'"
+#LDFLAGS+=" -rpath '$BOOST_LIBDIR'"
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
 
