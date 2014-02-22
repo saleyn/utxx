@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/config_tree.hpp>
 #include <utxx/verbosity.hpp>
 #include <boost/property_tree/info_parser.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 #include <boost/property_tree/detail/info_parser_read.hpp>
 #include <boost/property_tree/detail/info_parser_write.hpp>
 #include <boost/foreach.hpp>
@@ -338,4 +339,31 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         std::string exp = std::string(s_path) + ".four[ABC]";
         BOOST_REQUIRE_EQUAL(exp, s.dump());
     }
+}
+
+BOOST_AUTO_TEST_CASE( test_variant_tree_copy_ini )
+{
+    std::stringstream s; s <<
+        "[one]\n"
+        "verbose    = debug\n"
+        "test       = test1\n"
+        "interval   = 5\n"
+        "threshold  = 2.012\n"
+        "overwrite  = true\n"
+        "address1   = 29xx\n"
+        "address2   = 29 xx\n"
+        "\n";
+    boost::property_tree::ptree pt;
+    boost::property_tree::ini_parser::read_ini(s, pt);
+
+    variant_tree tree(pt);
+
+    BOOST_REQUIRE_EQUAL("debug", tree.get<std::string>("one.verbose"));
+    BOOST_REQUIRE_EQUAL("test1", tree.get<std::string>("one.test"));
+    BOOST_REQUIRE_EQUAL(5,       tree.get<int>("one.interval"));
+    BOOST_REQUIRE_EQUAL(2.012,   tree.get<double>("one.threshold"));
+    BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
+    BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
+    BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
+    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), std::runtime_error);
 }

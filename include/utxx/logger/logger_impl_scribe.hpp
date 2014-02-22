@@ -100,7 +100,7 @@ class logger_impl_scribe
 
     enum {
         DEFAULT_PORT    = 1463,
-        DEFAULT_TIMEOUT = 7500,
+        DEFAULT_TIMEOUT = 5000,
     };
 
     enum scribe_result_code {

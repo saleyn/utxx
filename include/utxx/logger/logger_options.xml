@@ -61,6 +61,22 @@
                 desc="Backend's number of idling milliseconds"/>
     </option>
 
+    <option name="scribe" required="false"
+            desc="Logger's backend for writing data to scribed server">
+        <option name="address" val_type="string" desc="URI address of scribed server"
+                required="true"/>
+        <option name="timeout" val_type="int" default="5000"
+                desc="Connection/send/receive timeout"/>
+        <option name="levels" val_type="string" default="info|warning|error|alert|fatal"
+                desc="Filter of log severity levels to be saved">
+            <copy path="../../../option[@name = 'min_level_filter']/value"/>
+        </option>
+        <option name="show_location" val_type="bool" default="false"
+                desc="Overrides logger.show_location option"/>
+        <option name="show_ident" val_type="bool" default="false"
+                desc="Overrides logger.show_indent option"/>
+    </option>
+
     <option name="console" required="false"
             desc="logger's backend for writing messages to console">
         <option name="stdout_levels" val_type="string"
