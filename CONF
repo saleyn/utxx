@@ -2,4 +2,16 @@
 
 TYPE=${1:-debug}
 
-./configure --enable-${TYPE} --with-boost=/opt/boost --prefix=/opt/utxx --with-thrift=/opt/thrift
+BUILD=${2:-mqt}
+
+if [ $BUILD = 'mqt' ]; then
+    ./configure --with-boost=/opt/BuildEnv/Boost/Current \
+        --with-boost-libdir=/opt/BuildEnv/Boost/Current/GCC/lib \
+        --with-thrift=/opt/BuildEnv/Thrift/Current \
+        --with-thrift-libdir=/opt/BuildEnv/Thrift/Current/GCC/lib \
+        --prefix=/opt/BuildEnv/utxx/1.1 \
+        --exec-prefix=/opt/BuildEnv/utxx/1.1/GCC \
+        --enable-${TYPE}
+else
+    ./configure --enable-${TYPE} --with-boost=/opt/boost --prefix=/opt/utxx --with-thrift=/opt/thrift
+fi
