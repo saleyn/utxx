@@ -99,6 +99,8 @@ AC_CHECK_FUNCS(clock_gettime, [], [
 AX_BOOST_BASE([1.49.0], [], [AC_MSG_ERROR("BOOST library version >= 1.49.0 not found!")])
 AX_BOOST_SYSTEM
 AX_BOOST_DATE_TIME
+AX_BOOST_FILESYSTEM
+AX_BOOST_UNIT_TEST_FRAMEWORK
 
 # workaround unexpected extra dependency on boost_system library (at least in 1.49)
 LDFLAGS_SAVED=$LDFLAGS
@@ -106,9 +108,6 @@ LDFLAGS+=" $BOOST_LDFLAGS $BOOST_SYSTEM_LIB"
 AX_BOOST_THREAD
 AX_BOOST_CHRONO
 LDFLAGS=$LDFLAGS_SAVED
-
-AX_BOOST_FILESYSTEM
-AX_BOOST_UNIT_TEST_FRAMEWORK
 
 if test x"$ac_boost_path" != x; then
     BOOST_ROOT="$ac_boost_path"
@@ -209,7 +208,7 @@ AC_TYPE_SIZE_T
 AC_CHECK_FUNCS([gettimeofday socket])
 
 CXXFLAGS+=" $BOOST_CPPFLAGS"
-#LDFLAGS+=" -rpath '$BOOST_LIBDIR'"
+LDFLAGS+=" -rpath '$BOOST_LIBDIR'"
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
 
