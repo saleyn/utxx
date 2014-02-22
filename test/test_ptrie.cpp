@@ -23,6 +23,7 @@
 #include <utxx/container/detail/svector.hpp>
 #include <utxx/container/detail/sarray.hpp>
 #include <utxx/container/detail/file_store.hpp>
+#include <utxx/container/detail/default_ptrie_codec.hpp>
 #include <utxx/memstat_alloc.hpp>
 
 #include <boost/test/unit_test.hpp>
@@ -136,6 +137,7 @@ struct f1 {
         template<typename AddrType>
         struct encoder {
             typedef std::pair<const void *, size_t> buf_t;
+            template<typename T> encoder(T&) {}
             template<typename Store, typename Out>
             void store(const data& v, const Store&, Out& out) {
                 uint8_t n = v.str.size();
@@ -159,12 +161,12 @@ struct f1 {
     // expandable trie type with export functions
     typedef ct::ptrie<node_t> trie_t;
 
-    struct store_traits {
+    struct encoder_t {
         typedef offset_t addr_type;
         typedef dt::file_store<addr_type> store_type;
         typedef data::encoder<addr_type> data_encoder;
         typedef typename dt::sarray<addr_type>::encoder coll_encoder;
-        typedef trie_t::encoder<addr_type> trie_encoder;
+        typedef dt::mmap_trie_codec::encoder<addr_type> trie_encoder;
     };
 };
 
@@ -177,14 +179,9 @@ struct f2 {
     typedef dt::pnode_ro<
         dt::flat_data_store<void, offset_t>, offset_t, dt::sarray<>
     > node_t;
-    typedef ct::mmap_ptrie<node_t> trie_t;
+    typedef dt::mmap_trie_codec::root_finder<offset_t> root_f;
+    typedef ct::mmap_ptrie<node_t, root_f> trie_t;
     typedef typename trie_t::store_t store_t;
-
-    static offset_t root(const void *m_addr, size_t m_size) {
-        size_t s = sizeof(offset_t);
-        if (m_size < s) throw std::runtime_error("no space for root");
-        return *(const offset_t *)((const char *)m_addr + m_size - s);
-    }
 
     // fold functor to save exact lookup result in a string
     static bool copy_exact_f(std::string &acc, offset_t off,
@@ -344,13 +341,14 @@ BOOST_FIXTURE_TEST_CASE( compact_test, f1 )
         l_trie.store(l_num, data(l_num));
     }
 
-    store_traits::store_type store("lalala");
-    BOOST_REQUIRE_NO_THROW(( l_trie.store_trie<store_traits>(store) ));
+    encoder_t::store_type store("lalala");
+    encoder_t encoder;
+    BOOST_REQUIRE_NO_THROW(( l_trie.store_trie(encoder, store) ));
 }
 
 BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
 {
-    trie_t l_trie("lalala", root);
+    trie_t l_trie("lalala");
     BOOST_TEST_MESSAGE( "reading trie from file" );
 
     // looking for random matches
@@ -518,7 +516,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_test, f0 )
 
 BOOST_FIXTURE_TEST_CASE( chrono_mmap_test, f2 )
 {
-    trie_t l_trie("lalala", root);
+    trie_t l_trie("lalala");
     int l_total = NSAMPLES;
     srand(123);
     time_point tp0 = clock::now();
@@ -537,7 +535,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_mmap_test, f2 )
 
 BOOST_FIXTURE_TEST_CASE( chrono_mmap_test_simple, f2 )
 {
-    trie_t l_trie("lalala", root);
+    trie_t l_trie("lalala");
     int l_total = NSAMPLES;
     srand(123);
     time_point tp0 = clock::now();

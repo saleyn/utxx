@@ -49,16 +49,16 @@ public:
     pnode() {}
 
     // write node to output store, return store pointer type
-    template<typename T, typename F>
-    typename T::addr_type write_to_store(const store_t& store, F func,
-            typename T::store_type& out) const {
+    template<typename T, typename O, typename F>
+    typename T::addr_type
+            write_to_store(const store_t& store, F func, T& enc, O& out) const {
 
         // encode data payload
-        typename T::data_encoder data_encoder;
+        typename T::data_encoder data_encoder(enc);
         data_encoder.store(m_data, store, out);
 
         // encode children
-        typename T::coll_encoder children_encoder;
+        typename T::coll_encoder children_encoder(enc);
         children_encoder.store(m_children, store, func, out);
 
         // store sequence of buffers as single memory chunk, return address
@@ -66,8 +66,8 @@ public:
     }
 
     // no cross-links to update - empty method
-    template <typename T, typename F>
-    void store_links(const store_t&, F, typename T::store_type&) {}
+    template <typename T, typename O, typename F>
+    void store_links(const store_t&, F, T&, O&) {}
 
     // node data payload
     const Data& data() const { return m_data; }

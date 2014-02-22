@@ -28,7 +28,7 @@ namespace container {
 
 namespace { namespace bip = boost::interprocess; }
 
-template <typename Node, typename Traits = ptrie_traits_default>
+template <typename Node, typename RootF, typename Traits = ptrie_traits_default>
 class mmap_ptrie {
 protected:
     typedef ptrie<Node, Traits> trie_t;
@@ -51,8 +51,7 @@ protected:
     trie_t      m_trie;  // underlying ptrie
 
 public:
-    template <typename F>
-    mmap_ptrie(const char *fname, F root)
+    mmap_ptrie(const char *fname, RootF root = RootF())
         : m_fmap(fname, bip::read_only)
         , m_reg(m_fmap, bip::read_only)
         , m_addr(m_reg.get_address())

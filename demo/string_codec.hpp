@@ -20,17 +20,17 @@
 
 #include <boost/numeric/conversion/cast.hpp>
 
+namespace {
+
 // this class combines stuff related to external string representation
 //
 template<typename AddrType>
-struct string_codec {
-
-    typedef AddrType addr_t;
+struct codec_impl {
 
     // external string representation - offset in file pointing to actual string
     // used by readers based on utxx::container::mmap_ptrie
     class data {
-        addr_t ptr;
+        AddrType ptr;
 
     public:
         bool empty() const { return ptr == 0; }
@@ -48,8 +48,10 @@ struct string_codec {
 
     // data writer - used by utxx::container::ptrie writer
     struct writer {
-        addr_t addr;
         typedef std::pair<const void *, size_t> buf_t;
+
+        // encoder always initialized with parent state
+        template<typename T> writer(T&) {}
 
         template<typename StoreIn, typename StoreOut>
         void store(const std::string& str, const StoreIn&, StoreOut& out) {
@@ -62,9 +64,25 @@ struct string_codec {
         const buf_t& buff() const { return buf; }
 
     private:
+        AddrType addr;
         buf_t buf;
     };
 
+};
+
+}
+
+// public codec interface
+// opaque data_type is used in mmap-ed trie instantiation
+// encoder must expose method: void store(Data, Store, Out)
+// (Out must have store(Buff) and AddrType null() methods)
+//
+struct string_codec {
+    template<typename AddrType>
+    struct bind {
+        typedef typename codec_impl<AddrType>::data data_type;
+        typedef typename codec_impl<AddrType>::writer encoder;
+    };
 };
 
 #endif // _STRING_CODEC_HPP_

@@ -18,6 +18,7 @@
 #include <utxx/container/detail/flat_data_store.hpp>
 #include <utxx/container/detail/sarray.hpp>
 #include <utxx/container/detail/pnode_ss_ro.hpp>
+#include <utxx/container/detail/default_ptrie_codec.hpp>
 #include <utxx/container/mmap_ptrie.hpp>
 
 #include "string_codec.hpp"
@@ -29,29 +30,24 @@ namespace dt = utxx::container::detail;
 typedef uint32_t offset_t;
 
 // payload type
-typedef string_codec<offset_t>::data data_t;
+typedef string_codec::bind<offset_t>::data_type data_t;
 
 // trie node type
 typedef dt::pnode_ss_ro<
         dt::flat_data_store</*Node*/void, offset_t>, data_t, dt::sarray<>
 > node_t;
 
+// root node finder
+typedef dt::mmap_trie_codec::root_finder<offset_t> root_f;
+
 // trie type (default traits)
-typedef ct::mmap_ptrie<node_t> trie_t;
+typedef ct::mmap_ptrie<node_t, root_f> trie_t;
 
 // concrete trie store type
 typedef typename trie_t::store_t store_t;
 
 // key element position type (default: uint32_t)
 typedef typename trie_t::position_t pos_t;
-
-// get offset of the 1st (root) node of the trie
-static offset_t root(const void *m_addr, size_t m_size) {
-    size_t s = sizeof(offset_t);
-    if (m_size < s)
-        throw std::runtime_error("short file");
-    return *(const offset_t *) ((const char *) m_addr + m_size - s);
-}
 
 // fold functor example
 static bool fun(const char *& acc, const data_t& data, const store_t& store,
@@ -71,7 +67,7 @@ static void enumerate(const std::string& key, const node_t& node,
 }
 
 int main() {
-    trie_t trie("actrie.bin", root);
+    trie_t trie("actrie.bin");
 
     // fold through the key-matching nodes
     const char *ret = 0;

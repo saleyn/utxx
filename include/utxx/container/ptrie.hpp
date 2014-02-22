@@ -298,31 +298,13 @@ public:
         }
     }
 
-    // default trie encoder
-    template<typename AddrType>
-    class encoder {
-        typedef std::pair<const void *, size_t> buf_t;
-        AddrType root;
-        buf_t buf;
-    public:
-        template<typename F, typename S>
-        void store(F f, S&) {
-            // store trie nodes, get root node address
-            root = f();
-            // fill output buffer with root node address
-            buf.first = &root;
-            buf.second = sizeof(root);
-        }
-        const buf_t& buff() const { return buf; }
-    };
-
     // write whole trie to output store
-    template<typename T>
-    void store_trie(typename T::store_type& out) const {
-        typename T::trie_encoder encoder;
-        encoder.store(boost::bind(
-            &ptrie::template store_nodes<T>, this, boost::ref(out)), out);
-        out.store(encoder.buff());
+    template<typename Enc, typename Out>
+    typename Enc::addr_type store_trie(Enc& enc, Out& out) const {
+        typename Enc::trie_encoder encoder(enc);
+        encoder.store(boost::bind( &ptrie::template store_nodes<Enc, Out>,
+            this, boost::ref(enc), boost::ref(out) ), out);
+        return out.store(encoder.buff());
     }
 
 protected:
@@ -440,29 +422,32 @@ protected:
     }
 
     // write trie nodes to output store
-    template<typename T>
-    typename T::addr_type store_nodes(typename T::store_type& out) const {
+    template<typename T, typename Out>
+    typename T::addr_type store_nodes(T& enc, Out& out) const {
         // store nodes
-        typename T::addr_type ret = m_root.template write_to_store<T>(m_store,
-            boost::bind(&ptrie::template store_child<T>, this, _1,
-            boost::ref(out)), out);
+        typename T::addr_type ret = m_root.template write_to_store<T, Out>(
+            m_store, boost::bind(&ptrie::template store_child<T, Out>, this, _1,
+            boost::ref(enc), boost::ref(out)), enc, out);
         // update cross-reference links
-        m_root.store_links<T>(m_store, boost::bind(&ptrie::store_links<T>, this,
-            _1, boost::ref(out)), out);
+        m_root.store_links<T, Out>(m_store, boost::bind(
+            &ptrie::store_links<T, Out>, this, _1,
+                boost::ref(enc), boost::ref(out)), enc, out);
         // return root node address
         return ret;
     }
 
-    template<typename T> typename T::addr_type
-    store_child(ptr_t addr, typename T::store_type& out) const {
-        return node_ptr(addr)->template write_to_store<T>(m_store, boost::bind(
-            &ptrie::template store_child<T>, this, _1, boost::ref(out)), out);
+    template<typename T, typename Out> typename T::addr_type
+    store_child(ptr_t addr, T& enc, Out& out) const {
+        return node_ptr(addr)->template write_to_store<T, Out>(m_store,
+            boost::bind(&ptrie::template store_child<T, Out>, this, _1,
+            boost::ref(enc), boost::ref(out)), enc, out);
     }
 
-    template<typename T>
-    void store_links(ptr_t addr, typename T::store_type& out) const {
-        node_ptr(addr)->template store_links<T>(m_store, boost::bind(
-            &ptrie::store_links<T>, this, _1, boost::ref(out)), out);
+    template<typename T, typename Out>
+    void store_links(ptr_t addr, T& enc, Out& out) const {
+        node_ptr(addr)->template store_links<T, Out>(m_store, boost::bind(
+            &ptrie::store_links<T, Out>, this, _1,
+                boost::ref(enc), boost::ref(out)), enc, out);
     }
 
     // class fields

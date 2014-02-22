@@ -23,6 +23,7 @@
 #include <utxx/container/detail/svector.hpp>
 #include <utxx/container/detail/sarray.hpp>
 #include <utxx/container/detail/file_store.hpp>
+#include <utxx/container/detail/default_ptrie_codec.hpp>
 
 #include <set>
 #include <boost/numeric/conversion/cast.hpp>
@@ -93,6 +94,7 @@ struct f1 {
     template<typename AddrType>
     struct encoder {
         typedef std::pair<const void *, size_t> buf_t;
+        template<typename T> encoder(T&) {}
         template<typename Store, typename Out>
         void store(const std::string& str, const Store&, Out& out) {
             uint8_t n = str.size();
@@ -115,12 +117,12 @@ struct f1 {
     // expandable trie type with export functions
     typedef ct::ptrie<node_t> trie_t;
 
-    struct store_traits {
+    struct encoder_t {
         typedef offset_t addr_type;
         typedef dt::file_store<addr_type> store_type;
         typedef encoder<addr_type> data_encoder;
         typedef typename dt::sarray<addr_type>::encoder coll_encoder;
-        typedef trie_t::encoder<addr_type> trie_encoder;
+        typedef dt::mmap_trie_codec::encoder<addr_type> trie_encoder;
     };
 };
 
@@ -132,15 +134,9 @@ struct f2 {
     typedef dt::pnode_ss_ro<
         dt::flat_data_store<void, offset_t>, offset_t, dt::sarray<>
     > node_t;
-    typedef ct::mmap_ptrie<node_t> trie_t;
+    typedef dt::mmap_trie_codec::root_finder<offset_t> root_f;
+    typedef ct::mmap_ptrie<node_t, root_f> trie_t;
     typedef typename trie_t::store_t store_t;
-
-    static offset_t root(const void *m_addr, size_t m_size) {
-        size_t s = sizeof(offset_t);
-        if (m_size < s) throw std::runtime_error("no space for root");
-        offset_t ret = *(const offset_t *)((const char *)m_addr + m_size - s);
-        return ret;
-    }
 
     // fold functor to gather matched tags
     static
@@ -285,13 +281,14 @@ BOOST_FIXTURE_TEST_CASE( prepare_and_write_test, f1 )
     trie.make_links();
 
     BOOST_TEST_MESSAGE( "writing actrie to file" );
-    store_traits::store_type store("pepepe");
-    trie.store_trie<store_traits>(store);
+    encoder_t::store_type store("pepepe");
+    encoder_t encoder;
+    trie.store_trie(encoder, store);
 }
 
 BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
 {
-    trie_t trie("pepepe", root);
+    trie_t trie("pepepe");
     set_t tags;
 
     // making unique tags to search for
@@ -336,7 +333,7 @@ BOOST_FIXTURE_TEST_CASE( mmap_test, f2 )
 
 BOOST_FIXTURE_TEST_CASE( chrono_mmap_test, f2 )
 {
-    trie_t trie("pepepe", root);
+    trie_t trie("pepepe");
     set_t tags;
 
     // making unique tags to search for
@@ -363,7 +360,7 @@ BOOST_FIXTURE_TEST_CASE( chrono_mmap_test, f2 )
 
 BOOST_FIXTURE_TEST_CASE( chrono_mmap_test_2, f2 )
 {
-    trie_t trie("pepepe", root);
+    trie_t trie("pepepe");
     set_t tags;
 
     // making unique tags to search for

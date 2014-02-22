@@ -78,6 +78,7 @@ public:
     // collection writer preparing data for reading by sarray
     //
     struct encoder {
+
         typedef std::pair<void *, size_t> buf_t;
         enum { capacity = IdxMap::capacity };
 
@@ -88,7 +89,8 @@ public:
 
         unsigned cnt;
 
-        encoder() : cnt(0) { body.mask = 0; }
+        // encoder always initialized with parent state
+        template<typename T> encoder(T&) : cnt(0) { body.mask = 0; }
 
         template<typename K, typename V, typename F, typename S>
         void store_it(K k, V v, F& func, S& out) {

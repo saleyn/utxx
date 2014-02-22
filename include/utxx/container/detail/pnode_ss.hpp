@@ -72,17 +72,17 @@ public:
     pnode_ss() : m_suffix(store_t::null), m_shift(0) {}
 
     // write node to output store, return store pointer type
-    template<typename T, typename F>
-    typename T::addr_type write_to_store(const store_t& store, F func,
-            typename T::store_type& out) const {
+    template<typename T, typename O, typename F>
+    typename T::addr_type
+            write_to_store(const store_t& store, F func, T& enc, O& out) const {
 
         // encode data payload
-        typename T::data_encoder data_encoder;
+        typename T::data_encoder data_encoder(enc);
         data_encoder.store(m_data, store, out);
         const buf_t& data_buff = data_encoder.buff();
 
         // encode children
-        typename T::coll_encoder children_encoder;
+        typename T::coll_encoder children_encoder(enc);
         children_encoder.store(m_children, store, func, out);
         const buf_t& coll_buff = children_encoder.buff();
 
@@ -105,8 +105,8 @@ public:
         return m_meta.node;
     }
 
-    template<typename T, typename F>
-    void store_links(const store_t& store, F f, typename T::store_type& out) {
+    template<typename T, typename O, typename F>
+    void store_links(const store_t& store, F f, T&, O& out) {
         // first process children
         m_children.foreach_value(f);
         // suffix node reference

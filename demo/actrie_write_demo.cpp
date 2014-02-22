@@ -20,6 +20,7 @@
 #include <utxx/container/detail/svector.hpp>
 #include <utxx/container/detail/sarray.hpp>
 #include <utxx/container/detail/pnode_ss.hpp>
+#include <utxx/container/detail/default_ptrie_codec.hpp>
 #include <utxx/container/ptrie.hpp>
 
 #include "string_codec.hpp"
@@ -41,16 +42,17 @@ typedef dt::pnode_ss<dt::simple_node_store<>, data_t, dt::svector<>,
 typedef ct::ptrie<node_t> trie_t;
 
 template<typename AddrType>
-struct MyTraits {
+struct EncoderTraits {
     typedef AddrType addr_type;
     typedef dt::file_store<addr_type> store_type;
-    typedef typename string_codec<addr_type>::writer data_encoder;
+    typedef typename string_codec::bind<addr_type>::encoder data_encoder;
     typedef typename dt::sarray<addr_type>::encoder coll_encoder;
-    typedef trie_t::encoder<addr_type> trie_encoder;
+    typedef dt::mmap_trie_codec::encoder<addr_type> trie_encoder;
 };
 
 // offset type in external data representation
-typedef MyTraits<addr_t> store_traits;
+typedef EncoderTraits<addr_t> encoder_t;
+typedef encoder_t::store_type output_t;
 
 int main() {
     trie_t trie;
@@ -62,8 +64,9 @@ int main() {
     trie.make_links();
 
     // write (export) trie to the file in external format
-    store_traits::store_type store("actrie.bin");
-    trie.store_trie<store_traits>(store);
+    output_t file("actrie.bin");
+    encoder_t encoder;
+    trie.store_trie(encoder, file);
 
     return 0;
 }
