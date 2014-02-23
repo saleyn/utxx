@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/utility/enable_if.hpp>
 #include <boost/throw_exception.hpp>
 #include <string>
+#include <cerrno>
 
 namespace boost {
 namespace property_tree {
