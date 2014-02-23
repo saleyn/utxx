@@ -10,6 +10,8 @@ before_script:
   - cat /usr/include/boost/version.hpp
   - ./bootstrap
 script: ./configure && make debug=true optimize=3
-after_script: ls -latr autom4te.cache
+after_script:
+  - ls -latr autom4te.cache
+  - cat config.log
 branches:
   only: master
