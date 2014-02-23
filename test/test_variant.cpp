@@ -38,10 +38,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/variant.hpp>
 #include <utxx/config_tree.hpp>
 #include <utxx/verbosity.hpp>
-#include <boost/property_tree/info_parser.hpp>
+#include <utxx/variant_tree_parser.hpp>
 #include <boost/property_tree/ini_parser.hpp>
-#include <boost/property_tree/detail/info_parser_read.hpp>
-#include <boost/property_tree/detail/info_parser_write.hpp>
+#include <boost/property_tree/xml_parser.hpp>
 #include <boost/foreach.hpp>
 #include <iostream>
 
@@ -183,7 +182,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
         "}";
     std::stringstream s; s << s_data;
     variant_tree tree;
-    variant_tree::read_info(s, tree);
+    read_info(s, tree);
     if (verbosity::level() > VERBOSE_NONE)
         tree.dump(std::cout);
     {
@@ -250,7 +249,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         //boost::property_tree::info_parser::read_info_internal(
         //    s, tree, std::string(), 0);
         //boost::property_tree::ptree pt;
-        variant_tree::read_info(s, tree);
+        read_info(s, tree);
         BOOST_REQUIRE_EQUAL(1, tree.get<int>("key1"));
         BOOST_REQUIRE_EQUAL(true, tree.get<bool>("key2"));
         BOOST_REQUIRE_EQUAL(10.0, tree.get<double>("key3"));
@@ -287,13 +286,13 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
         std::stringstream out;
         tree.dump(out);
         const char expect[] =
-            "first (null)      <NULL>\n"
-            "  n (int)    10\n"
-            "second (null)     <NULL>\n"
-            "  n (int)    2\n"
-            "third (string)    abc\n"
-            "fourth (null)     <NULL>\n"
-            "  b (int)    12\n";
+            "first::null()\n"
+            "  n::int() = 10\n"
+            "second::null()\n"
+            "  n::int() = 2\n"
+            "third::string() = \"abc\"\n"
+            "fourth::null()\n"
+            "  b::int() = 12\n";
         BOOST_REQUIRE_EQUAL(expect, out.str());
     }
     {
@@ -301,11 +300,11 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
         std::stringstream out;
         tree2.dump(out);
         const char expect[] =
-            "third (string)    abcx\n"
-            "fourth (null)     <NULL>\n"
-            "  b (int)    13\n"
-            "first (null)      <NULL>\n"
-            "  n (int)    11\n";
+            "third::string() = \"abcx\"\n"
+            "fourth::null()\n"
+            "  b::int() = 13\n"
+            "first::null()\n"
+            "  n::int() = 11\n";
         BOOST_REQUIRE_EQUAL(expect, out.str());
     }
 }
@@ -341,7 +340,44 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_variant_tree_copy_ini )
+template <class Stream, class ReadFun>
+bool gen_test_case(Stream& stream, ReadFun read_fun, const char* a_test_name)
+{
+    variant_tree tree;
+    read_fun(stream, tree);
+
+    try {
+        BOOST_REQUIRE_EQUAL("debug", tree.get<std::string>("one.verbose"));
+        BOOST_REQUIRE_EQUAL("test1", tree.get<std::string>("one.test"));
+        BOOST_REQUIRE_EQUAL(5,       tree.get<int>("one.interval"));
+        BOOST_REQUIRE_EQUAL(2.012,   tree.get<double>("one.threshold"));
+        BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
+        BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
+        BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
+        BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), std::runtime_error);
+    } catch (...) {
+        BOOST_MESSAGE("Test case name: " << a_test_name);
+        throw;
+    }
+    return true;
+}
+
+BOOST_AUTO_TEST_CASE( test_variant_tree_xml )
+{
+    std::stringstream s; s <<
+        "<one>\n"
+        "<verbose>debug</verbose>\n"
+        "<test>test1</test>\n"
+        "<interval>5</interval>\n"
+        "<threshold>2.012</threshold>\n"
+        "<overwrite>true</overwrite>\n"
+        "<address1>29xx</address1>\n"
+        "<address2>29 xx</address2>\n"
+        "</one>\n";
+    gen_test_case(s, &read_xml<std::stringstream, char>, "test_variant_tree_xml");
+}
+
+BOOST_AUTO_TEST_CASE( test_variant_tree_ini )
 {
     std::stringstream s; s <<
         "[one]\n"
@@ -353,17 +389,5 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_copy_ini )
         "address1   = 29xx\n"
         "address2   = 29 xx\n"
         "\n";
-    boost::property_tree::ptree pt;
-    boost::property_tree::ini_parser::read_ini(s, pt);
-
-    variant_tree tree(pt);
-
-    BOOST_REQUIRE_EQUAL("debug", tree.get<std::string>("one.verbose"));
-    BOOST_REQUIRE_EQUAL("test1", tree.get<std::string>("one.test"));
-    BOOST_REQUIRE_EQUAL(5,       tree.get<int>("one.interval"));
-    BOOST_REQUIRE_EQUAL(2.012,   tree.get<double>("one.threshold"));
-    BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
-    BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
-    BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
-    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), std::runtime_error);
+    gen_test_case(s, &read_ini<std::stringstream, char>, "test_variant_tree_ini");
 }

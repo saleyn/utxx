@@ -245,7 +245,7 @@ public:
     /// @return vector of active back-end logging implementations
     const implementations_vector&  implementations() const;
 
-    enum init_file_type { INFO_FILE, JSON_FILE, XML_FILE };
+    enum init_file_type { SCON_FILE, INFO_FILE, JSON_FILE, XML_FILE };
 
     /// Call to initialize the logger by reading configuration from file.
     /// Supported file formats: {info, json, xml}. See boost/property_tree

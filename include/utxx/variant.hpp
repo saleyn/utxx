@@ -134,6 +134,19 @@ public:
         *(base*)this = a;
     }
 
+    void operator+= (int16_t     a)  { *(base*)this = to_int() + a; }
+    void operator+= (int         a)  { *(base*)this = to_int() + a; }
+    void operator+= (int64_t     a)  { *(base*)this = to_int() + a; }
+    void operator+= (uint16_t    a)  { *(base*)this = to_int() + a; }
+    void operator+= (uint32_t    a)  { *(base*)this = to_int() + a; }
+    void operator+= (uint64_t    a)  { *(base*)this = (long)(to_int() + a); }
+    void operator+= (double      a)  { *(base*)this = to_int() + a; }
+    void operator+= (const char* a)  { *(base*)this = to_str() + a; }
+    void operator+= (const std::string& a) { *(base*)this = to_str() + a; }
+
+    template <typename T>
+    void operator+= (T a) { throw std::runtime_error("Operation not supported!"); }
+
     value_type  type()     const { return static_cast<value_type>(which()); }
     const char* type_str() const {
         static const char* s_types[] = { "null", "bool", "int", "double", "string" };
@@ -157,6 +170,11 @@ public:
     const std::string&  to_str()    const { return boost::get<std::string>(*this); }
     const char*         c_str()     const { return boost::get<std::string>(
                                                     *this).c_str(); }
+
+    /// Returns true if the variant doesn't contain a value or it's an empty string
+    bool empty(bool a_check_empty_string = true) const {
+        return is_null() || (a_check_empty_string && is_string() && to_str().empty());
+    }
 
     /// Convert value to string.
     std::string to_string() const {
@@ -197,9 +215,9 @@ public:
     }
 
     bool operator== (const variant& rhs) const {
-        if (type() == TYPE_NULL || rhs.type() == TYPE_NULL || type() != rhs.type())
-            return false;
+        if (type() != rhs.type()) return false;
         switch (type()) {
+            case TYPE_NULL:     return true;
             case TYPE_BOOL:     return to_bool()   == rhs.to_bool();
             case TYPE_INT:      return to_int()    == rhs.to_int();
             case TYPE_DOUBLE:   return to_float()  == rhs.to_float();
@@ -210,10 +228,10 @@ public:
     }
 
     bool operator< (const variant& rhs) const {
-        if (type() == TYPE_NULL || rhs.type() == TYPE_NULL) return false;
         if (type() < rhs.type()) return true;
         if (type() > rhs.type()) return false;
         switch (type()) {
+            case TYPE_NULL:     return false;
             case TYPE_BOOL:     return to_bool()    < rhs.to_bool();
             case TYPE_INT:      return to_int()     < rhs.to_int();
             case TYPE_DOUBLE:   return to_float()   < rhs.to_float();
@@ -224,10 +242,10 @@ public:
     }
 
     bool operator> (const variant& rhs) const {
-        if (type() == TYPE_NULL || rhs.type() == TYPE_NULL) return false;
         if (type() > rhs.type()) return true;
         if (type() < rhs.type()) return false;
         switch (type()) {
+            case TYPE_NULL:     return false;
             case TYPE_BOOL:     return to_bool()    > rhs.to_bool();
             case TYPE_INT:      return to_int()     > rhs.to_int();
             case TYPE_DOUBLE:   return to_float()   > rhs.to_float();

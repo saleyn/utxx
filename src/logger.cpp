@@ -38,11 +38,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/synch.hpp>
 #include <utxx/bits.hpp>
 #include <utxx/logger/logger.hpp>
+#include <utxx/variant_tree_parser.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/thread/locks.hpp>
-#include <boost/property_tree/info_parser.hpp>
-//#include <boost/property_tree/json_parser.hpp>    // FIXME
-//#include <boost/property_tree/xml_parser.hpp>     // FIXME
 #include <stdio.h>
 
 
@@ -161,11 +159,12 @@ void logger::init(const char* filename, init_file_type type)
 {
     variant_tree pt;
     switch (type) {
-        case INFO_FILE: variant_tree::read_info(filename, pt); break;
+        case SCON_FILE: read_scon(filename, pt); break;
+        case INFO_FILE: read_info(filename, pt); break;
         case JSON_FILE: throw std::runtime_error("JSON config not implemented!"); break;
                         //read_json(filename, pt); break;
-        case XML_FILE:  throw std::runtime_error("XML config not implemented!"); break;
-                        //read_xml (filename, pt); break;  // FIXME: This doesn't compile
+        case XML_FILE:  read_xml (filename, pt); break;
+        default:        throw std::runtime_error("Unknown configuration format!"); break;
     }
     init(pt);
 }
