@@ -53,7 +53,8 @@ AC_ARG_ENABLE(warnings,
 )
 
 AC_LANG_PUSH(C++)
-AX_CXX_COMPILE_STDCXX_11([], [optional])
+AX_CXX_COMPILE_STDCXX_11([noext], [optional])
+AC_LANG_POP([C++])
 
 dnl AC_ARG_ENABLE(cxx11,
 dnl     AC_HELP_STRING([--disable-cxx11],[disable c++11 standard [default=no]]),
