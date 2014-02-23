@@ -7,12 +7,14 @@ before_script:
   - sudo add-apt-repository -y "deb http://ppa.launchpad.net/wnoronha/thrift/ubuntu precise main"
   - sudo add-apt-repository -y "deb http://ppa.launchpad.net/boost-latest/ppa/ubuntu precise main"
   - sudo apt-get update -qq
-  - sudo apt-get install -qq libxslt1.1 python-lxml autoconf automake autoconf-archive libboost1.55-all-dev libthrift-dev thrift-compiler
-  - cat /usr/include/boost/version.hpp
+  - sudo apt-get install -qq automake autoconf autoconf-archive libboost1.55-all-dev
+  - sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev thrift-compiler
+  - find / -name libthrift.so -o -name Thrift.h -o -name thrift 2>/dev/null
   - ./bootstrap
-script: ./configure --with-boost-libdir=/usr/lib/x86_64-linux-gnu && make debug=true optimize=3
+script:
+  - ./configure --with-boost-libdir=/usr/lib/x86_64-linux-gnu
+  - make debug=true optimize=3
 after_script:
-  - ls -latr autom4te.cache
   - cat config.log
 branches:
   only: master
