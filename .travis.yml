@@ -9,9 +9,7 @@ before_script:
   - sudo apt-get install -qq libxslt1.1 python-lxml autoconf-archive libboost1.55-all-dev libthrift-dev thrift-compiler
   - cat /usr/include/boost/version.hpp
   - ./bootstrap
-  - ./configure
-script: make debug=true optimize=3
+script: ./configure && make debug=true optimize=3
+after_script: ls -latr autom4te.cache
 branches:
   only: master
-after_failure:
-  - ls -latr autom4te.cache
