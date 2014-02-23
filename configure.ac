@@ -52,16 +52,18 @@ AC_ARG_ENABLE(warnings,
      ],
 )
 
-AC_ARG_ENABLE(cxx11,
-    AC_HELP_STRING([--disable-cxx11],[disable c++11 standard [default=no]]),
-    [ if test "x${enable_cxx11}" != "xno" -a -z "${disable_cxx11}"; then
-         CXXFLAGS+=" -std=c++11"
-      fi
-    ],
-    [
-        CXXFLAGS+=" -std=c++11"
-    ]
-)
+AX_CXX_COMPILE_STDCXX_11(noext, optional)
+
+dnl AC_ARG_ENABLE(cxx11,
+dnl     AC_HELP_STRING([--disable-cxx11],[disable c++11 standard [default=no]]),
+dnl     [ if test "x${enable_cxx11}" != "xno" -a -z "${disable_cxx11}"; then
+dnl          CXXFLAGS+=" -std=c++11"
+dnl       fi
+dnl     ],
+dnl     [
+dnl         CXXFLAGS+=" -std=c++11"
+dnl     ]
+dnl )
 
 dnl optional pure compilation tests
 AC_ARG_ENABLE(demo,
