@@ -12,7 +12,7 @@ before_script:
   - find / -name libthrift.so -o -name Thrift.h -o -name thrift 2>/dev/null
   - ./bootstrap
 script:
-  - ./configure --with-boost-libdir=/usr/lib/x86_64-linux-gnu
+  - ./configure --with-boost-libdir=/usr/lib/x86_64-linux-gnu --with-thrift=/usr
   - make debug=true optimize=3
 after_script:
   - cat config.log
