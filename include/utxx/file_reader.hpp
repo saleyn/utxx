@@ -45,23 +45,24 @@ class basic_file_reader : private boost::noncopyable {
     utxx::basic_io_buffer<BufSize> m_buf;
     size_t m_offset;
     bool m_open;
+    bool m_use_stdin;
 
 public:
     /// default constructor
     basic_file_reader()
-        : m_offset(0), m_open(false)
+        : m_offset(0), m_open(false), m_use_stdin(false)
     {}
 
     /// constructor opening file for reading
     basic_file_reader(const std::string& a_fname)
-        : m_offset(0), m_open(false)
+        : m_offset(0), m_open(false), m_use_stdin(false)
     {
         open(a_fname);
     }
 
     /// destructor
     ~basic_file_reader() {
-        if (!m_open) return;
+        if (!m_open || m_use_stdin) return;
         try {
             m_file.close();
         } catch (...) {
@@ -86,15 +87,26 @@ public:
         BOOST_ASSERT(m_buf.capacity() > 0);
     }
 
+    void use_stdin() {
+        if (m_open) return;
+        m_use_stdin = true;
+        m_open = true;
+    }
+
     /// set initial read position
     void seek(size_t a_offset) {
         if (!m_open) return;
-        m_file.seekg(a_offset, std::ios::beg);
-        m_offset = m_file.tellg();
+        std::istream& l_inp = m_use_stdin ? std::cin : m_file;
+        l_inp.seekg(a_offset, std::ios::beg);
+        m_offset = l_inp.tellg();
     }
 
     /// clear error control state so read could be resumed
-    void clear() { if (m_open) m_file.clear(); }
+    void clear() {
+        if (!m_open) return;
+        std::istream& l_inp = m_use_stdin ? std::cin : m_file;
+        l_inp.clear();
+    }
 
     /// offset at which read start
     size_t offset() const { return m_offset; }
@@ -111,17 +123,18 @@ public:
     /// read portion of file into internal buffer
     /// if a_crunch == true, crunch buffer before reading
     bool read(bool a_crunch = true) {
-        if (!m_open || !m_file.is_open())
+        std::istream& l_inp = m_use_stdin ? std::cin : m_file;
+        if (!m_open || !m_use_stdin && !m_file.is_open())
             return false;
         if (a_crunch)
             m_buf.crunch();
         while (true) {
             BOOST_ASSERT(m_buf.capacity() > 0);
-            m_file.read(m_buf.wr_ptr(), m_buf.capacity());
-            int n = m_file.gcount();
+            l_inp.read(m_buf.wr_ptr(), m_buf.capacity());
+            int n = l_inp.gcount();
             if (n == 0) {
-                if (m_file.good()) continue;
-                if (m_file.eof()) return false;
+                if (l_inp.good()) continue;
+                if (l_inp.eof()) return false;
                 // this should never happen since we have set badbit
                 throw io_error(errno, "Unexpected error reading ", m_fname);
             }

@@ -52,16 +52,25 @@ AC_ARG_ENABLE(warnings,
      ],
 )
 
+AC_LANG_PUSH(C++)
 AC_ARG_ENABLE(cxx11,
     AC_HELP_STRING([--disable-cxx11],[disable c++11 standard [default=no]]),
     [ if test "x${enable_cxx11}" != "xno" -a -z "${disable_cxx11}"; then
-         CXXFLAGS+=" -std=c++11"
+        AX_CXX_COMPILE_STDCXX_11([noext], [optional])
       fi
     ],
     [
-        CXXFLAGS+=" -std=c++11"
+        AX_CXX_COMPILE_STDCXX_11([noext], [optional])
     ]
 )
+AC_LANG_POP([C++])
+
+dnl optional pure compilation tests
+AC_ARG_ENABLE(demo,
+    AC_HELP_STRING([--enable-demo], [compile demo programs [[default=no]]]),
+    [case ${enableval} in yes) demo=true;; *) demo=false;; esac], [demo=false]
+)
+AM_CONDITIONAL([DEMO], [test "x$demo" = "xtrue"])
 
 # libtool
 LT_INIT([disable-static])
@@ -178,12 +187,12 @@ AC_ARG_WITH([thrift-libdir],
 if test -z "${with_thrift}" -o ! -d "${with_thrift}" -o ! -f "$with_thrift/bin/thrift"; then
     AC_MSG_ERROR([no Thrift installation is found!])
 else
-if test ! -f "$with_thrift_libdir/libthrift.so"; then
+if test ! -f "$with_thrift_libdir/libthrift.a"; then
     AC_MSG_ERROR([no Thrift library is found!])
 else
     THRIFT_DIR="$with_thrift"
     THRIFT_PROG="$with_thrift/bin/thrift"
-    THRIFT_LDFLAGS="-L$with_thrift_libdir -rpath '$with_thrift_libdir' -lthrift"
+    THRIFT_LDFLAGS="$with_thrift_libdir/libthrift.a"
     THRIFT_LIBDIR="$with_thrift_libdir"
     THRIFT_CPPFLAGS="-I$with_thrift/include"
     AC_SUBST([THRIFT_PROG])
@@ -219,6 +228,7 @@ dnl ------------------------------------------------------------------
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([test/Makefile])
+AC_CONFIG_FILES([demo/Makefile])
 AC_CONFIG_FILES([test.sh], [chmod +x test.sh])
 AC_CONFIG_FILES([utxx.pc:utxx.pc.in])
 
