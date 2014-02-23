@@ -192,7 +192,7 @@ if test ! -f "$with_thrift_libdir/libthrift.so"; then
 else
     THRIFT_DIR="$with_thrift"
     THRIFT_PROG="$with_thrift/bin/thrift"
-    THRIFT_LDFLAGS="-L$with_thrift_libdir -rpath '$with_thrift_libdir' -lthrift"
+    THRIFT_LDFLAGS="-L$with_thrift_libdir -rpath '$with_thrift_libdir'
     THRIFT_LIBDIR="$with_thrift_libdir"
     THRIFT_CPPFLAGS="-I$with_thrift/include"
     AC_SUBST([THRIFT_PROG])
