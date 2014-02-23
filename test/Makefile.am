@@ -120,8 +120,8 @@ example_delegate_LDADD      = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRI
 example_scribe_SOURCES 		= test_logger_scribe.cpp
 example_scribe_CXXFLAGS		= -DUTXX_STANDALONE -I$(srcdir)/../include $(THRIFT_CPPFLAGS) \
 							  -I${top_srcdir}/src -I$(THRIFT_DIR)/include/thrift/fb303
-example_scribe_LDFLAGS		= $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
-example_scribe_LDADD    	= $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
+example_scribe_LDFLAGS		= $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB)
+example_scribe_LDADD    	= $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) $(THRIFT_LDFLAGS) \
 							  $(srcdir)/../src/.libs/libutxx.la 
 
 EXTRA_DIST = test_config_validator.xml $(top_src_dir)/bin/config_validator_codegen.py
