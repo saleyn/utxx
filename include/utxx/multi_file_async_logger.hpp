@@ -388,7 +388,7 @@ command_t {
 
     command_t(const stream_info* a_si, const std::string& a_category,
               const char* a_data, size_t a_size)
-        : command_t(msg, a_si)
+        : type(msg), stream(a_si), next(NULL), prev(NULL)
     {
         set_category(a_category);
         args.msg.data.iov_base = (void*)a_data;
