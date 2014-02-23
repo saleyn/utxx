@@ -13,3 +13,5 @@ before_script:
 script: make debug=true optimize=3
 branches:
   only: master
+after_failure:
+  - ls -latr autom4te.cache
