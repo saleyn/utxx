@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/throw_exception.hpp>
 #include <string>
 
+class T;
 namespace boost {
 namespace property_tree {
     // Custom translator that works with utxx::variant instead of std::string.
@@ -120,14 +121,11 @@ template <class Ch, class KeyComp = std::less<std::basic_string<Ch> > >
 class basic_variant_tree
     : public boost::property_tree::basic_ptree<std::basic_string<Ch>, variant, KeyComp>
 {
-    typedef boost::property_tree::basic_ptree<std::basic_string<Ch>, variant, KeyComp>
-                                        base;
-    typedef basic_variant_tree                self_type;
+    typedef basic_variant_tree          self_type;
     typedef boost::property_tree::ptree ptree;
-
 public:
-    typedef boost::property_tree::translator_between<
-                utxx::variant, std::basic_string<Ch> >      translator_from_string;
+    typedef boost::property_tree::basic_ptree<std::basic_string<Ch>, variant, KeyComp>
+                                                            base;
     typedef boost::property_tree::ptree_bad_path            bad_path;
     typedef typename base::key_type                         key_type;
     typedef boost::property_tree::string_path<std::basic_string<Ch>,
@@ -136,6 +134,22 @@ public:
     typedef std::pair<const std::basic_string<Ch>, base>    value_type;
     typedef typename base::iterator                         iterator;
     typedef typename base::const_iterator                   const_iterator;
+
+    class translator_from_string
+        : public boost::property_tree::translator_between
+        <
+            variant, std::basic_string<Ch>
+        >
+    {
+    public:
+        boost::optional<variant> operator() (const base& a_tree) const {
+            return *this->put_value(a_tree.get_value<std::string>());
+        }
+
+        variant operator() (const path_type& a_path, const variant& value) const {
+            return value;
+        }
+    };
 
     basic_variant_tree() {}
 
@@ -150,8 +164,6 @@ public:
     basic_variant_tree(const Ch* a_data) : base(variant(std::basic_string<Ch>(a_data)))
     {}
 
-    basic_variant_tree(const base& a_rhs) : base(a_rhs)
-    {}
     basic_variant_tree(const basic_variant_tree& a_rhs) : base(a_rhs)
     {}
 
@@ -160,10 +172,18 @@ public:
     basic_variant_tree(base&&               a_rhs)  { swap(a_rhs); }
     #endif
 
-    basic_variant_tree(const ptree& a_rhs, const path_type& a_prefix = path_type()) {
-        merge(a_rhs, a_prefix);
-    }
+/*
+    // This cons. is for supporting property_tree's read_{info,xml,ini}() functions.
+    basic_variant_tree(ptree& a_rhs, const path_type& a_prefix = path_type()) {
+        ptree temp;
+        if (!a_prefix.empty())
+            temp.add_child(a_prefix, a_rhs);
+        else
+            temp.swap(a_rhs);
 
+        translate_data(temp.begin(), temp.end(), translator_from_string());
+    }
+*/
     template <class T>
     T get_value() const {
         using boost::throw_exception;
@@ -240,9 +260,11 @@ public:
     void swap(basic_variant_tree& rhs) {
         base::swap(static_cast<base&>(rhs));
     }
-    void swap(boost::property_tree::basic_ptree<
-        std::string, variant, std::less<std::string> >& rhs) {
+    void swap(base& rhs) {
         base::swap(rhs);
+    }
+    void swap(ptree& rhs) {
+        base::swap(static_cast<self_type&>(rhs));
     }
 
     self_type &get_child(const path_type &path) {
@@ -266,7 +288,8 @@ public:
     }
 
     /** Get the child at the given path, or return boost::null. */
-    boost::optional<self_type &> get_child_optional(const path_type &path) {
+    boost::optional<self_type &>
+    get_child_optional(const path_type &path) {
         boost::optional<base&> o = base::get_child_optional(path);
         if (!o)
             return boost::optional<self_type&>();
@@ -319,7 +342,7 @@ public:
 
     void merge(const basic_variant_tree& a_tree) { merge("", a_tree, &update_fun); }
 
-    void merge(const ptree& a_tree, const path_type& a_prefix = path_type())
+    void merge(const base& a_tree, const path_type& a_prefix = path_type())
     {
         merge(a_prefix, a_tree, translator_from_string());
     }
@@ -335,12 +358,24 @@ public:
     /// For internal use
     template <typename T>
     static void translate_data(base& a_tree, const T& a_tr) {
-        for (iterator it = a_tree.begin(), e = a_tree.end(); it != e; it++)
+        for (iterator it = a_tree.begin(), e = a_tree.end(); it != e; ++it)
             translate_data(it->second, a_tr);
         a_tree.data() = *a_tr.put_value(a_tree.get_value<std::string>());
     }
 
 private:
+    /// For internal use
+    template <typename T>
+    void translate_data
+    (
+        typename base::iterator& a_node,
+        typename base::iterator& a_end,
+        const T& a_tr
+    ) {
+        for (iterator it = a_node; it != a_end; ++it)
+            translate_data(it.begin(), it.end(), a_tr);
+        this->put_child(a_node->first, *a_tr.put_value(a_node->second.get_value<std::string>()));
+    }
 
     std::basic_ostream<Ch>& dump
     (
@@ -352,13 +387,13 @@ private:
         size_t                  a_level
     ) const {
         size_t kwidth = 0;
-        for (const_iterator it = this->begin(), e = this->end(); it != e; it++) {
+        for (const_iterator it = this->begin(), e = this->end(); it != e; ++it) {
             size_t n = it->first.size()
                      + (a_show_types ? strlen(it->second.data().type_str()) : 0)
                      + 1;
             kwidth = std::max(n, kwidth);
         }
-        for (const_iterator it = this->begin(), e = this->end(); it != e; it++) {
+        for (const_iterator it = this->begin(), e = this->end(); it != e; ++it) {
             out << std::string(a_level*a_tab_width, a_indent_char)
                 << it->first;
             if (a_show_types) {
@@ -375,52 +410,46 @@ private:
                 << it->second.data().to_string()
                 << key_type(it->second.data().is_string() ? "\"" : "");
             }
-            out << std::endl;
             if (it->second.size()) {
-                if (a_show_braces) out << key_type(" {") << std::endl;
+                if (a_show_braces) out << key_type(" {");
+                out << std::endl;
                 static_cast<const self_type&>(it->second).dump(
                     out, a_tab_width, a_show_types, a_show_braces,
                     a_indent_char, a_level+1);
-                if (a_show_braces) out << key_type("}") << std::endl;
-            }
+                if (a_show_braces) out << key_type("}");
+                out << std::endl;
+            } else
+                out << std::endl;
         }
         return out;
     }
 
-    template <typename T>
-    void merge(const path_type& a_path, const ptree& a_tree, const T& a_tr)
-    {
-        for (ptree::const_iterator it = a_tree.begin(); it != a_tree.end(); it++) {
-            path_type path = a_path / path_type(it->first);
-            merge(path, it->second, a_tr);
-        }
-        put(a_path, *a_tr.put_value(a_tree.get_value<std::string>()));
-    }
-
     /// This recursive function will call a_method for every node in the tree
     template<typename T>
-    void merge(
-        const basic_variant_tree::path_type& a_path,
-        const basic_variant_tree& a_tree,
-        const T& a_on_update)
-    {
-        put(a_path, a_on_update(a_path, a_tree.data()));
-        for (const_iterator it = a_tree.begin(), e = a_tree.end(); it != e; it++) {
+    void merge
+    (
+        const path_type&    a_path,
+        const base&         a_tree,
+        const T&            a_on_update
+    ) {
+        for (const_iterator it = a_tree.begin(), e = a_tree.end(); it != e; ++it) {
             path_type path = a_path / path_type(it->first);
             merge(path, it->second, a_on_update);
         }
+        put(a_path, a_on_update(a_path, a_tree.data()));
     }
 
     /// This recursive function will call a_method for every node in the tree
     template<typename T>
-    static void update(
-        const basic_variant_tree::path_type& a_path,
+    static void update
+    (
+        const path_type&    a_path,
         basic_variant_tree& a_tree,
-        const T& a_on_update)
-    {
+        const T&            a_on_update
+    ){
         variant& v = a_tree.data();
         a_on_update(a_path, v);
-        for (iterator it = a_tree.begin(), e = a_tree.end(); it != e; it++) {
+        for (iterator it = a_tree.begin(), e = a_tree.end(); it != e; ++it) {
             basic_variant_tree::path_type l_path =
                 a_path / basic_variant_tree::path_type(it->first);
             update(l_path, static_cast<basic_variant_tree&>(it->second), a_on_update);
@@ -428,7 +457,8 @@ private:
     }
 
     static const variant& update_fun(
-        const basic_variant_tree::path_type& a, const variant& v) { return v; }
+        const basic_variant_tree::path_type& a, const variant& v)
+    { return v; }
 };
 
 /// Path in the tree derived from boost/property_tree/string_path.hpp

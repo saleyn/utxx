@@ -205,10 +205,12 @@ namespace utxx {
      */
     template <typename Source, typename Ch>
     void read_info(Source& a_src, basic_variant_tree<Ch>& a_tree) {
-        boost::property_tree::ptree pt;
+        //boost::property_tree::ptree pt;
+        typename basic_variant_tree<Ch>::base& pt =
+            static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::info_parser::read_info(a_src, pt);
-        basic_variant_tree<Ch> temp(pt);
-        a_tree.swap(temp);
+        boost::property_tree::translator_between<utxx::variant, std::string> tr;
+        basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
     template <typename Target, typename Ch>
@@ -230,21 +232,23 @@ namespace utxx {
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
-        boost::property_tree::ptree pt;
+        typename basic_variant_tree<Ch>::base& pt =
+            static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::xml_parser::read_xml(a_src, pt);
-        basic_variant_tree<Ch> temp(pt);
-        a_tree.swap(temp);
+        boost::property_tree::translator_between<utxx::variant, std::string> tr;
+        basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
     template <typename Source, typename Ch>
     void  read_ini(Source& a_src, basic_variant_tree<Ch>& a_tree)
     {
-        // TODO: Implement native support of read_ini for variant_tree instead
+        // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
-        boost::property_tree::ptree pt;
+        typename basic_variant_tree<Ch>::base& pt =
+            static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::ini_parser::read_ini(a_src, pt);
-        basic_variant_tree<Ch> temp(pt);
-        a_tree.swap(temp);
+        boost::property_tree::translator_between<utxx::variant, std::string> tr;
+        basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
     /*

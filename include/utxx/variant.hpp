@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/type_traits/is_same.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/property_tree/detail/info_parser_utils.hpp>
 #include <stdexcept>
 #include <string.h>
 #include <stdio.h>
@@ -109,8 +110,12 @@ public:
     explicit variant(uint32_t       a) : base((long)a)  {}
     explicit variant(uint64_t       a) : base((long)a)  {}
     explicit variant(double         a) : base(a)        {}
-    explicit variant(const char*    a) : base(std::string(a)) {}
-    explicit variant(const std::string& a) : base(a) {}
+
+    template <class Ch>
+    variant(const std::basic_string<Ch>& a) : base(to_std_string<Ch>(a)) {}
+    variant(const char*                  a) : base(std::string(a)) {}
+    variant(const std::string&           a) : base(a) {}
+
     variant(value_type v, const std::string& a) { from_string(v, a); }
 
     void operator= (bool        a)  { variant b(a); *this = b; }
@@ -260,6 +265,15 @@ private:
         std::stringstream s;
         s << "Unknown type " << v;
         throw std::runtime_error(s.str());
+    }
+
+    static std::string to_std_string(const std::basic_string<char>& a) {
+        return a;
+    }
+
+    template <class Ch>
+    static std::string to_std_string(const std::basic_string<Ch>& a) {
+        return boost::property_tree::info_parser::convert_chtype<char, Ch>(a);
     }
 };
 

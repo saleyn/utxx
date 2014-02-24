@@ -99,6 +99,9 @@ const char *ok_data_1 =
     "{\n"
     "\tkey data\n"
     "}\n"
+    "key { k9=100, k10=true }\n"
+    "key { k11=10, k12=\"abc\"\\"
+    "                  \"efg\"}"
     "\n";
 
 const char *ok_data_1_inc = 
