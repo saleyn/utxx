@@ -139,15 +139,15 @@ public:
         *(base*)this = a;
     }
 
-    void operator+= (int16_t     a)  { *(base*)this = to_int() + a; }
-    void operator+= (int         a)  { *(base*)this = to_int() + a; }
-    void operator+= (int64_t     a)  { *(base*)this = to_int() + a; }
-    void operator+= (uint16_t    a)  { *(base*)this = to_int() + a; }
-    void operator+= (uint32_t    a)  { *(base*)this = to_int() + a; }
-    void operator+= (uint64_t    a)  { *(base*)this = (long)(to_int() + a); }
-    void operator+= (double      a)  { *(base*)this = to_int() + a; }
-    void operator+= (const char* a)  { *(base*)this = to_str() + a; }
-    void operator+= (const std::string& a) { *(base*)this = to_str() + a; }
+    void operator+= (int16_t     a)  { *(base*)this = is_null() ? a : to_int() + a; }
+    void operator+= (int         a)  { *(base*)this = is_null() ? a : to_int() + a; }
+    void operator+= (int64_t     a)  { *(base*)this = is_null() ? a : to_int() + a; }
+    void operator+= (uint16_t    a)  { *(base*)this = is_null() ? a : to_int() + a; }
+    void operator+= (uint32_t    a)  { *(base*)this = is_null() ? a : to_int() + a; }
+    void operator+= (uint64_t    a)  { *(base*)this = is_null() ? (long)a : to_int()+(long)a; }
+    void operator+= (double      a)  { *(base*)this = is_null() ? a : to_int() + a; }
+    void operator+= (const char* a)  { *(base*)this = is_null() ? a : to_str() + a; }
+    void operator+= (const std::string& a) { *(base*)this = is_null() ? a : to_str() + a; }
 
     template <typename T>
     void operator+= (T a) { throw std::runtime_error("Operation not supported!"); }

@@ -397,7 +397,7 @@ namespace detail {
                                 std::basic_string<Ch> data =
                                     read_data(text, &need_more_lines, &is_str,
                                               filename, lineno);
-                                last->data() = *translator.put_value(data);
+                                last->data() = *translator.put_value(data, is_str);
                                 state = need_more_lines ? s_data_cont : s_kv_delim;
                             }
                         }; break;

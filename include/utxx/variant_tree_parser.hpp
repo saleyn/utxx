@@ -46,7 +46,7 @@ namespace utxx {
         scon_writer_settings
         (
             unsigned    a_tab_width       = 2,
-            bool        a_show_types      = true,
+            bool        a_show_types      = false,
             bool        a_show_braces     = true,
             Ch          a_indent_char     = Ch(' ')
         ) :
@@ -150,10 +150,10 @@ namespace utxx {
      *                          conversion fails.
      * @param settings The settings to use when writing the SCON data.
      */
-    template <class Ch>
+    template <class Stream, class Ch>
     void write_scon
     (
-        std::basic_ostream<Ch>&         a_stream,
+        Stream&                         a_stream,
         const basic_variant_tree<Ch>&   a_tree,
         const scon_writer_settings<Ch>& a_settings = scon_writer_settings<Ch>()
     ) {

@@ -22,10 +22,15 @@ namespace test {
 namespace bpd = boost::property_tree::detail;
 
 const char *ok_data_0 =
-    "key1 % No data\n"
+    "k1 % No data\n"
     "{\n"
-    "   key2 % No data\n"
-    "}\n";
+    "   k2 % No data\n"
+    "}\n"
+    "k3 { k4 }\n"
+    "k5 { k6 v6 }\n"
+    "k7\n"
+    "{ k8=v8 }\n"
+    "k9 v9 { k10=v10, k11=v11 }\n";
 
 const char *ok_data_1 = 
     "%Test file for scon_parser\n"
@@ -34,6 +39,8 @@ const char *ok_data_1 =
     "{\n"
     "\tkey data\n"
     "}\n"
+    "key { k=10, k=\"abc\"\\"
+    "                   \"efg\"}"
     "#include \"testok1_inc.config\"\n"
     "key2 \"data2  \" {\n"
     "\tkey data\n"
@@ -100,8 +107,6 @@ const char *ok_data_1 =
     "\tkey data\n"
     "}\n"
     "key { k9=100, k10=true }\n"
-    "key { k11=10, k12=\"abc\"\\"
-    "                  \"efg\"}"
     "\n";
 
 const char *ok_data_1_inc = 
@@ -154,6 +159,9 @@ const char *error_data_5 =
 const char *error_data_6 =
     "key1 data1 key2 data2\n";                  // No key-value ',' delimiter
 
+const char *error_data_7 =
+    "k1 d1 {k2=d2,}\n";                         // No key-value pair after ',' delimiter
+
 template<class Ptree>
 typename Ptree::size_type calc_total_size(const Ptree &pt)
 {
@@ -178,7 +186,7 @@ typename Ptree::size_type calc_total_keys_size(const Ptree &pt)
 template<class Ptree>
 typename Ptree::size_type calc_total_data_size(const Ptree &pt)
 {
-    typename Ptree::size_type size = pt.data().to_string().size();
+    typename Ptree::size_type size = pt.data().is_null() ? 0 : pt.data().to_string().size();
     for (typename Ptree::const_iterator it = pt.begin(); it != pt.end(); ++it)
         size += calc_total_data_size(it->second);
     return size;
@@ -390,7 +398,7 @@ bool test_scon_parser()
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_0, NULL,
-        "testok0.config", NULL, "testok0out.config", 3, 18, 8
+        "testok0.config", NULL, "testok0out.config", 12, 4, 35
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
@@ -402,31 +410,31 @@ bool test_scon_parser()
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_2, NULL,
-        "testok2.config", NULL, "testok2out.config", 1, 6, 0
+        "testok2.config", NULL, "testok2out.config", 1, 0, 0
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_3, NULL,
-        "testok3.config", NULL, "testok3out.config", 5, 30, 17
+        "testok3.config", NULL, "testok3out.config", 5, 0, 17
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_4, NULL,
-        "testok4.config", NULL, "testok4out.config", 3, 14, 8
+        "testok4.config", NULL, "testok4out.config", 3, 8, 8
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_5, NULL,
-        "testok5.config", NULL, "testok5out.config", 4, 24, 9
+        "testok5.config", NULL, "testok5out.config", 4, 0, 9
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_6, NULL,
-        "testok6.config", NULL, "testok6out.config", 3, 44, 30
+        "testok6.config", NULL, "testok6out.config", 3, 38, 30
     );
 
     generic_parser_test_error<Ptree, ReadFunc, WriteFunc, file_parser_error>
@@ -461,8 +469,14 @@ bool test_scon_parser()
 
     generic_parser_test_error<Ptree, ReadFunc, WriteFunc, file_parser_error>
     (
-        ReadFunc(), WriteFunc(), error_data_5, NULL,
+        ReadFunc(), WriteFunc(), error_data_6, NULL,
         "testerr6.config", NULL, "testerr6out.config", 1
+    );
+
+    generic_parser_test_error<Ptree, ReadFunc, WriteFunc, file_parser_error>
+    (
+        ReadFunc(), WriteFunc(), error_data_7, NULL,
+        "testerr7.config", NULL, "testerr7out.config", 1
     );
 
     return true;

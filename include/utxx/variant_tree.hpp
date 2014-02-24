@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/lexical_cast.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/throw_exception.hpp>
+#include <utxx/detail/variant_tree_utils.hpp>
 #include <string>
 
 class T;
@@ -73,6 +74,12 @@ namespace property_tree {
             if (value == "true" || value == "false")
                 return boost::optional<internal_type>(value[0] == 't');
             return boost::optional<internal_type>(value);
+        }
+
+        // Custom SCON extension to distinguish between values: 123 and \"123\",
+        // with the first being an integer and the second being a string
+        boost::optional<internal_type> put_value(const std::string& value, bool is_str) const {
+            return is_str ? boost::optional<internal_type>(value) : put_value(value);
         }
     };
 
@@ -309,9 +316,10 @@ public:
         return static_cast<self_type&>(base::put_child(path, value));
     }
 
-    std::basic_ostream<Ch>& dump
+    template <class Stream>
+    Stream& dump
     (
-        std::basic_ostream<Ch>& out,
+        Stream& out,
         size_t  a_tab_width   = 2,
         bool    a_show_types  = true,
         bool    a_show_braces = false,
@@ -377,25 +385,30 @@ private:
         this->put_child(a_node->first, *a_tr.put_value(a_node->second.get_value<std::string>()));
     }
 
-    std::basic_ostream<Ch>& dump
+    template <class Stream>
+    Stream& dump
     (
-        std::basic_ostream<Ch>& out,
-        size_t                  a_tab_width,
-        bool                    a_show_types,
-        bool                    a_show_braces,
-        Ch                      a_indent_char,
-        size_t                  a_level
+        Stream& out,
+        size_t  a_tab_width,
+        bool    a_show_types,
+        bool    a_show_braces,
+        Ch      a_indent_char,
+        size_t  a_level
     ) const {
         size_t kwidth = 0;
         for (const_iterator it = this->begin(), e = this->end(); it != e; ++it) {
+            bool simple = detail::is_simple_key(it->first);
             size_t n = it->first.size()
                      + (a_show_types ? strlen(it->second.data().type_str()) : 0)
-                     + 1;
+                     + (simple ? 1 : 3);
             kwidth = std::max(n, kwidth);
         }
         for (const_iterator it = this->begin(), e = this->end(); it != e; ++it) {
+            bool simple = detail::is_simple_key(it->first);
             out << std::string(a_level*a_tab_width, a_indent_char)
-                << it->first;
+                << (simple ? "" : "\"")
+                << it->first        // FIXME: do we need to create_escapes in the key?
+                << (simple ? "" : "\"");
             if (a_show_types) {
                 out << key_type("::")
                     << key_type(it->second.data().type_str())
@@ -404,10 +417,11 @@ private:
             if (!it->second.data().is_null()) {
                 int pad = kwidth - it->first.size()
                         - (a_show_types ? strlen(it->second.data().type_str()) : 0);
+                key_type s = key_type(it->second.data().to_string());
                 out << std::string(pad, Ch(' '))
-                << key_type("= ")
-                << key_type(it->second.data().is_string() ? "\"" : "")
-                << it->second.data().to_string()
+                    << key_type(it->second.size() > 0 ? "" : "= ")
+                    << key_type(it->second.data().is_string() ? "\"" : "")
+                    << (it->second.data().is_string() ? detail::create_escapes(s) : s)
                 << key_type(it->second.data().is_string() ? "\"" : "");
             }
             if (it->second.size()) {
@@ -416,8 +430,7 @@ private:
                 static_cast<const self_type&>(it->second).dump(
                     out, a_tab_width, a_show_types, a_show_braces,
                     a_indent_char, a_level+1);
-                if (a_show_braces) out << key_type("}");
-                out << std::endl;
+                if (a_show_braces) out << key_type("}") << std::endl;
             } else
                 out << std::endl;
         }
