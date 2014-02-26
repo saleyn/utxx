@@ -122,8 +122,14 @@ namespace utxx {
     {
         typename basic_variant_tree<Ch>::translator_from_string tr;
         basic_variant_tree<Ch> tree;
-        detail::read_scon_internal(
-            a_stream, tree, a_filename, 0, 0, tr, a_inc_filename_resolver);
+        int         lineno  = 0;
+        const Ch*   text    = NULL;
+        std::basic_string<Ch> line;
+        detail::read_scon_internal
+        (
+            a_stream, tree, a_filename, lineno, line, 0,
+            tr, text, a_inc_filename_resolver
+        );
         a_tree.swap(tree);
     }
 

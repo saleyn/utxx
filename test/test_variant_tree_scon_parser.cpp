@@ -23,9 +23,9 @@ namespace test {
 namespace bpd = boost::property_tree::detail;
 
 const char *ok_data_0 =
-    "k1 % No data\n"
+    "k1 # No data\n"
     "{\n"
-    "   k2 % No data\n"
+    "   k2 # No data\n"
     "}\n"
     "k3 { k4 }\n"
     "k5 { k6 v6 }\n"
@@ -34,7 +34,7 @@ const char *ok_data_0 =
     "k9 v9 { k10=v10, k11=v11 }\n";
 
 const char *ok_data_1 = 
-    "%Test file for scon_parser\n"
+    "#Test file for scon_parser\n"
     "\n"
     "key { k=10, k=\"abc\"\\\n"
     "                   \"efg\"}"
@@ -42,63 +42,63 @@ const char *ok_data_1 =
     "{\n"
     "\tkey data\n"
     "}\n"
-    "#include \"testok1_inc.config\"\n"
+    "$include{\"testok1_inc.config\"}\n"
+    "$include{\"testok1_inc.config\"}\n"
     "key2 \"data2  \" {\n"
     "\tkey data\n"
     "\tkey = data\n"
     "}\n"
-    "#\tinclude \"testok1_inc.config\" % Comment\n"
+    "$\tinclude { \"testok1_inc.config\" } # Comment\n"
     "key3   =   \"data\"\n"
     "\t \"3\" {\n"
     "\tkey data\n"
     "\tkey data, key = data, key = \"data\"\n"
     "}\n"
-    "\t#include \"testok1_inc.config\"\n"
+    "\t$include {\"testok1_inc.config\"}\n"
     "\n"
     "\"key4\" data4\n"
     "{\n"
     "\tkey data\n"
     "}\n"
-    "#include \"testok1_inc.config\"\n"
     "\"key.5\" \"data.5\" { \n"
     "\tkey data \n"
     "}\n"
-    "#\tinclude \"testok1_inc.config\"\n"
+    "$\tinclude{\"testok1_inc.config\"}\n"
     "\"key6\" = \"data\"\n"
     "\t   \"6\" {\n"
     "\tkey data\n"
     "}\n"
-    "\t#include \"testok1_inc.config\"\n"
+    "\t$include { \"testok1_inc.config\" }\n"
     "   \n"
-    "key1 data1% comment\n"
-    "{% comment\n"
-    "\tkey data% comment\n"
-    "}% comment\n"
-    "#include \"testok1_inc.config\"\n"
-    "key2 \"data2  \" {% comment\n"
-    "\tkey data% comment\n"
-    "}% comment\n"
-    "#\tinclude \"testok1_inc.config\"\n"
-    "key3 \"data\"% comment\n"
-    "\t \"3\" {% comment\n"
-    "\tkey data% comment\n"
-    "}% comment\n"
-    "\t#include \"testok1_inc.config\"\n"
+    "key1 data1# comment\n"
+    "{# comment\n"
+    "\tkey data# comment\n"
+    "}# comment\n"
+    "$include {\"testok1_inc.config\"}\n"
+    "key2 \"data2  \" {# comment\n"
+    "\tkey data# comment\n"
+    "}# comment\n"
+    "$\tinclude {  \"testok1_inc.config\"  }\n"
+    "key3 \"data\"# comment\n"
+    "\t \"3\" {# comment\n"
+    "\tkey data# comment\n"
+    "}# comment\n"
+    "\t$include{ \"testok1_inc.config\" }\n"
     "\n"
-    "\"key4\" data4% comment\n"
-    "{% comment\n"
-    "\tkey data% comment\n"
-    "}% comment\n"
-    "#include \"testok1_inc.config\"\n"
-    "\"key.5\" \"data.5\" {% comment\n"
-    "\tkey data% comment\n"
-    "}% comment\n"
-    "#\tinclude \"testok1_inc.config\"\n"
-    "\"key6\" \"data\"% comment\n"
-    "\t   \"6\" {% comment\n"
-    "\tkey data% comment\n"
-    "}% comment\n"
-    "\t#include \"testok1_inc.config\"\n"
+    "\"key4\" data4# comment\n"
+    "{# comment\n"
+    "\tkey data# comment\n"
+    "}# comment\n"
+    "$include { \"testok1_inc.config\" }\n"
+    "\"key.5\" \"data.5\" {# comment\n"
+    "\tkey data# comment\n"
+    "}# comment\n"
+    "$\tinclude \"testok1_inc.config\"\n"
+    "\"key6\" \"data\"# comment\n"
+    "\t   \"6\" {# comment\n"
+    "\tkey data# comment\n"
+    "}# comment\n"
+    "\t$include \"testok1_inc.config\"\n"
     "\\\\key\\t7 data7\\n\\\"data7\\\"\n"
     "{\n"
     "\tkey data\n"
@@ -111,9 +111,9 @@ const char *ok_data_1 =
     "\n";
 
 const char *ok_data_1_inc = 
-    "%Test file for scon_parser\n"
+    "#Test file for scon_parser\n"
     "\n"
-    "inc_key inc_data %%% comment\\";
+    "inc_key inc_data ### comment\\";
 
 const char *ok_data_2 = 
     "";
@@ -147,23 +147,23 @@ const char *ok_data_7 =
     "}\n";
 
 const char *error_data_1 =
-    "%Test file for scon_parser\n"
-    "#include \"bogus_file\"\n";                // Nonexistent include file
+    "#Test file for scon_parser\n"
+    "$include \"bogus_file\"\n";                // Nonexistent include file
 
 const char *error_data_2 = 
-    "%Test file for scon_parser\n"
+    "#Test file for scon_parser\n"
     "key \"data with bad escape: \\q\"\n";      // Bad escape
 
 const char *error_data_3 = 
-    "%Test file for scon_parser\n"
+    "#Test file for scon_parser\n"
     "{\n";                                      // Opening brace without key
 
 const char *error_data_4 = 
-    "%Test file for scon_parser\n"
+    "#Test file for scon_parser\n"
     "}\n";                                      // Closing brace without opening brace
 
 const char *error_data_5 = 
-    "%Test file for scon_parser\n"
+    "#Test file for scon_parser\n"
     "key data\n"
     "{\n"
     "";                                         // No closing brace
