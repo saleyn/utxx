@@ -1,8 +1,9 @@
 #ifndef UTXX_STANDALONE
-//#define BOOST_TEST_MODULE logger_test
-#include <boost/test/unit_test.hpp>
+#   include <boost/test/unit_test.hpp>
+#elif HAVE_THRIFT_H
+#   include <utxx/logger/logger_impl_scribe.hpp>
 #else
-#include <utxx/logger/logger_impl_scribe.hpp>
+#   define BOOST_TEST_MODULE logger_test
 #endif
 
 #pragma GCC diagnostic push
@@ -19,9 +20,9 @@ using namespace utxx;
 #ifdef UTXX_STANDALONE
 int main(int argc, char* argv[])
 {
+    #ifdef HAVE_THRIFT_H
     boost::shared_ptr<logger_impl_scribe> log( logger_impl_scribe::create("test") );
 
-    #ifdef UTXX_STANDALONE
     if (argc > 1 && (!strcmp("-h", argv[1]) || !strcmp("--help", argv[1]))) {
         printf("Usage: %s ScribeURL [TimeoutMsec [Iterations]]\n"
                "    TimeoutMsec    - default 100\n"
@@ -31,30 +32,16 @@ int main(int argc, char* argv[])
                argv[0], argv[0]);
         exit(1);
     }
-    #endif
 
     variant_tree pt;
-    pt.put("logger.scribe.address", variant(
-        #ifdef UTXX_STANDALONE
-        argc > 1 ? argv[1] :
-        #endif
-        "uds:///var/run/scribed"
-    ));
-    pt.put("logger.scribe.levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.scribe.address", argc > 1 ? argv[1] : "uds:///var/run/scribed");
+    pt.put("logger.scribe.levels", "debug|info|warning|error|fatal|alert");
 
     log->init(pt);
 
-    static const int TIMEOUT_MSEC =
-        #ifdef UTXX_STANDALONE
-        argc > 2 ? atoi(argv[2]) :
-        #endif
-        100;
+    static const int TIMEOUT_MSEC = argc > 2 ? atoi(argv[2]) : 100;
 
-    static const int ITERATIONS =
-        #ifdef UTXX_STANDALONE
-        argc > 3 ? atoi(argv[3]) :
-        #endif
-        10;
+    static const int ITERATIONS = argc > 3 ? atoi(argv[3]) : 10;
 
     for (int i=0; i < ITERATIONS; i++) {
         time_val tv(time_val::universal_time());
@@ -70,6 +57,8 @@ int main(int argc, char* argv[])
 
     log.reset();
 
+    #endif
+
     return 0;
 }
 #else
@@ -77,14 +66,10 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
 {
     variant_tree pt;
 
-    pt.put("logger.console.stderr_levels", variant("info|warning|error|fatal|alert"));
-    pt.put("logger.scribe.address", variant(
-        #ifdef UTXX_STANDALONE
-        argc > 1 ? argv[1] :
-        #endif
-        "uds:///var/run/scribed"
-    ));
-    pt.put("logger.scribe.levels", variant("debug|info|warning|error|fatal|alert"));
+    #ifdef HAVE_THRIFT_H
+    pt.put("logger.console.stderr_levels",  "info|warning|error|fatal|alert");
+    pt.put("logger.scribe.address",         "uds:///var/run/scribed");
+    pt.put("logger.scribe.levels",          "debug|info|warning|error|fatal|alert");
 
     logger& log = logger::instance();
 
@@ -107,6 +92,8 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
 
     // Unregister scribe implementation from the logging framework
     log.delete_impl("scribe");
+    
+    #endif
 
     BOOST_REQUIRE(true); // Just to suppress the warning
 }

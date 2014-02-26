@@ -177,23 +177,25 @@ AC_ARG_WITH([thrift-libdir],
 	with_thrift_libdir=${withval%/},
 	with_thrift_libdir="${with_thrift}/lib")
 
-if test -z "${with_thrift}" -o ! -d "${with_thrift}" -o ! -f "$with_thrift/bin/thrift"; then
-    AC_MSG_ERROR([no Thrift installation is found!])
-else
-if test ! -f "$with_thrift_libdir/libthrift.so"; then
-    AC_MSG_ERROR([no Thrift library is found!])
-else
-    THRIFT_DIR="$with_thrift"
-    THRIFT_PROG="$with_thrift/bin/thrift"
-    THRIFT_LDFLAGS="-L$with_thrift_libdir -rpath '$with_thrift_libdir' -lthrift"
-    THRIFT_LIBDIR="$with_thrift_libdir"
-    THRIFT_CPPFLAGS="-I$with_thrift/include"
-    AC_SUBST([THRIFT_PROG])
-    AC_SUBST([THRIFT_DIR])
-    AC_SUBST([THRIFT_LDFLAGS])
-    AC_SUBST([THRIFT_LIBDIR])
-    AC_SUBST([THRIFT_CPPFLAGS])
-fi
+if test -n "${with_thrift}"; then
+    if test -d "${with_thrift}" -o ! -f "$with_thrift/bin/thrift"; then
+        AC_MSG_ERROR([no Thrift installation is found!])
+    else
+    if test ! -f "$with_thrift_libdir/libthrift.so"; then
+        AC_MSG_ERROR([no Thrift library is found!])
+    else
+        THRIFT_DIR="$with_thrift"
+        THRIFT_PROG="$with_thrift/bin/thrift"
+        THRIFT_LDFLAGS="-L$with_thrift_libdir -rpath '$with_thrift_libdir' -lthrift"
+        THRIFT_LIBDIR="$with_thrift_libdir"
+        THRIFT_CPPFLAGS="-I$with_thrift/include"
+        AC_SUBST([THRIFT_PROG])
+        AC_SUBST([THRIFT_DIR])
+        AC_SUBST([THRIFT_LDFLAGS])
+        AC_SUBST([THRIFT_LIBDIR])
+        AC_SUBST([THRIFT_CPPFLAGS])
+    fi
+    fi
 fi
 
 # Checks for header files.
