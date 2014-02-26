@@ -12,6 +12,7 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/detail/ptree_utils.hpp>
 #include <utxx/variant_tree_parser.hpp>
+#include <typeinfo>  //for 'typeid' to work
 
 ///////////////////////////////////////////////////////////////////////////////
 // Test data
@@ -35,12 +36,12 @@ const char *ok_data_0 =
 const char *ok_data_1 = 
     "%Test file for scon_parser\n"
     "\n"
+    "key { k=10, k=\"abc\"\\\n"
+    "                   \"efg\"}"
     "key1 data1\n"
     "{\n"
     "\tkey data\n"
     "}\n"
-    "key { k=10, k=\"abc\"\\"
-    "                   \"efg\"}"
     "#include \"testok1_inc.config\"\n"
     "key2 \"data2  \" {\n"
     "\tkey data\n"
@@ -124,7 +125,9 @@ const char *ok_data_3 =
     "key4 = \"\"\n";
 
 const char *ok_data_4 = 
-    "key1 data, key2 = data";
+    "key1 data, key2 = data\n"
+    "key3 data  key4 = data\n"
+    "key5{key6=value}\n";
 
 const char *ok_data_5 = 
     "key { key \"\", key \"\" }\n";
@@ -135,7 +138,15 @@ const char *ok_data_6 =
     "\"cont\"\\\n"
     "\"cont\"";
 
-const char *error_data_1 = 
+const char *ok_data_7 =
+    "k1 d1 {k12=d12,}\n"
+    "k2 d2 {k12=d12}\n"
+    "k3 d3 {\n"
+    "   k31=d31\n"
+    "  ,k32=d32\n"
+    "}\n";
+
+const char *error_data_1 =
     "%Test file for scon_parser\n"
     "#include \"bogus_file\"\n";                // Nonexistent include file
 
@@ -157,10 +168,7 @@ const char *error_data_5 =
     "{\n"
     "";                                         // No closing brace
 const char *error_data_6 =
-    "key1 data1 key2 data2\n";                  // No key-value ',' delimiter
-
-const char *error_data_7 =
-    "k1 d1 {k2=d2,}\n";                         // No key-value pair after ',' delimiter
+    "key1 data1, ,key2 data2\n";                // Extra ',' delimiter
 
 template<class Ptree>
 typename Ptree::size_type calc_total_size(const Ptree &pt)
@@ -357,9 +365,10 @@ void generic_parser_test_error
             BOOST_CHECK_EQUAL(expected_error_line, e.line()); // Test line number
             BOOST_REQUIRE(pt == get_test_ptree<Ptree>());   // Test if error damaged contents
         }
-        catch (...)
+        catch (std::exception& e)
         {
-            BOOST_ERROR("Invalid exception type thrown");
+            BOOST_ERROR("Invalid exception type '" << typeid(e).name() << "' thrown: "
+                        << e.what());
             throw;
         }
 
@@ -398,13 +407,13 @@ bool test_scon_parser()
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_0, NULL,
-        "testok0.config", NULL, "testok0out.config", 12, 4, 35
+        "testok0.config", NULL, "testok0out.config", 12, 12, 24
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_1, ok_data_1_inc,
-        "testok1.config", "testok1_inc.config", "testok1out.config", 49, 286, 204
+        "testok1.config", "testok1_inc.config", "testok1out.config", 55, 271, 217
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
@@ -416,13 +425,13 @@ bool test_scon_parser()
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_3, NULL,
-        "testok3.config", NULL, "testok3out.config", 5, 0, 17
+        "testok3.config", NULL, "testok3out.config", 5, 0, 16
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_4, NULL,
-        "testok4.config", NULL, "testok4out.config", 3, 8, 8
+        "testok4.config", NULL, "testok4out.config", 7, 21, 24
     );
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
@@ -435,6 +444,12 @@ bool test_scon_parser()
     (
         ReadFunc(), WriteFunc(), ok_data_6, NULL,
         "testok6.config", NULL, "testok6out.config", 3, 38, 30
+    );
+
+    generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
+    (
+        ReadFunc(), WriteFunc(), ok_data_7, NULL,
+        "testok7.config", NULL, "testok7out.config", 8, 18, 18
     );
 
     generic_parser_test_error<Ptree, ReadFunc, WriteFunc, file_parser_error>
@@ -471,12 +486,6 @@ bool test_scon_parser()
     (
         ReadFunc(), WriteFunc(), error_data_6, NULL,
         "testerr6.config", NULL, "testerr6out.config", 1
-    );
-
-    generic_parser_test_error<Ptree, ReadFunc, WriteFunc, file_parser_error>
-    (
-        ReadFunc(), WriteFunc(), error_data_7, NULL,
-        "testerr7.config", NULL, "testerr7out.config", 1
     );
 
     return true;

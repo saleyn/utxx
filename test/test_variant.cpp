@@ -268,12 +268,6 @@ namespace {
         else if (d.is_string()) d = d.to_str() + "x";
         else d = d.to_int()+1;
     }
-
-    std::string print(const std::string& title, const variant_tree& t) {
-        BOOST_MESSAGE("Test " << title << ":");
-        t.dump(std::cout);
-        return "";
-    }
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
@@ -292,7 +286,6 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
         std::stringstream out;
 
         tree.dump(out);
-        BOOST_MESSAGE(print("test_variant_tree_merge", tree));
         const char expect[] =
             "first::null()\n"
             "  n::int() = 10\n"
@@ -306,7 +299,6 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
     {
         tree2.update(&update);
         std::stringstream out;
-        BOOST_MESSAGE(print("test_variant_tree_merge", tree));
         tree2.dump(out);
         const char expect[] =
             "third::string() = \"abcx\"\n"

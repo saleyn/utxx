@@ -72,7 +72,8 @@ namespace detail {
                 else if (*b == Ch('\\')) result += Ch('\\');
                 else
                     BOOST_PROPERTY_TREE_THROW(boost::property_tree::file_parser_error(
-                        "unknown escape sequence", "", 0));
+                        std::string("unknown escape sequence: ") + b,
+                        file, lineno));
             }
             else
                 result += *b;
@@ -102,25 +103,12 @@ namespace detail {
         using namespace std;
         skip_whitespace(text);
         const Ch *start = text;
-        while (!isspace(*text) && *text != Ch(',') && !iscomment(text) && *text != Ch('\0'))
+        while (*text != Ch('\0') && *text != Ch('=')
+            && *text != Ch(',')  && *text != Ch('{') && *text != Ch('}')
+            && !isspace(*text) && !iscomment(text))
             ++text;
         return expand_escapes(start, text, file, lineno);
     }
-
-    /* Extract line (eol delimited) and advance pointer accordingly
-    template<class Ch>
-    std::basic_string<Ch> read_line(const Ch *&text)
-    {
-        using namespace std;
-        skip_whitespace(text);
-        const Ch *start = text;
-        while (*text != Ch('\0') && *text != Ch(',') && !iscomment(text))
-            ++text;
-        while (text > start && isspace(*(text - 1)))
-            --text;
-        return expand_escapes(start, text);
-    }
-    */
 
     // Extract string (inside ""), and advance pointer accordingly
     // Set need_more_lines to true if \ continuator found
@@ -226,7 +214,7 @@ namespace detail {
         // Possible parser states
         enum state_t {
             s_key,              // Parser expects key
-            s_key_delim,        // Parser expects key delimiter
+            s_data_delim,       // Parser expects key delimiter
             s_data,             // Parser expects data
             s_data_cont,        // Parser expects data continuation
             s_kv_delim          // Parser expects key-value delimiter ','
@@ -257,10 +245,12 @@ namespace detail {
                 skip_whitespace(text);
                 if (state == s_key && *text == Ch('#')) {
                     namespace bpi = boost::property_tree::info_parser;
+                    static const std::basic_string<Ch> s_include =
+                        bpi::convert_chtype<Ch, char>("include");
                     // Determine directive type
                     ++text;     // skip #
                     std::basic_string<Ch> directive = read_word(text, filename, lineno);
-                    if (directive == bpi::convert_chtype<Ch, char>("include")) {
+                    if (directive == s_include) {
                         // #include
                         if (include_depth > 100) {
                             BOOST_PROPERTY_TREE_THROW(
@@ -292,7 +282,7 @@ namespace detail {
                     } else {   // Unknown directive
                         BOOST_PROPERTY_TREE_THROW(
                             boost::property_tree::file_parser_error(
-                                "unknown directive", filename, lineno));
+                                "unknown '#' directive", filename, lineno));
                     }
 
                     // Directive must be followed by end of line
@@ -311,13 +301,14 @@ namespace detail {
                 while (1) {
                     // Stop parsing on end of line or comment
                     skip_whitespace(text);
-                    if (*text == Ch('\0') || iscomment(text)) {
+                    if (*text == Ch('\0') || iscomment(text))
+                        break;
+                        /*
                         if (state == s_key_delim) // no data
                             state = s_key;
                         else if (state == s_kv_delim) // no key-value ',' delimiter
                             state = s_key;
-                        break;
-                    }
+                    */
 
                     // Process according to current parser state
                     switch (state)
@@ -347,22 +338,38 @@ namespace detail {
                                 last = NULL;
                                 ++text;
                             }
+                            else if (*text == Ch(','))
+                            {
+                                if (!last)
+                                    // This is the case of "{ key=value, }"
+                                    // but not             "{ ,key=value }"
+                                    BOOST_PROPERTY_TREE_THROW(
+                                        boost::property_tree::file_parser_error(
+                                            std::string("unexpected key-value ',' "
+                                                        "delimiter: ") + text,
+                                            filename, lineno));
+
+                                ++text;
+                            }
                             else    // Key text found
                             {
                                 std::basic_string<Ch> key = read_key(text, filename, lineno);
                                 last = static_cast<Ptree*>(&stack.top()->push_back(
                                     std::make_pair(key, Ptree()))->second);
-                                state = s_key_delim;
+                                state = s_data_delim;
                             }
 
                         }; break;
 
                         // Parser expects key delimiter
-                        case s_key_delim:
+                        case s_data_delim:
                         {
                             if (*text == Ch('=')) { // Delimiter found
-                                state = s_data;
                                 ++text;
+                                state = s_data;
+                            } else if (*text == Ch(',')) {
+                                ++text;
+                                state = s_key;
                             } else
                                 state = s_data;     // Delimiter is optional
                         }; break;
@@ -385,11 +392,11 @@ namespace detail {
                                 if (stack.size() <= 1)
                                     BOOST_PROPERTY_TREE_THROW(
                                         boost::property_tree::file_parser_error(
-                                            "unmatched }", "", 0));
+                                            "unmatched }", filename, lineno));
                                 stack.pop();
                                 last = NULL;
                                 ++text;
-                                state = s_kv_delim;
+                                state = s_key;
                             }
                             else    // Data text found
                             {
@@ -434,18 +441,18 @@ namespace detail {
 
                         case s_kv_delim:
                         {
-                            if (*text == Ch(',')) {
+                            // KeyValue ',' delimiter is optional
+                            if (*text == Ch(','))
                                 ++text;
-                                state = s_key;
-                            } else if (*text == Ch('{') || *text == Ch('}'))
-                                state = s_key;              // Ex: "k1 { k2 = v2 }"
-                            else
+                            skip_whitespace(text);
+                            if (*text == Ch(','))
                                 BOOST_PROPERTY_TREE_THROW(
                                     boost::property_tree::file_parser_error(
-                                        to_string("expected ',' delimiter "
-                                            "of key-value pair before token: '",
-                                            text, "'"),
+                                        "key expected but ',' delimiter found",
                                         filename, lineno));
+
+                            state = s_key;
+
                         }; break;
 
                         // Should never happen

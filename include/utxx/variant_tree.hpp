@@ -398,7 +398,7 @@ private:
         size_t kwidth = 0;
         for (const_iterator it = this->begin(), e = this->end(); it != e; ++it) {
             bool simple = detail::is_simple_key(it->first);
-            size_t n = it->first.size()
+            size_t n = detail::create_escapes(it->first).size()
                      + (a_show_types ? strlen(it->second.data().type_str()) : 0)
                      + (simple ? 1 : 3);
             kwidth = std::max(n, kwidth);
@@ -407,7 +407,7 @@ private:
             bool simple = detail::is_simple_key(it->first);
             out << std::string(a_level*a_tab_width, a_indent_char)
                 << (simple ? "" : "\"")
-                << it->first        // FIXME: do we need to create_escapes in the key?
+                << detail::create_escapes(it->first)
                 << (simple ? "" : "\"");
             if (a_show_types) {
                 out << key_type("::")

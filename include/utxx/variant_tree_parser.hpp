@@ -105,8 +105,10 @@ namespace utxx {
     )
     {
         typename basic_variant_tree<Ch>::translator_from_string tr;
+        basic_variant_tree<Ch> tree;
         detail::read_scon_internal(
-            a_stream, a_tree, a_filename, 0, 0, tr, a_inc_filename_resolver);
+            a_stream, tree, a_filename, 0, 0, tr, a_inc_filename_resolver);
+        a_tree.swap(tree);
     }
 
     /**
@@ -138,9 +140,7 @@ namespace utxx {
                     "cannot open file for reading", a_filename, 0));
         }
         stream.imbue(a_loc);
-        typename basic_variant_tree<Ch>::translator_from_string tr;
-        detail::read_scon_internal(
-            stream, a_tree, a_filename, 0, 0, tr, a_inc_filename_resolver);
+        read_scon(stream, a_tree, a_filename, a_inc_filename_resolver);
     }
 
 
