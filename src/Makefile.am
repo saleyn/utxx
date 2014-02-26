@@ -21,8 +21,7 @@ UTXX_SRCS = \
 	string.cpp \
 	synch.cpp \
 	timestamp.cpp \
-	url.cpp \
-	variant_tree_parser.cpp
+	url.cpp
 
 THRIFT 				= 
 if Ix86

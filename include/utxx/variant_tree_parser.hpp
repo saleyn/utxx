@@ -67,20 +67,36 @@ namespace utxx {
      * takes a list of directories, and finds a file with name \a a_filename
      * in the filesystem under one of the given directories.
      */
-    class scon_inc_file_resolver {
-        std::vector<std::string> m_dirs;
+    template <class Ch>
+    class inc_file_resolver {
+        typedef std::basic_string<Ch> string;
+        std::vector<string> m_dirs;
 
     public:
-        explicit scon_inc_file_resolver
+        explicit inc_file_resolver
         (
-            const std::vector<std::string>& a_dirs =
-            std::vector<std::string>()
+            const std::vector<string>& a_dirs = std::vector<string>()
         )
             : m_dirs(a_dirs)
         {}
 
         /// Main resolving functor
-        bool operator() (std::string& a_filename);
+        bool operator() (string& a_filename) {
+            string name = boost::filesystem::path(a_filename).is_absolute()
+                        ? boost::filesystem::basename(a_filename)
+                        : a_filename;
+            for (typename std::vector<string>::const_iterator
+                    it = m_dirs.begin(), e = m_dirs.end(); it != e; ++it)
+            {
+                boost::filesystem::path inc_file =
+                    boost::filesystem::path(*it) / name;
+                if (boost::filesystem::exists(inc_file)) {
+                    a_filename = inc_file.string();
+                    return true;
+                }
+            }
+            return false;
+        }
     };
 
     /**
@@ -101,7 +117,7 @@ namespace utxx {
         basic_variant_tree<Ch>& a_tree,
         const std::string&      a_filename  = std::string(),
         const boost::function<bool (std::string& a_filename)>
-                                a_inc_filename_resolver = scon_inc_file_resolver()
+                                a_inc_filename_resolver = inc_file_resolver<char>()
     )
     {
         typename basic_variant_tree<Ch>::translator_from_string tr;
@@ -130,7 +146,7 @@ namespace utxx {
         basic_variant_tree<Ch>& a_tree,
         const std::locale&      a_loc   = std::locale(),
         const boost::function<bool (std::string& a_filename)>
-                                a_inc_filename_resolver = NULL
+                                a_inc_filename_resolver = inc_file_resolver<char>()
     )
     {
         std::basic_ifstream<Ch> stream(a_filename.c_str());
@@ -205,7 +221,6 @@ namespace utxx {
      */
     template <typename Source, typename Ch>
     void read_info(Source& a_src, basic_variant_tree<Ch>& a_tree) {
-        //boost::property_tree::ptree pt;
         typename basic_variant_tree<Ch>::base& pt =
             static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::info_parser::read_info(a_src, pt);
@@ -264,6 +279,37 @@ namespace utxx {
             a_tar, static_cast<detail::basic_variant_tree&>(a_tree), a_settings);
     }
     */
+
+    /**
+     * Read SCON/INI/XML/INFO file format by guessing content type by extension
+     * @param a_filename is a filename associated with stream in case of exceptions
+     * @param a_tree     is the tree
+     * @param a_inc_filename_resolver is the resolver of files included in the
+     *                                configuration via '#include "filename"'
+     *                                clause (given that configuration format, such
+     *                                as SCON supports this feature)
+     * @note Replaces the existing contents. Strong exception guarantee.
+     * @throw file_parser_error If the stream cannot be read, doesn't contain
+     *                          valid format, or a conversion fails.
+     */
+    template<class Ch>
+    void read_config_file
+    (
+        const std::string&      a_filename,
+        basic_variant_tree<Ch>& a_tree,
+        const boost::function<bool (std::string& a_filename)>
+                                a_inc_filename_resolver = inc_file_resolver<char>()
+    ) {
+        std::string ext = boost::filesystem::extension(a_filename);
+        if (ext == ".config" || ext == ".conf" || ext == ".cfg" || ext == ".scon")
+            read_scon(a_filename, a_tree, a_inc_filename_resolver);
+        else if (ext == ".ini")
+            read_ini(a_filename, a_tree, a_inc_filename_resolver);
+        else if (ext == ".xml")
+            read_ini(a_filename, a_tree, a_inc_filename_resolver);
+        else
+            throw std::runtime_error("Configuration file extension not supported!");
+    }
 
 } // namespace utxx
 
