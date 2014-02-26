@@ -155,21 +155,14 @@ logger_impl_mgr::get_impl(const char* config_name) {
     return (it != m_implementations.end()) ? &it->second : NULL;
 }
 
-void logger::init(const char* filename, init_file_type type)
+void logger::init(const char* filename)
 {
-    variant_tree pt;
-    switch (type) {
-        case SCON_FILE: read_scon(filename, pt); break;
-        case INFO_FILE: read_info(filename, pt); break;
-        case JSON_FILE: throw std::runtime_error("JSON config not implemented!"); break;
-                        //read_json(filename, pt); break;
-        case XML_FILE:  read_xml (filename, pt); break;
-        default:        throw std::runtime_error("Unknown configuration format!"); break;
-    }
+    config_tree pt;
+    read_config_file(filename, pt);
     init(pt);
 }
 
-void logger::init(const variant_tree& config)
+void logger::init(const config_tree& config)
 {
     finalize();
 

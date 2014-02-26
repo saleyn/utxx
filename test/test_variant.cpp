@@ -346,7 +346,7 @@ template <class Stream, class ReadFun>
 bool gen_test_case(Stream& stream, ReadFun read_fun, const char* a_test_name)
 {
     variant_tree tree;
-    read_fun(stream, tree);
+    read_fun(stream, tree, 0);
 
     try {
         BOOST_REQUIRE_EQUAL("debug", tree.get<std::string>("one.verbose"));

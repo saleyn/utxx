@@ -385,7 +385,7 @@ struct ReadFunc
     template<class Ptree>
     void operator()(const std::string &filename, Ptree &pt) const
     {
-        read_scon(filename, pt, std::locale(), &ReadFunc::inc_filename_resolver);
+        read_scon(filename, pt, &ReadFunc::inc_filename_resolver, std::locale());
     }
 };
 

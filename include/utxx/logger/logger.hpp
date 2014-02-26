@@ -48,10 +48,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/exceptions.hpp>
 #include <boost/function.hpp>
 #include <boost/scope_exit.hpp>
+#include <utxx/config_tree.hpp>
 //#include <utxx/singleton.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -245,15 +244,13 @@ public:
     /// @return vector of active back-end logging implementations
     const implementations_vector&  implementations() const;
 
-    enum init_file_type { SCON_FILE, INFO_FILE, JSON_FILE, XML_FILE };
-
-    /// Call to initialize the logger by reading configuration from file.
-    /// Supported file formats: {info, json, xml}. See boost/property_tree
-    /// library for more information about format details.
-    void init(const char* filename, init_file_type type = INFO_FILE);
+    /// \brief Call to initialize the logger by reading configuration from file.
+    /// Supported file formats: {scon, info, xml}. The file format is determined
+    /// by the extension (".config|.conf" - SCON; ".info" - INFO; ".xml" - XML).
+    void init(const char* filename);
 
     /// Call to initialize the logger from a configuration container.
-    void init(const variant_tree& config);
+    void init(const config_tree& config);
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();

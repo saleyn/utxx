@@ -133,8 +133,8 @@ namespace utxx {
      * value_type typedef that is a valid parameter for basic_ifstream.
      * @param a_filename is a filename associated with stream in case of exceptions
      * @param a_tree is the destination of configuration data
-     * @param a_loc is the locale to use
      * @param a_dirs is a vector of directories to use for resolving included files
+     * @param a_loc is the locale to use
      * @note Replaces the existing contents. Strong exception guarantee.
      * @throw info_parser_error If the file cannot be read, doesn't contain
      *                          valid INFO, or a conversion fails.
@@ -144,9 +144,9 @@ namespace utxx {
     (
         const std::string&      a_filename,
         basic_variant_tree<Ch>& a_tree,
-        const std::locale&      a_loc   = std::locale(),
         const boost::function<bool (std::string& a_filename)>
-                                a_inc_filename_resolver = inc_file_resolver<char>()
+                                a_inc_filename_resolver = inc_file_resolver<char>(),
+        const std::locale&      a_loc   = std::locale()
     )
     {
         std::basic_ifstream<Ch> stream(a_filename.c_str());
@@ -242,20 +242,25 @@ namespace utxx {
             a_tar, a_tree, a_settings);
     }
 
+    /// @brief Read configuration from an XML file
+    /// @param a_src   is the configuration source (file or stream
+    /// @param a_tree  target configuration tree
+    /// @param a_flags are optional flags
+    ///                (see boost::property_tree::xml_parser::read_xml())
     template <typename Source, typename Ch>
-    void  read_xml(Source& a_src, basic_variant_tree<Ch>& a_tree)
+    void read_xml(Source& a_src, basic_variant_tree<Ch>& a_tree, int a_flags = 0)
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
         typename basic_variant_tree<Ch>::base& pt =
             static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
-        boost::property_tree::xml_parser::read_xml(a_src, pt);
+        boost::property_tree::xml_parser::read_xml(a_src, pt, a_flags);
         boost::property_tree::translator_between<utxx::variant, std::string> tr;
         basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
     template <typename Source, typename Ch>
-    void  read_ini(Source& a_src, basic_variant_tree<Ch>& a_tree)
+    void  read_ini(Source& a_src, basic_variant_tree<Ch>& a_tree, int a_flags = 0)
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
@@ -281,13 +286,15 @@ namespace utxx {
     */
 
     /**
-     * Read SCON/INI/XML/INFO file format by guessing content type by extension
+     * @brief Read SCON/INI/XML/INFO file format by guessing content type by extension
      * @param a_filename is a filename associated with stream in case of exceptions
      * @param a_tree     is the tree
      * @param a_inc_filename_resolver is the resolver of files included in the
      *                                configuration via '#include "filename"'
      *                                clause (given that configuration format, such
      *                                as SCON supports this feature)
+     * @param a_flags are the optional flags for reading XML file
+     *                (see boost::property_tree::xml_parser::read_xml())
      * @note Replaces the existing contents. Strong exception guarantee.
      * @throw file_parser_error If the stream cannot be read, doesn't contain
      *                          valid format, or a conversion fails.
@@ -298,15 +305,16 @@ namespace utxx {
         const std::string&      a_filename,
         basic_variant_tree<Ch>& a_tree,
         const boost::function<bool (std::string& a_filename)>
-                                a_inc_filename_resolver = inc_file_resolver<char>()
+                                a_inc_filename_resolver = inc_file_resolver<char>(),
+        int                     a_flags = 0
     ) {
         std::string ext = boost::filesystem::extension(a_filename);
         if (ext == ".config" || ext == ".conf" || ext == ".cfg" || ext == ".scon")
-            read_scon(a_filename, a_tree, a_inc_filename_resolver);
+            ::utxx::read_scon(a_filename, a_tree, a_inc_filename_resolver);
         else if (ext == ".ini")
-            read_ini(a_filename, a_tree, a_inc_filename_resolver);
+            ::utxx::read_ini(a_filename, a_tree);
         else if (ext == ".xml")
-            read_ini(a_filename, a_tree, a_inc_filename_resolver);
+            ::utxx::read_xml(a_filename, a_tree, a_flags);
         else
             throw std::runtime_error("Configuration file extension not supported!");
     }
