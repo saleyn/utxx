@@ -144,6 +144,21 @@ const char *ok_data_7 =
     "k3 d3 {\n"
     "   k31=d31\n"
     "  ,k32=d32\n"
+    "}\n"
+    "k4 {\n"
+    "  k5 {\n"
+    "    k6 {\n"
+    "      k61=a\n"
+    "      k62=b\n"
+    "}}}\n";
+
+const char *ok_data_8 =
+    "k1 d1 {k12=d12}\n"
+    "k2 d2 {\n"
+    "  $include{testok7_inc.config, root=\"k4.k5.k6\"} },\n"
+    "k3 d3 {\n"
+    "   k31=d31\n"
+    "  ,k32=d32\n"
     "}\n";
 
 const char *error_data_1 =
@@ -404,6 +419,12 @@ bool test_scon_parser()
     using namespace boost::property_tree;
     using boost::property_tree::file_parser_error;
 
+    generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
+    (
+        ReadFunc(), WriteFunc(), ok_data_8, ok_data_7,
+        "testok8.config", "testok7_inc.config", "testok8out.config", 8, 18, 18
+    );
+    
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_0, NULL,

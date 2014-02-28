@@ -430,7 +430,9 @@ private:
                 static_cast<const self_type&>(it->second).dump(
                     out, a_tab_width, a_show_types, a_show_braces,
                     a_indent_char, a_level+1);
-                if (a_show_braces) out << key_type("}") << std::endl;
+                if (a_show_braces)
+                    out << std::string(a_level*a_tab_width, a_indent_char)
+                        << key_type("}") << std::endl;
             } else
                 out << std::endl;
         }

@@ -239,9 +239,9 @@ namespace detail {
         int                     recursive_depth,
         const Translator&       translator,
         const Ch*&              text = NULL,
+        int&                    max_node_count = -1,
         const boost::function<bool (std::string& a_filename)>
-                                inc_filename_resolver = NULL,
-        int                     max_node_count = -1
+                                inc_filename_resolver = NULL
     )
     {
         typedef std::basic_string<Ch> str_t;
@@ -278,7 +278,7 @@ namespace detail {
                 BOOST_ASSERT(text);
 
                 // While there are characters left in line
-                while (max_node_count) {
+                while (max_node_count && text) {
                     // Stop parsing on end of line or comment
                     skip_whitespace(text);
                     if (*text == Ch('\0') || iscomment(text)) {
@@ -304,115 +304,118 @@ namespace detail {
 
                                 // Determine the directive type
 
-                                if (recursive_depth > 100) {
+                                if (recursive_depth > 100)
                                     BOOST_PROPERTY_TREE_THROW(
                                         boost::property_tree::file_parser_error(
                                             "recursive depth too large, "
                                             "probably recursive include",
                                             filename, lineno));
-                                } else {
-                                    Ptree temp;
-                                    const Ch* oldtext = text;
 
-                                    read_scon_internal(stream, temp, filename, curr_lineno,
-                                                    last_line,
-                                                    recursive_depth + 1, translator, text,
-                                                    inc_filename_resolver, 1);
+                                Ptree temp;
+                                const Ch*  oldtext = text;
+                                int max_term_count = 1;
 
-                                    typename Ptree::iterator it = temp.begin();
+                                read_scon_internal(stream, temp, filename, curr_lineno,
+                                                last_line,
+                                                recursive_depth + 1, translator, text,
+                                                max_term_count,
+                                                inc_filename_resolver);
 
-                                    if (it == temp.end())
-                                        BOOST_PROPERTY_TREE_THROW(
-                                            boost::property_tree::file_parser_error(
-                                                "missing required '$' directive", filename, lineno));
+                                typename Ptree::iterator it = temp.begin();
 
-                                    if (it->first != s_include)
-                                        BOOST_PROPERTY_TREE_THROW(
-                                            boost::property_tree::file_parser_error(
-                                                str_t("invalid '$' directive: ") + it->first,
-                                                filename, lineno));
+                                if (it == temp.end())
+                                    BOOST_PROPERTY_TREE_THROW(
+                                        boost::property_tree::file_parser_error(
+                                            "missing required '$' directive", filename, lineno));
 
-                                    // $include "filename"
-                                    std::string inc_name = it->second.data().is_null()
-                                                        ? std::string()
-                                                        : bpi::convert_chtype<char, Ch>(
-                                                            it->second.data().to_string().c_str());
+                                if (it->first != s_include)
+                                    BOOST_PROPERTY_TREE_THROW(
+                                        boost::property_tree::file_parser_error(
+                                            str_t("invalid '$' directive: ") + it->first,
+                                            filename, lineno));
 
-                                    // $include { "filename" }
-                                    if (inc_name.empty() && !it->second.empty()) {
-                                        if (!it->second.data().is_null())
-                                            BOOST_PROPERTY_TREE_THROW(
-                                                boost::property_tree::file_parser_error(
-                                                    std::string(
-                                                        "$include filename node cannot contain data") +
-                                                        oldtext,
-                                                    filename, lineno));
-                                        inc_name = bpi::convert_chtype<char, Ch>(
-                                                    it->second.begin()->first.c_str());
-                                    }
+                                // $include "filename"
+                                std::string inc_name = it->second.data().is_null()
+                                                    ? std::string()
+                                                    : bpi::convert_chtype<char, Ch>(
+                                                        it->second.data().to_string().c_str());
 
-                                    if (inc_name.empty())
+                                // $include { "filename" }
+                                if (inc_name.empty() && !it->second.empty()) {
+                                    if (!it->second.data().is_null())
                                         BOOST_PROPERTY_TREE_THROW(
                                             boost::property_tree::file_parser_error(
                                                 std::string(
-                                                    "$include directive missing file name: ") +
+                                                    "$include filename node cannot contain data") +
                                                     oldtext,
                                                 filename, lineno));
+                                    inc_name = bpi::convert_chtype<char, Ch>(
+                                                it->second.begin()->first.c_str());
+                                }
 
-                                    // $include { "filename", root = "path/to/include" }
-                                    // $include "filename" { root = "path/to/include" }
-                                    typename Ptree::path_type inc_root =
-                                        it->second.get(str_t("root"), str_t());
+                                if (inc_name.empty())
+                                    BOOST_PROPERTY_TREE_THROW(
+                                        boost::property_tree::file_parser_error(
+                                            std::string(
+                                                "$include directive missing file name: ") +
+                                                oldtext,
+                                            filename, lineno));
 
-                                    // Locate the include file
-                                    bool found = boost::filesystem::exists(inc_name);
-                                    if (!found && inc_filename_resolver)
-                                        found = inc_filename_resolver(inc_name);
+                                // $include { "filename", root = "path/to/include" }
+                                // $include "filename" { root = "path/to/include" }
+                                typename Ptree::path_type inc_root =
+                                    it->second.get(str_t("root"), str_t());
 
-                                    std::basic_ifstream<Ch> inc_stream(inc_name.c_str());
-                                    if (!inc_stream.good())
+                                // Locate the include file
+                                bool found = boost::filesystem::exists(inc_name);
+                                if (!found && inc_filename_resolver)
+                                    found = inc_filename_resolver(inc_name);
+
+                                std::basic_ifstream<Ch> inc_stream(inc_name.c_str());
+                                if (!inc_stream.good())
+                                    BOOST_PROPERTY_TREE_THROW(
+                                        boost::property_tree::file_parser_error(
+                                            std::string(found ? "cannot open include file"
+                                                            : "include file not found")
+                                            + ": '" + inc_name + "'",
+                                            filename, lineno));
+
+                                // Parse the include file and add the content to
+                                // current tree (optionally skiping content to root node)
+                                int   inc_lineno    = 0;
+                                const Ch* inc_text  = NULL;
+                                str_t line;
+
+                                if (inc_root.empty())
+                                    read_scon_internal(inc_stream, *stack.top(),
+                                                        inc_name, inc_lineno, line,
+                                                        recursive_depth + 1, translator, inc_text,
+                                                        max_node_count,
+                                                        inc_filename_resolver);
+                                else {
+                                    Ptree temp;
+                                    read_scon_internal(inc_stream, temp,
+                                                        inc_name, inc_lineno, line,
+                                                        recursive_depth + 1, translator, inc_text,
+                                                        max_node_count,
+                                                        inc_filename_resolver);
+                                    boost::optional<Ptree&> tree = temp.get_child_optional(inc_root);
+
+                                    if (!tree)
                                         BOOST_PROPERTY_TREE_THROW(
                                             boost::property_tree::file_parser_error(
-                                                std::string(found ? "cannot open include file"
-                                                                : "include file not found")
-                                                + ": '" + inc_name + "'",
-                                                filename, lineno));
-
-                                    // Parse the include file and add the content to
-                                    // current tree (optionally skiping content to root node)
-                                    int   inc_lineno    = 0;
-                                    const Ch* inc_text  = NULL;
-                                    str_t line;
-
-                                    if (inc_root.empty())
-                                        read_scon_internal(inc_stream, *stack.top(),
-                                                            inc_name, inc_lineno, line,
-                                                            recursive_depth + 1, translator, inc_text,
-                                                            inc_filename_resolver);
-                                    else {
-                                        Ptree temp;
-                                        read_scon_internal(inc_stream, temp,
-                                                            inc_name, inc_lineno, line,
-                                                            recursive_depth + 1, translator, inc_text,
-                                                            inc_filename_resolver);
-                                        boost::optional<Ptree&> tree = temp.get_child_optional(inc_root);
-
-                                        if (!tree)
-                                            BOOST_PROPERTY_TREE_THROW(
-                                                boost::property_tree::file_parser_error(
-                                                    std::string("required include root path not found: ") +
-                                                        bpi::convert_chtype<char, Ch>(
-                                                            inc_root.dump().c_str()),
-                                                    inc_name, inc_lineno));
-                                        for (typename Ptree::iterator tit = temp.begin(), e = temp.end();
-                                                tit != e; ++tit)
-                                            last = static_cast<Ptree*>(&stack.top()->push_back(
-                                                *tit)->second);
-                                    }
-
-                                    lineno = curr_lineno;
-                                    state  = s_kv_delim;
+                                                std::string("required include root path not found: ") +
+                                                    bpi::convert_chtype<char, Ch>(
+                                                        inc_root.dump().c_str()),
+                                                inc_name, inc_lineno));
+                                    for (typename Ptree::iterator tit = temp.begin(), e = temp.end();
+                                            tit != e; ++tit)
+                                        last = static_cast<Ptree*>(&stack.top()->push_back(
+                                            *tit)->second);
                                 }
+
+                                lineno = curr_lineno;
+                                state  = s_kv_delim;
                             }
                             else if (*text == Ch('{'))   // Brace opening found
                             {
@@ -446,12 +449,14 @@ namespace detail {
                                                         "delimiter: ") + text,
                                             filename, lineno));
                                 state = s_kv_delim;
+                                goto KV_DELIM;
                             }
                             else    // Key text found
                             {
                                 std::basic_string<Ch> key = read_key(text, filename, lineno);
                                 last = static_cast<Ptree*>(&stack.top()->push_back(
                                     std::make_pair(key, Ptree()))->second);
+                                if (max_node_count >= 0) max_node_count++;
                                 state = s_data_delim;
                             }
 
@@ -465,6 +470,7 @@ namespace detail {
                                 state = s_data;
                             } else if (*text == Ch(',')) {
                                 state = s_kv_delim;
+                                goto KV_DELIM;
                             } else
                                 state = s_data;     // Delimiter is optional
                         }; break;
@@ -535,6 +541,7 @@ namespace detail {
                         }; break;
 
                         case s_kv_delim:
+                        KV_DELIM:
                         {
                             // KeyValue ',' delimiter is optional
                             if (*text == Ch(','))

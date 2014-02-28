@@ -124,11 +124,13 @@ namespace utxx {
         basic_variant_tree<Ch> tree;
         int         lineno  = 0;
         const Ch*   text    = NULL;
+        int         max_cnt = -1;
+
         std::basic_string<Ch> line;
         detail::read_scon_internal
         (
             a_stream, tree, a_filename, lineno, line, 0,
-            tr, text, a_inc_filename_resolver
+            tr, text, max_cnt, a_inc_filename_resolver
         );
         a_tree.swap(tree);
     }
