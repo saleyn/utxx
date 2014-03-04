@@ -192,6 +192,74 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_integer )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_nchar_to_double )
+{
+    {
+        nchar<12> rc1("12345678.123");
+        BOOST_REQUIRE_EQUAL(12345678.123, rc1.to_double());
+        BOOST_REQUIRE_EQUAL(12345678.123, rc1.to_double(' '));
+        BOOST_REQUIRE_EQUAL(2345678.123,  rc1.to_double('1'));
+        BOOST_REQUIRE_EQUAL(12345678.123, rc1.to_double('2'));
+        nchar<16> rc2("-1234567890.567");
+        BOOST_REQUIRE_EQUAL(-1234567890.567, rc2.to_double());
+        const char* p = " 12.34  ";
+        nchar<8> rc3(p, 7);
+        BOOST_REQUIRE_EQUAL(12.34, rc3.to_double()); // Spaces are skipped by default
+        nchar<8> rc4(p+1, 6);
+        BOOST_REQUIRE_EQUAL(12.34, rc4.to_double());
+        nchar<8> rc5(p, 7);
+        BOOST_REQUIRE_EQUAL(12.34, rc5.to_double(' '));
+        {
+            const char* p = "  1.2";
+            nchar<6> rc(p, 5);
+            BOOST_REQUIRE_EQUAL(1.2, rc.to_double(' '));
+        }
+        {
+            const char* p = "-123.1";
+            nchar<6> rc(p, 6);
+            BOOST_REQUIRE_EQUAL(-123.1, rc.to_double(' '));
+            BOOST_REQUIRE_EQUAL(123.1,  rc.to_double('-'));
+        }
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_nchar_from_double )
+{
+    {
+        nchar<9> rc;
+        BOOST_REQUIRE_EQUAL(8, rc.from_double(12345.67, 2));
+        BOOST_REQUIRE_EQUAL("12345.67", rc.to_string());
+    }
+    {
+        nchar<17> rc;
+        BOOST_REQUIRE_EQUAL(-1, rc.from_double(-12345678901.234)); // Not enough space
+        BOOST_REQUIRE_EQUAL(16, rc.from_double(-12345678901.234, 3));
+        BOOST_REQUIRE_EQUAL("-12345678901.234", rc.to_string());
+    }
+    {
+        nchar<6> rc;
+        rc.from_double(12.1, 1);
+        BOOST_REQUIRE_EQUAL("12.1", rc.to_string());
+        rc.fill(' ');
+        rc.from_double(-12.1, 1);
+        BOOST_REQUIRE_EQUAL("-12.1", rc.to_string());
+        rc.fill(' ');
+        rc.from_double(12, 1, ' ');
+        BOOST_REQUIRE_EQUAL("12.0  ", rc.to_string());
+        rc.fill(' ');
+        rc.from_double(-12, 1, ' ');
+        BOOST_REQUIRE_EQUAL("-12.0 ", rc.to_string());
+    }
+    {
+        nchar<5> rc;
+        BOOST_REQUIRE_EQUAL(-1, rc.from_double(0, 3, ' '));
+        BOOST_REQUIRE_EQUAL(3, rc.from_double(0, 2, ' '));
+        BOOST_REQUIRE_EQUAL("0.0  ", rc.to_string());
+        BOOST_REQUIRE_EQUAL(4, rc.from_double(0, 2, ' ', false));
+        BOOST_REQUIRE_EQUAL("0.00 ", rc.to_string());
+    }
+}
+
 BOOST_AUTO_TEST_CASE( test_nchar_bad_cases )
 {
     if (0)

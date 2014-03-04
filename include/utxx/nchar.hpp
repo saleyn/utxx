@@ -140,6 +140,29 @@ namespace detail {
             return p - m_data;
         }
 
+        /// Convert the ASCII buffer to a double
+        /// @param skip optionally skip leading characters matching \a skip.
+        double to_double(char skip = '\0') const {
+            const char *p = m_data, *end = p + N;
+            if (skip)
+                while (*p == skip && p != end) p++;
+            return atof(p, end);
+        }
+
+        /// Convert the double to a string representation aligned to left 
+        /// with optional padding on the right.
+        /// @param n is the number to convert
+        /// @param a_precision number of digits abter decimal point
+        /// @param a_pad optional padding character.
+        /// @param a_compact strip extra '0' at the end
+        int from_double(double n, int a_precision=6, char a_pad='\0', bool a_compact = true) {
+            int k = ftoa_fast(n, m_data, N, a_precision, a_compact);
+            if (a_pad && k < N)
+                for (char* p = m_data+k, *end = m_data+N; p != end; ++p)
+                    *p = a_pad;
+            return k;
+        }
+
         /// Store the variable of type T as binary integer using big 
         /// endian encoding.
         template <typename T>

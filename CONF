@@ -11,6 +11,7 @@ if [ $BUILD = 'mqt' ]; then
         --with-thrift-libdir=/opt/BuildEnv/Thrift/Current/GCC/lib \
         --prefix=/opt/BuildEnv/utxx/1.1 \
         --exec-prefix=/opt/BuildEnv/utxx/1.1/GCC \
+        --enable-silent-rules \
         --enable-${TYPE}
 else
     ./configure --enable-${TYPE} --with-boost=/opt/boost --prefix=/opt/utxx --with-thrift=/opt/thrift

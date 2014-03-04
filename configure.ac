@@ -5,6 +5,7 @@ AC_INIT([utxx], [1.1], [BUG-REPORT-ADDRESS])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign -Wall -Wno-portability])
+m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 AC_SUBST([utxxdir], [$libdir])
 
