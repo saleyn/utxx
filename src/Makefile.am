@@ -41,7 +41,7 @@ nobase_include_HEADERS = \
 	$(sort 	${top_srcdir}/include/@PACKAGE@/config_validator.xsl \
 		   	${top_srcdir}/bin/config_validator_codegen.py \
 			$(foreach d, \
-				$(shell find ${top_srcdir}/include/@PACKAGE@ -type d -print0),\
+				$(shell find ${top_srcdir}/include/@PACKAGE@ -type d -print | xargs),\
 				$(wildcard $(d)/*.?pp)))
 
 nodist_libutxx_la_SOURCES = ${top_srcdir}/config.h

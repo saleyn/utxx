@@ -12,6 +12,7 @@
 #pragma GCC diagnostic pop
 
 #include <utxx/logger.hpp>
+#include <utxx/logger/logger_impl_scribe.hpp>
 #include <utxx/time_val.hpp>
 
 using namespace boost::property_tree;
@@ -34,8 +35,8 @@ int main(int argc, char* argv[])
     }
 
     variant_tree pt;
-    pt.put("logger.scribe.address", argc > 1 ? argv[1] : "uds:///var/run/scribed");
-    pt.put("logger.scribe.levels", "debug|info|warning|error|fatal|alert");
+    pt.put("logger.scribe.address", argc > 1 ? argv[1] : variant("uds:///var/run/scribed"));
+    pt.put("logger.scribe.levels", variant("debug|info|warning|error|fatal|alert"));
 
     log->init(pt);
 
@@ -67,9 +68,9 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
     variant_tree pt;
 
     #ifdef HAVE_THRIFT_H
-    pt.put("logger.console.stderr_levels",  "info|warning|error|fatal|alert");
-    pt.put("logger.scribe.address",         "uds:///var/run/scribed");
-    pt.put("logger.scribe.levels",          "debug|info|warning|error|fatal|alert");
+    pt.put("logger.console.stderr_levels",  std::string("info|warning|error|fatal|alert"));
+    pt.put("logger.scribe.address",         std::string("uds:///var/run/scribed"));
+    pt.put("logger.scribe.levels",          std::string("debug|info|warning|error|fatal|alert"));
 
     logger& log = logger::instance();
 
