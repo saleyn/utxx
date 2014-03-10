@@ -53,6 +53,11 @@ namespace utxx {
         return N;
     }
 
+    template <int N>
+    size_t length(const char (&a)[N]) {
+        return N-1;
+    }
+
     /// Find <s> in the static array of string <choices>.
     /// @return position of <s> in the <choices> array of <def> if string not found.
     /// 
@@ -80,9 +85,6 @@ namespace utxx {
             throw std::runtime_error(std::string("String not found: ")+s);
         return result;
     }
-
-    /// Fast implementation of strlen()
-    size_t xstrlen(const char* s);
 
     /// Perform wildcard matching of a string. The pattern argument can
     /// contain any letters including '*', '?', and "[]". In case of the brackets
@@ -149,6 +151,26 @@ namespace utxx {
     std::string to_bin_string(const char* buf, size_t sz,
                               bool hex = false, bool readable = true);
 
+#if __cplusplus >= 201103L
+    namespace {
+        inline void to_string_impl(std::stringstream& s) {}
+
+        template <class T, class... Args>
+        inline void to_string_impl(std::stringstream& s, const T& a, Args... args) {
+            s << a;
+            to_string_impl(s, args...);
+        }
+    }
+
+    template <class... Args>
+    inline std::string to_string(Args... args) {
+        std::stringstream s;
+        to_string_impl(s, args...);
+        return s.str();
+    }
+
+#else
+
     template <class T1>
     inline std::string to_string(T1 a1) {
         std::stringstream s; s << a1; return s.str();
@@ -209,6 +231,8 @@ namespace utxx {
                                << a5 << a6 << a7 << a8 << a9 << a10;
         return s.str();
     }
+
+#endif
 
 } // namespace utxx
 

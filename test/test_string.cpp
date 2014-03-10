@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file  test_variant.cpp
+/// \file  test_string.cpp
 //----------------------------------------------------------------------------
 /// \brief Test cases for classes in the variant.hpp and test_variant.hpp.
 //----------------------------------------------------------------------------
@@ -32,11 +32,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/string.hpp>
 #include <boost/test/unit_test.hpp>
-#include <boost/format.hpp>
-#include <boost/iterator/iterator_concepts.hpp>
-#include <boost/concept_check.hpp>
-#include <utxx/persist_array.hpp>
-#include <utxx/time_val.hpp>
 #include <iostream>
 
 using namespace utxx;
@@ -44,7 +39,15 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_string_length )
 {
     const char s[] = "abc";
-    BOOST_REQUIRE_EQUAL(sizeof(s), length(s));
+    BOOST_REQUIRE_EQUAL(3, length(s));
+    
+    static const char* s_ops[] = {"a", "b", "c"};
+    BOOST_REQUIRE_EQUAL(3, length(s_ops));
+
+    struct t { int a; t(int a) : a(a) {} };
+
+    const t arr[] = { t(1), t(2) };
+    BOOST_REQUIRE_EQUAL(2, length(arr));
 }
 
 enum op_type {OP_UNDEFINED = -1, OP_ADD, OP_REMOVE, OP_REPLACE, OP_UPDATE};
@@ -67,7 +70,7 @@ BOOST_AUTO_TEST_CASE( test_string_nocase )
     BOOST_REQUIRE_EQUAL("ABC", to_upper(s1));
 }
 
-BOOST_AUTO_TEST_CASE( test_to_bin_string )
+BOOST_AUTO_TEST_CASE( test_string_to_bin_string )
 {
     {
         std::string s("abcdef01234");

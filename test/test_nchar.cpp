@@ -77,10 +77,16 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         BOOST_REQUIRE_EQUAL(str.str(), "0,0,0,1");
         rc.fill(' ');
         BOOST_REQUIRE_EQUAL("    ", rc.to_string());
-        BOOST_REQUIRE_EQUAL(0, rc.to_integer<int>(' '));
+        BOOST_REQUIRE_EQUAL(0, rc.to_integer<int>());
         rc.fill('0');
         BOOST_REQUIRE_EQUAL("0000", rc.to_string());
         BOOST_REQUIRE_EQUAL(0, rc.to_integer<int>());
+    }
+
+    {
+        nchar<8> rc(" abc   ");
+        BOOST_REQUIRE_EQUAL(" abc   ", rc.to_string());
+        BOOST_REQUIRE_EQUAL(" abc",    rc.to_string(' '));
     }
 }
 
@@ -262,23 +268,34 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_double )
 
 BOOST_AUTO_TEST_CASE( test_nchar_bad_cases )
 {
-    if (0)
     {
         const char* p = " -12";
         nchar<4> rc(p, 4);
-        BOOST_REQUIRE_EQUAL(-12, rc.to_integer<int>(' '));
-        BOOST_REQUIRE_EQUAL(0,   rc.to_integer<int>('-'));
+        BOOST_CHECK_EQUAL(-12, rc.to_integer<int>(' '));
+        BOOST_CHECK_EQUAL(-12, rc.to_integer<int>());
+        BOOST_CHECK_EQUAL(0,   rc.to_integer<int>('-'));
     }
-    if (0)
+    {
+        const char* p = "  12";
+        nchar<4> rc(p, 4);
+        BOOST_CHECK_EQUAL(12, rc.to_integer<int>());
+        BOOST_CHECK_EQUAL(12, rc.to_integer<int>(' '));
+    }
+    {
+        const char* p = "  12";
+        nchar<5> rc(p, 4);
+        BOOST_CHECK_EQUAL(120,rc.to_integer<int>()); // Empty spaces are treated as zeros
+        BOOST_CHECK_EQUAL(12, rc.to_integer<int>(' '));
+    }
     {
         const char* p = "--12";
         nchar<4> rc(p, 4);
-        BOOST_REQUIRE_EQUAL(0, rc.to_integer<int>('-'));
+        BOOST_CHECK_EQUAL(12, rc.to_integer<int>('-'));
     }
-    if (0)
     {
-        const char* p = "  -1";
+        const char* p = " -1 ";
         nchar<4> rc(p, 4);
-        BOOST_REQUIRE_EQUAL(-1, rc.to_integer<int>(' '));
+        BOOST_CHECK_EQUAL(-10,rc.to_integer<int>()); // Empty spaces are treated as zeros
+        BOOST_CHECK_EQUAL(-1, rc.to_integer<int>(' '));
     }
 }

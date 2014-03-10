@@ -511,7 +511,7 @@ BOOST_AUTO_TEST_CASE( test_convert_skip_left )
     m = 0;
     atoi_right<long, 5>("12345", m, '5');
     BOOST_REQUIRE_EQUAL(1234, m);
-    
+
     n = m = 0;
     atoi_left<long, 7> ("12345  ", n, ' ');
     atoi_right<long, 7>("  12345", m, ' ');

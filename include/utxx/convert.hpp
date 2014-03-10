@@ -265,6 +265,8 @@ namespace detail {
 
         inline static T fast_atoi(const Char*& bytes, Char skip = '\0') {
             const char* p = bytes;
+            if (skip && *p == skip)
+                return fast_atoi(++bytes, skip);
             if (*p == '-') {
                 long n = unrolled_byte_loops<Char, N-1, LEFT_JUSTIFIED>::
                     atoi_skip_left(++bytes, skip);
@@ -338,6 +340,8 @@ namespace detail {
             return n;
         }
         inline static int64_t convert_signed(const char*& p) {
+            if (*p == ' ')
+                return unrolled_loop_atoul<N-1>::convert_signed(++p);
             if (*p == '-')
                 return -static_cast<int64_t>(unrolled_loop_atoul<N-1>::convert(++p));
             return unrolled_loop_atoul<N>::convert(p);
@@ -471,7 +475,7 @@ inline std::string itoa_right(T value, char pad = '\0') {
 
 /**
  * A faster replacement to atoi() library function.
- * Additionally it allows skipping leading characters before making a conversion.
+ * Additionally it allows skipping trailing characters before making a conversion.
  * @param bytes will be set to the end of parsed value.
  * @return parsed integer value.
  */

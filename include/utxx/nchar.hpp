@@ -107,10 +107,16 @@ namespace detail {
         operator char* () const     { return m_data; }
         operator char* ()           { return m_data; }
 
-        std::string to_string(int until_char = '\0') const {
-            const char* p = m_data, *end = m_data+N;
-            for(; p < end && (*p != (char)until_char || until_char < 0); ++p);
-            return std::string(m_data, p - m_data);
+        std::string to_string(char rtrim = '\0') const {
+            const char* end = m_data+N;
+            if (rtrim)
+                for(const char* q = end-1, *e = m_data-1; q != e && (*q == rtrim || !*q); end = q--);
+            for(const char*p = m_data; p != end; ++p)
+                if (!*p) {
+                    end = p;
+                    break;
+                }
+            return std::string(m_data, end - m_data);
         }
 
         std::ostream& to_bin_string(std::ostream& out, int until_char = -1) const {
@@ -121,16 +127,24 @@ namespace detail {
             return out << ">>";
         }
 
-        /// Convert the ASCII buffer to an integer
-        /// @param skip optionally skip leading characters matching \a skip.
+        /// Convert the ASCII buffer to an integer (assuming it's left-aligned)
+        /// @param skip skip leading characters matching \a skip.
         template <typename T>
-        T to_integer(char skip = '\0') const {
+        T to_integer(char skip) const {
             T n;
             atoi_left(m_data, n, skip);
             return n;
         }
 
-        /// Convert the integer to a string representation aligned to left 
+        /// Convert the ASCII buffer to an integer (assumes the value to be
+        /// right-aligned, skips leading space and 0's)
+        template <typename T>
+        T to_integer() const {
+            const char* p = m_data;
+            return unsafe_fixed_atol<N>(p);
+        }
+
+        /// Convert the integer to a string representation aligned to left
         /// with optional padding on the right.
         /// @param pad optional padding character.
         template <typename T>
