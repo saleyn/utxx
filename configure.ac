@@ -179,8 +179,8 @@ AC_ARG_WITH([thrift-libdir],
 	with_thrift_libdir="${with_thrift}/lib")
 
 if test -n "${with_thrift}"; then
-    if test -d "${with_thrift}" -o ! -f "$with_thrift/bin/thrift"; then
-        AC_MSG_ERROR([no Thrift installation is found!])
+    if test ! -d "${with_thrift}" -o ! -f "$with_thrift/bin/thrift"; then
+        AC_MSG_ERROR([no Thrift installation is found in ${with_thrift}!])
     else
     if test ! -f "$with_thrift_libdir/libthrift.so"; then
         AC_MSG_ERROR([no Thrift library is found!])

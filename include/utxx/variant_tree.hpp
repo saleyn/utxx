@@ -106,17 +106,11 @@ namespace detail {
 
     // Custom translator that works with variant instead of std::string
     // This translator is used to get/put values through explicit get/put calls.
-    template <class Ext>
+    template <typename Ext>
     struct variant_translator
     {
         typedef Ext external_type;
         typedef variant internal_type;
-
-        /*
-        typedef boost::mpl::joint_view<variant::int_types,
-                boost::mpl::vector<bool,double>
-            > valid_non_string_types;
-        */
         typedef variant::valid_types valid_types;
 
         external_type get_value(const internal_type& value) const {

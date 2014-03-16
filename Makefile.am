@@ -10,7 +10,7 @@ clean-local:
 docs: build-aux/Doxyfile
 	$(MKDIR_P) @docdir@
 	doxygen build-aux/Doxyfile
-	(cd lib/dma/src && $(MAKE) $@)
+	(cd src && $(MAKE) $@)
 
 build-aux/Doxyfile: build-aux/Doxyfile.in
 	$(SED) -e 's|[@]docdir@|${docdir}|g' \
