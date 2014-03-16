@@ -63,7 +63,17 @@ namespace {
 
     const std::string regex_home_var(const boost::xpressive::smatch& what) {
         const char* env = getenv("HOME");
-        return env ? env : "";
+        if (env)
+            return env;
+        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+        env = getenv("USERPROFILE");
+        if (env)
+            return env;
+        char const* c = getenv("HOMEDRIVE"), *home = getenv("HOMEPATH");
+        return (!c || !home) ? "" : std::string(c) + home;
+        #else
+        return "";
+        #endif
     }
 
 } // internal namespace
@@ -77,7 +87,7 @@ const char* basename(const char* begin, const char* end) {
 }
 
 bool file_exists(const char* a_path) {
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
     std::ifstream l_stream;
     l_stream.open(a_path, std::ios_base::in);
     if(l_stream.is_open()) {
@@ -93,7 +103,7 @@ bool file_exists(const char* a_path) {
 }
 
 void file_unlink(const char* a_path) {
-    #ifdef _MSC_VER
+    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
     ::_unlink(a_path);
     #else
     ::unlink(a_path);
@@ -107,7 +117,7 @@ std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
     using namespace boost::xpressive;
     std::string x(a_path);
     {
-        #if defined(_WIN32) || defined(_WIN64)
+        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
         sregex re = "%" >> (s1 = +_w) >> '%';
         #else
         sregex re = "${" >> (s1 = +_w) >> '}';
@@ -115,7 +125,7 @@ std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
 
         x = regex_replace(x, re, &regex_format_fun);
     }
-    #if !defined(_WIN32) && !defined(_WIN64)
+    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
     {
         sregex re = '$' >> (s1 = +_w);
         x = regex_replace(x, re, &regex_format_fun);
@@ -202,7 +212,7 @@ program::program()
             m_abs_path = exe;
             return;
         }
-#elif defined(_WIN32) || defined (_WIN64)
+#elif defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
     EXTERN_C IMAGE_DOS_HEADER __ImageBase;
     TCHAR str_dll_path[MAX_PATH];
     //::GetModuleFileName((HINSTANCE)&__ImageBase, str_dll_path, sizeof(str_dll_path));

@@ -61,14 +61,28 @@ namespace property_tree {
 
         boost::optional<internal_type> put_value(const external_type& value) const {
             if (value.empty())
-                return boost::optional<internal_type>(internal_type());
-            char* end;
-            long n = strtol(value.c_str(), &end, 10);
-            if (!*end && end > value.c_str()) // is an integer and has been decoded fully
-                return boost::optional<internal_type>(n);
+                return internal_type();
+            const char* end = value.c_str() + value.size();
+            char* e;
+            long n = strtol(value.c_str(), &e, 10);
+            // Note that value.size() can be 1, so we need both tests
+            if (e > value.c_str() && e >= end-1) { // is an integer and has been decoded fully
+                if (!*e)
+                    return boost::optional<internal_type>(n);
 
-            double d = strtod(value.c_str(), &end);
-            if (!*end && end > value.c_str()) // is a double and has been decoded fully
+                if (e == end-1) {
+                    switch (toupper(*e)) {
+                        case 'K': n *= 1024; break;
+                        case 'M': n *= 1024*1024; break;
+                        case 'G': n *= 1024*1024*1024; break;
+                        default:
+                            return internal_type();
+                    }
+                    return boost::optional<internal_type>(n);
+                }
+            }
+            double d = strtod(value.c_str(), &e);
+            if (!*e && e == end) // is a double and has been decoded fully
                 return boost::optional<internal_type>(d);
 
             if (value == "true" || value == "false")
@@ -142,13 +156,12 @@ public:
     typedef typename base::iterator                         iterator;
     typedef typename base::const_iterator                   const_iterator;
 
-    class translator_from_string
+    struct translator_from_string
         : public boost::property_tree::translator_between
         <
             variant, std::basic_string<Ch>
         >
     {
-    public:
         boost::optional<variant> operator() (const base& a_tree) const {
             return *this->put_value(a_tree.get_value<std::string>());
         }

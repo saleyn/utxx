@@ -17,6 +17,15 @@ build-aux/Doxyfile: build-aux/Doxyfile.in
 		   -e 's|[@]PACKAGE@|${PACKAGE}|g' \
 		   -e 's|[@]PACKAGE_VERSION@|${PACKAGE_VERSION}|g' $< > "$@"
 
+tar:
+	@rm -f $(PACKAGE).tbz
+	tar jcf $(PACKAGE).tbz --transform 's|^|$(PACKAGE)/|' \
+		--exclude-from=.gitignore \
+		--exclude="autom4te.cache" \
+		--exclude="core*" --exclude="*.*o" --exclude="*~" \
+		--exclude=".deps" --exclude=".libs" \
+		*
+
 CLEANFILES = stamp-h1
 DISTCLEANFILES = config.h.in~ config.log build-aux/Doxyfile
 MAINTAINERCLEANFILES = configure build-aux/l*.m4 build-aux/*.sh \

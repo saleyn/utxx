@@ -240,7 +240,10 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         "key2 true\n"
         "key3 10.0\n"
         "key4 test\n"
-        "key4 \"str\"\n";
+        "key4 \"str\"\n"
+        "key5 1K\n"
+        "key6 1M\n"
+        "key7 1G\n";
 
     {
         variant_tree tree;
@@ -254,6 +257,9 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         BOOST_REQUIRE_EQUAL(true, tree.get<bool>("key2"));
         BOOST_REQUIRE_EQUAL(10.0, tree.get<double>("key3"));
         BOOST_REQUIRE_EQUAL(2u, tree.count("key4"));
+        BOOST_REQUIRE_EQUAL(1024,       tree.get<int>("key5"));
+        BOOST_REQUIRE_EQUAL(1048576,    tree.get<int>("key6"));
+        BOOST_REQUIRE_EQUAL(1073741824, tree.get<int>("key7"));
 
         //tree.swap(pt);
         //boost::property_tree::info_parser::read_info_intenal<variant_tree, char>(

@@ -22,6 +22,12 @@ namespace test {
 
 namespace bpd = boost::property_tree::detail;
 
+const char *ok_data_00 =
+    "k1 # No data\n"
+    "$include testok7_inc.config\n"
+    "$include {testok7_inc.config, root=k4.k5}\n"
+    "k2\n";
+
 const char *ok_data_0 =
     "k1 # No data\n"
     "{\n"
@@ -153,7 +159,7 @@ const char *ok_data_7 =
     "}}}\n";
 
 const char *ok_data_8 =
-    "k1 d1 {k12=d12}\n"
+    "k1 \"d1\" {k12=d12}\n"
     "k2 d2 {\n"
     "  $include{testok7_inc.config, root=\"k4.k5.k6\"} },\n"
     "k3 d3 {\n"
@@ -421,10 +427,10 @@ bool test_scon_parser()
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
-        ReadFunc(), WriteFunc(), ok_data_8, ok_data_7,
-        "testok8.config", "testok7_inc.config", "testok8out.config", 8, 18, 18
+        ReadFunc(), WriteFunc(), ok_data_00, ok_data_7,
+        "testok00.config", "testok7_inc.config", "testok00out.config", 18, 22, 42
     );
-    
+
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_0, NULL,
@@ -470,7 +476,13 @@ bool test_scon_parser()
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
         ReadFunc(), WriteFunc(), ok_data_7, NULL,
-        "testok7.config", NULL, "testok7out.config", 8, 18, 18
+        "testok7.config", NULL, "testok7out.config", 13, 20, 30
+    );
+
+    generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
+    (
+        ReadFunc(), WriteFunc(), ok_data_8, ok_data_7,
+        "testok8.config", "testok7_inc.config", "testok8out.config", 9, 17, 21
     );
 
     generic_parser_test_error<Ptree, ReadFunc, WriteFunc, file_parser_error>

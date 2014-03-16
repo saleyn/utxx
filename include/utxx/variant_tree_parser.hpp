@@ -120,17 +120,17 @@ namespace utxx {
                                 a_inc_filename_resolver = inc_file_resolver<char>()
     )
     {
-        typename basic_variant_tree<Ch>::translator_from_string tr;
-        basic_variant_tree<Ch> tree;
-        int         lineno  = 0;
-        const Ch*   text    = NULL;
-        int         max_cnt = -1;
-
+        typedef typename basic_variant_tree<Ch>::translator_from_string     translator;
+        typedef detail::scon_reader<basic_variant_tree<Ch>, translator, Ch> scon_reader;
+        translator              tr;
+        basic_variant_tree<Ch>  tree;
+        int                     lineno  = 0;
+        const Ch*               text    = NULL;
         std::basic_string<Ch> line;
-        detail::read_scon_internal
+        scon_reader rd
         (
             a_stream, tree, a_filename, lineno, line, 0,
-            tr, text, max_cnt, a_inc_filename_resolver
+            tr, text, a_inc_filename_resolver
         );
         a_tree.swap(tree);
     }
