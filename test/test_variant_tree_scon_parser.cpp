@@ -610,7 +610,6 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
             % now_utc.tm_hour).str();
     std::string time_home_date = std::string("Time: ") + home + date;
 
-    BOOST_REQUIRE_EQUAL(home+" abc",            t::get("k10 \"${HOME} $env{TTT}\"\n", "k10"));
     BOOST_REQUIRE_EQUAL(home,                   t::get("k1 ${HOME}\n",      "k1"));
     BOOST_REQUIRE_EQUAL("abc",                  t::get("k2 ${\"TTT\"}\n",   "k2"));
     BOOST_REQUIRE_EQUAL("abc",                  t::get("k3 $env{TTT}\n",    "k3"));
@@ -622,6 +621,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
                                                        snow_utc, "}\n", "k7"));
     BOOST_REQUIRE_EQUAL(home+"abc",             t::get("k8 \"${HOME}${TTT}\"\n", "k8"));
     BOOST_CHECK_THROW  (t::get("k9 ${HOME}${TTT}\n", "k9"), boost::property_tree::file_parser_error);
+    BOOST_REQUIRE_EQUAL(home+" abc",            t::get("k10 \"${HOME} $env{TTT}\"\n", "k10"));
     BOOST_REQUIRE_EQUAL(date,                   t::get("k11 $date{\"%Y%m%d-%H\"}\n", "k11"));
     BOOST_REQUIRE_EQUAL(date_now,               t::get("k12 $date{\"%Y%m%d-%H\", now=", snow,     "}\n", "k12"));
     BOOST_REQUIRE_EQUAL(date_now_utc,           t::get("k13 $date{'%Y%m%d-%H', now=", snow_utc, "}\n", "k13"));
