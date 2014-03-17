@@ -53,7 +53,7 @@ namespace path {
 //------------------------------------------------------------------------------
 namespace {
 
-    const std::string regex_format_fun(const boost::xpressive::smatch& what) {
+    std::string regex_format_fun(const boost::xpressive::smatch& what) {
         if (what[1].str() == "EXEPATH") // special case
             return program::abs_path();
 
@@ -61,19 +61,8 @@ namespace {
         return env ? env : "";
     }
 
-    const std::string regex_home_var(const boost::xpressive::smatch& what) {
-        const char* env = getenv("HOME");
-        if (env)
-            return env;
-        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-        env = getenv("USERPROFILE");
-        if (env)
-            return env;
-        char const* c = getenv("HOMEDRIVE"), *home = getenv("HOMEPATH");
-        return (!c || !home) ? "" : std::string(c) + home;
-        #else
-        return "";
-        #endif
+    std::string regex_home_var(const boost::xpressive::smatch& what) {
+        return home();
     }
 
 } // internal namespace
@@ -84,6 +73,21 @@ const char* basename(const char* begin, const char* end) {
         if (*end == ch)
             return ++end;
     return begin;
+}
+
+std::string home() {
+    const char* env = getenv("HOME");
+    if (env)
+        return env;
+    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+    env = getenv("USERPROFILE");
+    if (env)
+        return env;
+    char const* c = getenv("HOMEDRIVE"), *home = getenv("HOMEPATH");
+    return (!c || !home) ? "" : std::string(c) + home;
+    #else
+    return "";
+    #endif
 }
 
 bool file_exists(const char* a_path) {
@@ -125,7 +129,7 @@ std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
 
         x = regex_replace(x, re, &regex_format_fun);
     }
-    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+    #if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
     {
         sregex re = '$' >> (s1 = +_w);
         x = regex_replace(x, re, &regex_format_fun);

@@ -55,8 +55,7 @@ namespace property_tree {
         typedef utxx::variant   internal_type;
 
         boost::optional<external_type> get_value(const internal_type& value) const {
-            return boost::optional<external_type>(
-                value.type() == internal_type::TYPE_NULL ? "" : value.to_string());
+            return boost::optional<external_type>(value.is_null() ? "" : value.to_str());
         }
 
         boost::optional<internal_type> put_value(const external_type& value) const {
@@ -95,6 +94,51 @@ namespace property_tree {
         boost::optional<internal_type> put_value(const std::string& value, bool is_str) const {
             return is_str ? boost::optional<internal_type>(value) : put_value(value);
         }
+    };
+
+    template <>
+    struct translator_between<utxx::variant, const char*>
+    {
+        typedef translator_between<utxx::variant, const char*> type;
+        boost::optional<const char*> get_value(const utxx::variant& val) const {
+            return val.is_null() ? "" : val.to_str().c_str();
+        }
+        boost::optional<utxx::variant> put_value(const char* val) const {
+            translator_between<utxx::variant, std::string> tr;
+            return tr.put_value(std::string(val));
+        }
+    };
+
+    template <>
+    struct translator_between<utxx::variant, bool>
+    {
+        typedef translator_between<utxx::variant, bool> type;
+        boost::optional<bool> get_value(const utxx::variant& val) const { return val.to_bool(); }
+        boost::optional<utxx::variant> put_value(bool val) const { return utxx::variant(val); }
+    };
+
+    template <>
+    struct translator_between<utxx::variant, int>
+    {
+        typedef translator_between<utxx::variant, int> type;
+        boost::optional<int> get_value(const utxx::variant& val) const { return val.to_int(); }
+        boost::optional<utxx::variant> put_value(int val) const { return utxx::variant(val); }
+    };
+
+    template <>
+    struct translator_between<utxx::variant, long>
+    {
+        typedef translator_between<utxx::variant, long> type;
+        boost::optional<long> get_value(const utxx::variant& val) const { return val.to_int(); }
+        boost::optional<utxx::variant> put_value(long val) const { return utxx::variant(val); }
+    };
+
+    template <>
+    struct translator_between<utxx::variant, double>
+    {
+        typedef translator_between<utxx::variant, double> type;
+        boost::optional<double>  get_value(const utxx::variant& val) const { return val.to_float(); }
+        boost::optional<utxx::variant> put_value(double val) const { return utxx::variant(val); }
     };
 
 } // namespace property_tree

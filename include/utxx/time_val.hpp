@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/detail/gettimeofday.hpp>
 #include <cstddef>
 #include <stdint.h>
+#include <ctime>
 #include <sys/time.h>
 
 namespace utxx {
@@ -94,6 +95,10 @@ namespace utxx {
         time_val(const time_val& a) : m_tv(a.m_tv) {}
         explicit time_val(const struct timeval& a) {
             m_tv.tv_sec=a.tv_sec; m_tv.tv_usec=a.tv_usec; normalize();
+        }
+
+        explicit time_val(struct tm& a_tm) {
+            m_tv.tv_sec = mktime(&a_tm); m_tv.tv_usec = 0;
         }
 
         /// Set time to abosolute time given by \a a

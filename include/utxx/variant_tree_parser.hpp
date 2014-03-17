@@ -126,7 +126,7 @@ namespace utxx {
         basic_variant_tree<Ch>  tree;
         int                     lineno  = 0;
         const Ch*               text    = NULL;
-        std::basic_string<Ch> line;
+        std::basic_string<Ch>   line;
         scon_reader rd
         (
             a_stream, tree, a_filename, lineno, line, 0,

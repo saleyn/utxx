@@ -66,6 +66,11 @@ bool file_exists(const char* a_path);
 void file_unlink(const char* a_path);
 
 /**
+ * Return portable value of the home path
+ */
+std::string home();
+
+/**
  * \brief Substitute all environment variables and day-time
  * formatting symbols (see strptime(3)) in a given filename.
  * The variables can be represented by "%VARNAME%" notation

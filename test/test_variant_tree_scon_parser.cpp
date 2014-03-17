@@ -11,7 +11,9 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/property_tree/detail/ptree_utils.hpp>
+#include <boost/format.hpp>
 #include <utxx/variant_tree_parser.hpp>
+#include <utxx/time_val.hpp>
 #include <typeinfo>  //for 'typeid' to work
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -533,5 +535,101 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parser )
     //test_scon_parser<wiptree>();
 //#endif
 }
+
+BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
+{
+    std::string home = utxx::path::home();
+    std::string home_tmp = home + "/tmp";
+
+    setenv("TTT", "abc", true);
+    struct tm tm, now, now_utc;
+    time_t nowtime = ::time(NULL);
+    localtime_r(&nowtime, &tm);
+
+    now.tm_year = 100;
+    now.tm_mon  = 10;
+    now.tm_mday = 20;
+    now.tm_hour = 11;
+    now.tm_min  = 25;
+    now.tm_sec  = 33;
+    time_t faketime = mktime(&now);
+
+    localtime_r(&faketime, &now);
+    gmtime_r(&faketime, &now_utc);
+
+    std::string stime = (boost::format("\"%d-%02d-%02d %02d:%02d:%02d\"")
+        % (1900+tm.tm_year) % (tm.tm_mon+1) % tm.tm_mday
+        % tm.tm_hour        % tm.tm_min     % tm.tm_sec).str();
+
+    std::string snow = (boost::format("\"%d-%02d-%02d %02d:%02d:%02d\"")
+        % (1900+now.tm_year) % (now.tm_mon+1) % now.tm_mday
+        % now.tm_hour        % now.tm_min     % now.tm_sec).str();
+
+    std::string snow_utc = (boost::format("\"%d-%02d-%02d %02d:%02d:%02d\", utc=true")
+        % (1900+now_utc.tm_year) % (now_utc.tm_mon+1) % now_utc.tm_mday
+        % now_utc.tm_hour        % now_utc.tm_min     % now_utc.tm_sec).str();
+//            % (1900+now_utc.year) % now_utc.tm_mon % now_utc.tm_mday
+//            % now_utc.tm_hour     % now_utc.tm_min % now_utc.tm_sec;
+
+    struct t {
+        static std::string get(const std::string& tree, const char* key) {
+            variant_tree t;
+            std::stringstream s; s << tree;
+            read_scon(s, t);
+            {
+                std::stringstream s;
+                t.dump(s, 2, false);
+                //BOOST_MESSAGE("Tree=====\n" << s.str());
+            }
+            return t.get<std::string>(key);
+        }
+
+        static std::string get(const char* t1, const std::string& t2, const char* t3, const char* key) {
+            return get(std::string(t1) + t2 + t3, key);
+        }
+    };
+
+    std::string home_tmp_file_time =
+        (boost::format("%s/tmp/file%d%02d%02d-%02d%02d.log")
+            % home % (1900+tm.tm_year) % (tm.tm_mon+1) % tm.tm_mday
+            % tm.tm_hour % tm.tm_min).str();
+    std::string home_tmp_file_now =
+        (boost::format("%s/tmp/file%d%02d%02d-%02d%02d.log")
+            % home % (1900+now.tm_year) % (now.tm_mon+1) % now.tm_mday
+            % now.tm_hour % now.tm_min).str();
+    std::string home_tmp_file_now_utc =
+        (boost::format("%s/tmp/file%d%02d%02d-%02d%02d.log")
+            % home % (1900+now_utc.tm_year) % (now_utc.tm_mon+1) % now_utc.tm_mday
+            % now_utc.tm_hour % now_utc.tm_min).str();
+    std::string date = (boost::format("%d%02d%02d-%02d")
+            % (1900+tm.tm_year) % (tm.tm_mon+1) % tm.tm_mday % tm.tm_hour).str();
+    std::string date_now = (boost::format("%d%02d%02d-%02d")
+            % (1900+now.tm_year) % (now.tm_mon+1) % now.tm_mday % now.tm_hour).str();
+    std::string date_now_utc = (boost::format("%d%02d%02d-%02d")
+            % (1900+now_utc.tm_year) % (now_utc.tm_mon+1) % now_utc.tm_mday
+            % now_utc.tm_hour).str();
+    std::string time_home_date = std::string("Time: ") + home + date;
+
+    BOOST_REQUIRE_EQUAL(home+" abc",            t::get("k10 \"${HOME} $env{TTT}\"\n", "k10"));
+    BOOST_REQUIRE_EQUAL(home,                   t::get("k1 ${HOME}\n",      "k1"));
+    BOOST_REQUIRE_EQUAL("abc",                  t::get("k2 ${\"TTT\"}\n",   "k2"));
+    BOOST_REQUIRE_EQUAL("abc",                  t::get("k3 $env{TTT}\n",    "k3"));
+    BOOST_REQUIRE_EQUAL(home_tmp,               t::get("k4 $path{~/tmp}\n", "k4"));
+    BOOST_REQUIRE_EQUAL(home_tmp_file_time,     t::get("k5 $path{~/tmp/file%Y%m%d-%H%M.log}\n", "k5"));
+    BOOST_REQUIRE_EQUAL(home_tmp_file_now,      t::get("k6 $path{\"~/tmp/file%Y%m%d-%H%M.log\", now=",
+                                                       snow, "}\n", "k6"));
+    BOOST_REQUIRE_EQUAL(home_tmp_file_now_utc,  t::get("k7 $path{\"~/tmp/file%Y%m%d-%H%M.log\", now=",
+                                                       snow_utc, "}\n", "k7"));
+    BOOST_REQUIRE_EQUAL(home+"abc",             t::get("k8 \"${HOME}${TTT}\"\n", "k8"));
+    BOOST_CHECK_THROW  (t::get("k9 ${HOME}${TTT}\n", "k9"), boost::property_tree::file_parser_error);
+    BOOST_REQUIRE_EQUAL(date,                   t::get("k11 $date{\"%Y%m%d-%H\"}\n", "k11"));
+    BOOST_REQUIRE_EQUAL(date_now,               t::get("k12 $date{\"%Y%m%d-%H\", now=", snow,     "}\n", "k12"));
+    BOOST_REQUIRE_EQUAL(date_now_utc,           t::get("k13 $date{'%Y%m%d-%H', now=", snow_utc, "}\n", "k13"));
+    BOOST_REQUIRE_EQUAL(time_home_date,         t::get("k14 \"Time: ${HOME}$date{'%Y%m%d-%H'}\"\n", "k14"));
+    BOOST_REQUIRE_EQUAL(home+"-abc/file.log",   t::get("k15 $path{'${HOME}-${TTT}/file.log'}", "k15"));
+    BOOST_REQUIRE_EQUAL(path::program::abs_path()+"/f", t::get("k16 $path{'${EXEPATH}/f'}", "k16"));
+
+}
+
 
 }} // namespace utxx::test
