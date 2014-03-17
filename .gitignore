@@ -23,6 +23,7 @@ test/config_test_data/config_options.hpp
 test/config_test_data/test_conf.hpp
 autom4te.cache
 aclocal.m4
+build-aux/compile
 build-aux/config.*
 build-aux/depcomp
 build-aux/install-sh
