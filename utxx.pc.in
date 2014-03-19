@@ -7,6 +7,6 @@ Name: @PACKAGE@
 Description: C++ Utility Library.
 #Requires: boost_1_49_0
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir}/utxx -lutxx
-Cflags: -isystem ${includedir}
+Libs: -L${libdir} -lutxx
+Cflags: -I${includedir}
 
