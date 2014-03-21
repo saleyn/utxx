@@ -192,6 +192,8 @@ namespace detail {
             >::type assoc_iterator;
 
         base* t = tree;
+        if (separator == Ch('\0'))
+            separator = path.separator();
         path_type p(path.dump(), separator);
         BOOST_ASSERT(!p.empty());
 
@@ -382,24 +384,55 @@ public:
         base::swap(static_cast<self_type&>(rhs));
     }
 
-    self_type &get_child(const path_type &path) {
-        return static_cast<self_type&>(base::get_child(path));
+    /**
+     * Get the child at given path, where current tree's path of root is \a root.
+     * Throw @c ptree_bad_path if such path doesn't exist
+     */
+    self_type &get_child
+    (
+        const path_type& path,
+        const path_type& root = path_type(),
+        Ch               sep  = Ch('\0')
+    ) {
+        boost::optional<self_type&> r = get_child_optional(path, sep);
+        if (!r) throw boost::property_tree::ptree_bad_path(
+            "Cannot get child - path not found", root / path);
+        return *r;
     }
 
     /** Get the child at the given path, or throw @c ptree_bad_path. */
-    const self_type &get_child(const path_type &path) const {
-        return static_cast<const self_type&>(base::get_child(path));
+    const self_type &get_child
+    (
+        const path_type& path,
+        const path_type& root = path_type(),
+        Ch               sep  = Ch('\0')
+    ) const {
+        boost::optional<self_type&> r = get_child_optional(path, sep);
+        if (!r) throw boost::property_tree::ptree_bad_path(
+            "Cannot get child - path not found", root / path);
+        return *r;
     }
 
     /** Get the child at the given path, or return @p default_value. */
-    self_type &get_child(const path_type &path, self_type &default_value) {
-        return static_cast<self_type&>(base::get_child(path, default_value));
+    self_type &get_child
+    (
+        const path_type& path,
+        self_type&       default_value,
+        Ch               sep = Ch('\0')
+    ) {
+        boost::optional<self_type&> r = get_child_optional(path, sep);
+        return r ? *r : default_value;
     }
 
     /** Get the child at the given path, or return @p default_value. */
-    const self_type &get_child(const path_type &path,
-                               const self_type &default_value) const {
-        return static_cast<const self_type&>(base::get_child(path, default_value));
+    const self_type &get_child
+    (
+        const path_type& path,
+        const self_type& default_value,
+        Ch               sep = Ch('\0')
+    ) const {
+        boost::optional<const self_type&> r = get_child_optional(path, sep);
+        return r ? *r : default_value;
     }
 
     /**
@@ -408,17 +441,21 @@ public:
      * In the contrast to the native implementation of property_tree,
      * this method allows paths to contain the bracket notation that
      * will also match the data of type string with the bracketed content:
-     * \code
+     * @code
      * auto result r = tree.get_child_optional("/one[weather]/two[sunshine]", '/')
-     * \endcode
+     * @endcode
+     * @param path_with_brackets is the path that optionally may contain data
+     *                           matches in square brackets
+     * @param separator is the separating character to use. Defaults to separator
+     *                  of the \a path_with_brackets
      */
     boost::optional<const self_type &>
-    get_child_optional(const path_type &path_with_brackets, Ch separator = Ch('.')) const {
+    get_child_optional(const path_type &path_with_brackets, Ch separator = Ch('\0')) const {
         return detail::get_child_optional<const self_type>(this, path_with_brackets, separator);
     }
 
     boost::optional<self_type &>
-    get_child_optional(const path_type &path_with_brackets, Ch separator = Ch('.')) {
+    get_child_optional(const path_type &path_with_brackets, Ch separator = Ch('\0')) {
         return detail::get_child_optional<self_type>(this, path_with_brackets, separator);
     }
 
