@@ -191,7 +191,7 @@ const char *error_data_5 =
     "{\n"
     "";                                         // No closing brace
 const char *error_data_6 =
-    "key1 data1, ,key2 data2\n";                // Extra ',' delimiter
+    "key1 data1 { ,key2 data2 }\n";             // Extra ',' delimiter
 
 template<class Ptree>
 typename Ptree::size_type calc_total_size(const Ptree &pt)

@@ -329,8 +329,21 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         config_path s1;
         config_path s2 = s1 / "a.b.c";
         BOOST_REQUIRE_EQUAL("a.b.c", s2.dump());
+        std::string k = s2.reduce();
+        BOOST_REQUIRE_EQUAL("a", k);
+        BOOST_REQUIRE_EQUAL("a.b.c", s2.dump());
         s2 /= "d.e";
         BOOST_REQUIRE_EQUAL("a.b.c.d.e", s2.dump());
+    }
+
+    {
+        config_path p("/a/b/c", '/');
+        std::string k = p.reduce();
+        BOOST_REQUIRE(k.empty());
+        BOOST_REQUIRE_EQUAL("/a/b/c", p.dump());
+        k = p.reduce();
+        BOOST_REQUIRE_EQUAL("/a/b/c", p.dump());
+        BOOST_REQUIRE_EQUAL("a", k);
     }
 
     try {
@@ -345,6 +358,38 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         std::string exp = std::string(s_path) + ".four[ABC]";
         std::string res = s.dump();
         BOOST_REQUIRE_EQUAL(exp, res);
+    }
+
+    {
+        std::stringstream s; s <<
+            "k1 a001\n"
+            "k1 a002 {\n"
+            "  k2 a011 {\n"
+            "    k3 a111\n"
+            "    k4 a211\n"
+            "    k4 a3111\n"
+            "  }\n"
+            "}\n";
+        variant_tree tree;
+        read_info(s, tree);
+
+        boost::optional<variant_tree&> r = tree.get_child_optional("k1[a001]");
+        BOOST_REQUIRE(r);
+        BOOST_REQUIRE(r->empty());
+
+        r = tree.get_child_optional("k1[a002]/k2[a011]", '/');
+        BOOST_REQUIRE(r);
+        BOOST_REQUIRE(!r->empty());
+        BOOST_REQUIRE(r->find("k3") != r->not_found());
+
+        r = tree.get_child_optional("[a002]/k2[a011]", '/');
+        BOOST_REQUIRE(r);
+        BOOST_REQUIRE(!r->empty());
+        BOOST_REQUIRE(r->find("k3") != r->not_found());
+
+        r = tree.get_child_optional("k1[a002]/k2/k4[a3111]", '/');
+        BOOST_REQUIRE(r);
+        BOOST_REQUIRE(r->empty());
     }
 }
 

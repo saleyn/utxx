@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/lexical_cast.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/throw_exception.hpp>
+#include <boost/type_traits/remove_const.hpp>
 #include <utxx/detail/variant_tree_utils.hpp>
 #include <string>
 
@@ -171,6 +172,61 @@ namespace detail {
         put_value(T value) const { return variant(value); }
     };
 
+    template <typename PTree, typename Ch>
+    boost::optional<PTree&>
+    get_child_optional(PTree* tree, const typename PTree::path_type &path, Ch separator) {
+        typedef typename boost::remove_const<PTree>::type   tree_type;
+        typedef typename tree_type::path_type               path_type;
+        typedef typename tree_type::key_type                key_type;
+        typedef typename
+            boost::mpl::if_<
+                boost::is_const<PTree>,
+                const typename PTree::base,
+                typename PTree::base
+            >::type base;
+        typedef typename
+            boost::mpl::if_<
+                boost::is_const<PTree>,
+                typename tree_type::const_assoc_iterator,
+                typename tree_type::assoc_iterator
+            >::type assoc_iterator;
+
+        base* t = tree;
+        path_type p(path.dump(), separator);
+        BOOST_ASSERT(!p.empty());
+
+        while (true) {
+            key_type k = p.reduce();
+            size_t  n = k.find('[');
+            key_type kp, dp;
+            assoc_iterator el, end = t->not_found();
+            if (n == key_type::npos)
+                el = t->find(k);
+            else {
+                size_t e = k.find(']', n+1);
+                if (e == key_type::npos)
+                    throw(boost::property_tree::ptree_bad_path(
+                        "Missing closing bracket", path));
+                kp = k.substr(0, n++);
+                dp = k.substr(n, e-n);
+                if (dp.empty())
+                    throw(boost::property_tree::ptree_bad_path(
+                        "Empty data expression in '[...]'", path));
+                for(el=t->ordered_begin(); el != end; ++el)
+                    if (el->first == kp || kp.empty())
+                        if (el->second.data().is_string() && el->second.data().to_str() == dp)
+                            break;
+            }
+            if (el == end)
+                return boost::optional<PTree&>();
+
+            t = &el->second;
+
+            if (p.empty())
+                return static_cast<PTree&>(*t);
+        }
+    }
+
 } // namespace detail
 
 
@@ -187,10 +243,11 @@ public:
                                                             base;
     typedef boost::property_tree::ptree_bad_path            bad_path;
     typedef typename base::key_type                         key_type;
-    typedef boost::property_tree::string_path<std::basic_string<Ch>,
-                boost::property_tree::id_translator<std::basic_string<Ch> >
+    typedef boost::property_tree::string_path<key_type,
+                boost::property_tree::id_translator<key_type>
             >                                               path_type;
     typedef std::pair<const std::basic_string<Ch>, base>    value_type;
+    typedef Ch                                              char_type;
     typedef typename base::iterator                         iterator;
     typedef typename base::const_iterator                   const_iterator;
 
@@ -345,22 +402,24 @@ public:
         return static_cast<const self_type&>(base::get_child(path, default_value));
     }
 
-    /** Get the child at the given path, or return boost::null. */
-    boost::optional<self_type &>
-    get_child_optional(const path_type &path) {
-        boost::optional<base&> o = base::get_child_optional(path);
-        if (!o)
-            return boost::optional<self_type&>();
-        return boost::optional<self_type&>(static_cast<self_type&>(*o));
+    /**
+     * Get the child at the given path (using provided separator).
+     *
+     * In the contrast to the native implementation of property_tree,
+     * this method allows paths to contain the bracket notation that
+     * will also match the data of type string with the bracketed content:
+     * \code
+     * auto result r = tree.get_child_optional("/one[weather]/two[sunshine]", '/')
+     * \endcode
+     */
+    boost::optional<const self_type &>
+    get_child_optional(const path_type &path_with_brackets, Ch separator = Ch('.')) const {
+        return detail::get_child_optional<const self_type>(this, path_with_brackets, separator);
     }
 
-    /** Get the child at the given path, or return boost::null. */
-    boost::optional<const self_type &>
-    get_child_optional(const path_type &path) const {
-        boost::optional<const base&> o = base::get_child_optional(path);
-        if (!o)
-            return boost::optional<const self_type&>();
-        return boost::optional<const self_type&>(static_cast<const self_type&>(*o));
+    boost::optional<self_type &>
+    get_child_optional(const path_type &path_with_brackets, Ch separator = Ch('.')) {
+        return detail::get_child_optional<self_type>(this, path_with_brackets, separator);
     }
 
     self_type &put_child(const path_type &path, const self_type &value) {

@@ -362,7 +362,7 @@ namespace detail {
                         else if (*text == Ch(','))
                         {
                             if (!last)
-                                // This is the case of "{ key, }"
+                                // This is the case of "{ key, }" or "{k1 d1, , k2 ...}"
                                 // but not             "{ ,key=value }"
                                 BOOST_PROPERTY_TREE_THROW(
                                     boost::property_tree::file_parser_error(
@@ -535,7 +535,7 @@ namespace detail {
                             std::string("required include root path not found: ") +
                                 convert_chtype(inc_root.dump()),
                             inc_name, inc_lineno));
-                for (typename Ptree::iterator
+                for (typename Ptree::const_iterator
                         tit = tt->begin(), e = tt->end(); tit != e; ++tit)
                     last = static_cast<Ptree*>(&stack.top()->push_back(*tit)->second);
             }
@@ -671,8 +671,8 @@ namespace detail {
             bool escaped = false;
             const Ch *start = text;
 
-            for(; (escaped || *text != qchar) && *text != Ch('\0'); ++text)
-                escaped = !escaped && *text == qchar;
+            for(; (escaped || *text != qchar) && !iseol(); ++text)
+                escaped = !escaped && *text == Ch('\\');
 
             // If end of string found
             if (*text != qchar)
