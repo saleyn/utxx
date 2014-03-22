@@ -366,8 +366,11 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
             "k1 a002 {\n"
             "  k2 a011 {\n"
             "    k3 a111\n"
-            "    k4 a211\n"
+            "    k4 a3110\n"
             "    k4 a3111\n"
+            "    k5 true\n"
+            "    k6 1.23\n"
+            "    k7 10\n"
             "  }\n"
             "}\n";
         variant_tree tree;
@@ -390,6 +393,8 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         r = tree.get_child_optional("k1[a002]/k2/k4[a3111]", '/');
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(r->empty());
+
+        BOOST_REQUIRE_EQUAL(10, tree.get<int>("k1[
     }
 }
 

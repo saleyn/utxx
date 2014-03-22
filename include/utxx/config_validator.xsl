@@ -4,7 +4,7 @@
     This file auto-generates a class derived from utxx::validator that
     implements an init() method, which populates configuration options
     from the XML specification file supplied by an app developer.
-     
+
     Copyright (c) 2012 Sergey Aleynikov <saleyn@gmail.com>
     Created: 2012-01-12
 -->
@@ -58,7 +58,7 @@ namespace </xsl:text>
     using namespace utxx;&#10;</xsl:text>
 
     <xsl:call-template name="print-all-constants"/>
-    
+
     <xsl:text>&#10;    namespace {
         typedef config::option_map    ovec;
         typedef config::string_set    sset;
@@ -67,10 +67,7 @@ namespace </xsl:text>
 
     struct </xsl:text>
     <xsl:value-of select="@name"/>
-    <xsl:text>: public config::validator&lt;</xsl:text>
-    <xsl:value-of select="@name"/>
-    <xsl:text>&gt; {</xsl:text>
-    <xsl:text>
+    <xsl:text>: public config::validator {
     private:
         </xsl:text>
         <xsl:value-of select="@name"/><xsl:text>() {}
@@ -99,7 +96,7 @@ namespace </xsl:text>
     <xsl:template name="process_options">
         <xsl:param name="level"/>
         <xsl:param name="arg"/>
-        
+
         <xsl:variable name="ws"><xsl:call-template name="pad">
             <xsl:with-param name="n" select="$level+6"/>
         </xsl:call-template></xsl:variable>
@@ -126,7 +123,7 @@ namespace </xsl:text>
                         <xsl:with-param name="level" select="$level+1"/>
                         <xsl:with-param name="arg" select="concat('l_children',$level)"/>
                     </xsl:call-template>
-                    
+
                     <xsl:for-each select="name">
                         <xsl:value-of select="$ws2"/><xsl:text>l_names.insert("</xsl:text>
                         <xsl:call-template name="value-to-string">

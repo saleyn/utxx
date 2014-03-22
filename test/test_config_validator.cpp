@@ -262,16 +262,15 @@ BOOST_AUTO_TEST_CASE( test_config_validator4 )
 
 BOOST_AUTO_TEST_CASE( test_config_validator5 )
 {
-    variant_tree l_config;
+    variant_tree l_config("root");
     std::stringstream l_stream;
     l_stream << "country US { ARCA connection { address abc } }\nduration 61\n"
              << "section { location 10 }\n";
 
     read_info(l_stream, l_config);
 
-    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
-        l_validator.validate(l_config, true, "root");
+        l_config.validate_with_defaults(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("root.duration[61]", e.path());
@@ -289,9 +288,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator6 )
 
     read_info(l_stream, l_config);
 
-    const test::cfg_validator& l_validator = test::cfg_validator::instance();
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[ER]", e.path());
@@ -305,7 +303,6 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
-    const test::cfg_validator& l_validator = test::cfg_validator::instance();
 
     l_stream << "duration 10\n"
              << "country \"US\"\n"
@@ -313,7 +310,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US]", e.path());
@@ -331,7 +328,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US].connection.ARCA[example].address", e.path());
@@ -348,7 +345,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[ER]", e.path());
@@ -364,7 +361,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("abc", e.path());
@@ -378,7 +375,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("country[US].connection[example].address", e.path());
@@ -393,7 +390,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("address[bcd]", e.path());
@@ -406,7 +403,6 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
-    const test::cfg_validator& l_validator = test::cfg_validator::instance();
 
     l_stream << "address 10\nduration 15\n"
              << "country \"US\" { ARCA connection { address abc } }\n"
@@ -414,7 +410,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("address[10]", e.path());
@@ -430,7 +426,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("duration[abc]", e.path());
@@ -446,7 +442,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("enabled[1]", e.path());
@@ -463,7 +459,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("cost[1]", e.path());
@@ -478,7 +474,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
         BOOST_REQUIRE(false);
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("section", e.path());
@@ -496,7 +492,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
     } catch (utxx::config_error& e) {
         BOOST_REQUIRE_EQUAL("cost[1]", e.path());
         BOOST_REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
@@ -511,7 +507,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
     read_info(l_stream, l_config);
 
     try {
-        l_validator.validate(l_config);
+        l_config.validate(test::cfg_validator::instance());
     } catch (utxx::config_error& e) {
         std::cerr << e.str() << std::endl;
         BOOST_REQUIRE(false);

@@ -191,9 +191,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_CONFIG_VALIDATOR_HPP_
 #define _UTXX_CONFIG_VALIDATOR_HPP_
 
-#include <utxx/config_tree.hpp>
 #include <utxx/path.hpp>
 #include <utxx/error.hpp>
+#include <utxx/variant.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
@@ -204,6 +204,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <map>
 
 namespace utxx {
+
+    class variant_tree;
+    class variant_tree_base;
+    class config_tree;
+    class config_path;
+    class config_error;
+
 namespace config {
 
     class option;
@@ -283,15 +290,14 @@ namespace config {
         std::string to_string() const;
     };
 
-    template <class Derived>
     class validator {
-        void check_option(const config_path& a_root, config_tree::value_type& a_vt,
+        void check_option(const config_path& a_root, variant& a_vt,
             const option& a_opt, bool a_fill_defaults) const throw(config_error);
 
-        void check_unique(const config_path& a_root, const config_tree& a_config,
+        void check_unique(const config_path& a_root, const variant_tree_base& a_config,
             const option_map& a_opts) const throw(config_error);
 
-        void check_required(const config_path& a_root, const config_tree& a_config,
+        void check_required(const config_path& a_root, const variant_tree_base& a_config,
             const option_map& a_opts) const throw (config_error);
 
         static option_type_t to_option_type(variant::value_type a_type);
@@ -319,18 +325,20 @@ namespace config {
         static const option* find(config_path& a_suffix, const option_map& a_options)
             throw ();
 
-        template <typename T>
-        T substitute_env_vars(subst_env_type, const T& a_value) const { return a_value; }
-        std::string substitute_env_vars(
-            subst_env_type a_type, const std::string& a_value) const;
     protected:
         config_path m_root;       // Path from configuration root
         option_map  m_options;
 
         static Derived init_once() { Derived v; return v.init(); }
 
-        void validate(const config_path& a_root, config_tree& a_config,
+        void validate(const config_path& a_root, variant_tree_base& a_config,
             const option_map& a_opts, bool fill_defaults) const throw(config_error);
+
+        void validate(config_tree& a_config,
+            const option_map& a_opts, bool fill_defaults) const throw(config_error)
+        {
+            validate(a_config.root_path(), a_config.to_base(), a_opts, fill_defaults);
+        }
 
         static void add_option(option_map& a, const option& a_opt) {
             a.insert(std::make_pair(a_opt.name, a_opt));
@@ -365,16 +373,13 @@ namespace config {
         /// no default, an exception is thrown.
         /// @param a_option is the path of the option to get from a_config.
         /// @param a_config is the configuration sub-tree.
-        /// @param a_root_path is the path of the \a a_config sub-tree from
-        ///             configuration root. empty path means that a_option is
-        ///             fully qualified from the root.
         template <class T>
-        T get(const config_path& a_option, const config_tree& a_config,
-            const config_path& a_root_path = config_path()) const throw(config_error);
+        T get(const config_path& a_option, const config_tree& a_config)
+            const throw(config_error);
 
-        const config_tree& get_child(const config_path& a_option,
-            const config_tree& a_config, const config_path& a_root_path = config_path())
-                const throw(config_error);
+        const variant_tree_base& get_child(
+            const config_path& a_option,
+            const config_tree& a_config) const throw(config_error);
 
         /// @return vector of configuration options
         const option_map& options() const { return m_options; }
@@ -383,22 +388,18 @@ namespace config {
         ///              property
         const config_path& root()   const { return m_root; }
 
-        void validate(config_tree& a_config, bool a_fill_defaults,
-                const config_path& a_root = config_path()) const throw(config_error) {
-            validate(a_root, a_config, m_options, a_fill_defaults);
+        void validate(config_tree& a_config, bool a_fill_defaults) const throw(config_error) {
+            validate(a_config, m_options, a_fill_defaults);
         }
 
-        void validate(const config_tree& a_config,
-                const config_path& a_root = config_path()) const throw(config_error) {
+        void validate(const config_tree& a_config) const throw(config_error) {
             config_tree l_config(a_config);
-            validate(l_config, false, a_root);
+            validate(l_config, false);
         }
     };
 
 } // namespace config
 } // namespace utxx
-
-#include <utxx/config_validator.ipp>
 
 #endif // _UTXX_CONFIG_VALIDATOR_HPP_
 
