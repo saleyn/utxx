@@ -59,7 +59,8 @@ example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp
 
 generated/test_config_validator.generated.hpp: \
-	   	test_config_validator.xml $(top_srcdir)/test/generated
+	   	test_config_validator.xml $(top_srcdir)/bin/config_validator_codegen.py \
+		$(top_srcdir)/test/generated
 	$(PYTHON) $(top_srcdir)/bin/config_validator_codegen.py -f $< -o $@ --overwrite
 
 # XSLT transform is deprecated

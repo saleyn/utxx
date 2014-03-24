@@ -29,151 +29,25 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
 #ifndef _UTXX_VARIANT_TREE_HPP_
 #define _UTXX_VARIANT_TREE_HPP_
 
 #include <utxx/variant.hpp>
+#include <utxx/variant_tree_error.hpp>
+#include <utxx/variant_tree_fwd.hpp>
+#include <utxx/variant_translator.hpp>
+#include <utxx/variant_tree_path.hpp>
 #include <utxx/typeinfo.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/type_traits/remove_const.hpp>
 #include <utxx/detail/variant_tree_utils.hpp>
 #include <utxx/config_validator.hpp>
+#include <utxx/string.hpp>
 #include <string>
 
-class T;
-namespace boost {
-namespace property_tree {
-    // Custom translator that works with utxx::variant instead of std::string.
-    // This translator is used to read/write values from files.
-    template <>
-    struct translator_between<utxx::variant, std::string>
-    {
-        typedef translator_between<utxx::variant, std::string> type;
-        typedef std::string     external_type;
-        typedef utxx::variant   internal_type;
-
-        boost::optional<external_type> get_value(const internal_type& value) const {
-            return boost::optional<external_type>(value.is_null() ? "" : value.to_str());
-        }
-
-        boost::optional<internal_type> put_value(const external_type& value) const {
-            if (value.empty())
-                return internal_type();
-            const char* end = value.c_str() + value.size();
-            char* e;
-            long n = strtol(value.c_str(), &e, 10);
-            // Note that value.size() can be 1, so we need both tests
-            if (e > value.c_str() && e >= end-1) { // is an integer and has been decoded fully
-                if (!*e)
-                    return boost::optional<internal_type>(n);
-
-                if (e == end-1) {
-                    switch (toupper(*e)) {
-                        case 'K': n *= 1024; break;
-                        case 'M': n *= 1024*1024; break;
-                        case 'G': n *= 1024*1024*1024; break;
-                        default:
-                            return internal_type();
-                    }
-                    return boost::optional<internal_type>(n);
-                }
-            }
-            double d = strtod(value.c_str(), &e);
-            if (!*e && e == end) // is a double and has been decoded fully
-                return boost::optional<internal_type>(d);
-
-            if (value == "true" || value == "false")
-                return boost::optional<internal_type>(value[0] == 't');
-            return boost::optional<internal_type>(value);
-        }
-
-        // Custom SCON extension to distinguish between values: 123 and \"123\",
-        // with the first being an integer and the second being a string
-        boost::optional<internal_type> put_value(const std::string& value, bool is_str) const {
-            return is_str ? boost::optional<internal_type>(value) : put_value(value);
-        }
-    };
-
-    template <>
-    struct translator_between<utxx::variant, const char*>
-    {
-        typedef translator_between<utxx::variant, const char*> type;
-        boost::optional<const char*> get_value(const utxx::variant& val) const {
-            return val.is_null() ? "" : val.to_str().c_str();
-        }
-        boost::optional<utxx::variant> put_value(const char* val) const {
-            translator_between<utxx::variant, std::string> tr;
-            return tr.put_value(std::string(val));
-        }
-    };
-
-    template <>
-    struct translator_between<utxx::variant, bool>
-    {
-        typedef translator_between<utxx::variant, bool> type;
-        boost::optional<bool> get_value(const utxx::variant& val) const { return val.to_bool(); }
-        boost::optional<utxx::variant> put_value(bool val) const { return utxx::variant(val); }
-    };
-
-    template <>
-    struct translator_between<utxx::variant, int>
-    {
-        typedef translator_between<utxx::variant, int> type;
-        boost::optional<int> get_value(const utxx::variant& val) const { return val.to_int(); }
-        boost::optional<utxx::variant> put_value(int val) const { return utxx::variant(val); }
-    };
-
-    template <>
-    struct translator_between<utxx::variant, long>
-    {
-        typedef translator_between<utxx::variant, long> type;
-        boost::optional<long> get_value(const utxx::variant& val) const { return val.to_int(); }
-        boost::optional<utxx::variant> put_value(long val) const { return utxx::variant(val); }
-    };
-
-    template <>
-    struct translator_between<utxx::variant, double>
-    {
-        typedef translator_between<utxx::variant, double> type;
-        boost::optional<double>  get_value(const utxx::variant& val) const { return val.to_float(); }
-        boost::optional<utxx::variant> put_value(double val) const { return utxx::variant(val); }
-    };
-
-} // namespace property_tree
-} // namespace boost
-
 namespace utxx {
-
-namespace detail {
-
-    // Custom translator that works with variant instead of std::string
-    // This translator is used to get/put values through explicit get/put calls.
-    template <typename Ext>
-    struct variant_translator
-    {
-        typedef Ext external_type;
-        typedef variant internal_type;
-        typedef variant::valid_types valid_types;
-
-        external_type get_value(const internal_type& value) const {
-            return value.get<external_type>();
-        }
-
-        template<typename T>
-        typename boost::disable_if<
-            boost::is_same<
-                boost::mpl::end<valid_types>::type,
-                boost::mpl::find<variant::valid_types, T>
-            >,
-            internal_type>::type
-        put_value(T value) const { return variant(value); }
-    };
-
-} // namespace detail
 
 namespace config {
     class validator;
@@ -182,21 +56,7 @@ namespace config {
 // TODO: replace variant with basic_variant<Ch>
 
 template <class Ch>
-using basic_variant_tree_base =
-    boost::property_tree::basic_ptree<
-        std::basic_string<Ch>,
-        variant,
-        std::less<std::basic_string<Ch>>
-    >;
-
-template <class Ch>
 using vt_key = std::basic_string<Ch>;
-
-template <class Ch>
-using vt_path =
-    boost::property_tree::string_path<
-        std::basic_string<Ch>,
-        boost::property_tree::id_translator<std::basic_string<Ch>>>;
 
 template <class Ch>
 class basic_variant_tree : public basic_variant_tree_base<Ch>
@@ -206,47 +66,32 @@ class basic_variant_tree : public basic_variant_tree_base<Ch>
 
 public:
     typedef basic_variant_tree_base<Ch>                     base;
-    typedef boost::property_tree::ptree_bad_path            bad_path;
     typedef typename base::key_type                         key_type;
-    typedef boost::property_tree::string_path<key_type,
-                boost::property_tree::id_translator<key_type>
-            >                                               path_type;
-    typedef std::pair<const std::basic_string<Ch>, base>    value_type;
+    typedef basic_tree_path<Ch>                             path_type;
+    typedef typename base::value_type                       value_type;
     typedef Ch                                              char_type;
     typedef typename base::iterator                         iterator;
     typedef typename base::const_iterator                   const_iterator;
 
-    struct translator_from_string
-        : public boost::property_tree::translator_between
-        <
-            variant, std::basic_string<Ch>
-        >
-    {
-        boost::optional<variant> operator() (const base& a_tree) const {
-            return *this->put_value(a_tree.get_value<std::string>());
-        }
-
-        variant operator() (const path_type& a_path, const variant& value) const {
-            return value;
-        }
-    };
-
 private:
-    path_type          m_root_path;
-    config::validator* m_schema_validator;
+    path_type                m_root_path;
+    const config::validator* m_schema_validator;
 
 
     template <typename T>
     static const base* do_put_value(
-        const base* tree, const key_type& k, const T& v, bool child, bool put)
+        const base* tree, const key_type& k, const T* v, bool put)
     {
         return tree;
     }
     template <typename T>
-    base* do_put_value(base* tree, const key_type& k, const T& v, bool child, bool put) {
-        if (child)    return tree->put_child(k, v);
-        else if (put) return tree->put(k, v, detail::variant_translator<T>());
-        else          return tree->add(k, v, detail::variant_translator<T>());
+    static base* do_put_value(
+        base* tree, const key_type& k, const T* v, bool put)
+    {
+        BOOST_ASSERT(v);
+        return put
+            ? &tree->put(k, *v, detail::variant_translator<T>())
+            : &tree->add(k, *v, detail::variant_translator<T>());
     }
 
     // Navigate to the path and optionally put given value.
@@ -254,7 +99,7 @@ private:
     // Otherwise each element of the path is created.
     // The path may contain brackets that will be used to match data elements
     // for a given key: "key1[data1].key2.[data3].key3"
-    template <typename PTree>
+    template <typename PTree, typename T = void>
     static typename boost::mpl::if_<boost::is_const<PTree>, const base*, base*>::type
     navigate(PTree* t, path_type& path, const T* put_val = NULL, bool do_put = true)
     {
@@ -278,7 +123,7 @@ private:
         const Ch  separator  = path.separator();
 
         if (pstr.size() == 0 || *(end-1) == separator)
-            throw boost::property_tree::ptree_bad_path(
+            throw variant_tree_bad_path(
                     "Invalid path", root / path);
 
         while (true) {
@@ -290,20 +135,20 @@ private:
             if (b != end) {
                 const Ch* be = std::find(b+1, q, Ch(']'));
                 if (be == q)
-                    throw boost::property_tree::ptree_bad_path(
+                    throw variant_tree_bad_path(
                         "Missing closing bracket", root / path);
                 if (be == b+1)
-                    throw boost::property_tree::ptree_bad_path(
+                    throw variant_tree_bad_path(
                         "Empty data expression in '[]'", root / path);
                 if (be+1 != end && *(be+1) != separator)
-                    throw boost::property_tree::ptree_bad_path(
+                    throw variant_tree_bad_path(
                         "Invalid path", root / path);
                 dp = key_type(b+1, be - b - 1);
             }
 
             // Reached the end of path
             if (q == end && put_val && !dp.empty())
-                throw boost::property_tree::ptree_bad_path(
+                throw variant_tree_bad_path(
                     "Last subpath cannot end with a '[]' filter", root / path);
 
             assoc_iter el, tend = tree->not_found();
@@ -320,8 +165,8 @@ private:
                 tree = &el->second;
             else if (put_val) {
                 tree = q != end
-                     ? do_put_value(tree, kp, dp, true, false)
-                     : do_put_value(tree, kp, *put_val, false, do_put);
+                     ? do_put_value(tree, kp, &dp,     false)
+                     : do_put_value(tree, kp, put_val, do_put);
             } else
                 tree = NULL;
 
@@ -348,7 +193,7 @@ private:
 
         BOOST_ASSERT(!p.empty());
 
-        TBase* t = navigate(tree, p, NULL);
+        TBase* t = navigate(tree, p, (const int*)NULL);
         return t ? *t : boost::optional<TBase&>();
     }
 
@@ -408,7 +253,11 @@ public:
 
     #if __cplusplus >= 201103L
     basic_variant_tree(basic_variant_tree&& a_rhs)  { swap(a_rhs); }
-    //basic_variant_tree(base&&               a_rhs)  { swap(a_rhs); }
+    basic_variant_tree(base&& a_rhs)
+        : m_schema_validator(NULL)
+    {
+        swap(a_rhs);
+    }
     #endif
 
     /// Offset path of this tree from the root configuration
@@ -426,12 +275,11 @@ public:
     T get_value() const {
         boost::optional<T> o = get_value_optional<T>();
         if (o) return *o;
-
-        std::stringstream s; s <<
-            "Path '" << m_root_path.dump() << "' conversion of data to type '"
-                     << type_to_string<T>() << "' failed";
-        BOOST_PROPERTY_TREE_THROW(
-            boost::property_tree::ptree_bad_data(s.str(), base::data()));
+        throw variant_tree_bad_data(
+            utxx::to_string(
+                "Path '", m_root_path.dump(), "' data conversion to type '",
+                type_to_string<T>(), "' failed"),
+            base::data());
     }
 
     template <class T>
@@ -439,7 +287,7 @@ public:
         return base::get_value(default_value, detail::variant_translator<T>());
     }
 
-    std::basic_string<Ch> get_value(const char* default_value) const {
+    std::basic_string<Ch> get_value(const Ch* default_value) const {
         return base::get_value(std::basic_string<Ch>(default_value),
             detail::variant_translator<std::basic_string<Ch> >());
     }
@@ -450,17 +298,20 @@ public:
     }
 
     template <class T>
-    T get(const path_type& path, Ch sep = Ch('\0')) const {
-        if (m_schema_validator)
-            return m_schema_validator->get<T>(path, *this);
-        const base& t = get_child(path, sep);
-        return t.get_value<T>(detail::variant_translator<T>());
+    T get(const path_type& path) const {
+        boost::optional<T> r = get_optional<T>(path);
+        if (r) return *r;
+        if (m_schema_validator) {
+            const base& v = m_schema_validator->default_value(path, m_root_path);
+            return v.data().get<T>();
+        }
+        throw variant_tree_bad_path("Path not found", path);
     }
 
     template <class T>
     T get(const path_type& path, const T& default_value) const {
         path_type p(path);
-        const base* t = navigate(this, p, NULL);
+        const base* t = navigate(this, p, (const int*)NULL);
         return t ? t->get_value<T>(detail::variant_translator<T>()) : default_value;
     }
 
@@ -472,8 +323,10 @@ public:
     template <class T>
     boost::optional<T> get_optional(const path_type& path) const {
         path_type p(path);
-        const base* t = navigate(this, p, NULL);
-        return t ? t->get_value<T>() : boost::optional<T>();
+        const base* t = navigate(this, p, (const int*)NULL);
+        return t
+            ? boost::optional<T>(t->get_value<T>(detail::variant_translator<T>()))
+            : boost::optional<T>();
     }
 
     template <class T>
@@ -500,6 +353,7 @@ public:
     void swap(basic_variant_tree& rhs) {
         base::swap(static_cast<base&>(rhs));
         std::swap(m_root_path, rhs.m_root_path);
+        std::swap(m_schema_validator, rhs.m_schema_validator);
     }
     void swap(base&  rhs) { base::swap(rhs); }
     void swap(ptree& rhs) { base::swap(rhs); }
@@ -509,22 +363,26 @@ public:
      * Throw @c ptree_bad_path if such path doesn't exist
      */
     base& get_child(const path_type& path) {
-        if (m_schema_validator)
-            return m_schema_validator->get_child(path, *this);
         boost::optional<base&> r = get_child_optional(path);
-        if (!r) throw boost::property_tree::ptree_bad_path(
+        if (r) return *r;
+        if (m_schema_validator) {
+            const base& v = m_schema_validator->default_value(path, m_root_path);
+            return put(path, v.data());
+        }
+        throw variant_tree_bad_path(
             "Cannot get child - path not found", m_root_path / path);
-        return *r;
     }
 
     /** Get the child at the given path, or throw @c ptree_bad_path. */
     const base& get_child(const path_type& path) const {
-        if (m_schema_validator)
-            return m_schema_validator->get_child(path, *this);
         boost::optional<const base&> r = get_child_optional(path);
-        if (!r) throw boost::property_tree::ptree_bad_path(
+        if (r) return *r;
+        if (m_schema_validator)
+            // default_value will throw if there's no such path
+            return m_schema_validator->default_value(path, m_root_path);
+
+        throw variant_tree_bad_path(
             "Cannot get child - path not found", m_root_path / path);
-        return *r;
     }
 
     /** Get the child at the given path, or return @p default_value. */
@@ -566,7 +424,7 @@ public:
     base& put_child(const path_type& path, const self_type& value) {
         path_type p(path);
         base* c = navigate(this, p, false);
-        if (!c) throw boost::property_tree::ptree_bad_path("Path doesn't exist", p);
+        if (!c) throw variant_tree_bad_path("Path doesn't exist", p);
         return c->put_child(p, value);
     }
 
@@ -612,7 +470,7 @@ public:
 
     void merge(const base& a_tree, const path_type& a_prefix = path_type())
     {
-        merge(a_prefix, a_tree, translator_from_string());
+        merge(a_prefix, a_tree, detail::basic_translator_from_string<Ch>());
     }
 
     /// Execute \a a_on_update function for every node in the tree. The function
@@ -626,8 +484,8 @@ public:
     /// Validate content of this tree against the custom validator
     void validate() const {
         if (!m_schema_validator)
-            throw std::runtime_error("Unassigned validator!")
-        m_schema_validator.validate(*this);
+            throw std::runtime_error("Unassigned validator!");
+        m_schema_validator->validate(*this);
     }
 
     /// For internal use
@@ -735,31 +593,6 @@ private:
     { return v; }
 };
 
-/// Path in the tree derived from boost/property_tree/string_path.hpp
-typedef basic_variant_tree<char>            variant_tree;
-typedef boost::property_tree::basic_ptree<
-    std::basic_string<char>,
-    variant,
-    std::less<std::basic_string<char> > >   variant_tree_base;
-typedef typename variant_tree::path_type    tree_path;
-
-tree_path  operator/ (const tree_path& a, const std::string& s);
-tree_path& operator/ (tree_path& a,       const std::string& s);
-tree_path  operator/ (const std::string& a, const tree_path& s);
-
-tree_path  operator/ (const tree_path& a,
-    const std::pair<std::string,std::string>& a_option_with_value);
-
-tree_path  operator/ (const tree_path& a,
-    const std::pair<const char*,const char*>& a_option_with_value);
-
-tree_path& operator/ (tree_path& a,
-    const std::pair<std::string,std::string>& a_option_with_value);
-
-tree_path& operator/ (tree_path& a,
-    const std::pair<const char*,const char*>& a_option_with_value);
-
-#include <utxx/variant_tree.ipp>
 
 } // namespace utxx
 

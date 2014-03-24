@@ -158,7 +158,7 @@ logger_impl_mgr::get_impl(const char* config_name) {
 void logger::init(const char* filename)
 {
     config_tree pt;
-    read_config_file(filename, pt);
+    read_config(filename, pt);
     init(pt);
 }
 

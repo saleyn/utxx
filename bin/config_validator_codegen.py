@@ -346,17 +346,20 @@ class ConfigGenerator(object):
                     "        typedef config::variant_set   vset;\n" +
                     "    }\n\n");
             name = root.attrib['name']
-            f.write("    class %s : public config::validator<%s> {\n" % (name, name))
-            f.write("        %s() {}\n" % name)
-            f.write("        friend class config::validator<%s>;\n\n" % name)
+            f.write("    class %s : public config::validator {\n" % name)
             f.write("    public:\n")
-            f.write("        const %s& init() {\n" % name)
+            f.write("        static const %s* instance() {\n" % name)
+            f.write("            static %s s_instance;\n" % name)
+            f.write("            return &s_instance;\n")
+            f.write("        }\n\n")
+            f.write("        friend class config::validator;\n\n")
+            f.write("        virtual ~%s() {}\n\n" % name)
+            f.write("        %s() {\n" % name)
             f.write('            m_root = "%s";\n' % root.attrib['namespace'])
 
             self.process_options(f, root)
 
-            f.write("            return *this;\n"
-                    "        }\n"
+            f.write("        }\n"
                     "    };\n\n"
                     "} // namespace %s\n\n"
                     "#endif // %s" % (root.attrib['namespace'], ifdeftag))

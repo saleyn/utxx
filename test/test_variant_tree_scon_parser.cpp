@@ -408,7 +408,7 @@ struct ReadFunc
     template<class Ptree>
     void operator()(const std::string &filename, Ptree &pt) const
     {
-        read_scon(filename, pt, &ReadFunc::inc_filename_resolver, std::locale());
+        detail::read_scon<char>(filename, pt, &ReadFunc::inc_filename_resolver, std::locale());
     }
 };
 
@@ -417,7 +417,7 @@ struct WriteFunc
     template<class Ptree>
     void operator()(const std::string &filename, const Ptree &pt) const
     {
-        write_scon(filename, pt);
+        detail::write_scon(filename, pt);
     }
 };
 
@@ -575,7 +575,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
         static std::string get(const std::string& tree, const char* key) {
             variant_tree t;
             std::stringstream s; s << tree;
-            read_scon(s, t);
+            detail::read_scon(s, t);
             {
                 std::stringstream s;
                 t.dump(s, 2, false);

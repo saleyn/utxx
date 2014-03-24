@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
+    !!!DEPRACATED!!!
+
+    This XSLT file was replaced by utxx/bin/config_validator_codegen.py
+    ===================================================================
+
     This file auto-generates a class derived from utxx::validator that
     implements an init() method, which populates configuration options
     from the XML specification file supplied by an app developer.

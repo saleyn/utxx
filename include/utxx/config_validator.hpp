@@ -40,7 +40,7 @@
 ///                                     is true the l_config will be
 ///                                     populated with default values
 ///                                     of missing options */
-///     } catch (util::config_error& e) {
+///     } catch (util::variant_tree_error& e) {
 ///         /* Output config usage information */
 ///         std::cerr << "Configuration error in " << e.path() << ": "
 ///                   << e.what() << std::endl
@@ -129,88 +129,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-/* TODO: following schema is incomplete
-
-    <?xml version="1.0"?>
-    <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
-
-    <xs:element name="config">
-      <xs:complexType>
-        <xs:attribute name="namespace" type="xs:string"/>
-        <xs:attribute name="name"      type="xs:string"/>
-        <xs:element name="options">
-          <xs:complexType>
-            <xs:sequence>
-              <xs:element name="option" type="xs:string"/>
-                <xs:complexType>
-                  <xs:attribute name="name" type="xs:string" use="required"/>
-                  <xs:attribute name="type">
-                    <xs:simpleType>
-                      <xs:restriction base="xs:string">
-                        <xs:enumeration value="string"/>
-                        <xs:enumeration value="bool"/>
-                      </xs:restriction>
-                    </xs:simpleType>
-                  </xs:attribute>
-                  <xs:attribute name="val_type">
-                    <xs:simpleType>
-                      <xs:restriction base="xs:string">
-                        <xs:enumeration value="string"/>
-                        <xs:enumeration value="int"/>
-                        <xs:enumeration value="float"/>
-                        <xs:enumeration value="bool"/>
-                      </xs:restriction>
-                    </xs:simpleType>
-                  </xs:attribute>
-                  <xs:attribute name="description"  type="xs:string"/>
-                  <xs:attribute name="unique"       type="xs:boolean"/>
-                  <xs:attribute name="default"/>
-                  <xs:attribute name="min"    />
-                  <xs:attribute name="max"    />
-                  <xs:element name="choices">
-                    <xs:complexType>
-                      <xs:choice maxOccurs="unbounded">
-                        <xs:choice name="name"/>
-                        <xs:choice name="value"/>
-                      </xs:choice>
-                    </xs:complexType>
-                  </xs:element>
-                  <xs:element ref="options" minOccurs="0" maxOccurs="unbounded"/>
-                </xs:complexType>
-              </xs:element>
-            </xs:sequence>
-          </xs:complexType>
-        </xs:element>
-      </xs:complexType>
-    </xs:element>
-
-    </xs:schema>
-
-*/
-
 #ifndef _UTXX_CONFIG_VALIDATOR_HPP_
 #define _UTXX_CONFIG_VALIDATOR_HPP_
 
 #include <utxx/path.hpp>
 #include <utxx/error.hpp>
 #include <utxx/variant.hpp>
+#include <utxx/variant_tree_error.hpp>
+#include <utxx/variant_tree_fwd.hpp>
+#include <utxx/variant_tree_path.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string/join.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <type_traits>
 #include <set>
 #include <list>
 #include <map>
 
 namespace utxx {
-
-    class variant_tree;
-    class variant_tree_base;
-    class config_tree;
-    class config_path;
-    class config_error;
-
 namespace config {
 
     class option;
@@ -241,37 +179,41 @@ namespace config {
 
     struct option {
 
-        std::string     name;
-        option_type_t   opt_type;   // Only STRING & ANONYMOUS are allowed
-        string_set      name_choices;
-        variant_set     value_choices;
+        std::string         name;
+        option_type_t       opt_type;   // STRING | ANONYMOUS
+        string_set          name_choices;
+        variant_set         value_choices;
 
-        option_type_t   value_type;
-        variant         default_value;
-        variant         min_value;
-        variant         max_value;
+        option_type_t       value_type;
+        variant_tree_base   default_value;
+        variant             min_value;
+        variant             max_value;
 
-        std::string     description;
-        option_map      children;
-        bool            required;
-        bool            unique;
-        subst_env_type  subst_env;  // If true, the value may have environment
-                                    // variable references that require substitution
+        std::string         description;
+        option_map          children;
+        bool                required;
+        bool                unique;
+        subst_env_type      subst_env;  // If true, the value may have environment
+                                        // variable references that require substitution
 
         option() : opt_type(UNDEF), value_type(UNDEF), required(true), unique(true) {}
 
-        option( const std::string& a_name,
-                option_type_t a_type, option_type_t a_value_type,
-                const std::string& a_desc = std::string(),
-                bool a_unique = true,
-                bool a_required = true,
-                subst_env_type a_subst_env = ENV_NONE,
-                const variant& a_def = variant(),
-                const variant& a_min = variant(),
-                const variant& a_max = variant(),
-                const string_set&   a_names   = string_set(),
-                const variant_set&  a_values  = variant_set(),
-                const option_map&   a_options = option_map())
+        option
+        (
+            const std::string&  a_name,
+            option_type_t       a_type,
+            option_type_t       a_value_type,
+            const std::string&  a_desc = std::string(),
+            bool                a_unique = true,
+            bool                a_required = true,
+            subst_env_type      a_subst_env = ENV_NONE,
+            const variant&      a_def = variant(),
+            const variant&      a_min = variant(),
+            const variant&      a_max = variant(),
+            const string_set&   a_names   = string_set(),
+            const variant_set&  a_values  = variant_set(),
+            const option_map&   a_options = option_map()
+        )
             : name(a_name), opt_type(a_type)
             , name_choices(a_names)
             , value_choices(a_values)
@@ -291,23 +233,27 @@ namespace config {
     };
 
     class validator {
-        void check_option(const config_path& a_root, variant& a_vt,
-            const option& a_opt, bool a_fill_defaults) const throw(config_error);
+        void check_option(
+            const tree_path&                        a_root,
+            typename variant_tree_base::value_type& a_vt,
+            const option&                           a_opt,
+            bool                                    a_fill_defaults
+        ) const throw(std::invalid_argument, variant_tree_error);
 
-        void check_unique(const config_path& a_root, const variant_tree_base& a_config,
-            const option_map& a_opts) const throw(config_error);
+        void check_unique(const tree_path& a_root, const variant_tree_base& a_config,
+            const option_map& a_opts) const throw(variant_tree_error);
 
-        void check_required(const config_path& a_root, const variant_tree_base& a_config,
-            const option_map& a_opts) const throw (config_error);
+        void check_required(const tree_path& a_root, const variant_tree_base& a_config,
+            const option_map& a_opts) const throw (variant_tree_error);
 
         static option_type_t to_option_type(variant::value_type a_type);
 
-        config_path format_name(const config_path& a_root, const option& a_opt,
+        tree_path format_name(const tree_path& a_root, const option& a_opt,
             const std::string& a_cfg_opt   = std::string(),
             const std::string& a_cfg_value = std::string()) const;
 
         bool has_required_child_options(const option_map& a_opts,
-            config_path& a_req_option_path) const;
+            tree_path& a_req_option_path) const;
 
         static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
             int a_level, const option_map& a_opts);
@@ -319,83 +265,63 @@ namespace config {
             return true;
         }
 
-        config_path strip_root(const config_path& a_root_path) const
-            throw(config_error);
+        tree_path strip_root(const tree_path& a_root_path) const
+            throw(variant_tree_error);
 
-        static const option* find(config_path& a_suffix, const option_map& a_options)
+        static const option* find(tree_path& a_suffix, const option_map& a_options)
             throw ();
 
     protected:
-        config_path m_root;       // Path from configuration root
+        tree_path m_root;       // Path from configuration root
         option_map  m_options;
 
-        static Derived init_once() { Derived v; return v.init(); }
+        void validate(const tree_path& a_root, variant_tree_base& a_config,
+            const option_map& a_opts, bool fill_defaults) const throw(variant_tree_error);
 
-        void validate(const config_path& a_root, variant_tree_base& a_config,
-            const option_map& a_opts, bool fill_defaults) const throw(config_error);
-
-        void validate(config_tree& a_config,
-            const option_map& a_opts, bool fill_defaults) const throw(config_error)
-        {
-            validate(a_config.root_path(), a_config.to_base(), a_opts, fill_defaults);
-        }
+        void validate(variant_tree& a_config,
+            const option_map& a_opts, bool fill_defaults) const throw(variant_tree_error);
 
         static void add_option(option_map& a, const option& a_opt) {
             a.insert(std::make_pair(a_opt.name, a_opt));
         }
 
         validator() {}
-    public:
         virtual ~validator() {}
 
-        static const Derived& instance() {
-            static Derived s_instance = init_once();
-            return s_instance;
-        }
+    public:
 
-        virtual const Derived& init() = 0;
+        /// Derived classes must implement this method
+        template <class Derived>
+        static const Derived* instance() {
+            static Derived s_instance;
+            return &s_instance;
+        }
 
         /// @return config option details
         std::string usage(const std::string& a_indent=std::string()) const;
 
         /// Get default value for a named option.
         /// @return default value for a given option's path.
-        const variant& default_value(const config_path& a_path,
-            const config_path& a_root_path = config_path()) const throw (config_error);
+        const variant_tree_base& default_value(
+            const tree_path& a_path,
+            const tree_path& a_root_path = tree_path()
+        ) const throw (variant_tree_error);
 
         /// Find option's metadata
-        const option* find(const config_path& a_path,
-            const config_path& a_root_path = config_path()) const throw ();
-
-        /// Get configuration a_option of type <tt>T</tt> from \a a_config tree.
-        /// If the option is not found and there's a default value, that
-        /// value will be returned.  Otherwise if the option is required and there is
-        /// no default, an exception is thrown.
-        /// @param a_option is the path of the option to get from a_config.
-        /// @param a_config is the configuration sub-tree.
-        template <class T>
-        T get(const config_path& a_option, const config_tree& a_config)
-            const throw(config_error);
-
-        const variant_tree_base& get_child(
-            const config_path& a_option,
-            const config_tree& a_config) const throw(config_error);
+        const option* find(const tree_path& a_path,
+            const tree_path& a_root_path = tree_path()) const throw ();
 
         /// @return vector of configuration options
         const option_map& options() const { return m_options; }
 
         /// @return root path of this configuration from the XML /config/@namespace
         ///              property
-        const config_path& root()   const { return m_root; }
+        const tree_path& root()   const { return m_root; }
 
-        void validate(config_tree& a_config, bool a_fill_defaults) const throw(config_error) {
-            validate(a_config, m_options, a_fill_defaults);
-        }
+        void validate(variant_tree& a_config, bool a_fill_defaults)
+            const throw(variant_tree_error);
 
-        void validate(const config_tree& a_config) const throw(config_error) {
-            config_tree l_config(a_config);
-            validate(l_config, false);
-        }
+        void validate(const variant_tree& a_config) const throw(variant_tree_error);
     };
 
 } // namespace config

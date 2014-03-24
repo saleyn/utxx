@@ -182,7 +182,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
         "}";
     std::stringstream s; s << s_data;
     variant_tree tree;
-    read_info(s, tree);
+    detail::read_scon(s, tree);
     if (verbosity::level() > VERBOSE_NONE)
         tree.dump(std::cout);
     {
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
         BOOST_REQUIRE_EQUAL(4.5, n);
     }
     {
-        variant_tree& vt = tree.get_child("test");
+        const variant_tree_base& vt = tree.get_child("test");
         int n = vt.count("address");
         BOOST_REQUIRE_EQUAL(2, n);
         std::string str = tree.get<std::string>("test.address");
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
         //boost::property_tree::info_parser::read_info_internal(
         //    s, tree, std::string(), 0);
         //boost::property_tree::ptree pt;
-        read_info(s, tree);
+        detail::read_scon(s, tree);
         BOOST_REQUIRE_EQUAL(1, tree.get<int>("key1"));
         BOOST_REQUIRE_EQUAL(true, tree.get<bool>("key2"));
         BOOST_REQUIRE_EQUAL(10.0, tree.get<double>("key3"));
@@ -374,27 +374,30 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
             "  }\n"
             "}\n";
         variant_tree tree;
-        read_info(s, tree);
+        detail::read_scon(s, tree);
 
-        boost::optional<variant_tree&> r = tree.get_child_optional("k1[a001]");
+        boost::optional<variant_tree_base&> r = tree.get_child_optional("k1[a001]");
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(r->empty());
 
-        r = tree.get_child_optional("k1[a002]/k2[a011]", '/');
+        r = tree.get_child_optional(tree_path("k1[a002]/k2[a011]", '/'));
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(!r->empty());
         BOOST_REQUIRE(r->find("k3") != r->not_found());
 
-        r = tree.get_child_optional("[a002]/k2[a011]", '/');
+        r = tree.get_child_optional(tree_path("[a002]/k2[a011]", '/'));
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(!r->empty());
         BOOST_REQUIRE(r->find("k3") != r->not_found());
 
-        r = tree.get_child_optional("k1[a002]/k2/k4[a3111]", '/');
+        r = tree.get_child_optional(tree_path("k1[a002]/k2/k4[a3111]", '/'));
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(r->empty());
 
-        BOOST_REQUIRE_EQUAL(10, tree.get<int>("k1[
+        BOOST_REQUIRE_EQUAL("a3110", tree.get<std::string>(tree_path("k1[a002]/k2/k4[3110]", '/')));
+        BOOST_REQUIRE_EQUAL(true, tree.get<bool>(tree_path("k1[a002]/k2/k5", '/')));
+        BOOST_REQUIRE_EQUAL(1.23, tree.get<double>(tree_path("k1[a002]/k2[a011]/k6", '/')));
+        BOOST_REQUIRE_EQUAL(10,   tree.get<int>(tree_path("k1[a002]/k2/k7", '/')));
     }
 }
 
@@ -432,7 +435,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_xml )
         "<address1>29xx</address1>\n"
         "<address2>29 xx</address2>\n"
         "</one>\n";
-    gen_test_case(s, &read_xml<std::stringstream, char>, "test_variant_tree_xml");
+    gen_test_case(s, &detail::read_xml<std::stringstream, char>, "test_variant_tree_xml");
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_ini )
@@ -447,5 +450,5 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_ini )
         "address1   = 29xx\n"
         "address2   = 29 xx\n"
         "\n";
-    gen_test_case(s, &read_ini<std::stringstream, char>, "test_variant_tree_ini");
+    gen_test_case(s, &detail::read_ini<std::stringstream, char>, "test_variant_tree_ini");
 }

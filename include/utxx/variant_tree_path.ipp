@@ -1,11 +1,11 @@
-#ifndef _UTXX_VARIANT_TREE_IPP_
-#define _UTXX_VARIANT_TREE_IPP_
+#ifndef _UTXX_VARIANT_TREE_PATH_IPP_
+#define _UTXX_VARIANT_TREE_PATH_IPP_
 
 #include <boost/assert.hpp>
-//#include <utxx/variant_tree.hpp> // To keep code analysis happy
+#include <utxx/variant_tree_path.hpp> // To keep code analysers happy
 
-//namespace utxx
-//{
+namespace utxx
+{
     inline tree_path operator/ (const tree_path& a, const std::string& s) {
         tree_path t(a);
         t /= s;
@@ -54,6 +54,6 @@
                     '[' + a_option_with_value.second + ']');
     }
 
-//} // namespace utxx
+} // namespace utxx
 
-#endif // _UTXX_VARIANT_TREE_IPP_
+#endif // _UTXX_VARIANT_TREE_PATH_IPP_

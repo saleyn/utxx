@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_PATH_HPP_
 #define _UTXX_PATH_HPP_
 
+#include <string>
+
 namespace utxx {
 namespace path {
 
