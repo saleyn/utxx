@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 """
 config_validator_codegen.py
 ===========================
@@ -275,7 +275,8 @@ class ConfigGenerator(object):
         # Since includes might have made nodes non-unique, we need to add
         # a surrogate unique identifier in order to check for loops in <copy> tags
         for i in root.iter():
-            i.attrib['_ID_'] = str(self.next_id())
+            if i.tag is not et.Comment:
+                i.attrib['_ID_'] = str(self.next_id())
         self.copy_and_check_loops(root, set(), [])
         self.debug(lambda: print_tree(root, ids='_ID_'), verbosity=1)
         return root
