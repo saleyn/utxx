@@ -400,6 +400,11 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         BOOST_REQUIRE_EQUAL(true, tree.get<bool>(tree_path("k1[a002]/k2/k5", '/')));
         BOOST_REQUIRE_EQUAL(1.23, tree.get<double>(tree_path("k1[a002]/k2[a011]/k6", '/')));
         BOOST_REQUIRE_EQUAL(10,   tree.get<int>(tree_path("k1[a002]/k2/k7", '/')));
+
+        variant_tree cfg(tree, "k1[a002]");
+
+        BOOST_REQUIRE_EQUAL("k1[a002]", cfg.root_path().dump());
+        BOOST_REQUIRE_EQUAL("a011",     cfg.get<std::string>("k2"));
     }
 }
 
