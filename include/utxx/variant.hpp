@@ -77,8 +77,9 @@ class variant: public boost::variant<null, bool, long, double, std::string>
     };
 
     template <typename T>
-    T       get(T*)       const { return boost::get<T>(*this); }
-    variant get(variant*) const { return variant(*this); }
+    T              get(T*)       const { return boost::get<T>(*this); }
+    const variant& get(variant*) const { return *this; }
+    variant&       get(variant*)       { return *this; }
 public:
     typedef boost::mpl::vector<
         int,int16_t,long,uint16_t,uint32_t,uint64_t> int_types;
@@ -102,23 +103,30 @@ public:
     };
 
     variant() : base(null()) {}
-    explicit variant(bool           a) : base(a)        {}
-    explicit variant(int16_t        a) : base((long)a)  {}
-    explicit variant(int            a) : base((long)a)  {}
-    explicit variant(long           a) : base(a)        {}
-    explicit variant(uint16_t       a) : base((long)a)  {}
-    explicit variant(uint32_t       a) : base((long)a)  {}
-    explicit variant(uint64_t       a) : base((long)a)  {}
-    explicit variant(double         a) : base(a)        {}
+    explicit variant(bool       a) : base(a)        {}
+    explicit variant(int16_t    a) : base((long)a)  {}
+    explicit variant(int        a) : base((long)a)  {}
+    explicit variant(long       a) : base(a)        {}
+    explicit variant(uint16_t   a) : base((long)a)  {}
+    explicit variant(uint32_t   a) : base((long)a)  {}
+    explicit variant(uint64_t   a) : base((long)a)  {}
+    explicit variant(double     a) : base(a)        {}
 
     template <class Ch>
     variant(const std::basic_string<Ch>& a) : base(to_std_string<Ch>(a)) {}
     variant(const char*                  a) : base(std::string(a)) {}
     variant(const std::string&           a) : base(a) {}
 
+    variant(const variant& a) : base((const base&)a) {}
+
+#if __cplusplus >= 201103L
+    variant(variant&& a) { swap(a); }
+#endif
+
     variant(value_type v, const std::string& a) { from_string(v, a); }
 
-    void operator= (bool        a)  { variant b(a); *this = b; }
+    void operator= (const variant& a) { *(base*)this = (const base&)a; }
+    //void operator= (null        a)  { *(base*)this = null(); }
     void operator= (int16_t     a)  { *(base*)this = (long)a; }
     void operator= (int         a)  { *(base*)this = (long)a; }
     void operator= (int64_t     a)  { *(base*)this = (long)a; }
@@ -127,6 +135,7 @@ public:
     void operator= (uint64_t    a)  { *(base*)this = (long)a; }
     void operator= (const char* a)  { *(base*)this = std::string(a); }
     void operator= (const std::string& a) { *(base*)this = a; }
+    void operator= (bool        a)  { variant b(a); *this = b; }
 
     template <typename T>
     void operator= (T a) {
@@ -168,7 +177,6 @@ public:
     bool is_double()    const { return type() == TYPE_DOUBLE; }
     bool is_string()    const { return type() == TYPE_STRING; }
 
-
     bool                to_bool()   const { return boost::get<bool>(*this); }
     long                to_int()    const { return boost::get<long>(*this); }
     long                to_float( ) const { return boost::get<double>(*this); }
@@ -207,6 +215,8 @@ public:
         type* dummy(NULL);
         return get(dummy);
     }
+
+    const variant& get() const { return *this; }
 
     void from_string(value_type v, const std::string& a) {
         switch (v) {

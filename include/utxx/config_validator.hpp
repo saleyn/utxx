@@ -230,6 +230,11 @@ namespace config {
         bool operator== (const option& a_rhs) const { return name == a_rhs.name; }
 
         std::string to_string() const;
+
+        static std::string substitute_vars(
+            subst_env_type a_type, const std::string& a_value);
+
+        variant default_subst_value() const;
     };
 
     class validator {
@@ -304,12 +309,16 @@ namespace config {
         /// @return default value for a given option's path.
         const variant_tree_base& default_value(
             const tree_path& a_path,
-            const tree_path& a_root_path = tree_path()
+            const tree_path& a_root_path  = tree_path()
         ) const throw (variant_tree_error);
 
         /// Find option's metadata
         const option* find(const tree_path& a_path,
             const tree_path& a_root_path = tree_path()) const throw ();
+
+        /// Find option's metadata or throw if not found
+        const option& get(const tree_path& a_path,
+            const tree_path& a_root_path = tree_path()) const;
 
         /// @return vector of configuration options
         const option_map& options() const { return m_options; }

@@ -46,6 +46,12 @@ using basic_tree_path = boost::property_tree::string_path<
 
 typedef basic_tree_path<char> tree_path;
 
+template <class Ch>
+basic_tree_path<Ch> operator/
+(
+    const basic_tree_path<Ch>& a,
+    const basic_tree_path<Ch>& b
+);
 
 tree_path  operator/ (const tree_path& a, const std::string& s);
 tree_path& operator/ (tree_path& a,       const std::string& s);

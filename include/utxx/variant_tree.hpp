@@ -79,19 +79,26 @@ private:
 
 
     template <typename T>
-    static const base* do_put_value(
-        const base* tree, const key_type& k, const T* v, bool put)
-    {
+    static const base* do_put_value(const base* tree, const key_type&, const T*, bool) {
         return tree;
     }
+    static base* do_put_value(base* tree, const key_type& k, const variant* v, bool put) {
+        if (!v)  return tree;
+        if (put) { tree->data() = *v; return tree; }
+        return add(tree, k, *v);
+    }
     template <typename T>
-    static base* do_put_value(
-        base* tree, const key_type& k, const T* v, bool put)
-    {
-        BOOST_ASSERT(v);
-        return put
-            ? &tree->put(k, *v, detail::variant_translator<T>())
-            : &tree->add(k, *v, detail::variant_translator<T>());
+    static base* do_put_value(base* tree, const key_type& k, const T* v, bool put) {
+        if (!v)  return tree;
+        if (put) { tree->put_value(*v, detail::variant_translator<T>()); return tree; }
+        return add(tree, k, variant(*v));
+    }
+
+    static const base* add(const base* tree, const key_type&, const variant&) {
+        return tree;
+    }
+    static base* add(base* tree, const key_type& k, const variant& v) {
+        return &tree->push_back(value_type(k, self_type(v)))->second;
     }
 
     // Navigate to the path and optionally put given value.
@@ -99,7 +106,7 @@ private:
     // Otherwise each element of the path is created.
     // The path may contain brackets that will be used to match data elements
     // for a given key: "key1[data1].key2.[data3].key3"
-    template <typename PTree, typename T = void>
+    template <typename PTree, typename T = int>
     static typename boost::mpl::if_<boost::is_const<PTree>, const base*, base*>::type
     navigate(PTree* t, path_type& path, const T* put_val = NULL, bool do_put = true)
     {
@@ -122,17 +129,21 @@ private:
         const Ch* end        = begin + pstr.size();
         const Ch  separator  = path.separator();
 
-        if (pstr.size() == 0 || *(end-1) == separator)
-            throw variant_tree_bad_path(
-                    "Invalid path", root / path);
+        if (path.empty())
+            return do_put_value(tree, key_type(), put_val, true);
+
+        if (pstr.size() != 0 && *(end-1) == separator)
+            throw variant_tree_bad_path("Invalid path", root / path);
+
+        key_type kp;
 
         while (true) {
             const Ch* q = std::find(p, end, path.separator());
             const Ch* b = std::find(p, q, Ch('['));
-            key_type kp = key_type(p, b - p);
+            kp          = key_type(p, b - p);
             key_type dp;
 
-            if (b != end) {
+            if (b != q) {
                 const Ch* be = std::find(b+1, q, Ch(']'));
                 if (be == q)
                     throw variant_tree_bad_path(
@@ -160,15 +171,11 @@ private:
                     if (el->first == kp || kp.empty())
                         if (el->second.data().is_string() && el->second.data().to_str() == dp)
                             break;
-
-            if (el != tend)
-                tree = &el->second;
-            else if (put_val) {
-                tree = q != end
-                     ? do_put_value(tree, kp, &dp,     false)
-                     : do_put_value(tree, kp, put_val, do_put);
-            } else
-                tree = NULL;
+            tree = el != tend
+                 ? &el->second
+                 : (put_val
+                    ? add(tree, kp, dp.empty() ? variant() : variant(dp))
+                    : NULL);
 
             if (q == end || !tree) {
                 path = path_type(key_type(begin, q - begin), separator);
@@ -177,6 +184,9 @@ private:
 
             p = q+1;
         }
+
+        if (tree)
+           do_put_value(tree, kp, put_val, do_put);
 
         return tree;
     }
@@ -302,8 +312,8 @@ public:
         boost::optional<T> r = get_optional<T>(path);
         if (r) return *r;
         if (m_schema_validator) {
-            const base& v = m_schema_validator->default_value(path, m_root_path);
-            return v.data().get<T>();
+            const config::option& o = m_schema_validator->get(path, m_root_path);
+            return o.default_subst_value().get<T>();
         }
         throw variant_tree_bad_path("Path not found", path);
     }
@@ -360,27 +370,37 @@ public:
 
     /**
      * Get the child at given path, where current tree's path of root is \a root.
+     *
+     * The tree is updated to ensure that \a path exists, and if the
+     * schema_validator is defined, a default value for the \a path option
+     * is looked up with environment variable substitution.
      * Throw @c ptree_bad_path if such path doesn't exist
      */
     base& get_child(const path_type& path) {
         boost::optional<base&> r = get_child_optional(path);
         if (r) return *r;
         if (m_schema_validator) {
-            const base& v = m_schema_validator->default_value(path, m_root_path);
-            return put(path, v.data());
+            const config::option& o = m_schema_validator->get(path, m_root_path);
+            return put(path, o.default_subst_value());
         }
         throw variant_tree_bad_path(
             "Cannot get child - path not found", m_root_path / path);
     }
 
-    /** Get the child at the given path, or throw @c ptree_bad_path. */
+    /**
+     * Get the child at the given path, or throw @c ptree_bad_path.
+     *
+     * If the \a path doesn't exist, and if the
+     * schema_validator is not defined, the function throws an error.
+     * If the schema_validator is defined, it's consulted to ensure
+     * the given \a path represents a valid option.
+     */
     const base& get_child(const path_type& path) const {
         boost::optional<const base&> r = get_child_optional(path);
         if (r) return *r;
         if (m_schema_validator)
             // default_value will throw if there's no such path
             return m_schema_validator->default_value(path, m_root_path);
-
         throw variant_tree_bad_path(
             "Cannot get child - path not found", m_root_path / path);
     }
@@ -449,7 +469,7 @@ public:
     std::basic_string<Ch> to_string
     (
         size_t  a_tab_width     = 2,
-        bool    a_with_types    = true,
+        bool    a_with_types    = false,
         bool    a_with_braces   = true
     ) const {
         std::basic_stringstream<Ch> s;
@@ -570,7 +590,7 @@ private:
     template<typename T>
     void merge(const path_type& a_path, const base& a_tree, const T& a_on_update) {
         for (const_iterator it = a_tree.begin(), e = a_tree.end(); it != e; ++it) {
-            path_type path = a_path / path_type(it->first);
+            path_type path = a_path / it->first;
             merge(path, it->second, a_on_update);
         }
         put(a_path, a_on_update(a_path, a_tree.data()));

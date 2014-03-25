@@ -268,7 +268,9 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_parse )
 }
 
 namespace {
-    static variant merge(const variant_tree::path_type& s, const variant& d) { return d; }
+    static const variant& merge(const variant_tree::path_type& s, const variant& d) {
+        return d;
+    }
     static void update(const variant_tree::path_type& s, variant& d) {
         if (d.is_null()) return;
         else if (d.is_string()) d = d.to_str() + "x";
@@ -394,7 +396,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(r->empty());
 
-        BOOST_REQUIRE_EQUAL("a3110", tree.get<std::string>(tree_path("k1[a002]/k2/k4[3110]", '/')));
+        BOOST_REQUIRE_EQUAL("a3110", tree.get<std::string>(tree_path("k1[a002]/k2/k4[a3110]", '/')));
         BOOST_REQUIRE_EQUAL(true, tree.get<bool>(tree_path("k1[a002]/k2/k5", '/')));
         BOOST_REQUIRE_EQUAL(1.23, tree.get<double>(tree_path("k1[a002]/k2[a011]/k6", '/')));
         BOOST_REQUIRE_EQUAL(10,   tree.get<int>(tree_path("k1[a002]/k2/k7", '/')));
@@ -402,25 +404,19 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
 }
 
 template <class Stream, class ReadFun>
-bool gen_test_case(Stream& stream, ReadFun read_fun, const char* a_test_name)
+void gen_test_case(Stream& stream, ReadFun read_fun, const char* a_test_name)
 {
     variant_tree tree;
     read_fun(stream, tree, 0);
 
-    try {
-        BOOST_REQUIRE_EQUAL("debug", tree.get<std::string>("one.verbose"));
-        BOOST_REQUIRE_EQUAL("test1", tree.get<std::string>("one.test"));
-        BOOST_REQUIRE_EQUAL(5,       tree.get<int>("one.interval"));
-        BOOST_REQUIRE_EQUAL(2.012,   tree.get<double>("one.threshold"));
-        BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
-        BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
-        BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
-        BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), std::runtime_error);
-    } catch (...) {
-        BOOST_MESSAGE("Test case name: " << a_test_name);
-        throw;
-    }
-    return true;
+    BOOST_REQUIRE_EQUAL("debug", tree.get<std::string>("one.verbose"));
+    BOOST_REQUIRE_EQUAL("test1", tree.get<std::string>("one.test"));
+    BOOST_REQUIRE_EQUAL(5,       tree.get<int>("one.interval"));
+    BOOST_REQUIRE_EQUAL(2.012,   tree.get<double>("one.threshold"));
+    BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
+    BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
+    BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
+    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), boost::bad_get);
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_xml )

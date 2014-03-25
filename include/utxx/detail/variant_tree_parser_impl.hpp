@@ -123,15 +123,15 @@ namespace detail {
     )
     {
         typedef detail::basic_translator_from_string<Ch> translator;
-        translator              tr;
-        basic_variant_tree<Ch>  tree;
-        int                     lineno  = 0;
-        const Ch*               text    = NULL;
-        std::basic_string<Ch>   line;
+        translator                  tr;
+        basic_variant_tree_base<Ch> tree(a_tree.to_base());
+        int                         lineno  = 0;
+        const Ch*                   text    = NULL;
+        std::basic_string<Ch>       line;
 
         detail::scon_reader<basic_variant_tree_base<Ch>, translator, Ch> rd
         (
-            a_stream, tree.to_base(), a_filename, lineno, line, 0,
+            a_stream, tree, a_filename, lineno, line, 0,
             tr, text, a_resolver
         );
         a_tree.swap(tree);

@@ -87,7 +87,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
 
     std::stringstream s;
     s << l_validator->usage("");
-    BOOST_REQUIRE_EQUAL(
+    static const char* expected =
         "address: string\n"
         "  Description: Sample string entry\n"
         "      Default: \"123.124.125.012\"\n"
@@ -130,15 +130,14 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
         "\n"
         "tmp_str: string\n"
         "      Default: \"$TMP\"\n"
-        "\n",
-        s.str());
+        "\n";
+    BOOST_REQUIRE_EQUAL(expected, s.str());
 }
 
 BOOST_AUTO_TEST_CASE( test_config_validator1 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
-    std::stringstream l_stream;
-    l_stream
+    std::stringstream l_stream; l_stream
         << "address \"yahoo\"\n"
         << "enabled false\n"
         << "duration 20\n"

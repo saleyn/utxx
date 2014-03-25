@@ -33,6 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/variant_tree.hpp>
 #include <utxx/config_validator.hpp>
 #include <boost/algorithm/string/replace.hpp>
+#include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/date_time/posix_time/conversion.hpp>
+#include <boost/date_time/posix_time/posix_time_types.hpp>
 
 namespace utxx {
 namespace config {
@@ -101,6 +104,34 @@ std::string option::to_string() const {
     return s.str();
 }
 
+std::string option::substitute_vars
+(
+    subst_env_type a_type,
+    const std::string& a_value
+) {
+    namespace pt = boost::posix_time;
+    switch (a_type) {
+        case ENV_VARS:
+            return path::replace_env_vars(a_value);
+        case ENV_VARS_AND_DATETIME: {
+            struct tm tm = pt::to_tm(pt::second_clock::local_time());
+            return path::replace_env_vars(a_value, &tm);
+        }
+        case ENV_VARS_AND_DATETIME_UTC: {
+            struct tm tm = pt::to_tm(pt::second_clock::universal_time());
+            return path::replace_env_vars(a_value, &tm);
+        }
+        default:
+            return a_value;
+    }
+}
+
+variant option::default_subst_value() const {
+    return default_value.data().is_string()
+         ? variant(substitute_vars(subst_env, default_value.data().to_str()))
+         : default_value.data();
+}
+
 tree_path validator::
 strip_root(const tree_path& a_root_path) const throw(variant_tree_error)
 {
@@ -117,7 +148,7 @@ strip_root(const tree_path& a_root_path) const throw(variant_tree_error)
     if (s.substr(0, r.size()) != r || (s.size() > r.size() && s[r.size()] != sep))
         throw variant_tree_error(a_root_path, "Sub-path not found in root path");
 
-    return s.erase(s.size() > r.size() ? r.size()+1 : r.size());
+    return s.erase(0, s.size() > r.size() ? r.size()+1 : r.size());
 }
 
 const option* validator::
@@ -157,6 +188,15 @@ const option* validator::find
     }
 }
 
+const option& validator::get(const tree_path& a_path, const tree_path& a_root) const
+{
+    tree_path p(a_root.empty() ? strip_root(a_path) : (strip_root(a_root) / a_path.dump()));
+    const option* o = find(p, m_options);
+    if (o) return *o;
+    tree_path ep(p.dump());
+    throw variant_tree_error(m_root / ep, "Configuration option not found!");
+}
+
 const variant_tree_base& validator::default_value
 (
     const tree_path& a_path,
@@ -164,13 +204,7 @@ const variant_tree_base& validator::default_value
 )
     const throw (variant_tree_error)
 {
-    const option* o = find(a_path, a_root_path);
-
-    if (o) return o->default_value;
-
-    throw variant_tree_error(
-        a_root_path.empty() ? a_path : a_root_path / a_path,
-        "Required option doesn't have default value!");
+    return get(a_path, a_root_path).default_value;
 }
 
 tree_path validator::format_name
@@ -390,7 +424,7 @@ check_option
 
         switch (a_opt.value_type) {
             case STRING:
-                if (a_vt.second.data().type() != variant::TYPE_STRING)
+                if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_STRING)
                     throw std::invalid_argument("Wrong type - expected string!");
                 if (!a_opt.min_value.is_null() &&
                      a_vt.second.data().to_str().size() < (size_t)a_opt.min_value.to_int())
@@ -400,7 +434,7 @@ check_option
                     throw std::invalid_argument("String value too long!");
                 break;
             case INT:
-                if (a_vt.second.data().type() != variant::TYPE_INT)
+                if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_INT)
                     throw std::invalid_argument("Wrong type - expected integer!");
                 if (!a_opt.min_value.is_null() && a_opt.min_value > a_vt.second.data())
                     throw std::invalid_argument("Value too small!");
@@ -408,11 +442,11 @@ check_option
                     throw std::invalid_argument("Value too large!");
                 break;
             case BOOL:
-                if (a_vt.second.data().type() != variant::TYPE_BOOL)
+                if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_BOOL)
                     throw std::invalid_argument("Wrong type - expected boolean true/false!");
                 break;
             case FLOAT:
-                if (a_vt.second.data().type() != variant::TYPE_DOUBLE)
+                if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_DOUBLE)
                     throw std::invalid_argument("Wrong type - expected float!");
                 if (!a_opt.min_value.is_null() && a_opt.min_value > a_vt.second.data())
                     throw std::invalid_argument("Value too small!");
@@ -444,6 +478,9 @@ check_option
             case STRING:    break;
             case ANONYMOUS: break;
             case BRANCH:    break;
+            case INT:       break;
+            case FLOAT:     break;
+            case BOOL:      break;
             default: {
                 throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
                         a_vt.second.data().to_string()),

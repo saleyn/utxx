@@ -365,12 +365,12 @@ class ConfigGenerator(object):
                     "#endif // %s" % (root.attrib['namespace'], ifdeftag))
 
     def value_to_string(self, val, type):
-        if not val: return ""
+        if val == None: return ""
         return '"' + val + '"' if type == 'string' else val
 
     def string_to_type(self, type):
         if not type:            return 'config::STRING'
-        if type == 'string':    return 'config::STRING';
+        if type == 'string':    return 'config::STRING'
         if type == 'int':       return 'config::INT'
         if type == 'bool':      return 'config::BOOL'
         if type == 'float':     return 'config::FLOAT'
@@ -391,7 +391,7 @@ class ConfigGenerator(object):
 
             subopts = len(node.xpath("./option"))
 
-            [name, desc, val, type, valtype, default, macros,
+            [name, desc, val, tp, valtype, default, macros,
              required, unique, min, max, minlen, maxlen] = \
                 [node.attrib.get(a[0], default=a[1]) for a in [
                     ('name',        ""),
@@ -411,8 +411,8 @@ class ConfigGenerator(object):
 
             err = None
 
-            if macros == 'false' or type != 'string':
-                macros  = "config::ENV_NONE"
+            if   macros == 'false' \
+                 or valtype != 'string':    macros = "config::ENV_NONE"
             elif macros == 'true':          macros = "config::ENV_VARS"
             elif macros == 'env':           macros = "config::ENV_VARS"
             elif macros == 'env-date':      macros = "config::ENV_VARS_AND_DATETIME"
@@ -436,19 +436,29 @@ class ConfigGenerator(object):
 
             for n in node.xpath("./name"):
                 f.write('%sl_names.insert("%s");\n' % \
-                        (ws1, self.value_to_string(n.attrib.get('val'), type)))
+                        (ws1, self.value_to_string(n.attrib.get('val'), tp)))
 
             for n in node.xpath("./value"):
                 f.write('%sl_values.insert(variant(%s));\n' % \
                         (ws1, self.value_to_string(n.attrib.get('val'), valtype)))
+
+            if tp:
+                str_tp = self.string_to_type(tp)
+            elif subopts:
+                str_tp = 'config::BRANCH'
+            elif valtype:
+                str_tp = self.string_to_type(valtype)
+            else:
+                str_tp = 'config::UNDEF'
+
+            valtp = 'string' if not tp and subopts else valtype;
 
             f.write("%sadd_option(%s,\n" % (ws1, arg))
             f.write("%sconfig::option(CFG_%s, %s, %s,\n"
                     '%s  "%s", %s, %s, %s,\n'
                     "%s  variant(%s), variant(%s), variant(%s), l_names, l_values, l_children%d));\n"
                     "%s}\n" % (
-                    ws2, name.upper(), self.string_to_type(type),
-                        'config::BRANCH' if subopts else 'config::STRING',
+                    ws2, name.upper(), str_tp, self.string_to_type(valtp),
                     ws2, desc, unique, required, macros,
                     ws2, self.value_to_string(default, valtype),
                         min if min else "", max if max else "", level,
