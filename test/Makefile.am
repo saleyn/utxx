@@ -25,6 +25,7 @@ TEST_UTXX_SRCS = \
 	test_config_validator.cpp \
 	test_convert.cpp \
 	test_file_reader.cpp \
+	test_hashmap.cpp \
 	test_high_res_timer.cpp \
 	test_iovec.cpp \
 	test_iovector.cpp \

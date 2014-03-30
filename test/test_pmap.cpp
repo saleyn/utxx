@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \brief This is a test file for validating bitmap.hpp functionality.
+/// \brief This is a test file for validating pmap.hpp functionality.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2009-12-21
@@ -28,7 +28,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 #ifndef UTXX_STANDALONE
-//#define BOOST_TEST_MODULE bitmap_test 
+//#define BOOST_TEST_MODULE pmap_test
 #include <boost/test/unit_test.hpp>
 #else
 #define BOOST_AUTO_TEST_CASE( X ) void X()
