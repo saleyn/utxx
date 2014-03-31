@@ -325,7 +325,10 @@ class ConfigGenerator(object):
             f.write("#define %s\n\n" % ifdeftag)
             f.write("#include <utxx/config_validator.hpp>\n\n")
             f.write("namespace %s {\n" % root.attrib['namespace'])
-            f.write("    using namespace utxx;\n\n")
+            f.write("    using namespace utxx;\n")
+            f.write("    typedef\n")
+            f.write("        boost::property_tree::translator_between<variant, std::string>\n")
+            f.write("        translator;\n\n")
 
             max_name_size = max([len(n) for n in names])
             max_val_size = max([len(n) for n in values]) if len(values) > 0 else 0
@@ -348,6 +351,9 @@ class ConfigGenerator(object):
                     "    }\n\n");
             name = root.attrib['name']
             f.write("    class %s : public config::validator {\n" % name)
+            f.write("        translator tr;\n")
+            f.write("        variant v()              const { return variant();        }\n")
+            f.write("        variant v(const char* s) const { return *tr.put_value(s); }\n")
             f.write("    public:\n")
             f.write("        static const %s* instance() {\n" % name)
             f.write("            static %s s_instance;\n" % name)
@@ -358,6 +364,7 @@ class ConfigGenerator(object):
             f.write("        %s() {\n" % name)
             f.write('            m_root = "%s";\n' % root.attrib['namespace'])
 
+
             self.process_options(f, root)
 
             f.write("        }\n"
@@ -366,8 +373,9 @@ class ConfigGenerator(object):
                     "#endif // %s" % (root.attrib['namespace'], ifdeftag))
 
     def value_to_string(self, val, type):
-        if val == None: return ""
-        return '"' + val + '"' if type == 'string' else val
+        if val  == None:     return ""
+        if type == 'string': return '"' + val + '"'
+        return val
 
     def string_to_type(self, type):
         if not type:            return 'config::STRING'
@@ -381,7 +389,7 @@ class ConfigGenerator(object):
         exit(6)
 
     def process_options(self, f, root, level=0, arg='m_options'):
-        ws = '  ' * (level+6)
+        ws  = '  ' * (level+6)
         ws1 = '  ' + ws
         ws2 = '  ' + ws1
 
@@ -457,12 +465,14 @@ class ConfigGenerator(object):
             f.write("%sadd_option(%s,\n" % (ws1, arg))
             f.write("%sconfig::option(CFG_%s, %s, %s,\n"
                     '%s  "%s", %s, %s, %s,\n'
-                    "%s  variant(%s), variant(%s), variant(%s), l_names, l_values, l_children%d));\n"
+                    "%s  v(%s), v(%s), v(%s), l_names, l_values, l_children%d));\n"
                     "%s}\n" % (
                     ws2, name.upper(), str_tp, self.string_to_type(valtp),
                     ws2, desc, unique, required, macros,
-                    ws2, self.value_to_string(default, valtype),
-                        min if min else "", max if max else "", level,
+                    ws2,('"%s"' % default) if default else "",
+                        ('"%s"' % min) if min else "",
+                        ('"%s"' % max) if max else "",
+                        level,
                     ws))
 
 
