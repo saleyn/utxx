@@ -177,6 +177,8 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
         "    report_interval 5\n"
         "    threshold 2.012\n"
         "    overwrite true\n"
+        "    octal     0660\n"
+        "    hex       0xFA16\n"
         "    address \"229.1.0.1:2000 Line1\"\n"
         "    address \"229.1.0.2:2001 Line2\"\n"
         "}";
@@ -216,6 +218,14 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
     {
         double n = tree.get("test.threshold_it", 4.5);
         BOOST_REQUIRE_EQUAL(4.5, n);
+    }
+    {
+        int n = tree.get<int>("test.octal");
+        BOOST_REQUIRE_EQUAL(0660, n);
+    }
+    {
+        int n = tree.get<int>("test.hex");
+        BOOST_REQUIRE_EQUAL(0xFA16, n);
     }
     {
         const variant_tree_base& vt = tree.get_child("test");

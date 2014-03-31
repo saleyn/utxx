@@ -58,7 +58,15 @@ namespace property_tree {
                 return internal_type();
             const char* end = value.c_str() + value.size();
             char* e;
-            long n = strtol(value.c_str(), &e, 10);
+            int base = 10;
+            if (value.size() > 1 && value[0] == '0') {
+                char c = value[1];
+                if (c == 'x')
+                    base = 16;
+                else if ('0' <= c && c <= '7')
+                    base = 8;
+            }
+            long n = strtol(value.c_str(), &e, base);
             // Note that value.size() can be 1, so we need both tests
             if (e > value.c_str() && e >= end-1) { // is an integer and has been decoded fully
                 if (!*e)

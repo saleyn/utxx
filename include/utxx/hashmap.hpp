@@ -114,8 +114,6 @@ namespace detail {
 
     template <>
     struct hash_fun<const char*> {
-        static uint16_t get16bits(const char* d) { return *(const uint16_t *)d; }
-
         size_t operator()(const char* data) const {
             return hsieh_hash(data, strlen(data));
         }

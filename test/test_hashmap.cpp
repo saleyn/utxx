@@ -33,6 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/hashmap.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/verbosity.hpp>
+#if defined(__GNUC__) && __cplusplus >= 201103L
+#include <bits/functional_hash.h>
+#endif
 
 using namespace utxx;
 
@@ -81,13 +84,30 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     timer perf;
 
     long sum = 0;
-    for (int i=0; i < ITERATIONS; ++i) {
+    for (int i=0; i < ITERATIONS; ++i)
         sum += detail::hash_fun<const char*>()(data[i % COUNT].c_str());
-    }
 
-    double elapsed = perf.elapsed();
+    double elapsed1 = perf.elapsed();
 
     BOOST_MESSAGE(
-        (boost::format("StrHashFun speed: %.3f us/call") %
-                       (1000000.0 * elapsed / ITERATIONS)).str());
+        (boost::format("StrHashFun   speed: %.3f us/call") %
+                       (1000000.0 * elapsed1 / ITERATIONS)).str());
+
+    #if defined(__GNUC__) && __cplusplus >= 201103L
+    perf.reset();
+    for (int i=0; i < ITERATIONS; ++i) {
+        const std::string& s = data[i%COUNT];
+        sum += std::_Hash_impl::hash(s.c_str(), s.size()) & 0xFFFFFFFF;
+    }
+    double elapsed2 = perf.elapsed();
+    #else
+    double elapsed2 = elapsed1;
+    #endif
+
+    BOOST_MESSAGE(
+        (boost::format("std::HashFun speed: %.3f us/call") %
+                       (1000000.0 * elapsed2 / ITERATIONS)).str());
+
+    BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed1 / elapsed2)).str());
+
 }
