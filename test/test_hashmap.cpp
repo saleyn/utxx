@@ -51,9 +51,9 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
 {
     typedef
         detail::basic_hash_map<const char*, int, detail::hash_fun<const char*> >
-        hashtable;
+        hashtable1;
 
-    hashtable tab(30);
+    hashtable1 tab(10);
 
     tab["abc"]                               = 1;
     tab["abc_bcd_def_efgh"]                  = 2;
@@ -109,5 +109,4 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
                        (1000000.0 * elapsed2 / ITERATIONS)).str());
 
     BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed1 / elapsed2)).str());
-
 }
