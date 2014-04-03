@@ -96,7 +96,7 @@ test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
                           $(BOOST_TIMER_LIB) \
                           $(BOOST_FILESYSTEM_LIB) \
                           $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
-                          $(THRIFT_LDFLAGS) \
+                          $(THRIFT_LDFLAGS) $(THRIFT_LIBS) \
                           $(RTLIB)
 
 test_utxx_DATA 		= test_config_validator.xml
@@ -108,7 +108,7 @@ example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
                                    $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
                                    $(BOOST_DATE_TIME_LIB) $(BOOST_CHRONO_LIB) \
                                    $(BOOST_TIMER_LIB) $(BOOST_FILESYSTEM_LIB) \
-                                   $(THRIFT_LDFLAGS)
+                                   $(THRIFT_LDFLAGS) $(THRIFT_LIBS)
 
 example_delegate_SOURCES	= example_delegate.cpp
 example_delegate_CXXFLAGS 	= $(if $(debug),\
@@ -117,14 +117,14 @@ example_delegate_CXXFLAGS 	= $(if $(debug),\
 					          -DUTXX_STANDALONE -I$(srcdir)/../include
 example_delegate_LDFLAGS        = $(BOOST_LDFLAGS)
 example_delegate_LDADD          = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) \
-                                  $(THRIFT_LDFLAGS)
+                                  $(THRIFT_LDFLAGS) $(THRIFT_LIBS)
 
 example_scribe_SOURCES          = test_logger_scribe.cpp
 example_scribe_CXXFLAGS         = -DUTXX_STANDALONE -I$(srcdir)/../include $(THRIFT_CPPFLAGS) \
 							  -I${top_srcdir}/src -I$(THRIFT_DIR)/include/thrift/fb303
 example_scribe_LDFLAGS          = $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
 example_scribe_LDADD            = $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) \
-                                  $(BOOST_THREAD_LIB) \
+                                  $(BOOST_THREAD_LIB) $(THRIFT_LIBS) \
                                   $(srcdir)/../src/.libs/libutxx.la
 
 EXTRA_DIST = test_config_validator.xml $(top_src_dir)/bin/config_validator_codegen.py

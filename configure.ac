@@ -187,13 +187,15 @@ if test -n "${with_thrift}"; then
     else
         THRIFT_DIR="$with_thrift"
         THRIFT_PROG="$with_thrift/bin/thrift"
-        THRIFT_LDFLAGS="-L$with_thrift_libdir -lthrift"
         THRIFT_LIBDIR="$with_thrift_libdir"
+        THRIFT_LIBS="-lthrift"
+        THRIFT_LDFLAGS="-L$with_thrift_libdir"
         THRIFT_CPPFLAGS="-I$with_thrift/include"
         AC_SUBST([THRIFT_PROG])
         AC_SUBST([THRIFT_DIR])
         AC_SUBST([THRIFT_LDFLAGS])
         AC_SUBST([THRIFT_LIBDIR])
+        AC_SUBST([THRIFT_LIBS])
         AC_SUBST([THRIFT_CPPFLAGS])
     fi
     fi

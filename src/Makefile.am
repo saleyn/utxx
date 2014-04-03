@@ -31,8 +31,9 @@ libutxx_la_SOURCES  = $(UTXX64_SRCS) $(UTXX_SRCS)
 endif
 libutxx_la_LDFLAGS  = -version-info 1:1:0 -shared \
                       -Wl,-rpath -Wl,$(BOOST_LIBDIR) \
-                      -Wl,-rpath -Wl,$(THRIFT_LIBDIR)
-libutxx_la_LIBS     = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(THRIFT_LDFLAGS)
+                      -Wl,-rpath -Wl,$(THRIFT_LIBDIR) \
+                      $(BOOST_LDFLAGS) $(THRIFT_LDFLAGS)
+libutxx_la_LIBS     = $(BOOST_THREAD_LIB) $(THRIFT_LIBS)
 libutxx_la_CXXFLAGS = -I${top_srcdir}/include $(THRIFT_CPPFLAGS) \
 					  -I${top_srcdir}/src -I$(THRIFT_DIR)/include/thrift/fb303
 
