@@ -398,10 +398,16 @@ inline const char* unsafe_fixed_atol(const char* p, int64_t& value) {
     return q;
 }
 
-
 /**
- * A faster replacement to itoa() library function.
- * Additionally it allows skipping leading characters before making a conversion.
+ * A replacement to atoi() library function that does the job 4 times faster.
+ * The value written is padded on the right with \a pad character, unless it is '\0'.
+ * @return Pointer above the rightmost character (value or pad) written.
+ * @code
+ *   E.g.
+ *   itoa<int, 5>(buf, 1234) -> "1234  "
+ *                                   ^
+ *                                   +--- return pointer points to buf+4.
+ * @endcode
  */
 template <typename T, int N, typename Char>
 static inline char* itoa_left(Char *bytes, T value, Char pad = '\0') {
@@ -450,7 +456,14 @@ inline const char* atoi_left(const Char (&bytes)[N], T& value, Char skip = '\0')
 
 /**
  * A replacement to atoi() library function that does the job 4 times faster.
- * Additionally it allows skipping leading characters before making a conversion.
+ * The value written is padded on the left with \a pad character, unless it is '\0'.
+ * @return Pointer below the leftmost character (value or pad) written.
+ * @code
+ *   E.g.
+ *   itoa<int, 5>(buf, 1234) -> "  1234"
+ *                                ^
+ *                                +--- return pointer points to buf+1.
+ * @endcode
  */
 template <typename T, int N, typename Char>
 static inline char* itoa_right(Char *bytes, T value, Char pad = '\0') {
@@ -494,7 +507,7 @@ inline const char* atoi_right(const Char (&bytes)[N], T& value, Char skip = '\0'
 
 //--------------------------------------------------------------------------------
 /// Fallback implementation of itoa. Prints \a a_value into \a a_data buffer
-/// right padded with \a a_pad character.
+/// left padded with \a a_pad character.
 /// @return pointer to the beginning of the buffer.
 // 2010-10-15 Serge Aleynikov
 //--------------------------------------------------------------------------------
