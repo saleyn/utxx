@@ -662,18 +662,20 @@ const char* fast_atoi(const char* a_str, size_t a_sz, T* result,
 }
 
 template <typename T>
-const char* fast_atoi_skip_ws(const std::string& a_str, T* result,
+bool fast_atoi_skip_ws(const std::string& a_str, T* result,
     bool a_till_eol = true)
 {
-    return fast_atoi_skip_ws<T>(a_str.c_str(), a_str.size(), result, a_till_eol);
+    return fast_atoi_skip_ws<T>(a_str.c_str(), a_str.size(), result, a_till_eol)
+           != NULL;
 }
 
 /// \copydetail fast_atoi()
 template <typename T>
-const char* fast_atoi(const std::string& a_value, T* a_result,
+bool fast_atoi(const std::string& a_value, T* a_result,
     bool a_till_eol = true)
 {
-    return fast_atoi<T>(a_value.c_str(), a_value.size(), a_result, a_till_eol);
+    return fast_atoi<T>(a_value.c_str(), a_value.size(), a_result, a_till_eol)
+           != NULL;
 }
 
 //--------------------------------------------------------------------------------

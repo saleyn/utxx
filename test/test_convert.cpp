@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
     unsigned long u;
 
     for (uint32_t i=0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
-        BOOST_REQUIRE_EQUAL(tests[i].fatoi_success, fast_atoi(tests[i].test, n));
+        BOOST_REQUIRE_EQUAL(tests[i].fatoi_success, fast_atoi(tests[i].test, &n) != NULL);
         if (tests[i].fatoi_success) BOOST_REQUIRE_EQUAL(tests[i].expected, n);
 
         BOOST_REQUIRE(tests[i].test + strlen(tests[i].test) ==
@@ -400,32 +400,32 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
 
     }
 
-    BOOST_REQUIRE(!fast_atoi("123ABC", n));
-    BOOST_REQUIRE(fast_atoi( "123ABC", n, false));
+    BOOST_REQUIRE(!fast_atoi("123ABC", &n));
+    BOOST_REQUIRE(fast_atoi( "123ABC", &n, false));
     BOOST_REQUIRE_EQUAL(123, n);
     
-    BOOST_REQUIRE(!fast_atoi( "123  ", n));
-    BOOST_REQUIRE(fast_atoi( "123  ", n, false));
+    BOOST_REQUIRE(!fast_atoi( "123  ", &n));
+    BOOST_REQUIRE(fast_atoi( "123  ",  &n, false));
     BOOST_REQUIRE_EQUAL(123, n);
     
-    BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000123", 7), n));
-    BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000123", 7), n));
+    BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000123", 7), &n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000123", 7), &n));
     BOOST_REQUIRE_EQUAL(123, n);
 
-    BOOST_REQUIRE(!fast_atoi( "        -123", n));
-    BOOST_REQUIRE(fast_atoi_skip_ws( "        -123", n));
+    BOOST_REQUIRE(!fast_atoi( "        -123", &n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( "        -123", &n));
     BOOST_REQUIRE_EQUAL(-123, n);
 
-    BOOST_REQUIRE(!fast_atoi( "-123ABC", n));
-    BOOST_REQUIRE(fast_atoi( "-123ABC", n, false));
+    BOOST_REQUIRE(!fast_atoi( "-123ABC", &n));
+    BOOST_REQUIRE(fast_atoi( "-123ABC",  &n, false));
     BOOST_REQUIRE_EQUAL(-123, n);
     
-    BOOST_REQUIRE(!fast_atoi( "-123  ", n));
-    BOOST_REQUIRE(fast_atoi( "-123  ", n, false));
+    BOOST_REQUIRE(!fast_atoi( "-123  ",  &n));
+    BOOST_REQUIRE(fast_atoi( "-123  ",   &n, false));
     BOOST_REQUIRE_EQUAL(-123, n);
     
-    BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000-123", 8), n));
-    BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), n));
+    BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000-123", 8), &n));
+    BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), &n));
     BOOST_REQUIRE_EQUAL(-123, n);
     
 }
@@ -443,11 +443,11 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         cpu_timer t;
         const std::string buf("1234567890");
         long n;
-        BOOST_REQUIRE(fast_atoi(buf, n));
+        BOOST_REQUIRE(fast_atoi(buf, &n));
         BOOST_REQUIRE_EQUAL(1234567890, n);
 
         for (int i = 0; i < ITERATIONS; i++)
-            fast_atoi(buf, n);
+            fast_atoi(buf, &n);
 
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
@@ -592,6 +592,4 @@ BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )
     BOOST_REQUIRE_EQUAL("0001", (itoa_right<int, 4>(1, '0')));
     BOOST_REQUIRE_EQUAL("1", (itoa_right<int, 10>(1)));
 }
-
-
 
