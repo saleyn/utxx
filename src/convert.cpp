@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/convert.hpp>
 
 namespace utxx {
-
+/*
 //--------------------------------------------------------------------------------
 // Parses floating point numbers with fixed number of decimal digits from string.
 //
@@ -85,47 +85,46 @@ double atof(const char* p, const char* end)
     }
 
     // Handle exponent, if any.
-    /*
-    double scale = 1.0;
-    if ((*p == 'e') || (*p == 'E')) {
-        unsigned int expon;
-        p += 1;
+//  double scale = 1.0;
+//  if ((*p == 'e') || (*p == 'E')) {
+//      unsigned int expon;
+//      p += 1;
 
-        // Get sign of exponent, if any.
+//      // Get sign of exponent, if any.
 
-        frac = 0;
-        if (*p == '-') {
-            frac = 1;
-            p += 1;
+//      frac = 0;
+//      if (*p == '-') {
+//          frac = 1;
+//          p += 1;
 
-        } else if (*p == '+') {
-            p += 1;
-        }
+//      } else if (*p == '+') {
+//          p += 1;
+//      }
 
-        // Get digits of exponent, if any.
+//      // Get digits of exponent, if any.
 
-        expon = 0;
-        while (valid_digit(*p)) {
-            expon = expon * 10 + (*p - '0');
-            p += 1;
-        }
-        if (expon > 308) expon = 308;
+//      expon = 0;
+//      while (valid_digit(*p)) {
+//          expon = expon * 10 + (*p - '0');
+//          p += 1;
+//      }
+//      if (expon > 308) expon = 308;
 
-        // Calculate scaling factor.
+//      // Calculate scaling factor.
 
-        while (expon >= 50) { scale *= 1E50; expon -= 50; }
-        while (expon >=  8) { scale *= 1E8;  expon -=  8; }
-        while (expon >   0) { scale *= 10.0; expon -=  1; }
-    }
+//      while (expon >= 50) { scale *= 1E50; expon -= 50; }
+//      while (expon >=  8) { scale *= 1E8;  expon -=  8; }
+//      while (expon >   0) { scale *= 10.0; expon -=  1; }
+//  }
 
-    // Return signed and scaled floating point result.
+//  // Return signed and scaled floating point result.
+//  return sign * (frac ? (value / scale) : (value * scale));
 
-    return sign * (frac ? (value / scale) : (value * scale));
-    */
     return sign * value;
 }
+*/
 
-/* For internal use by sys_double_to_chars_fast() */
+/* For internal use by ftoa_fast() */
 static inline char* find_first_trailing_zero(char* p)
 {
     for (; *(p-1) == '0'; --p);
