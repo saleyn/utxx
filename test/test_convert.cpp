@@ -383,7 +383,8 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
     unsigned long u;
 
     for (uint32_t i=0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
-        BOOST_REQUIRE_EQUAL(tests[i].fatoi_success, fast_atoi(tests[i].test, &n) != NULL);
+        BOOST_REQUIRE_EQUAL(tests[i].fatoi_success,
+                            fast_atoi(tests[i].test, &n));
         if (tests[i].fatoi_success) BOOST_REQUIRE_EQUAL(tests[i].expected, n);
 
         BOOST_REQUIRE(tests[i].test + strlen(tests[i].test) ==
