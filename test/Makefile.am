@@ -79,7 +79,8 @@ $(top_srcdir)/test/generated:
 
 AM_CPPFLAGS = $(if $(debug),\
 				-g $(if $(optimize),-O$(optimize),-O0),\
-				$(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS))
+				$(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS)) \
+              -I /opt/pkg/folly/current/include
 
 if Ix86
 test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
@@ -88,7 +89,7 @@ test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
 test_utxx_CXXFLAGS 	= -I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(THRIFT_CPPFLAGS)
-test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS)
+test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS) -L/opt/pkg/folly/current/gcc/lib
 
 test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
                           $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
@@ -97,7 +98,7 @@ test_utxx_LDADD    	= $(srcdir)/../src/.libs/libutxx.la \
                           $(BOOST_FILESYSTEM_LIB) \
                           $(BOOST_UNIT_TEST_FRAMEWORK_LIB) \
                           $(THRIFT_LDFLAGS) $(THRIFT_LIBS) \
-                          $(RTLIB)
+                          $(RTLIB) -lfolly
 
 test_utxx_DATA 		= test_config_validator.xml
 

@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/timer/timer.hpp>
 #endif
 #include <limits>
+#include <folly/Conv.h>
 
 using namespace utxx;
 
@@ -439,15 +440,20 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
 
     BOOST_MESSAGE(       "             iterations: " << ITERATIONS);
+    const std::string buf("1234567890");
+    const char* p;
     {
         cpu_timer t;
-        const std::string buf("1234567890");
         long n;
         BOOST_REQUIRE(fast_atoi(buf, n));
         BOOST_REQUIRE_EQUAL(1234567890, n);
 
-        for (int i = 0; i < ITERATIONS; i++)
+        for (int i = 0; i < ITERATIONS; i++) {
+            p = buf.c_str();
             fast_atoi(buf, n);
+            // Trick the compiler into thinking that p changed to prevent loop opimization
+            asm volatile("" : "+g"(p));
+        }
 
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
@@ -486,14 +492,39 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         long n;
         BOOST_REQUIRE_EQUAL(1234567890, atoi(buf.c_str()));
 
-        for (int i = 0; i < ITERATIONS; i++)
+        for (int i = 0; i < ITERATIONS; i++) {
+            p = buf.c_str();
             atoi2(buf, n);
+            // Trick the compiler into thinking that p changed to prevent loop opimization
+            asm volatile("" : "+g"(p));
+        }
 
         cpu_times elapsed_times(t.elapsed());
         nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
 
         std::stringstream s;
         s << boost::format("              atoi time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+        BOOST_MESSAGE(s.str());
+    }
+    {
+        cpu_timer t;
+        const std::string buf("1234567890");
+        long n;
+        BOOST_REQUIRE_EQUAL(1234567890, atoi(buf.c_str()));
+
+        for (int i = 0; i < ITERATIONS; i++) {
+            p = buf.c_str();
+            folly::to<long>(buf);
+            // Trick the compiler into thinking that p changed to prevent loop opimization
+            asm volatile("" : "+g"(p));
+        }
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        std::stringstream s;
+        s << boost::format("     folly to<int> time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
         BOOST_MESSAGE(s.str());
     }
