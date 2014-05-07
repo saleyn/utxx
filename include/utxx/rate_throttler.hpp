@@ -204,7 +204,7 @@ add(const timeval& a_time, int a_count)
     }
     m_last_time = l_now;
     #ifdef THROTTLE_DEBUG
-    dumpt(std::cout);
+    dump(std::cout);
     #endif
 
     return m_sum;
