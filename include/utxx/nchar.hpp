@@ -160,7 +160,9 @@ namespace detail {
             const char *p = m_data, *end = p + N;
             if (skip)
                 while (*p == skip && p != end) p++;
-            return atof(p, end);
+            double res = 0.0;
+            (void)atof<double>(p, end, &res);
+            return res;
         }
 
         /// Convert the double to a string representation aligned to left 

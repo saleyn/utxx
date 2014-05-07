@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/type_traits/make_unsigned.hpp>
 #include <boost/assert.hpp>
 #include <string>
+#include <stdexcept>
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
 #include <stdint.h>
@@ -366,6 +367,33 @@ namespace detail {
     template <>
     struct unrolled_loop_atoul<0>;
 
+    //--------------------------------------------------------------------------
+    // Converting an insigned int type to a hexadecimal string
+    // The output is of length "N", left-filled with 0s if necessary:
+    //
+    template <typename T, int N>
+    struct unrolled_loop_itoa16_left
+    {
+      typedef unrolled_loop_itoa16_left<T, N-1> next;
+
+      static void convert(char* bytes, T val)
+      {
+        unsigned int ind = (unsigned int)(val & 0xf);
+        bytes[N-1] = "0123456789ABCDEF"[ind];
+        next::convert(bytes, val >> 4);
+      }
+    };
+
+    template<typename T>
+    struct unrolled_loop_itoa16_left<T, 0>
+    {
+      static void convert(char* bytes, T val)
+      {
+        if (val != 0)
+          throw std::runtime_error("utxx::detail::unrolled_loop_utoa16_left::"
+                                   "convert: No space for output");
+      }
+    };
 } // namespace detail
 
 /// This function converts a fixed-length string to integer.
@@ -398,10 +426,16 @@ inline const char* unsafe_fixed_atol(const char* p, int64_t& value) {
     return q;
 }
 
-
 /**
- * A faster replacement to itoa() library function.
- * Additionally it allows skipping leading characters before making a conversion.
+ * A replacement to atoi() library function that does the job 4 times faster.
+ * The value written is padded on the right with \a pad character, unless it is '\0'.
+ * @return Pointer above the rightmost character (value or pad) written.
+ * @code
+ *   E.g.
+ *   itoa<int, 5>(buf, 1234) -> "1234  "
+ *                                   ^
+ *                                   +--- return pointer points to buf+4.
+ * @endcode
  */
 template <typename T, int N, typename Char>
 static inline char* itoa_left(Char *bytes, T value, Char pad = '\0') {
@@ -450,7 +484,14 @@ inline const char* atoi_left(const Char (&bytes)[N], T& value, Char skip = '\0')
 
 /**
  * A replacement to atoi() library function that does the job 4 times faster.
- * Additionally it allows skipping leading characters before making a conversion.
+ * The value written is padded on the left with \a pad character, unless it is '\0'.
+ * @return Pointer below the leftmost character (value or pad) written.
+ * @code
+ *   E.g.
+ *   itoa<int, 5>(buf, 1234) -> "  1234"
+ *                                ^
+ *                                +--- return pointer points to buf+1.
+ * @endcode
  */
 template <typename T, int N, typename Char>
 static inline char* itoa_right(Char *bytes, T value, Char pad = '\0') {
@@ -494,7 +535,7 @@ inline const char* atoi_right(const Char (&bytes)[N], T& value, Char skip = '\0'
 
 //--------------------------------------------------------------------------------
 /// Fallback implementation of itoa. Prints \a a_value into \a a_data buffer
-/// right padded with \a a_pad character.
+/// left padded with \a a_pad character.
 /// @return pointer to the beginning of the buffer.
 // 2010-10-15 Serge Aleynikov
 //--------------------------------------------------------------------------------
@@ -519,31 +560,34 @@ inline Char* itoa_right(Char* a_data, size_t a_size, T a_value, Char a_pad = '\0
     }
 }
 
-/// @param till_eol instructs that the integer must be validated till a_str+a_sz.
-///                 If false "123ABC" is considered a valid 123 number. Otherwise
-///                 the function will return false.
-inline bool fast_atoi(const char* a_str, const char* a_end, long& result, bool till_eol = true) {
-    if (a_str >= a_end) return false;
+/// @param till_eol instructs that the integer must be validated till a_end.
+///                 If false, "123ABC" is considered a valid 123 number. Otherwise
+///                 the function will return NULL.
+/// @return input string ptr beyond the the value read if successful, NULL otherwise
+//
+template <typename T>
+const char* fast_atoi(const char* a_str, const char* a_end, T* result, bool till_eol = true) {
+    if (a_str >= a_end) return NULL;
 
     bool l_neg;
 
     if (*a_str == '-') { l_neg = true; ++a_str; }
     else               { l_neg = false; }
 
-    long x = 0;
+    T x = 0;
 
     do {
         const int c = *a_str - '0';
         if (c < 0 || c > 9) {
             if (till_eol)
-               return false;
+               return NULL;
             break;
         }
         x = (x << 3) + (x << 1) + c;
     } while (++a_str != a_end);
 
-    result = l_neg ? -x : x;
-    return true;
+    *result = l_neg ? -x : x;
+    return a_str;
 }
 
 /// Convert a number to string
@@ -581,37 +625,62 @@ char* itoa(T value, char*& result, int base = 10) {
     return begin;
 }
 
-inline bool fast_atoi_skip_ws(const char* a_str, size_t a_sz, long& result,
+/// Convert an unsigned number to the hexadecimal string
+/// This is a special optimased case of "itoa_left"
+/// @return pointer to the end
+template <typename T, int N>
+char* itoa16_left(char* (&result), T value)
+{
+  detail::unrolled_loop_itoa16_left<T,N>::convert(result, value);
+  return result + N;
+}
+
+template <typename T, int N>
+char* itoa16_left(char (&result)[N], T value)
+{
+  char* buff = static_cast<char*>(result);
+  detail::unrolled_loop_itoa16_left<T,N>::convert(buff, value);
+  return buff + N;
+}
+
+template <typename T>
+const char* fast_atoi_skip_ws(const char* a_str, size_t a_sz, T* result,
     bool a_till_eol = true)
 {
     const char* l_end = a_str + a_sz;
     // Find first non-white space char by treating ' ' like '\0'
     while (!(a_str == l_end || (*a_str & 0xF))) ++a_str;
-    return fast_atoi(a_str, l_end, result, a_till_eol);
+    return fast_atoi<T>(a_str, l_end, result, a_till_eol);
 }
 
-inline bool fast_atoi(const char* a_str, size_t a_sz, long& result,
+template <typename T>
+const char* fast_atoi(const char* a_str, size_t a_sz, T* result,
     bool a_till_eol = true)
 {
     const char* l_end = a_str + a_sz;
-    return fast_atoi(a_str, l_end, result, a_till_eol);
+    return fast_atoi<T>(a_str, l_end, result, a_till_eol);
 }
 
-inline bool fast_atoi_skip_ws(const std::string& a_str, long& result,
+template <typename T>
+bool fast_atoi_skip_ws(const std::string& a_str, T* result,
     bool a_till_eol = true)
 {
-    return fast_atoi_skip_ws(a_str.c_str(), a_str.size(), result, a_till_eol);
+    return fast_atoi_skip_ws<T>(a_str.c_str(), a_str.size(), result, a_till_eol)
+           != NULL;
 }
 
 /// \copydetail fast_atoi()
-inline bool fast_atoi(const std::string& a_value, long& a_result,
+template <typename T>
+bool fast_atoi(const std::string& a_value, T* a_result,
     bool a_till_eol = true)
 {
-    return fast_atoi(a_value.c_str(), a_value.size(), a_result, a_till_eol);
+    return fast_atoi<T>(a_value.c_str(), a_value.size(), a_result, a_till_eol)
+           != NULL;
 }
 
 //--------------------------------------------------------------------------------
 /// Convert a floating point number to string
+/// @return
 //--------------------------------------------------------------------------------
 int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact = true);
 
@@ -623,7 +692,54 @@ int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact = 
 //      http://www.leapsecond.com/tools/fast_atof.c
 //      Contributor: 2010-10-15 Serge Aleynikov
 //--------------------------------------------------------------------------------
-double atof(const char* p, const char* end);
+template <typename T>
+const char* atof(const char* p, const char* end, T* result)
+{
+    BOOST_ASSERT(p != NULL && end != NULL && result != NULL);
+
+    // Skip leading white space, if any.
+    while (p < end && (*p == ' ' || *p == '0'))
+        ++p;
+
+    // Get sign, if any.
+
+    double sign = 1.0;
+
+    if (*p == '-') {
+        sign = -1.0;
+        ++p;
+    } else if (*p == '+') {
+        ++p;
+    }
+
+    // Get digits before decimal point or exponent, if any.
+
+    double value = 0.0;
+    uint8_t n = *p - '0';
+    while (p < end && n < 10u) {
+        value = value * 10.0 + n;
+        n = *(++p) - '0';
+    }
+
+    // Get digits after decimal point, if any.
+
+    if (*p == '.') {
+        ++p;
+
+        double pow10 = 1.0;
+        double acc   = 0.0;
+        n = *p - '0';
+        while (p < end && n < 10u) {
+            acc = acc * 10.0 + n;
+            n = *(++p) - '0';
+            pow10 *= 10.0;
+        }
+        value += acc / pow10;
+    }
+
+    *result = sign * value;
+    return p;
+}
 
 /**
  * Convert an integer to string.
