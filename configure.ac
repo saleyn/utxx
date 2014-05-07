@@ -86,7 +86,7 @@ fi
 # Make sure Python package python-lxml is installed
 
 dnl AC_CONFIG_SRCDIR([src/common.cpp])
-AC_CONFIG_HEADER(include/utxx/config.h)   # prep config.h from config.h.in
+AC_CONFIG_HEADERS(config.h)   # prep config.h from config.h.in
 
 # Checks for libraries.
 

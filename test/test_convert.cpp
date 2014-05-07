@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
 #ifdef HAVE_CONFIG_H
-#include <utxx/config.h>
+#include <config.h>
 #endif
 #ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>

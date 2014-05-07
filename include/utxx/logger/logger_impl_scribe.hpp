@@ -55,7 +55,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_LOGGER_SCRIBE_HPP_
 #define _UTXX_LOGGER_SCRIBE_HPP_
 
-#include <utxx/config.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #ifdef HAVE_THRIFT_H
 

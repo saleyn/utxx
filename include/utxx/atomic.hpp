@@ -41,7 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/bits.hpp>
 
 #ifdef HAVE_CONFIG_H
-#include <utxx/config.h>
+#include <config.h>
 #endif
 
 #if __SIZEOF_LONG__ == 8
