@@ -369,12 +369,12 @@ namespace detail {
 
     //--------------------------------------------------------------------------
     // Converting an insigned int type to a hexadecimal string
-    // The output is of length "N", left-filled with 0s if necessary:
+    // The output is of length "N", right-adjusted, left-filled with 0s:
     //
     template <typename T, int N>
-    struct unrolled_loop_itoa16_left
+    struct unrolled_loop_itoa16_right
     {
-      typedef unrolled_loop_itoa16_left<T, N-1> next;
+      typedef unrolled_loop_itoa16_right<T, N-1> next;
 
       static void convert(char* bytes, T val)
       {
@@ -385,7 +385,7 @@ namespace detail {
     };
 
     template<typename T>
-    struct unrolled_loop_itoa16_left<T, 0>
+    struct unrolled_loop_itoa16_right<T, 0>
     {
       static void convert(char* bytes, T val)
       {
@@ -428,7 +428,8 @@ inline const char* unsafe_fixed_atol(const char* p, int64_t& value) {
 
 /**
  * A replacement to atoi() library function that does the job 4 times faster.
- * The value written is padded on the right with \a pad character, unless it is '\0'.
+ * The value written is aligned on the left and padded on the right with \a pad
+ * character, unless it is '\0'.
  * @return Pointer above the rightmost character (value or pad) written.
  * @code
  *   E.g.
@@ -484,7 +485,8 @@ inline const char* atoi_left(const Char (&bytes)[N], T& value, Char skip = '\0')
 
 /**
  * A replacement to atoi() library function that does the job 4 times faster.
- * The value written is padded on the left with \a pad character, unless it is '\0'.
+ * The value written is aligned on the right and padded on the left with \a pad
+ * character, unless it is '\0'.
  * @return Pointer below the leftmost character (value or pad) written.
  * @code
  *   E.g.
@@ -626,20 +628,21 @@ char* itoa(T value, char*& result, int base = 10) {
 }
 
 /// Convert an unsigned number to the hexadecimal string
-/// This is a special optimased case of "itoa_left"
+/// This is a special optimised case of "itoa_right" (the output string is
+/// right-aligned, left-padded with '0's if necessary)
 /// @return pointer to the end
 template <typename T, int N>
-char* itoa16_left(char* (&result), T value)
+char* itoa16_right(char* (&result), T value)
 {
-  detail::unrolled_loop_itoa16_left<T,N>::convert(result, value);
+  detail::unrolled_loop_itoa16_right<T,N>::convert(result, value);
   return result + N;
 }
 
 template <typename T, int N>
-char* itoa16_left(char (&result)[N], T value)
+char* itoa16_right(char (&result)[N], T value)
 {
   char* buff = static_cast<char*>(result);
-  detail::unrolled_loop_itoa16_left<T,N>::convert(buff, value);
+  detail::unrolled_loop_itoa16_right<T,N>::convert(buff, value);
   return buff + N;
 }
 
