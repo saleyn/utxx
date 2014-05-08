@@ -40,9 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <utxx/config.h>
 
 #if __SIZEOF_LONG__ == 8
 #   define UTXX_QorL_SUFFIX "q"
@@ -315,16 +313,10 @@ static inline unsigned long bit_scan_reverse(unsigned long v) {
 }
 
 /// Holds cacheline size.
-// Compile with "gcc -DCL_SIZE=$(getconf LEVEL1_DCACHE_LINESIZE)"
-// for acurate value reading.  Defaults to 64.
+// Compile with "gcc -DUTXX_CL_SIZE=$(getconf LEVEL1_DCACHE_LINESIZE)"
+// or use autoconf scripts to set proper value
 struct cacheline {
-    static const int size =
-        #ifdef CL_SIZE
-        CL_SIZE
-        #else
-        64
-        #endif
-    ;
+    static const int size = UTXX_CL_SIZE;
 
     template<int N>
     struct pad {

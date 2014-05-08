@@ -45,9 +45,10 @@ bin_SCRIPTS = ${top_srcdir}/bin/config_validator_codegen.py
 nobase_include_HEADERS = \
 	$(sort 	${top_srcdir}/include/@PACKAGE@/config_validator.xsl \
             ${top_srcdir}/include/@PACKAGE@/logger/logger_options.xml \
-			$(foreach d, \
-				$(shell find ${top_srcdir}/include/@PACKAGE@ -type d -print | xargs),\
-				$(wildcard $(d)/*.?pp)))
+            $(foreach d, \
+                $(shell find ${top_srcdir}/include/@PACKAGE@ -type d -print | xargs), \
+            $(wildcard $(d)/*.?pp)) \
+            ${top_srcdir}/include/@PACKAGE@/config.h)
 
 nodist_libutxx_la_SOURCES = ${top_srcdir}/config.h
 

@@ -40,3 +40,4 @@ libtool
 stamp-h1
 utxx.pc
 test.sh
+_configs.sed

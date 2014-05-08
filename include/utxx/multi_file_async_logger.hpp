@@ -38,9 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_ASYNC_FILE_LOGGER_HPP_
 #define _UTXX_ASYNC_FILE_LOGGER_HPP_
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <utxx/config.h>
 
 #include <boost/pool/pool_alloc.hpp>
 #include <boost/thread/thread.hpp>
@@ -417,13 +415,7 @@ private:
     void set_category(const std::string& a_category) {
         new (&args.msg.category) std::string(a_category);
     }
-} __attribute__((aligned(
-    #ifdef CL_SIZE
-        CL_SIZE
-    #else
-        64
-    #endif
-)));
+} __attribute__((aligned(UTXX_CL_SIZE)));
 
 template<typename traits>
 class basic_multi_file_async_logger<traits>::
