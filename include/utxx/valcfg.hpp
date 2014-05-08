@@ -27,6 +27,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <iostream>
 #include <utxx/config_tree.hpp>
+#include <utxx/variant_tree_parser.hpp>
 
 namespace utxx {
 
@@ -35,45 +36,40 @@ namespace utxx {
  */
 template<typename Validator>
 class valcfg {
-    config_tree  m_config_root;
-    config_tree& m_config;
-    const Validator& m_validator;
-    config_path m_root_path;
+    typedef typename Validator::cfg_validator val_t;
+    config_tree m_config;
 
 public:
     /// Root configuration constructor
-    valcfg(const std::string& a_fname, const config_path& a_root_path = config_path())
-        : m_config(m_config_root)
-        , m_validator(Validator::cfg_validator::instance())
-        , m_root_path(a_root_path)
+    valcfg(const std::string& a_file, const config_path& a_root = config_path())
+        : m_config(a_root, val_t::instance())
     {
-        config_tree::read_info(a_fname, m_config);
         try {
-            m_validator.validate(m_config, true);
+            read_config(a_file, m_config);
         } catch (config_error& e) {
             std::cerr << "Configuration error in " << e.path() << ": "
                       << e.what() << std::endl;
-            std::cerr << "Configuration schema to follow:\n\n"
-                      << m_validator.usage() << std::endl;
+            const val_t* l_validator = val_t::instance();
+            if (l_validator != NULL)
+                std::cerr << "Configuration schema to follow:\n\n"
+                          << l_validator->usage() << std::endl;
             throw;
         }
     }
 
     /// Child configuration constructor
     valcfg(const valcfg& a_root, const config_path& a_root_path)
-        : m_config(a_root.m_config.get_child(a_root_path))
-        , m_validator(a_root.m_validator)
-        , m_root_path(a_root.m_root_path / a_root_path)
+        : m_config(a_root.m_config, a_root_path)
     {}
 
     /// Get configuration option using default root path for the context
     template<typename T>
     T get(const config_path& a_option) const throw(config_error) {
-        return m_validator.get<T>(a_option, m_config, m_root_path);
+        return m_config.get<T>(a_option);
     }
 
-    config_tree     & conf_tree() { return m_config;    }
-    const Validator & validator() { return m_validator; }
+    /// Get internal configuration tree reference
+    const config_tree& conf_tree() { return m_config; }
 };
 
 } // namespace utxx
