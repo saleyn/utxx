@@ -267,6 +267,11 @@ namespace utxx {
         name_t (const char (&a_buf)[N]) { this->set_and_check(a_buf, N, false); }
     };
 
+    template <size_t Size>
+    static inline std::size_t hash_value(basic_short_name<Size> v) {
+        return boost::hash_value(v.to_int());
+    }
+
 } // namespace utxx
 
 #endif // _UTXX_BASIC_SHORT_NAME_HPP_

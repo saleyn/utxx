@@ -30,16 +30,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
+#include <utxx/config.h>
+
 //#define BOOST_TEST_MODULE test_convert
 #include <boost/test/unit_test.hpp>
 #include <utxx/convert.hpp>
 #include <utxx/verbosity.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>
-#ifdef HAVE_CONFIG_H
-#include <utxx/config.h>
-#endif
-#ifdef HAVE_BOOST_TIMER_TIMER_HPP
+#ifdef UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
 #endif
 #include <limits>

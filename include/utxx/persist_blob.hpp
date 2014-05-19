@@ -34,9 +34,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_PERSIST_BLOB_HPP_
 #define _UTXX_PERSIST_BLOB_HPP_
 
-#if HAVE_CONFIG_H
 #include <utxx/config.h>
-#endif
+
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/scope_exit.hpp>
@@ -103,7 +102,7 @@ private:
         typename Lock::lock_data lock_data;
         uint32_t version;
         T        data;
-    } __attribute__((aligned(CL_SIZE)));
+    } __attribute__((aligned(UTXX_CL_SIZE)));
 
     BOOST_STATIC_ASSERT(sizeof(blob_t) % atomic::cacheline::size == 0);
 

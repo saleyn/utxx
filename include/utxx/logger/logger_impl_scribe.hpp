@@ -57,7 +57,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/config.h>
 
-#ifdef HAVE_THRIFT_H
+#ifdef UTXX_HAVE_THRIFT_H
 
 #include <utxx/logger.hpp>
 #include <utxx/logger/logger_impl.hpp>

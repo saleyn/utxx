@@ -5,6 +5,8 @@ AC_INIT([utxx], [1.1], [BUG-REPORT-ADDRESS])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_MACRO_DIR([build-aux])
 AM_INIT_AUTOMAKE([foreign -Wall -Wno-portability])
+AC_CONFIG_HEADERS(config.h)
+AX_PREFIX_CONFIG_H(include/utxx/config.h)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES])
 
 AC_SUBST([utxxdir], [$libdir])
@@ -84,9 +86,6 @@ if test -n $lc1_size; then
 fi
 
 # Make sure Python package python-lxml is installed
-
-dnl AC_CONFIG_SRCDIR([src/common.cpp])
-AC_CONFIG_HEADER(include/utxx/config.h)   # prep config.h from config.h.in
 
 # Checks for libraries.
 

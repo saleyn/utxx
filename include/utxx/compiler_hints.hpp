@@ -33,14 +33,22 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_COMPILER_HINTS_HPP_
 #define _UTXX_COMPILER_HINTS_HPP_
 
-// Branch prediction optimization (see http://lwn.net/Articles/255364/)
-#ifdef __GNUC__
-#  define unlikely(expr) __builtin_expect(!!(expr), 0)
-#  define likely(expr)   __builtin_expect(!!(expr), 1)
-#else
-#  define unlikely(expr) (expr)
-#  define likely(expr)   (expr)
+#ifndef NO_HINT_BRANCH_PREDICTION
+#include <boost/lockfree/detail/branch_hints.hpp>
 #endif
+
+// Branch prediction optimization (see http://lwn.net/Articles/255364/)
+namespace utxx {
+
+#ifndef NO_HINT_BRANCH_PREDICTION
+    inline bool likely(bool expr)   { return boost::lockfree::detail::likely  (expr); }
+    inline bool unlikely(bool expr) { return boost::lockfree::detail::unlikely(expr); }
+#else
+    inline bool likely(bool expr)   { return expr; }
+    inline bool unlikely(bool expr) { return expr; }
+#endif
+
+} // namespace utxx
 
 #endif // _UTXX_COMPILER_HINTS_HPP_
 

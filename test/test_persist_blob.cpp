@@ -30,15 +30,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
+#include <utxx/config.h>
+
 #include <iostream>
 #include <iomanip>
 #include <unistd.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
-#ifdef HAVE_CONFIG_H
-#include <utxx/config.h>
-#endif
-#ifdef HAVE_BOOST_TIMER_TIMER_HPP
+#ifdef UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
 #endif
 #include <utxx/persist_blob.hpp>
@@ -171,7 +170,7 @@ namespace {
     };
 }
 
-#ifdef HAVE_BOOST_TIMER_TIMER_HPP
+#ifdef UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 
 BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
 {
