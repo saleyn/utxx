@@ -73,6 +73,17 @@ public:
     static const int padding    = size - Size;
 };
 
+#if __cplusplus >= 201103L
+/// Convert strongly typed enum to underlying type
+/// \code
+/// enum class B { B1 = 1, B2 = 2 };
+/// std::cout << utxx::to_underlying(B::B2) << std::endl;
+/// \endcode
+template <typename E>
+constexpr typename std::underlying_type<E>::type to_underlying(E e) {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+#endif
 
 } // namespace utxx
 
