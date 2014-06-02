@@ -77,9 +77,9 @@ protected:
     ///         exceed the maximum expected message size to be stored
     ///         in the buffer. When the buffer has less than that amount
     ///         of space left, it'll call the crunch() function.
-    explicit basic_io_buffer(size_t a_lwm = 0, const Alloc& a_alloc = Alloc())
+    explicit basic_io_buffer(size_t a_lwm = LONG_MAX, const Alloc& a_alloc = Alloc())
         : m_begin(m_data), m_end(m_data+N)
-        , m_rd_ptr(m_data), m_wr_ptr(m_data), m_wr_lwm(0)
+        , m_rd_ptr(m_data), m_wr_ptr(m_data), m_wr_lwm(a_lwm)
         , m_allocator(reinterpret_cast<const alloc_t&>(a_alloc))
     {}
 
@@ -143,7 +143,9 @@ protected:
 
     /// Returns true when the wr_lwm is set and the write pointer
     /// passed the point of wr_lwm bytes from the end of the buffer.
-    bool is_low_space()     const { return m_wr_ptr >= m_end - m_wr_lwm; }
+    bool is_low_space()     const {
+        return m_wr_ptr >= m_end - (m_wr_lwm == LONG_MAX ? 0 : m_wr_lwm);
+    }
 
     /// Current read pointer.
     const char* rd_ptr()    const { return m_rd_ptr; }
@@ -169,7 +171,11 @@ protected:
 
     /// Set the low memory watermark indicating when the buffer should be 
     /// automatically crunched by the read() call without releasing allocated memory.
-    void wr_lwm(size_t a_lwm)     { m_wr_lwm = a_lwm; }
+    void wr_lwm(size_t a_lwm) {
+        if (a_lwm > max_size())
+            throw std::runtime_error("io_buffer: low watermark too large!");
+        m_wr_lwm = a_lwm;
+    }
 
     /// Read \a n bytes from the buffer and increment the rd_ptr() by \a n.
     /// @returns NULL if there is not enough data in the buffer 
