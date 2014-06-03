@@ -146,11 +146,11 @@ namespace utxx {
             m_tv.tv_sec = tv.tv_sec + _s; m_tv.tv_usec = tv.tv_usec + _us; normalize();
         }
 
-        void copy_to(struct timeval& tv) {
+        void copy_to(struct timeval& tv) const {
             tv.tv_sec = m_tv.tv_sec; tv.tv_usec = m_tv.tv_usec;
         }
 
-        double diff(const time_val& t) {
+        double diff(const time_val& t) const {
             time_val tv(this->timeval());
             tv -= t;
             return (double)tv.sec() + (double)tv.usec() / N10e6;
