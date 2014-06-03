@@ -325,7 +325,7 @@ namespace detail {
     public:
         explicit basic_dynamic_io_buffer(
             size_t a_initial_size, const Alloc& a_alloc = Alloc())
-            : basic_io_buffer<0, Alloc>(0, a_alloc)
+            : basic_io_buffer<0, Alloc>(LONG_MAX, a_alloc)
         {
             this->reserve(a_initial_size);
         }
