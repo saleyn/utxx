@@ -71,12 +71,15 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
         BOOST_REQUIRE_EQUAL(-759293558, n);
     }
 
-    const int COUNT      = 1024*1024;
+    const int COUNT      = 1 << 20;
+    const int MASK       = COUNT - 1;
     const int ITERATIONS = getenv("ITERATIONS")
                          ? atoi(getenv("ITERATIONS"))
-                         : 10*1024*1024;
+                         : 10;
 
     std::vector<std::string> data(COUNT);
+
+    srand(time(NULL));
 
     for (int i=0; i < COUNT; ++i)
         data[i] = srandom(32);
@@ -85,19 +88,24 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
 
     long sum = 0;
     for (int i=0; i < ITERATIONS; ++i)
-        sum += detail::hash_fun<const char*>()(data[i % COUNT].c_str());
-
+    for (std::vector<std::string>::const_iterator s = data.begin(), e = data.end();
+         s != e; ++s)
+    {
+        sum += detail::hsieh_hash(s->c_str(), s->length());
+    }
     double elapsed1 = perf.elapsed();
 
     BOOST_MESSAGE(
         (boost::format("StrHashFun   speed: %.3f us/call") %
-                       (1000000.0 * elapsed1 / ITERATIONS)).str());
+                       (1000000.0 * elapsed1 / (COUNT*ITERATIONS))).str());
 
     #if defined(__GNUC__) && __cplusplus >= 201103L
     perf.reset();
-    for (int i=0; i < ITERATIONS; ++i) {
-        const std::string& s = data[i%COUNT];
-        sum += std::_Hash_impl::hash(s.c_str(), s.size()) & 0xFFFFFFFF;
+    for (int i=0; i < ITERATIONS; ++i)
+    for (std::vector<std::string>::const_iterator s = data.begin(), e = data.end();
+         s != e; ++s)
+    {
+        sum += std::_Hash_impl::hash(s->c_str(), s->size()) & 0xFFFFFFFF;
     }
     double elapsed2 = perf.elapsed();
     #else
@@ -105,8 +113,23 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     #endif
 
     BOOST_MESSAGE(
-        (boost::format("std::HashFun speed: %.3f us/call") %
-                       (1000000.0 * elapsed2 / ITERATIONS)).str());
+        (boost::format("std::hash    speed: %.3f us/call") %
+                       (1000000.0 * elapsed2 / (COUNT*ITERATIONS))).str());
 
     BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed1 / elapsed2)).str());
+
+    perf.reset();
+    for (int i=0; i < ITERATIONS; ++i)
+    for (std::vector<std::string>::const_iterator s = data.begin(), e = data.end();
+         s != e; ++s)
+    {
+        sum += detail::crapwow(s->c_str(), s->size()) & 0xFFFFFFFF;
+    }
+    double elapsed3 = perf.elapsed();
+
+    BOOST_MESSAGE(
+        (boost::format("crapwow      speed: %.3f us/call") %
+                       (1000000.0 * elapsed3 / (COUNT*ITERATIONS))).str());
+
+    BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed3 / elapsed2)).str());
 }
