@@ -66,7 +66,8 @@ int inline log2(unsigned long n) {
     return bits::bit_scan_forward(n);
 }
 
-/// Calculate logarithm of \a n using \a base.
+/// Calculate logarithm of \a n using \a base, such that
+/// the Base to the power of the returned value is greater or equal to \a n.
 /// If n is 0 or is less than base, the function returns 0.
 template <uint8_t Base>
 int inline upper_log(size_t n) {
