@@ -132,4 +132,19 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
                        (1000000.0 * elapsed3 / (COUNT*ITERATIONS))).str());
 
     BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed3 / elapsed2)).str());
+
+    perf.reset();
+    for (int i=0; i < ITERATIONS; ++i)
+    for (std::vector<std::string>::const_iterator s = data.begin(), e = data.end();
+         s != e; ++s)
+    {
+        sum += detail::murmur_hash64(s->c_str(), s->size(), 0) & 0xFFFFFFFF;
+    }
+    double elapsed4 = perf.elapsed();
+
+    BOOST_MESSAGE(
+        (boost::format("murmur_hash  speed: %.3f us/call") %
+                       (1000000.0 * elapsed4 / (COUNT*ITERATIONS))).str());
+
+    BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed4 / elapsed2)).str());
 }
