@@ -139,12 +139,12 @@ public:
             m_page = NULL;
         }
     }
-            
+
     pointer allocate(size_type n, const void *hint = 0) {
         pointer end = reinterpret_cast<pointer>(
-                reinterpret_cast<char*>(m_page) + PageSize);
+                        reinterpret_cast<char*>(m_page) + PageSize);
 
-            m_page = page_alloc();
+        m_page = page_alloc();
 
         atomic::add(&m_page->alloc_count);
 
