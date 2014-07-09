@@ -181,7 +181,7 @@ struct test2 {
         // Testing gettimeofday speed
         {
             caller test(id, "gettimeofday()", iterations);
-            test(&time_val::universal_time);
+            test([]{ return time_val::universal_time(); });
         }
 
         // Testing boost::universal_time speed

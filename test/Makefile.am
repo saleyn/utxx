@@ -23,6 +23,7 @@ TEST_UTXX_SRCS = \
 	test_concurrent_stack.cpp \
 	test_concurrent_update.cpp \
     test_concurrent_spsc_queue.cpp \
+    test_concurrent_mpsc_queue.cpp \
 	test_config_validator.cpp \
 	test_convert.cpp \
 	test_file_reader.cpp \

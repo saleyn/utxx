@@ -169,8 +169,8 @@ public:
 
         // We allow up to N usec to rely on HR timer readings between
         // successive calls to gettimeofday.
-        if ((l_hrtime_diff <= high_res_timer::global_scale_factor() << 2) &&
-                (l_hr_now >= s_last_hrtime)) {
+        if ((l_hrtime_diff <= (high_res_timer::global_scale_factor() << 2)) &&
+            (l_hr_now      >= s_last_hrtime)) {
             #ifdef DEBUG_TIMESTAMP
             atomic::inc(&s_hrcalls);
             #endif
