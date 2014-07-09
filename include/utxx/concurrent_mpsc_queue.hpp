@@ -99,7 +99,7 @@ struct concurrent_mpsc_queue {
     ///
     /// Use concurrent_mpsc_queue::free() to deallocate each node
     node* pop_all_reverse() {
-        return m_head.exchange(nullptr, std::memory_order_consume);
+        return m_head.exchange(nullptr, std::memory_order_acquire);
     }
 
     /// Deallocate a node created by a call to pop_all() or pop_all_reverse()
