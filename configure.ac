@@ -105,11 +105,10 @@ AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
 
 # workaround unexpected extra dependency on boost_system library (at least in 1.49)
-LDFLAGS_SAVED=$LDFLAGS
 LDFLAGS+=" $BOOST_LDFLAGS $BOOST_SYSTEM_LIB"
 AX_BOOST_THREAD
 AX_BOOST_CHRONO
-LDFLAGS=$LDFLAGS_SAVED
+LDFLAGS=
 
 if test x"$ac_boost_path" != x; then
     BOOST_ROOT="$ac_boost_path"
