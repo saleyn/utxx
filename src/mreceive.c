@@ -99,6 +99,7 @@ struct address   addrs[128];
 struct address*  addrs_idx[1024];   // Maps fd -> addrs*
 struct address** sorted_addrs[4];   // For report stats sorting
 
+int         wfd           = -1;
 const char* label         = NULL;
 int         addrs_count   = 0;
 int         verbose       = 0;
@@ -149,7 +150,8 @@ void usage(const char* program) {
          "      -n MaxCount - Terminate after receiving this number of packets\n"
          "      -r [Size]   - Print packet up to Size bytes\n"
          "      -q          - Quiet (no output)\n"
-         "      -o Filename - Output log file\n\n"
+         "      -o Filename - Output log file\n"
+         "      -w Filename - Write packets to file\n\n"
          "If there is no incoming data, press several Ctrl-C to break\n\n"
          "Return code: = 0  - if the process received at least one packet\n"
          "             > 0  - if no packets were received or there was an error\n\n"
@@ -366,6 +368,7 @@ void main(int argc, char *argv[])
   int                   use_epoll = 1, efd = -1, tfd = -1;
   struct epoll_event    timer_event;
   const char*           output_file = NULL;
+  const char*           write_file  = NULL;
 
   char*                 iaddr       = NULL;
   char*                 imcast_addr = NULL;
@@ -427,6 +430,8 @@ void main(int argc, char *argv[])
       max_pkts = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-o") && i < argc-1)
       output_file = argv[++i];
+    else if (!strcmp(argv[i], "-w") && i < argc-1)
+      write_file = argv[++i];
     else if (!strcmp(argv[i], "-d") && i < argc-1) {
       gettimeofday(&tv, NULL);
       alarm(atoi(argv[++i]));
@@ -470,6 +475,15 @@ void main(int argc, char *argv[])
     }
     dup2(efd, 1);
     close(efd);
+  }
+
+  if (write_file) {
+    wfd = open(write_file, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
+    if (wfd < 0) {
+      fprintf(stderr, "Cannot open file '%s' for writing: %s\n",
+        write_file, strerror(errno));
+      exit(1);
+    }
   }
 
   if (addrs_count > 1 && !use_epoll) {
@@ -786,6 +800,9 @@ void main(int argc, char *argv[])
     if (sorted_addrs[i])
       free(sorted_addrs[i]);
 
+  if (efd != -1) close(efd);
+  if (wfd != -1) close(wfd);
+
   exit(tot_pkts ? 0 : 1);
 }
 
@@ -1059,6 +1076,10 @@ void process_packet(struct address* addr, const char* buf, int n) {
       if (((i+1) % 16) == 0) fprintf(stderr, "\n   ");
     }
     fprintf(stderr, "};\n");
+  }
+
+  if (wfd != -1) {
+    write(wfd, buf, n);
   }
 
   if (seqno) {
