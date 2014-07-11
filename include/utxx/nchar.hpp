@@ -125,7 +125,7 @@ namespace detail {
         /// given delimiter.
         /// @return the string length up to the \a delimiter or size() if
         ///         the \a delimiter is not found
-        size_t len(char delimiter) {
+        size_t len(char delimiter) const {
             const char* pos = find_pos(m_data, end(), delimiter);
             return pos - m_data;
         }
