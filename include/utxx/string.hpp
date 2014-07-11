@@ -48,14 +48,30 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+    /// Return the static length of an array of type T
     template <typename T, int N>
     size_t length(const T (&a)[N]) {
         return N;
     }
 
+    /// Return the static length of a character string
     template <int N>
     size_t length(const char (&a)[N]) {
         return N-1;
+    }
+
+    /// Convert a string to an integer value
+    /// \code
+    /// std::cout << to_int64("\1\2") << std::endl;
+    ///     output: 258     // I.e. (1 << 8 | 2)
+    /// \endcode
+    constexpr uint64_t to_int64(const char* a_str, size_t sz) {
+        return sz ? (to_int64(a_str, sz-1) << 8 | (uint8_t)a_str[sz-1]) : 0;
+    }
+
+    template <int N>
+    constexpr uint64_t to_int64(const char (&a)[N]) {
+        return to_int64(a, N-1);
     }
 
     /// Find the position of character \a c.

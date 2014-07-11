@@ -44,7 +44,7 @@ struct PerfTest {
     }
 
     void producer() {
-        for (int i = 0; i < traits_.limit(); ++i)
+        for (int i = 0; i < (int)traits_.limit(); ++i)
             while (!queue_.push(traits_.generate()));
     }
 
@@ -90,7 +90,7 @@ struct CorrectnessTest {
     {
         const size_t testSize = traits_.limit();
         testData_.reserve(testSize);
-        for (int i = 0; i < testSize; ++i)
+        for (size_t i = 0; i < testSize; ++i)
             testData_.push_back(traits_.generate());
     }
 
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_empty ) {
     BOOST_REQUIRE(queue.full());  // Tricky: full after 3 writes, not 2.
 
     BOOST_REQUIRE(!queue.push(4));
-    BOOST_REQUIRE_EQUAL(queue.count(), 3);
+    BOOST_REQUIRE_EQUAL(queue.count(), 3u);
 }
 
 BOOST_AUTO_TEST_CASE( test_concurrent_spsc_correctness ) {

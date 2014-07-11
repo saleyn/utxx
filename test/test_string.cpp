@@ -71,6 +71,14 @@ BOOST_AUTO_TEST_CASE( test_string_find_index )
     BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "xxx"));
 }
 
+BOOST_AUTO_TEST_CASE( test_string_to_int64 )
+{
+    BOOST_REQUIRE_EQUAL(1u,       to_int64("\1"));
+    BOOST_REQUIRE_EQUAL(258u,     to_int64("\1\2"));
+    BOOST_REQUIRE_EQUAL(66051u,   to_int64("\1\2\3"));
+    BOOST_REQUIRE_EQUAL(4276803u, to_int64("ABC"));
+}
+
 BOOST_AUTO_TEST_CASE( test_string_nocase )
 {
     string_nocase s("AbcDe123");
