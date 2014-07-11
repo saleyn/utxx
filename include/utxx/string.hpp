@@ -58,23 +58,63 @@ namespace utxx {
         return N-1;
     }
 
-    /// Find <s> in the static array of string <choices>.
-    /// @return position of <s> in the <choices> array of <def> if string not found.
+    /// Find the position of character \a c.
+    /// @return pointer to the position of character \a c, or \a end if
+    ///         no character \a c is found.
+    inline const char* find_pos(const char* str, const char* end, char c) {
+        for (const char* p = str; p != end; ++p)
+            if (*p == c)
+                return p;
+        return end;
+    }
+
+    /// Find \a s in the static array of string \a choices.
+    /// @return position of \a s in the \a choices array or \a def if
+    ///         the string not found.
     /// 
     template <typename T>
     inline T find_index(const char* choices[], size_t n, 
-                        const std::string& s, T def = static_cast<T>(-1)) {
+                        const std::string& s,  T def = static_cast<T>(-1)) {
         for (size_t i=0; i < n; ++i)
             if (s == choices[i])
                 return static_cast<T>(i);
         return def;
     }
 
+    /// Find \a value in the static array of string \a choices.
+    /// @return position of \a value in the \a choices array or \a def if
+    ///         the string not found.
+    /// 
+    template <typename T>
+    inline T find_index(const char* choices[], size_t n, 
+                        const char* value,     size_t len,
+                        T def = static_cast<T>(-1)) {
+        for (size_t i=0; i < n; ++i)
+            if (!strncmp(value, choices[i], len))
+                return static_cast<T>(i);
+        return def;
+    }
+
+    /// Find \a value in the static array of string \a choices.
+    /// @return position of \a value in the \a choices array or \a def if
+    ///         the string not found.
+    /// 
     template <typename T, int N>
-    inline T find_index(const char* (&choices)[N], const std::string& s,
+    inline T find_index(const char* (&choices)[N], const std::string& value,
         T def = static_cast<T>(-1))
     {
-        return find_index(choices, N, s, def);
+        return find_index(choices, N, value, def);
+    }
+
+    /// Find \a value in the static array of string \a choices.
+    /// @return position of \a value in the \a choices array or \a def if
+    ///         the string not found.
+    /// 
+    template <typename T, int N>
+    inline T find_index(const char* (&choices)[N], const char* value, size_t len,
+        T def = static_cast<T>(-1))
+    {
+        return find_index(choices, N, value, len, def);
     }
 
     template <typename T, int N>
