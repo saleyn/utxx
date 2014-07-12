@@ -96,6 +96,30 @@ BOOST_AUTO_TEST_CASE( test_running_stat )
     BOOST_REQUIRE_EQUAL(0.0, rs.deviation());
 }
 
+BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
+{
+    basic_moving_average<int, 4> ma;
+
+    BOOST_REQUIRE_EQUAL(4u, ma.capacity());
+
+    ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
+    ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+    ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
+    ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
+
+    BOOST_REQUIRE_EQUAL(4u, ma.samples());
+
+    ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
+    ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+    
+    BOOST_REQUIRE_EQUAL(4u, ma.samples());
+
+    ma.clear();
+
+    BOOST_REQUIRE_EQUAL(0u,  ma.samples());
+    BOOST_REQUIRE_EQUAL(0.0, ma.mean());
+}
+
 enum test_rs {
       ONE
     , TWO

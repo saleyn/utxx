@@ -63,20 +63,21 @@ template <typename CntType = size_t>
 class basic_running_sum {
 protected:
     CntType m_count;
-    double  m_sum, m_min, m_max;
+    double  m_last, m_sum, m_min, m_max;
 public:
     basic_running_sum() {
         clear();
     }
 
     basic_running_sum(const basic_running_sum& rhs) 
-        : m_count(rhs.m_count), m_sum(rhs.m_sum)
-        , m_min(rhs.m_min), m_max(rhs.m_max)
+        : m_count(rhs.m_count)
+        , m_last(rhs.m_last), m_sum(rhs.m_sum)
+        , m_min(rhs.m_min),   m_max(rhs.m_max)
     {}
 
     /// Reset the internal state.
     void clear() { 
-        m_count = 0; m_sum = 0.0; m_sum = 0.0;
+        m_count = 0; m_last = 0.0; m_sum = 0.0;
         m_min = std::numeric_limits<double>::max();
         m_max = std::numeric_limits<double>::min();
     }
@@ -84,6 +85,7 @@ public:
     /// Add a sample measurement.
     inline void add(double x) {
         ++m_count;
+        m_last = x;
         m_sum += x;
         if (x > m_max) m_max = x;
         if (x < m_min) m_min = x;
@@ -104,16 +106,18 @@ public:
     }
 
     /// Number of samples since last invocation of clear().
-    CntType     count() const { return m_count; }
-    double      sum()   const { return m_sum; }
-    double      mean()  const { return m_count > 0 ? m_sum / m_count : 0.0; }
+    CntType     count() const { return m_count;  }
+    bool        empty() const { return !m_count; }
+
+    double      last()  const { return m_last; }
+    double      sum()   const { return m_sum;  }
+    double      mean()  const { return m_count ? m_sum / m_count : 0.0; }
     double      min()   const { return m_min == std::numeric_limits<double>::max()
                                      ? 0.0 : m_min; }
     double      max()   const { return m_max == std::numeric_limits<double>::min()
                                      ? 0.0 : m_max; }
 };
 
-   
 template <typename CntType = size_t>
 class basic_running_variance : public basic_running_sum<CntType> {
     typedef basic_running_sum<CntType> base;
@@ -150,6 +154,68 @@ public:
     double   mean()      const { return base::m_count > 0 ? m_mean : 0.0; }
     double   variance()  const { return base::m_count > 0 ? m_var/base::m_count : 0.0; }
     double   deviation() const { return sqrt(variance()); }
+};
+
+template <typename T, int N = 0>
+struct basic_moving_average
+{
+    explicit basic_moving_average(size_t a_capacity = 0)
+      : MASK(N ? N-1 : a_capacity-1)
+      , m_data(m_samples)
+    {
+        #if __cplusplus >= 201103L
+        static_assert(!N || (N & (N-1)) == 0, "N must be 0 or power of 2");
+        #else
+        assert(!N || (N & (N-1)) == 0);
+        #endif
+        assert((N && !a_capacity) || (!N && a_capacity));
+        assert(!a_capacity || (a_capacity & (a_capacity-1)) == 0);
+        if (a_capacity)
+           m_data = new T[a_capacity];
+
+        clear();
+    }
+
+    ~basic_moving_average() {
+        if (m_data != m_samples)
+            delete [] m_data;
+    }
+
+    void add(T sample) {
+        if (m_full) {
+            T& oldest = m_data[m_size];
+            m_sum += sample - oldest;
+            oldest = sample;
+        } else {
+            m_data[m_size] = sample;
+            m_sum += sample;
+        }
+
+        if (!m_full && m_size == MASK)
+            m_full = true;
+
+        m_size = (m_size+1) & MASK;
+    }
+
+    void clear() {
+        memset(m_data, 0, capacity()*sizeof(T));
+        m_full = false;
+        m_sum  = 0.0;
+        m_size = 0;
+    }
+
+    bool   empty()    const { return !m_full && !m_size; }
+    size_t capacity() const { return MASK+1; }
+    size_t samples()  const { return m_full ? capacity() : m_size; }
+    double mean()     const { return m_sum / ((m_full || !m_size) ? capacity() : m_size); }
+
+private:
+    const size_t    MASK;
+    bool            m_full;
+    size_t          m_size;
+    double          m_sum;
+    T*              m_data;
+    T               m_samples[N];
 };
 
 /**
