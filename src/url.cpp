@@ -44,10 +44,11 @@ namespace detail {
     const char* connection_type_to_str(connection_type a_type)
     {
         switch (a_type) {
-            case TCP:  return "tcp";
-            case UDP:  return "udp";
-            case UDS:  return "uds";
-            default:   return "undefined";
+            case TCP:       return "tcp";
+            case UDP:       return "udp";
+            case UDS:       return "uds";
+            case FILENAME:  return "file";
+            default:        return "undefined";
         }
     }
 
@@ -56,20 +57,10 @@ namespace detail {
 std::string addr_info::to_string() const
 {
     std::stringstream s;
-    s << detail::connection_type_to_str(proto) << "://";
-    switch (proto) {
-        case TCP:
-        case UDP: 
-            s << addr;
-            if (!port.empty()) s << ':' << port;
-            if (!path.empty()) s << path;
-            break;
-        case UDS:
-            s << path;
-            break;
-        case UNDEFINED:
-            break;
-    }
+    s << m_proto << "://";
+    if (!addr.empty()) s << addr;
+    if (!port.empty()) s << ':' << port;
+    if (!path.empty()) s << path;
     return s.str();
 }
 
@@ -100,12 +91,12 @@ bool is_ipv4_addr(const std::string& a_addr)
 bool addr_info::parse(const std::string& a_url) {
     static std::map<std::string, std::string> proto_to_port =
             boost::assign::map_list_of
-                ("http", "80") ("file", "") ("uds", "");
+                ("http", "80") ("https", "443") ("file", "") ("uds", "");
 
     using namespace boost::xpressive;
     // "(http|perc)://(.*?)(:(\\d+))?(/.*)" | "(file|uds)://(.*)"
     static const boost::xpressive::sregex l_re_url =
-          (    (s1 = icase("http") | icase("udp") | icase("tcp"))
+          (    (s1 = icase("http") | icase("https") | icase("udp") | icase("tcp"))
             >> "://"
             >> optional(s2 = +set[alpha | '-' | '.' | '_' | digit])
             >> optional(':' >> (s3 = +_d))
@@ -115,20 +106,22 @@ bool addr_info::parse(const std::string& a_url) {
             >> optional(s4 = +_) );
 
     boost::xpressive::smatch l_what;
-    std::string l_proto;
 
     bool res = boost::xpressive::regex_search(a_url, l_what, l_re_url);
     if (res) {
-        l_proto = l_what[1];
-        boost::to_lower(l_proto);
+        m_proto = l_what[1];
+        boost::to_lower(m_proto);
         addr  = l_what[2];
-        port  = l_what[3].matched ? l_what[3] : proto_to_port[l_proto];
+        port  = l_what[3].matched ? l_what[3] : proto_to_port[m_proto];
         path  = l_what[4];
     }
 
-    if      (l_proto == "tcp" || l_proto == "http") proto = TCP;
-    else if (l_proto == "udp")                      proto = UDP;
-    else if (l_proto == "uds" || l_proto == "file") proto = UDS;
+    if      (m_proto == "tcp"  ||
+             m_proto == "http" ||
+             m_proto == "https")                    proto = TCP;
+    else if (m_proto == "udp")                      proto = UDP;
+    else if (m_proto == "uds")                      proto = UDS;
+    else if (m_proto == "file")                     proto = FILENAME;
     else                                            proto = UNDEFINED;
 
     m_is_ipv4 = is_ipv4_addr(addr);

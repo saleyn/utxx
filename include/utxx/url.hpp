@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
     /// Types of connections supported by this class.
-    enum connection_type { UNDEFINED, TCP, UDP, UDS };
+    enum connection_type { UNDEFINED, TCP, UDP, UDS, FILENAME };
 
     namespace detail {
         /// Convert connection type to string.
@@ -49,18 +49,22 @@ namespace utxx {
     /// Server ddress information holder
     struct addr_info {
         connection_type proto;
-        std::string addr;
-        std::string port;
-        std::string path;
+        std::string     addr;
+        std::string     port;
+        std::string     path;
 
         addr_info() : m_is_ipv4(false) {}
         addr_info(const std::string& a_url) { parse(a_url); }
 
+        /// Parse a URL in the form PROTO://ADDRESS[:PORT][/PATH]
+        ///
+        /// PROTO can be one of "tcp", "udp", "uds", "file"
         bool parse(const std::string& a_url);
 
         bool is_ipv4() const { return m_is_ipv4; }
 
-        int  port_int() const { return atoi(port.c_str()); }
+        int                 port_int()  const { return atoi(port.c_str()); }
+        std::string const&  proto_str() const { return m_proto; }
 
         std::string to_string() const;
 
@@ -68,7 +72,8 @@ namespace utxx {
             return out << a.to_string();
         }
     private:
-        bool m_is_ipv4;
+        std::string m_proto;
+        bool        m_is_ipv4;
     };
 
     /// @return true if \a a_addr is in NNN.NNN.NNN.NNN format.

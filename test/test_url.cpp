@@ -75,6 +75,14 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_REQUIRE_EQUAL("",          l_url.path);
     BOOST_REQUIRE(!l_url.is_ipv4());
 
+    BOOST_REQUIRE(parse_url("https://localhost", l_url));
+    BOOST_REQUIRE_EQUAL(TCP,         l_url.proto);
+    BOOST_REQUIRE_EQUAL("https",     l_url.proto_str());
+    BOOST_REQUIRE_EQUAL("localhost", l_url.addr);
+    BOOST_REQUIRE_EQUAL("443",       l_url.port);
+    BOOST_REQUIRE_EQUAL("",          l_url.path);
+    BOOST_REQUIRE(!l_url.is_ipv4());
+
     BOOST_REQUIRE(parse_url("http://google.com:8000/a/b/d?a=3", l_url));
     BOOST_REQUIRE_EQUAL(TCP,         l_url.proto);
     BOOST_REQUIRE_EQUAL("google.com",l_url.addr);
@@ -88,6 +96,12 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_REQUIRE_EQUAL("",          l_url.port);
     BOOST_REQUIRE_EQUAL("/tmp/path", l_url.path);
     BOOST_REQUIRE(!l_url.is_ipv4());
-}
 
+    BOOST_REQUIRE(parse_url("file:///tmp/path", l_url));
+    BOOST_REQUIRE_EQUAL(FILENAME,    l_url.proto);
+    BOOST_REQUIRE_EQUAL("",          l_url.addr);
+    BOOST_REQUIRE_EQUAL("",          l_url.port);
+    BOOST_REQUIRE_EQUAL("/tmp/path", l_url.path);
+    BOOST_REQUIRE(!l_url.is_ipv4());
+}
 
