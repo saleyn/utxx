@@ -590,7 +590,7 @@ void main(int argc, char *argv[])
       if ((sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
                   mc, via, addrs[i].iface_name, src) != 4) &&
           (sscanf(obuf, "multicast %16s dev %16s src %16s ",
-                  mc, addrs[i].iface_name, src) != 4)) {
+                  mc, addrs[i].iface_name, src) != 3)) {
         fprintf(stderr, "Couldn't parse output of 'ip route get: %s'\n", obuf);
         exit(2);
       }
