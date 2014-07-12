@@ -587,9 +587,11 @@ void main(int argc, char *argv[])
       fclose(file);
       if (verbose > 2)
         printf("Executed: '%s' ->\n  %s\n", buf, obuf);
-      if (sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
-          mc, via, addrs[i].iface_name, src) != 4) {
-        fprintf(stderr, "Couldn't parse output of 'ip route get'\n");
+      if ((sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
+                  mc, via, addrs[i].iface_name, src) != 4) &&
+          (sscanf(obuf, "multicast %16s dev %16s src %16s ",
+                  mc, addrs[i].iface_name, src) != 4)) {
+        fprintf(stderr, "Couldn't parse output of 'ip route get: %s'\n", obuf);
         exit(2);
       }
       if (inet_aton(src, (struct in_addr*)&addrs[i].iface) == 0) {
