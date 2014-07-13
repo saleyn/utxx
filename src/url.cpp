@@ -98,7 +98,7 @@ bool addr_info::parse(const std::string& a_url) {
     static const boost::xpressive::sregex l_re_url =
           (    (s1 = icase("http") | icase("https") | icase("udp") | icase("tcp"))
             >> "://"
-            >> optional(s2 = +set[alpha | '-' | '.' | '_' | digit])
+            >> optional(s2 = +set[alpha | ';' | '@' | '-' | '.' | digit])
             >> optional(':' >> (s3 = +_d))
             >> optional(s4 = '/' >> *_) )
         | (    (s1 = icase("file") | icase("uds"))

@@ -61,6 +61,13 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_REQUIRE_EQUAL("",          l_url.path);
     BOOST_REQUIRE(l_url.is_ipv4());
 
+    BOOST_REQUIRE(parse_url("tcp://233.37.0.10@127.0.0.1;eth1:1024/temp", l_url));
+    BOOST_REQUIRE_EQUAL(TCP,         l_url.proto);
+    BOOST_REQUIRE_EQUAL("233.37.0.10@127.0.0.1;eth1", l_url.addr);
+    BOOST_REQUIRE_EQUAL("1024",      l_url.port);
+    BOOST_REQUIRE_EQUAL("/temp",     l_url.path);
+    BOOST_REQUIRE(l_url.is_ipv4());
+
     BOOST_REQUIRE(parse_url("udp://myhome.com:1234", l_url));
     BOOST_REQUIRE_EQUAL(UDP,         l_url.proto);
     BOOST_REQUIRE_EQUAL("myhome.com",l_url.addr);
