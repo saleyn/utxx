@@ -208,6 +208,7 @@ struct basic_moving_average
     size_t capacity() const { return MASK+1; }
     size_t samples()  const { return m_full ? capacity() : m_size; }
     double mean()     const { return m_sum / ((m_full || !m_size) ? capacity() : m_size); }
+    size_t sum()      const { return m_sum; }
 
     std::pair<T,T> minmax() const {
         if (empty()) return std::make_pair(0, 0);
