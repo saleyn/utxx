@@ -98,6 +98,7 @@ namespace utxx {
     }
 
     /// Find \a value in the static array of string \a choices.
+    /// @param len is the length of \a value. If 0, return \a def.
     /// @return position of \a value in the \a choices array or \a def if
     ///         the string not found.
     /// 
@@ -105,6 +106,7 @@ namespace utxx {
     inline T find_index(const char* choices[], size_t n, 
                         const char* value,     size_t len,
                         T def = static_cast<T>(-1)) {
+        if (!len) return def;
         for (size_t i=0; i < n; ++i)
             if (!strncmp(value, choices[i], len))
                 return static_cast<T>(i);
@@ -123,6 +125,7 @@ namespace utxx {
     }
 
     /// Find \a value in the static array of string \a choices.
+    /// @param len is the length of \a value. If 0, return \a def.
     /// @return position of \a value in the \a choices array or \a def if
     ///         the string not found.
     /// 

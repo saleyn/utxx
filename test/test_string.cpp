@@ -66,6 +66,7 @@ BOOST_AUTO_TEST_CASE( test_string_find_index )
 {
     static const char* s_ops[] = {"add", "remove", "replace", "update"};
     BOOST_REQUIRE(OP_REMOVE    == utxx::find_index<op_type>(s_ops, "remove  ", 6));
+    BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "remove  ", 0));
     BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace"));
     BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace ", 7));
     BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "xxx"));
