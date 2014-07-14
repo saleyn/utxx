@@ -315,19 +315,24 @@ __attribute__ ((noinline)) void atoi2(const std::string& s, long& n) {
     n = atoi(s.c_str());
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
+BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
 {
-    struct utest { const char* test; long expected; bool fatoi_success; };
+    struct utest { const char* test; long expected; bool fatoi_success; int len; };
     const utest tests[] = {
-        { "123456989012345678",   123456989012345678, true },   // 0
-        { "-123456989012345678", -123456989012345678, true },   // 1
-        { "   123",               123,               false },   // 2
-        { "123ABC",               123,               false },   // 3
-        { "123   ",               123,               false },   // 4
-        { "\0\0\000123",          123,               false },   // 5
-        { "-123ABC",              -123,              false },   // 6
-        { "-123   ",              -123,              false },   // 7
-        { "\0\0\000-123",         -123,              false },   // 5
+        { "123456989012345678",   123456989012345678, true, 18 },   // 0
+        { "-123456989012345678", -123456989012345678, true, 19 },   // 1
+        { "   123",               123,               false, 6  },   // 2
+        // unsafe_fixed_ato{u}l does no checking of valid '0'..'9' chars
+        // hence the result may not be as expected. E.g.: 'A' & 0xF -> 1
+        { "123ABC",               123123,            false, 6 },   // 3
+        { "123   ",               123000,            false, 6 },   // 4
+        { "\0\0\000123",          0,                 false, 6 },   // 5
+        // unsafe_fixed_ato{u}l does no checking of valid '0'..'9' chars
+        // hence the result may not be as expected. E.g.: 'A' & 0xF -> 1
+        { "-123ABC",              -123123,           false, 7 },   // 6
+        { "-123   ",              -123000,           false, 7 },   // 7
+        { "-\0\0\000123",         -123,              false, 7 },   // 8
+        { "\0\0\000-123",         0,                 false, 7 },   // 8
     };
 
     typedef const char* (*fun_u)(const char*, uint64_t&);
@@ -386,28 +391,39 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
                             fast_atoi(tests[i].test, &n));
         if (tests[i].fatoi_success) BOOST_REQUIRE_EQUAL(tests[i].expected, n);
 
-        BOOST_REQUIRE(tests[i].test + strlen(tests[i].test) ==
-            fun_signed[strlen(tests[i].test)](tests[i].test, n));
-        if (tests[i].expected != n)
-            BOOST_MESSAGE("Test #" << i << " failed");
+        const char* e = fun_signed[tests[i].len](tests[i].test, n);
+        bool       ok = !tests[i].expected || e == (tests[i].test + tests[i].len);
+
+        if (tests[i].expected != n || !ok)
+            BOOST_MESSAGE("Test signed #" << i << " failed");
         BOOST_REQUIRE_EQUAL(tests[i].expected, n);
+        BOOST_REQUIRE(ok);
 
         if (tests[i].expected >= 0) {
-            BOOST_REQUIRE(tests[i].test+strlen(tests[i].test) ==
-                fun_unsigned[strlen(tests[i].test)](tests[i].test, u));
-            BOOST_REQUIRE_EQUAL(tests[i].expected, u);
+            e  = fun_unsigned[tests[i].len](tests[i].test, u);
+            ok = !tests[i].expected || e == (tests[i].test + tests[i].len);
+
+            if (tests[i].expected != (long)u || !ok)
+                BOOST_MESSAGE("Test unsigned #" << i << " failed");
+            BOOST_REQUIRE_EQUAL(tests[i].expected, (long)u);
+            BOOST_REQUIRE(ok);
         }
 
     }
+}
+
+BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
+{
+    long n;
 
     BOOST_REQUIRE(!fast_atoi("123ABC", &n));
     BOOST_REQUIRE(fast_atoi( "123ABC", &n, false));
     BOOST_REQUIRE_EQUAL(123, n);
-    
+
     BOOST_REQUIRE(!fast_atoi( "123  ", &n));
     BOOST_REQUIRE(fast_atoi( "123  ",  &n, false));
     BOOST_REQUIRE_EQUAL(123, n);
-    
+
     BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000123", 7), &n));
     BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000123", 7), &n));
     BOOST_REQUIRE_EQUAL(123, n);
@@ -419,15 +435,14 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
     BOOST_REQUIRE(!fast_atoi( "-123ABC", &n));
     BOOST_REQUIRE(fast_atoi( "-123ABC",  &n, false));
     BOOST_REQUIRE_EQUAL(-123, n);
-    
+
     BOOST_REQUIRE(!fast_atoi( "-123  ",  &n));
     BOOST_REQUIRE(fast_atoi( "-123  ",   &n, false));
     BOOST_REQUIRE_EQUAL(-123, n);
-    
+
     BOOST_REQUIRE(!fast_atoi( std::string("\0\0\0\000-123", 8), &n));
     BOOST_REQUIRE(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), &n));
     BOOST_REQUIRE_EQUAL(-123, n);
-    
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )

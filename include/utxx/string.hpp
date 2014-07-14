@@ -215,14 +215,14 @@ namespace utxx {
         inline void to_string_impl(std::stringstream& s) {}
 
         template <class T, class... Args>
-        inline void to_string_impl(std::stringstream& s, const T& a, Args... args) {
-            s << a;
+        inline void to_string_impl(std::stringstream& s, T&& a, Args&&... args) {
+            s << std::forward<T>(a);
             to_string_impl(s, args...);
         }
     }
 
     template <class... Args>
-    inline std::string to_string(Args... args) {
+    inline std::string to_string(Args&&... args) {
         std::stringstream s;
         to_string_impl(s, args...);
         return s.str();
