@@ -8,7 +8,7 @@
 /// Based on code from:
 /// https://github.com/facebook/folly/blob/master/folly/concurrent_spsc_queue.h
 /// Original public domain version authored by Facebook
-/// Modifications by Serge Aleynikov
+/// Modifications by Serge Aleynikov & Leonid Timochouk
 //----------------------------------------------------------------------------
 // Created: 2014-06-10
 //----------------------------------------------------------------------------
@@ -17,7 +17,8 @@
 
  This file is part of the utxx open-source project.
 
- Copyright (C) 2014 Serge Aleynikov <saleyn@gmail.com>
+ Copyright (C) 2014 Serge Aleynikov  <saleyn@gmail.com>
+ Copyright (C) 2014 Leonid Timochouk <l.timochouk@gmail.com>
 
  This library is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
@@ -47,7 +48,6 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <type_traits>
 
 namespace utxx {
 
@@ -61,7 +61,7 @@ class concurrent_spsc_queue : private boost::noncopyable
     //=======================================================================//
     // Implementation:                                                       //
     //=======================================================================//
-    // header (can also be located in ShMemalong with the data):
+    // header (can also be located in ShMem along with the data):
     //
     struct header
     {
@@ -210,12 +210,13 @@ public:
     }
 
     /// Write a T object constructed with the "recordArgs" to the queue.
-    /// @return true on success, false when the queue is full:
+    /// @return the ptr to the installed entry on success, or NULL when
+    /// the queue is full:
     /// NB: In particular, this allows us to write a pre-constructed object
     /// into the queue using a Copy or Move ctor:
     ///
     template<class ...Args>
-    bool push(Args&&... recordArgs)
+    T* push(Args&&... recordArgs)
     {
         // NB: the side check is for ShM only, and in the debug mode only:
         // must be on the Producer side:
@@ -226,12 +227,13 @@ public:
 
         if (next != head().load(std::memory_order_acquire))
         {
-            new (m_rec_ptr + t) T(std::forward<Args>(recordArgs)...);
+            T* at = m_rec_ptr + t;
+            new (at) T(std::forward<Args>(recordArgs)...);
             tail().store(next, std::memory_order_release);
-            return true;
+            return at;
         }
-        // Otherwise: queue is full:
-        return false;
+        // Otherwise: queue is full, nothing is 
+        return NULL;
     }
 
     /// Move (or copy) the value at the front of the queue to given variable
@@ -444,6 +446,9 @@ private:
     //-----------------------------------------------------------------------//
     // Accessors (for internal use only):                                    //
     //-----------------------------------------------------------------------//
+    // NB: "head" is the actual front of the queue (where items are consumed);
+    //     "tail" is beyond the last stored entry, so a new item would be app-
+    //     ended at the curr "tail":
     std::atomic<uint32_t>&       head()       { return m_header_ptr->m_head; }
     std::atomic<uint32_t>&       tail()       { return m_header_ptr->m_tail; }
     std::atomic<uint32_t> const& head() const { return m_header_ptr->m_head; }
