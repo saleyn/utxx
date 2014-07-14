@@ -34,7 +34,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-std::string to_bin_string(const char* buf, size_t sz, bool hex, bool readable) {
+std::string to_bin_string(const char* buf, size_t sz,
+                          bool hex, bool readable, bool eol)
+{
     std::stringstream out;
     const char* begin = buf, *end = buf + sz;
     bool printable = readable;
@@ -55,6 +57,7 @@ std::string to_bin_string(const char* buf, size_t sz, bool hex, bool readable) {
         }
     }
     out << (printable ? "\"" : "") << ">>";
+    if (eol) out << std::endl;
     return out.str();
 }
 

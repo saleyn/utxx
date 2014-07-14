@@ -207,8 +207,10 @@ namespace utxx {
     /// @param readable if true prints buffer as a readable string if it
     ///                 contains all printable bytes. If false - binary
     ///                 list is printed
+    /// @param eol      if true - terminate string with end-of-line
     std::string to_bin_string(const char* buf, size_t sz,
-                              bool hex = false, bool readable = true);
+                              bool hex = false, bool readable = true,
+                              bool eol = false);
 
 #if __cplusplus >= 201103L
     namespace {
