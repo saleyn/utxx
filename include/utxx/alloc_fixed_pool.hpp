@@ -283,7 +283,7 @@ void fixed_size_object_pool<PointerType>
     BOOST_ASSERT(((p - m_begin) % m_object_size) == 0); // "Invalid object alignment!"
 
     #ifdef USE_PID_RECOVERY
-    pg->freed = 1;
+    obj->freed = 1;
     #endif
 
     size_t old_head, new_head;

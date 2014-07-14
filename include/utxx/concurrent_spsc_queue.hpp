@@ -111,9 +111,7 @@ public:
     typedef T value_type;
 
     /// @return memory size needed for allocating internal queue data.
-    /// XXX: this does not tale into account that the actual capacity may be
-    /// lower (a rounded-down power of 2):
-    ///
+    /// Note that the actual capacity may be lower (a rounded-down power of 2).
     static uint32_t memory_size(uint32_t a_capacity)
       { return sizeof(header) + a_capacity * sizeof(T); }
 
@@ -160,7 +158,7 @@ public:
         : m_header     (a_capacity)
         , m_header_ptr (&m_header)
         , m_rec_ptr    (reinterpret_cast<T*>
-                       (::malloc(sizeof(T)*m_header.m_count)))
+                       (::malloc(sizeof(T)*m_header.m_capacity)))
         , m_shared_data(false)
         , m_is_producer(false)   // irrelevant in this case
         , m_mask       (m_header.m_capacity-1)
@@ -204,7 +202,7 @@ public:
       // de-allocate the storage space:
       if (StaticCapacity == 0 && !m_shared_data)
       {
-        assert(m_rec_ptr != NULL && m_rec_ptr != &m_records);
+        assert(m_rec_ptr != NULL && m_rec_ptr != m_records);
         ::free(m_rec_ptr);
       }
     }

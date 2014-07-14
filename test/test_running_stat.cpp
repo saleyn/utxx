@@ -96,29 +96,43 @@ BOOST_AUTO_TEST_CASE( test_running_stat )
     BOOST_REQUIRE_EQUAL(0.0, rs.deviation());
 }
 
-enum test_rs {
-      ONE
-    , TWO
-    , THREE
-};
-
-BOOST_AUTO_TEST_CASE( test_running_stats )
+namespace std
 {
-/*
-    typedef basic_running_tuple_stat<test_rs, size_t, 3> basic_rs;
-
-    basic_rs::value_tuple value;
-
-    value.clear();
-    boost::get<ONE>(value) = 1.0;
-    boost::get<TWO>(value) = 2.0;
-    boost::get<THREE>(value) = 3.0;
-
-    basic_rs stats;
-
-    stats.clear();
-    stats.add(value);
-
-    std::cout << "Count: " << stats.count() << std::endl;
-*/
+    ostream& operator<< (ostream& out, pair<int, int> const& a)
+    {
+        return out << '{' << a.first << ',' << a.second << '}';
+    }
 }
+
+BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
+{
+    basic_moving_average<int, 4> ma;
+
+    BOOST_REQUIRE_EQUAL(std::make_pair(0, 0), ma.minmax());
+
+    BOOST_REQUIRE_EQUAL(4u, ma.capacity());
+
+    ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
+    ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+
+    BOOST_REQUIRE_EQUAL(std::make_pair(2, 4), ma.minmax());
+
+    ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
+    ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
+
+    BOOST_REQUIRE_EQUAL(std::make_pair(2, 8), ma.minmax());
+    BOOST_REQUIRE_EQUAL(4u, ma.samples());
+
+    ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
+    ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+
+    BOOST_REQUIRE_EQUAL(std::make_pair(6,10), ma.minmax());
+    BOOST_REQUIRE_EQUAL(4u, ma.samples());
+    BOOST_REQUIRE_EQUAL(32u,ma.sum()); 
+
+    ma.clear();
+
+    BOOST_REQUIRE_EQUAL(0u,  ma.samples());
+    BOOST_REQUIRE_EQUAL(0.0, ma.mean());
+}
+

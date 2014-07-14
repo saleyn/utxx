@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string.h>
 #include <utxx/endian.hpp>
 #include <utxx/convert.hpp>
+#include <utxx/string.hpp>
 
 namespace utxx {
 
@@ -100,6 +101,7 @@ namespace detail {
         const char*   data() const  { return m_data; }
         char*         data()        { return m_data; }
         size_t        size() const  { return N; }
+        const char*   end()  const  { return m_data + N; }
 
         operator uint8_t* () const  { return reinterpret_cast<uint8_t*>(m_data); }
         operator uint8_t* ()        { return reinterpret_cast<uint8_t*>(m_data); }
@@ -117,6 +119,15 @@ namespace detail {
                     break;
                 }
             return std::string(m_data, end - m_data);
+        }
+
+        /// Find the length of the string contained in the buffer up to the
+        /// given delimiter.
+        /// @return the string length up to the \a delimiter or size() if
+        ///         the \a delimiter is not found
+        size_t len(char delimiter) const {
+            const char* pos = find_pos(m_data, end(), delimiter);
+            return pos - m_data;
         }
 
         std::ostream& to_bin_string(std::ostream& out, int until_char = -1) const {

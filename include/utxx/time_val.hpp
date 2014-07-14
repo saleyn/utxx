@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/static_assert.hpp>
 #include <utxx/detail/gettimeofday.hpp>
+#include <utxx/compiler_hints.hpp>
 #include <cstddef>
 #include <stdint.h>
 #include <ctime>
@@ -166,6 +167,53 @@ namespace utxx {
         static time_val universal_time() {
             time_val tv; ::gettimeofday(&tv, 0); return tv;
         }
+
+        /// Construct a time_val from UTC "y/m/d-H:M:S"
+        static time_val universal_time(int year, int month, int day,
+                                       int hour, int min,   int sec, int usec) {
+            static __thread int    s_y, s_m, s_d;
+            static __thread time_t s_ymd;
+
+            if (year != s_y || month != s_m || day != s_d) {
+                struct tm tm = {0, 0, 0, day, month-1, year-1900};
+                s_ymd = ::mktime(&tm);
+                s_y   = year;
+                s_m   = month;
+                s_d   = day;
+            }
+
+            time_val tv;
+            tv.m_tv.tv_sec  = s_ymd + hour*3600 + min*60 + sec;
+            tv.m_tv.tv_usec = usec;
+            return tv;
+        };
+
+        /// Construct a time_val from local "y/m/d-H:M:S"
+        static time_val local_time(int year, int month, int day,
+                                   int hour, int min,   int sec, int usec) {
+            static __thread int    s_y, s_m, s_d, s_tzoffset;
+            static __thread time_t s_ymd;
+
+            if (year != s_y || month != s_m || day != s_d) {
+                if (unlikely(!s_tzoffset))
+                {
+                    time_t now; time(&now);
+                    struct tm ltm;
+                    localtime_r(&now, &ltm);
+                    s_tzoffset = ltm.tm_gmtoff;
+                }
+                struct tm tm = {0, 0, 0, day, month-1, year-1900};
+                s_ymd = ::mktime(&tm) + s_tzoffset;
+                s_y   = year;
+                s_m   = month;
+                s_d   = day;
+            }
+
+            time_val tv;
+            tv.m_tv.tv_sec  = s_ymd + hour*3600 + min*60 + sec;
+            tv.m_tv.tv_usec = usec;
+            return tv;
+        };
 
         time_val& now(long addS, long addUS=0) {
             ::gettimeofday(&m_tv, 0); add(addS, addUS);

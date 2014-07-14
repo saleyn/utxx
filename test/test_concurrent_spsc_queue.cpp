@@ -44,7 +44,7 @@ struct PerfTest {
     }
 
     void producer() {
-        for (int i = 0; i < traits_.limit(); ++i)
+        for (int i = 0; i < (int)traits_.limit(); ++i)
             while (!queue_.push(traits_.generate()));
     }
 
@@ -56,7 +56,7 @@ struct PerfTest {
         } else {
             while (!done_) {
                 T data;
-                queue_.pop(data);
+                queue_.pop(&data);
             }
         }
     }
@@ -90,7 +90,7 @@ struct CorrectnessTest {
     {
         const size_t testSize = traits_.limit();
         testData_.reserve(testSize);
-        for (int i = 0; i < testSize; ++i)
+        for (size_t i = 0; i < testSize; ++i)
             testData_.push_back(traits_.generate());
     }
 
@@ -139,14 +139,14 @@ struct CorrectnessTest {
         for (auto expect : testData_) {
         again:
             T data;
-            if (!queue_.pop(data)) {
+            if (!queue_.pop(&data)) {
                 if (!done_)
                     goto again;
 
                 // Try one more read; unless there's a bug in the queue class
                 // there should still be more data sitting in the queue even
                 // though the producer thread exited.
-                if (!queue_.pop(data)) {
+                if (!queue_.pop(&data)) {
                     BOOST_REQUIRE(0 && "Finished too early ...");
                     return;
                 }
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_empty ) {
     BOOST_REQUIRE(queue.full());  // Tricky: full after 3 writes, not 2.
 
     BOOST_REQUIRE(!queue.push(4));
-    BOOST_REQUIRE_EQUAL(queue.unsafe_size(), 3);
+    BOOST_REQUIRE_EQUAL(queue.count(), 3u);
 }
 
 BOOST_AUTO_TEST_CASE( test_concurrent_spsc_correctness ) {
@@ -226,8 +226,8 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_destructor ) {
 
         {
             DtorChecker ignore;
-            BOOST_REQUIRE(queue.pop(ignore));
-            BOOST_REQUIRE(queue.pop(ignore));
+            BOOST_REQUIRE(queue.pop(&ignore));
+            BOOST_REQUIRE(queue.pop(&ignore));
         }
 
         BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 8);
@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_destructor ) {
         BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 3);
         {
             DtorChecker ignore;
-            BOOST_REQUIRE(queue.pop(ignore));
+            BOOST_REQUIRE(queue.pop(&ignore));
         }
         BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 2);
         BOOST_REQUIRE(queue.push(DtorChecker()));

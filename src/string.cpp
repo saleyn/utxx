@@ -47,9 +47,12 @@ std::string to_bin_string(const char* buf, size_t sz, bool hex, bool readable) {
     out << "<<" << (printable ? "\"" : "");
     for(const char* p = begin; p != end; ++p) {
         out << (p == begin || printable ? "" : ",");
-        if      (hex)       out << std::hex;
-        else if (printable) out << *p;
-        else                out << (int)*(unsigned char*)p;
+        if (printable)
+            out << *p;
+        else {
+            if (hex) out << std::hex;
+            out << (int)*(unsigned char*)p;
+        }
     }
     out << (printable ? "\"" : "") << ">>";
     return out.str();

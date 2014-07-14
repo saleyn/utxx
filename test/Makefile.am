@@ -23,6 +23,7 @@ TEST_UTXX_SRCS = \
 	test_concurrent_stack.cpp \
 	test_concurrent_update.cpp \
     test_concurrent_spsc_queue.cpp \
+    test_concurrent_mpsc_queue.cpp \
 	test_config_validator.cpp \
 	test_convert.cpp \
 	test_file_reader.cpp \
@@ -91,8 +92,10 @@ endif
 
 test_utxx_CXXFLAGS 	= -I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(THRIFT_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS) \
-                      -L$(srcdir)/../src/.libs -rpath $(abspath $(srcdir)/../src/.libs) \
-                      -rpath $(abspath $(prefix)/gcc/lib)
+                      -L$(srcdir)/../src/.libs \
+                      -rpath $(abspath $(srcdir)/../src/.libs) \
+                      -rpath $(abspath $(prefix)/gcc/lib) \
+                      $(if $(THRIFT_LIBDIR),-rpath $(THRIFT_LIBDIR))
 
 test_utxx_LDADD    	= -lutxx \
                           $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \

@@ -88,6 +88,13 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         BOOST_REQUIRE_EQUAL(" abc   ", rc.to_string());
         BOOST_REQUIRE_EQUAL(" abc",    rc.to_string(' '));
     }
+
+    {
+        nchar<6> rc("abc\n  ", 6);
+        BOOST_REQUIRE_EQUAL(3u, rc.len('\n'));
+        BOOST_REQUIRE_EQUAL(6u, rc.len('\0'));
+        BOOST_REQUIRE_EQUAL(6u, rc.len('X'));
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_nchar_to_binary )

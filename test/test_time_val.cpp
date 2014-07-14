@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdio.h>
 #include <sstream>
 #include <iostream>
+#include <time.h>
 
 using namespace utxx;
 
@@ -67,6 +68,17 @@ BOOST_AUTO_TEST_CASE( test_time_val )
 
     BOOST_REQUIRE_EQUAL(now.microseconds() + 2004003, add.microseconds());
     BOOST_REQUIRE_EQUAL(4003, rel.usec());
+
+    {
+        time_t t;     time(&t);
+        struct tm tm; localtime_r(&t, &tm);
+        time_val gmt = time_val::universal_time(2014, 7, 10, 0,0,0, 0);
+        time_val loc = time_val::local_time    (2014, 7, 10, 0,0,0, 0);
+        BOOST_MESSAGE("TZ  offset: " << tm.tm_gmtoff);
+        BOOST_MESSAGE("GMT   time: " << gmt.sec());
+        BOOST_MESSAGE("Local time: " << loc.sec());
+        BOOST_REQUIRE_NE(gmt.sec() - loc.sec(), tm.tm_gmtoff);
+    }
 }
 
 

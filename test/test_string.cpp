@@ -39,25 +39,45 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_string_length )
 {
     const char s[] = "abc";
-    BOOST_REQUIRE_EQUAL(3, length(s));
+    BOOST_REQUIRE_EQUAL(3u, length(s));
     
     static const char* s_ops[] = {"a", "b", "c"};
-    BOOST_REQUIRE_EQUAL(3, length(s_ops));
+    BOOST_REQUIRE_EQUAL(3u, length(s_ops));
 
     struct t { int a; t(int a) : a(a) {} };
 
     const t arr[] = { t(1), t(2) };
-    BOOST_REQUIRE_EQUAL(2, length(arr));
+    BOOST_REQUIRE_EQUAL(2u, length(arr));
 }
 
 enum op_type {OP_UNDEFINED = -1, OP_ADD, OP_REMOVE, OP_REPLACE, OP_UPDATE};
 
+BOOST_AUTO_TEST_CASE( test_string_find_pos )
+{
+    static const char* s_test   = "abc\n   ";
+    static const char* s_end    = s_test + 7;
+    static const char* s_expect = s_test + 3;
+    BOOST_REQUIRE_EQUAL(s_expect, utxx::find_pos(s_test, s_end, '\n'));
+    BOOST_REQUIRE_EQUAL(s_end,    utxx::find_pos(s_test, s_end, 'X'));
+    BOOST_REQUIRE_EQUAL(s_end,    utxx::find_pos(s_test, s_end, '\0'));
+}
+
 BOOST_AUTO_TEST_CASE( test_string_find_index )
 {
     static const char* s_ops[] = {"add", "remove", "replace", "update"};
-    BOOST_REQUIRE(OP_REMOVE    == utxx::find_index<op_type>(s_ops, "remove"));
+    BOOST_REQUIRE(OP_REMOVE    == utxx::find_index<op_type>(s_ops, "remove  ", 6));
+    BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "remove  ", 0));
     BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace"));
+    BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace ", 7));
     BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "xxx"));
+}
+
+BOOST_AUTO_TEST_CASE( test_string_to_int64 )
+{
+    BOOST_REQUIRE_EQUAL(1u,       to_int64("\1"));
+    BOOST_REQUIRE_EQUAL(258u,     to_int64("\1\2"));
+    BOOST_REQUIRE_EQUAL(66051u,   to_int64("\1\2\3"));
+    BOOST_REQUIRE_EQUAL(4276803u, to_int64("ABC"));
 }
 
 BOOST_AUTO_TEST_CASE( test_string_nocase )

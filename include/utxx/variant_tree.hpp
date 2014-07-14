@@ -263,8 +263,12 @@ public:
         , m_schema_validator(a_rhs.m_schema_validator)
     {}
 
-    basic_variant_tree(const base& a_rhs, const path_type& a_root_path = path_type())
-        : base(a_rhs), m_root_path(a_root_path)
+    basic_variant_tree(const base& a_rhs,
+        const path_type&           a_root_path = path_type(),
+        const config::validator*   a_validator = NULL)
+        : base(a_rhs)
+        , m_root_path(a_root_path)
+        , m_schema_validator(NULL)
     {}
 
     #if __cplusplus >= 201103L
