@@ -157,6 +157,18 @@ namespace utxx {
             return (double)tv.sec() + (double)tv.usec() / N10e6;
         }
 
+        int64_t diff_usec(const time_val& t) const {
+            time_val tv(this->timeval());
+            tv -= t;
+            return (int64_t)tv.sec() * N10e6 + tv.usec();
+        }
+
+        int64_t diff_msec(const time_val& t) const {
+            time_val tv(this->timeval());
+            tv -= t;
+            return (int64_t)tv.sec() * 1000 + tv.usec() / 1000;
+        }
+
         void add(long _sec, long _us) {
             m_tv.tv_sec += _sec; m_tv.tv_usec += _us;
             if (_sec || _us) normalize();
@@ -226,6 +238,14 @@ namespace utxx {
         static double now_diff(const time_val& start) {
             time_val tv; tv.now(); tv -= start;
             return (double)tv.sec() + (double)tv.usec() / N10e6;
+        }
+        static int64_t now_diff_usec(const time_val& start) {
+            time_val tv; tv.now(); tv -= start;
+            return (int64_t)tv.sec() * N10e6 + tv.usec();
+        }
+        static int64_t now_diff_msec(const time_val& start) {
+            time_val tv; tv.now(); tv -= start;
+            return (int64_t)tv.sec() * 1000 + tv.usec() / 1000;
         }
 
         time_val operator- (const time_val& tv) const {
