@@ -25,7 +25,7 @@ import tempfile
 import time
 from copy import deepcopy
 import sys
-
+import re
 
 def flatten(*n):
     """
@@ -71,6 +71,8 @@ def print_tree(root, stream = sys.stdout, ids=None, comments=False):
 def print_element(e, stream = sys.stdout, with_offset=True, ids=None):
     print >> stream, node_to_string(e, with_offset=with_offset, ids=ids)
 
+def format_name(name):
+    return re.sub('[-.,;:]', '_', name.upper())
 
 class RenamedTemporaryFile(object):
     """
@@ -336,7 +338,7 @@ class ConfigGenerator(object):
 
             f.write("    //---------- Configuration Options ------------\n")
             for n in names:
-                u = n.upper()
+                u = format_name(n)
                 f.write('    static const char CFG_%s[]%s = "%s";\n' % (u, ' ' * (max_width - len(n) + 4), n))
             f.write("\n")
             f.write("    //---------- Configuration Values -------------\n")
@@ -467,7 +469,7 @@ class ConfigGenerator(object):
                     '%s  "%s", %s, %s, %s,\n'
                     "%s  v(%s), v(%s), v(%s), l_names, l_values, l_children%d));\n"
                     "%s}\n" % (
-                    ws2, name.upper(), str_tp, self.string_to_type(valtp),
+                    ws2, format_name(name), str_tp, self.string_to_type(valtp),
                     ws2, desc, unique, required, macros,
                     ws2,('"%s"' % default) if default else "",
                         ('"%s"' % min) if min else "",

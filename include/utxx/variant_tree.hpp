@@ -74,8 +74,8 @@ public:
     typedef typename base::const_iterator                   const_iterator;
 
 private:
-    path_type                m_root_path;
-    const config::validator* m_schema_validator;
+    path_type                        m_root_path;
+    mutable const config::validator* m_schema_validator;
 
 
     template <typename T>
@@ -285,8 +285,8 @@ public:
     void root_path(const path_type& p) { m_root_path = p; }
 
     /// Get schema validator
-    const config::validator* validator() const { return m_schema_validator; }
-    void validator(const config::validator* a) { m_schema_validator = a; }
+    const config::validator* validator()       const { return m_schema_validator; }
+    void validator(const config::validator* a) const { m_schema_validator = a; }
 
     base&       to_base() { return static_cast<base&>(*this); }
     const base& to_base() const { return static_cast<const base&>(*this); }
@@ -512,10 +512,15 @@ public:
     }
 
     /// Validate content of this tree against the custom validator
-    void validate() const {
-        if (!m_schema_validator)
+    /// @param a_schema if not NULL use this schema validator otherwise
+    ///                 use internal validator().
+    void validate(const config::validator* a_schema = NULL) const {
+        if (!a_schema && !m_schema_validator)
             throw std::runtime_error("Unassigned validator!");
-        m_schema_validator->validate(*this);
+        if (a_schema)
+            a_schema->validate(*this);
+        else
+            m_schema_validator->validate(*this);
     }
 
     /// For internal use
