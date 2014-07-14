@@ -218,7 +218,7 @@ tree_path validator::format_name
     tree_path s = a_root / a_opt.name;
     if (!a_cfg_opt.empty() && a_cfg_opt != a_opt.name) // && a_opt.opt_type == ANONYMOUS)
         s /= a_cfg_opt;
-    if (a_cfg_value != std::string()) // && !a_opt.unique)
+    if (!a_cfg_value.empty()) // && !a_opt.unique)
         s = s.dump() + '[' + a_cfg_value + ']';
     return s;
 }
