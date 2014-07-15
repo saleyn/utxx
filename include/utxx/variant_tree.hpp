@@ -410,7 +410,7 @@ public:
         if (r) return *r;
         if (m_schema_validator)
             // default_value will throw if there's no such path
-            return m_schema_validator->default_value(path, m_root_path);
+            return m_schema_validator->def(path, m_root_path);
         throw variant_tree_bad_path(
             "Cannot get child - path not found", m_root_path / path);
     }

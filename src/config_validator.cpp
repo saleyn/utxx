@@ -197,7 +197,7 @@ const option& validator::get(const tree_path& a_path, const tree_path& a_root) c
     throw variant_tree_error(m_root / ep, "Configuration option not found!");
 }
 
-const variant_tree_base& validator::default_value
+const variant_tree_base& validator::def
 (
     const tree_path& a_path,
     const tree_path& a_root_path

@@ -185,6 +185,8 @@ namespace config {
         variant_set         value_choices;
 
         option_type_t       value_type;
+        // NB: Default value is a tree because variant_tree.get_child()
+        // may need to return a default child tree node as a const expression
         variant_tree_base   default_value;
         variant             min_value;
         variant             max_value;
@@ -317,12 +319,22 @@ namespace config {
         /// @return config option details
         std::string usage(const std::string& a_indent=std::string()) const;
 
+        /// @return default variant for a given option's path.
+        const variant_tree_base& def(
+             const tree_path& a_path,
+             const tree_path& a_root_path  = tree_path()
+         ) const throw (variant_tree_error);
+ 
         /// Get default value for a named option.
         /// @return default value for a given option's path.
-        const variant_tree_base& default_value(
+        template <class T>
+        T def_value(
             const tree_path& a_path,
             const tree_path& a_root_path  = tree_path()
-        ) const throw (variant_tree_error);
+        ) const throw (variant_tree_error)
+        {
+            return def(a_path, a_root_path).data().get<T>();
+        }
 
         /// Find option's metadata
         const option* find(const tree_path& a_path,

@@ -449,6 +449,8 @@ class ConfigGenerator(object):
             elif max    : err = "'max': %s " % max
             elif maxlen : err = "'max_length': %s " % maxlen
 
+            if default != None: required = 'false'
+
             for n in node.xpath("./name"):
                 f.write('%sl_names.insert("%s");\n' % \
                         (ws1, self.value_to_string(n.attrib.get('val'), tp)))
@@ -468,17 +470,25 @@ class ConfigGenerator(object):
 
             valtp = 'string' if not tp and subopts else valtype;
 
+            if default == None:
+                defval = "v()"
+            elif len(default) == 0:
+                defval = "variant(\"\")"
+            else:
+                defval = ('v("%s")' % default)
+
             f.write("%sadd_option(%s,\n" % (ws1, arg))
             f.write("%sconfig::option(%s(), %s, %s,\n"
-                    '%s  "%s", %s, %s, %s,\n'
-                    "%s  v(%s), v(%s), v(%s), l_names, l_values, l_children%d));\n"
+                    '%s  "%s", %s /*unique*/, %s /*required*/, %s,\n'
+                    "%s  %s /*default*/, v(%s) /*min*/, v(%s) /*max*/,\n"
+                    "%s  l_names, l_values, l_children%d));\n"
                     "%s}\n" % (
                     ws2, format_name(name), str_tp, self.string_to_type(valtp),
                     ws2, desc, unique, required, macros,
-                    ws2,('"%s"' % default) if default else "",
+                    ws2, defval,
                         ('"%s"' % min) if min else "",
                         ('"%s"' % max) if max else "",
-                        level,
+                    ws2, level,
                     ws))
 
 
