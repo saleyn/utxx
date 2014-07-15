@@ -268,7 +268,7 @@ public:
         const config::validator*   a_validator = NULL)
         : base(a_rhs)
         , m_root_path(a_root_path)
-        , m_schema_validator(NULL)
+        , m_schema_validator(a_validator)
     {}
 
     #if __cplusplus >= 201103L
@@ -528,9 +528,9 @@ public:
         if (!a_schema && !m_schema_validator)
             throw std::runtime_error("Unassigned validator!");
         if (a_schema)
-            a_schema->validate(*this);
+            a_schema->validate(*this, a_custom_validator);
         else
-            m_schema_validator->validate(*this);
+            m_schema_validator->validate(*this, a_custom_validator);
     }
 
     /// For internal use
