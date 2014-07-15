@@ -102,7 +102,11 @@ class concurrent_spsc_queue : private boost::noncopyable
         }
     };
 
+    // Index increment, with wrap-up:
     uint32_t increment(uint32_t h) const { return (h + 1) & m_mask; }
+
+    // Index decrement, with wrap-up around 0:
+    uint32_t decrement(uint32_t h) const { return (h - 1) & m_mask; }
 
 public:
     //=======================================================================//
@@ -253,6 +257,22 @@ public:
         return true;
     }
 
+    /// Pop an element from the front of the queue.
+    /// Queue must not be empty!
+    void pop()
+    {
+        // NB: the side check is for ShM only, and in the debug mode only:
+        // must be on the Consumer side:
+        assert(!m_shared_data || !m_is_producer);
+
+        uint32_t h = head().load(std::memory_order_relaxed);
+        assert(h  != tail().load(std::memory_order_acquire));
+
+        uint32_t next = increment(h);
+        m_rec_ptr[h].~T();
+        head().store(next, std::memory_order_release);
+    }
+
     /// Pointer to the value at the front of the queue (for use in-place) or
     /// nullptr if empty.
     T* peek()
@@ -281,22 +301,6 @@ public:
             (h == tail().load(std::memory_order_acquire))
             ? nullptr /* queue is empty */
             : (m_rec_ptr + h);
-    }
-
-    /// Pop an element from the front of the queue.
-    /// Queue must not be empty!
-    void pop()
-    {
-        // NB: the side check is for ShM only, and in the debug mode only:
-        // must be on the Consumer side:
-        assert(!m_shared_data || !m_is_producer);
-
-        uint32_t h = head().load(std::memory_order_relaxed);
-        assert(h  != tail().load(std::memory_order_acquire));
-
-        uint32_t next = increment(h);
-        m_rec_ptr[h].~T();
-        head().store(next, std::memory_order_release);
     }
 
     /// UNSAFE test for the queue being empty (because == is not synchronised):
@@ -349,14 +353,21 @@ public:
         friend class concurrent_spsc_queue<T>;
 
         iterator(uint32_t ind, concurrent_spsc_queue<T>* queue)
-            : m_ind  (ind),
+            : m_ind(ind),
+            m_queue(queue)
+        {}
+
+        // NB: The following ctor requires that "entry" and "queue" must be
+        // valid non-NULL ptrs:
+        iterator(T* entry,     concurrent_spsc_queue<T>* queue)
+            : m_ind(entry - queue->m_rec_ptr),
             m_queue(queue)
         {}
 
     public:
         // Default Ctor: creates an invalid "iterator":
         iterator()
-            : m_ind  (0),
+            : m_ind(0),
             m_queue(nullptr)
         {};
         // Dtor, copy ctor, assignemnt and equality are auto-generated
@@ -387,6 +398,12 @@ public:
             m_queue(queue)
         {}
 
+        // NB: The following ctor requires that "entry" and "queue" must be
+        // valid non-NULL ptrs:
+        const_iterator(T const* entry, concurrent_spsc_queue<T> const* queue)
+            : m_ind(entry - queue->m_rec_ptr),
+            m_queue(queue)
+        {}
     public:
         // Default Ctor: creates an invalid "const_iterator":
         const_iterator()
@@ -428,6 +445,28 @@ public:
     // "cend":
     const_iterator cend() const
         { return iterator(tail().load(), this); }
+
+    //-----------------------------------------------------------------------//
+    // "erase":                                                              //
+    //-----------------------------------------------------------------------//
+    /// Remove the entry specified by the iterator, which must be a valid one
+    /// (NOT *end). No explicit validity checks on the iterator are performed.
+    /// This method is thread-safe safe only on the Consumer side:
+    ///
+    void erase(iterator it)
+    {
+        assert((!m_shared_data || !m_is_producer) && it.m_queue == this);
+        uint32_t h = head().load();  // XXX: Which memory model to use here?
+
+        // Shift the data items backwards, freeing the front:
+        for (uint32_t i = it.m_ind; i != h; )
+        {
+            uint32_t  p = decrement(i);
+            m_rec_ptr[i] = m_rec_ptr[p];
+            i = p;
+        }
+        pop();
+    }
 
 private:
     //=======================================================================//
