@@ -330,21 +330,12 @@ class ConfigGenerator(object):
             f.write("    using namespace utxx;\n")
             f.write("    typedef\n")
             f.write("        boost::property_tree::translator_between<variant, std::string>\n")
-            f.write("        translator;\n\n")
+            f.write("        translator;\n")
 
             max_name_size = max([len(n) for n in names])
             max_val_size = max([len(n) for n in values]) if len(values) > 0 else 0
             max_width = max(max_name_size, max_val_size)
 
-            f.write("    //---------- Configuration Options ------------\n")
-            for n in names:
-                u = format_name(n)
-                f.write('    static const char CFG_%s[]%s = "%s";\n' % (u, ' ' * (max_width - len(n) + 4), n))
-            f.write("\n")
-            f.write("    //---------- Configuration Values -------------\n")
-            for n in values:
-                u = n.upper()
-                f.write('    static const char CFG_VAL_%s[]%s = "%s";\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("\n" +
                     "    namespace {\n" +
                     "        typedef config::option_map    ovec;\n" +
@@ -357,6 +348,15 @@ class ConfigGenerator(object):
             f.write("        variant v()              const { return variant();        }\n")
             f.write("        variant v(const char* s) const { return *tr.put_value(s); }\n")
             f.write("    public:\n")
+            f.write("        //---------- Configuration Options ------------\n")
+            for n in names:
+                u = format_name(n)
+                f.write('        static constexpr const char* %s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
+            f.write("        //---------- Configuration Values -------------\n")
+            for n in values:
+                u = n.upper()
+                f.write('        static constexpr const char* VAL_%s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
+            f.write("\n")
             f.write("        static const %s* instance() {\n" % name)
             f.write("            static %s s_instance;\n" % name)
             f.write("            return &s_instance;\n")
@@ -465,7 +465,7 @@ class ConfigGenerator(object):
             valtp = 'string' if not tp and subopts else valtype;
 
             f.write("%sadd_option(%s,\n" % (ws1, arg))
-            f.write("%sconfig::option(CFG_%s, %s, %s,\n"
+            f.write("%sconfig::option(%s(), %s, %s,\n"
                     '%s  "%s", %s, %s, %s,\n'
                     "%s  v(%s), v(%s), v(%s), l_names, l_values, l_children%d));\n"
                     "%s}\n" % (

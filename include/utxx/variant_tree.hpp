@@ -514,7 +514,10 @@ public:
     /// Validate content of this tree against the custom validator
     /// @param a_schema if not NULL use this schema validator otherwise
     ///                 use internal validator().
-    void validate(const config::validator* a_schema = NULL) const {
+    void validate(
+        const config::validator*        a_schema           = NULL,
+        const config::custom_validator& a_custom_validator = NULL
+    ) const {
         if (!a_schema && !m_schema_validator)
             throw std::runtime_error("Unassigned validator!");
         if (a_schema)
