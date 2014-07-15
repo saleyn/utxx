@@ -514,6 +514,13 @@ public:
     /// Validate content of this tree against the custom validator
     /// @param a_schema if not NULL use this schema validator otherwise
     ///                 use internal validator().
+    void validate(const config::custom_validator& a_custom_validator) const {
+        validate(NULL, a_custom_validator);
+    }
+
+    /// Validate content of this tree against the custom validator
+    /// @param a_schema if not NULL use this schema validator otherwise
+    ///                 use internal validator().
     void validate(
         const config::validator*        a_schema           = NULL,
         const config::custom_validator& a_custom_validator = NULL

@@ -145,6 +145,8 @@ strip_root(const tree_path& a_root_path) const throw(variant_tree_error)
 
     if (s.size() < r.size())
         throw variant_tree_error(a_root_path, "Path is shorter than root!");
+    if (r.empty())
+        return a_root_path;
     if (s.substr(0, r.size()) != r || (s.size() > r.size() && s[r.size()] != sep))
         throw variant_tree_error(a_root_path, "Sub-path not found in root path");
 

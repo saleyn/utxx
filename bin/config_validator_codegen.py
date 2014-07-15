@@ -368,8 +368,7 @@ class ConfigGenerator(object):
             f.write("        friend class config::validator;\n\n")
             f.write("        virtual ~%s() {}\n\n" % name)
             f.write("        %s() {\n" % name)
-            f.write('            m_root = "%s";\n' % root.attrib['namespace'])
-
+            f.write('            m_root = "%s";\n' % (root.attrib['root'] if root.attrib.get('root') else ""))
 
             self.process_options(f, root)
 
