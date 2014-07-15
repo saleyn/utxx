@@ -237,12 +237,20 @@ namespace config {
         variant default_subst_value() const;
     };
 
+    /// Performs custom validation of unrecognized options
+    /// @return true if given option is valid.
+    typedef std::function
+        <bool (const tree_path&     a_path,
+               const std::string&   a_name,
+               const variant&       a_value)> custom_validator;
+
     class validator {
         void check_option(
             const tree_path&                        a_root,
             typename variant_tree_base::value_type& a_vt,
             const option&                           a_opt,
-            bool                                    a_fill_defaults
+            bool                                    a_fill_defaults,
+            const custom_validator&                 a_custom_validator
         ) const throw(std::invalid_argument, variant_tree_error);
 
         void check_unique(const tree_path& a_root, const variant_tree_base& a_config,
@@ -277,14 +285,18 @@ namespace config {
             throw ();
 
     protected:
-        tree_path m_root;       // Path from configuration root
+        tree_path   m_root;       // Path from configuration root
         option_map  m_options;
 
         void validate(const tree_path& a_root, variant_tree_base& a_config,
-            const option_map& a_opts, bool fill_defaults) const throw(variant_tree_error);
+            const option_map& a_opts, bool fill_defaults,
+            const custom_validator& a_custom_validator
+        ) const throw(variant_tree_error);
 
         void validate(variant_tree& a_config,
-            const option_map& a_opts, bool fill_defaults) const throw(variant_tree_error);
+            const option_map& a_opts, bool fill_defaults,
+            const custom_validator& a_custom_validator
+        ) const throw(variant_tree_error);
 
         static void add_option(option_map& a, const option& a_opt) {
             a.insert(std::make_pair(a_opt.name, a_opt));
@@ -327,10 +339,13 @@ namespace config {
         ///              property
         const tree_path& root()   const { return m_root; }
 
-        void validate(variant_tree& a_config, bool a_fill_defaults)
-            const throw(variant_tree_error);
+        void validate(variant_tree& a_config, bool a_fill_defaults,
+            const custom_validator& a_custom_validator = NULL
+        ) const throw(variant_tree_error);
 
-        void validate(const variant_tree& a_config) const throw(variant_tree_error);
+        void validate(const variant_tree& a_config,
+            const custom_validator& a_custom_validator = NULL
+        ) const throw(variant_tree_error);
     };
 
 } // namespace config

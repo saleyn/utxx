@@ -207,22 +207,24 @@ namespace utxx {
     /// @param readable if true prints buffer as a readable string if it
     ///                 contains all printable bytes. If false - binary
     ///                 list is printed
+    /// @param eol      if true - terminate string with end-of-line
     std::string to_bin_string(const char* buf, size_t sz,
-                              bool hex = false, bool readable = true);
+                              bool hex = false, bool readable = true,
+                              bool eol = false);
 
 #if __cplusplus >= 201103L
     namespace {
         inline void to_string_impl(std::stringstream& s) {}
 
         template <class T, class... Args>
-        inline void to_string_impl(std::stringstream& s, const T& a, Args... args) {
-            s << a;
+        inline void to_string_impl(std::stringstream& s, T&& a, Args&&... args) {
+            s << std::forward<T>(a);
             to_string_impl(s, args...);
         }
     }
 
     template <class... Args>
-    inline std::string to_string(Args... args) {
+    inline std::string to_string(Args&&... args) {
         std::stringstream s;
         to_string_impl(s, args...);
         return s.str();

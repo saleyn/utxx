@@ -168,10 +168,15 @@ struct basic_moving_average
         #else
         assert(!N || (N & (N-1)) == 0);
         #endif
-        assert((N && !a_capacity) || (!N && a_capacity));
-        assert(!a_capacity || (a_capacity & (a_capacity-1)) == 0);
-        if (a_capacity)
-           m_data = new T[a_capacity];
+        if (!(N ^ a_capacity))
+            throw std::logic_error
+                ("utxx::basic_moving_average: both static and dynamic capacity is given");
+        if (a_capacity) {
+            if ((a_capacity & (a_capacity-1)) != 0)
+                throw std::invalid_argument
+                    ("utxx::basic_moving_average: dynamic capacity must be power of 2");
+            m_data = new T[a_capacity];
+        }
 
         clear();
     }

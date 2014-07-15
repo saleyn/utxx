@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     BOOST_REQUIRE_EQUAL(4003,       rel.usec());
     BOOST_REQUIRE_EQUAL(4,          rel.msec());
     BOOST_REQUIRE_EQUAL(2004,       rel.milliseconds());
-    BOOST_REQUIRE_EQUAL(2004003,    rel.microseconds());
+    BOOST_REQUIRE_EQUAL(2004003u,   rel.microseconds());
     BOOST_REQUIRE_EQUAL(2.004003,   rel.seconds());
 
     time_val add = now + rel;

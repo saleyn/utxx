@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdexcept>
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
+#include <utxx/compiler_hints.hpp>
 #include <stdint.h>
 
 namespace utxx {
@@ -340,11 +341,20 @@ namespace detail {
             unrolled_loop_atoul<N-1>::convert(p, n);
             return n;
         }
+        inline static uint64_t convert_unsigned(const char*& p) {
+            if (*p == ' ')
+                return unrolled_loop_atoul<N-1>::convert_unsigned(++p);
+            if (*p < '0' || *p > '9')
+                return 0u;
+            return unrolled_loop_atoul<N>::convert(p);
+        }
         inline static int64_t convert_signed(const char*& p) {
             if (*p == ' ')
                 return unrolled_loop_atoul<N-1>::convert_signed(++p);
             if (*p == '-')
                 return -static_cast<int64_t>(unrolled_loop_atoul<N-1>::convert(++p));
+            if (*p < '0' || *p > '9')
+                return 0;
             return unrolled_loop_atoul<N>::convert(p);
         }
     };
@@ -358,6 +368,9 @@ namespace detail {
         inline static uint64_t convert(const char*& p) {
             //BOOST_ASSERT(*p >= '0' && *p <= '9' || *p == ' ');
             return *p++ & 0x0f;
+        }
+        inline static uint64_t convert_unsigned(const char*& p) {
+            return convert(p);
         }
         inline static int64_t convert_signed(const char*& p) {
             return convert(p);
@@ -401,13 +414,13 @@ namespace detail {
 /// Note: It performs no error checking!!!
 template <int N>
 inline uint64_t unsafe_fixed_atoul(const char*& p) {
-    return detail::unrolled_loop_atoul<N>::convert(p);
+    return detail::unrolled_loop_atoul<N>::convert_unsigned(p);
 }
 
 template <int N>
 inline const char* unsafe_fixed_atoul(const char* p, uint64_t& value) {
     const char* q = p;
-    value = detail::unrolled_loop_atoul<N>::convert(q);
+    value = detail::unrolled_loop_atoul<N>::convert_unsigned(q);
     return q;
 }
 

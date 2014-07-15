@@ -218,42 +218,47 @@ tree_path validator::format_name
     tree_path s = a_root / a_opt.name;
     if (!a_cfg_opt.empty() && a_cfg_opt != a_opt.name) // && a_opt.opt_type == ANONYMOUS)
         s /= a_cfg_opt;
-    if (a_cfg_value != std::string()) // && !a_opt.unique)
+    if (!a_cfg_value.empty()) // && !a_opt.unique)
         s = s.dump() + '[' + a_cfg_value + ']';
     return s;
 }
 
 void validator::validate
 (
-    variant_tree& a_config, bool a_fill_defaults
+    variant_tree& a_config, bool a_fill_defaults,
+    const custom_validator& a_custom_validator
 )
     const throw(variant_tree_error)
 {
-    validate(a_config, m_options, a_fill_defaults);
+    validate(a_config, m_options, a_fill_defaults, a_custom_validator);
 }
 
-void validator::validate(const variant_tree& a_config)
-    const throw(variant_tree_error)
+void validator::validate(const variant_tree& a_config,
+    const custom_validator& a_custom_validator
+) const throw(variant_tree_error)
 {
     variant_tree l_config(a_config);
-    validate(l_config, false);
+    validate(l_config, false, a_custom_validator);
 }
 
 void validator::validate
 (
-    variant_tree& a_config,
-    const option_map& a_opts,
-    bool fill_defaults
+    variant_tree&           a_config,
+    const option_map&       a_opts,
+    bool                    a_fill_defaults,
+    const custom_validator& a_custom_validator
 )
     const throw(variant_tree_error)
 {
-    validate(a_config.root_path(), a_config.to_base(), a_opts, fill_defaults);
+    validate(a_config.root_path(), a_config.to_base(), a_opts, a_fill_defaults,
+             a_custom_validator);
 }
 
 void validator::validate
 (
     const tree_path& a_root, variant_tree_base& a_config,
-    const option_map& a_opts, bool a_fill_defaults
+    const option_map& a_opts, bool a_fill_defaults,
+    const custom_validator& a_custom_validator
 )
     const throw (variant_tree_error)
 {
@@ -270,18 +275,21 @@ void validator::validate
                         vt.first, vt.second.data().to_string()),
                         "Check XML spec. Cannot mix anonymous and named options "
                         "in one section!");
-                check_option(a_root, vt, opt, a_fill_defaults);
+                check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
                 l_match = true;
                 break;
             } else if (opt.name == vt.first) {
-                check_option(a_root, vt, opt, a_fill_defaults);
+                check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
                 l_match = true;
                 break;
             }
         }
         if (!l_match) {
             tree_path p; p /= vt.first;
-            throw variant_tree_error(p, "Unsupported config option!");
+            if (a_custom_validator)
+                l_match = a_custom_validator(a_root, vt.first, vt.second.data());
+            if (!l_match)
+                throw variant_tree_error(p, "Unsupported config option!");
         }
     }
 }
@@ -406,7 +414,8 @@ check_option
 (
     const tree_path& a_root,
     typename variant_tree_base::value_type& a_vt,
-    const option& a_opt, bool a_fill_defaults
+    const option& a_opt, bool a_fill_defaults,
+    const custom_validator& a_custom_validator
 )
     const throw(std::invalid_argument, variant_tree_error)
 {
@@ -505,7 +514,8 @@ check_option
                     "Value is not allowed for option!");
             }
         if (!a_opt.children.empty())
-            validate(a_root / a_opt.name, a_vt.second, a_opt.children, a_fill_defaults);
+            validate(a_root / a_opt.name, a_vt.second, a_opt.children, a_fill_defaults,
+                a_custom_validator);
     } catch (std::invalid_argument& e) {
         throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
                 a_vt.second.data().to_string()),
