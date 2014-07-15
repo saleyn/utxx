@@ -432,19 +432,19 @@ public:
     // "begin" is non-const because the queue can be modified via the iterator
     // returned:
     iterator begin()
-        { return iterator(head().load(), this); }
+        { return iterator(head().load(std::memory_order_acquire), this); }
 
     // "cbegin":
     const_iterator cbegin() const
-        { return iterator(head().load(), this); }
+        { return iterator(head().load(std::memory_order_acquire), this); }
 
     // "end" is non-const for same reason as "begin":
     iterator end()
-        { return iterator(tail().load(), this); }
+        { return iterator(tail().load(std::memory_order_acquire), this); }
 
     // "cend":
     const_iterator cend() const
-        { return iterator(tail().load(), this); }
+        { return iterator(tail().load(std::memory_order_acquire), this); }
 
     //-----------------------------------------------------------------------//
     // "erase":                                                              //
@@ -456,7 +456,7 @@ public:
     void erase(iterator it)
     {
         assert((!m_shared_data || !m_is_producer) && it.m_queue == this);
-        uint32_t h = head().load();  // XXX: Which memory model to use here?
+        uint32_t h = head().load(std::memory_order_acquire);
 
         // Shift the data items backwards, freeing the front:
         for (uint32_t i = it.m_ind; i != h; )

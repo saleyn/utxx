@@ -9,15 +9,17 @@
 
 namespace utxx {
 
+static size_t iterations() { return getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 0; }
+
 template<class T>
 struct TestTraits {
-    T limit() const { return 1 << 24; }
+    T limit() const { auto n = iterations(); return n ? n : 1 << 24; }
     T generate() const { return rand() % 26; }
 };
 
 template<>
 struct TestTraits<std::string> {
-    int limit() const { return 1 << 22; }
+    int limit() const { auto n = iterations(); return n ? n : 1 << 22; }
     std::string generate() const { return std::string(12, ' '); }
 };
 
@@ -44,7 +46,7 @@ struct PerfTest {
     }
 
     void producer() {
-        for (int i = 0; i < (int)traits_.limit(); ++i)
+        for (int i = 0, n = (int)traits_.limit(); i < n; ++i)
             while (!queue_.push(traits_.generate()));
     }
 

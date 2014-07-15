@@ -255,13 +255,17 @@ class ConfigGenerator(object):
 
     def expand_includes(self, root, treedict):
         for i in root.xpath(".//include"):
-            child = self.parse_xml(i.attrib['file'])
-            repl_list = self.expand_includes(child, treedict)
-            for j in reversed(repl_list):
-                i.addnext(deepcopy(j))
-            if i.getparent() is not None: i.getparent().remove(i) 
+            child    = treedict[i.attrib['file']] #self.parse_xml(i.attrib['file'])
+            xpath    = i.attrib.get('xpath')
+            # FIXME: xpath filtering doesn't always work here for arbitraty user-given XPATH
+            nodelist = filter(lambda c: et.iselement(c), child.xpath(xpath)) if xpath else [child]
+            for childroot in nodelist:
+                repl_list = self.expand_includes(childroot, treedict)
+                for j in reversed(repl_list):
+                    i.addnext(deepcopy(j))
+                if i.getparent() is not None: i.getparent().remove(i) 
 
-        return [root] if len(root.keys()) > 0 else root.getchildren()
+        return [root] if len(root.keys()) > 0 and root.tag != 'config' else root.getchildren()
 
     def expand_all_includes(self, filename, dirs=None):
         """
