@@ -5,7 +5,7 @@
     Created: 2012-01-13
 -->
 
-<config namespace="test" name="cfg_validator">
+<config namespace="test" name="cfg_validator" root="test">
     <option name="address" val_type="string" desc="Sample string entry"
         default="123.124.125.012"/>
     <option name="enabled" val_type="bool" desc="Sample bool entry"
