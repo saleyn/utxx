@@ -54,7 +54,7 @@ template <size_t N>     struct pow<N, 0>        { static const size_t value = 1;
 template <size_t Power> struct pow<0, Power>    { static const size_t value = 0; };
 
 /// Computes the smallest power of \a base equal or greater than number \a n.
-template <size_t N, size_t Base = 2>
+template <size_t N, size_t Base>
 class upper_power {
     static const size_t s_log = log<N,Base>::value;
     static const size_t s_pow = pow<Base,s_log>::value;
@@ -64,12 +64,16 @@ public:
 
 // We need specialisation of "upper_power" for N=0, because the log cannot be
 // computed in that case (as required in the generic case above).  The result
-// is 0 in this case (the corresp exponent of Base is "-oo"):
-template<size_t Base = 2>
+// is 0 in this case (the corresp exponent of Base is "-oo")    (XXX: even if
+// Base==0):
+template<size_t Base>
 class upper_power<0, Base> {
 public:
      static const size_t value  = 0;
-}
+};
+
+template <size_t N>
+using upper_power2 = upper_power<N, 2>;
 
 /// Given the size N and alignment size get the number of padding and aligned 
 /// space needed to hold the structure of N bytes.
