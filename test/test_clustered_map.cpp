@@ -46,9 +46,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/random.hpp>
 #endif
 
-typedef utxx::clustered_map<int, int> cmap;
+typedef utxx::clustered_map<size_t, int> cmap;
 
-void visitor(int k, int v, int& sum) { sum += k; }
+void visitor(size_t k, int v, int& sum) { sum += k; }
 
 double sample() {
   restart:
@@ -75,10 +75,10 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
     for (size_t i=0; i < sizeof(s_data)/sizeof(s_data[0]); i++)
         m.insert(s_data[i][0], s_data[i][1]);
 
-    BOOST_REQUIRE_EQUAL(3, m.group_count());
-    BOOST_REQUIRE_EQUAL(3, m.item_count(1));
-    BOOST_REQUIRE_EQUAL(3, m.item_count(65));
-    BOOST_REQUIRE_EQUAL(1, m.item_count(129));
+    BOOST_REQUIRE_EQUAL(3u, m.group_count());
+    BOOST_REQUIRE_EQUAL(3u, m.item_count(1));
+    BOOST_REQUIRE_EQUAL(3u, m.item_count(65));
+    BOOST_REQUIRE_EQUAL(1u, m.item_count(129));
 
     for (size_t i = 0; i < sizeof(s_data)/sizeof(s_data[0]); i++) {
         int* p = m.at(s_data[i][0]);
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
 
     int n = 0;
     for (cmap::iterator it = m.begin(), e = m.end(); it != e; ++it, ++n) {
-        BOOST_REQUIRE_EQUAL(s_data[n][0], it.key());
+        BOOST_REQUIRE_EQUAL(s_data[n][0], (int)it.key());
         BOOST_REQUIRE_EQUAL(s_data[n][1], it.data());
     }
 
@@ -97,12 +97,12 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
     BOOST_REQUIRE_EQUAL(333, j);
 
     BOOST_REQUIRE(m.erase(2));
-    BOOST_REQUIRE_EQUAL(2, m.item_count(1));
+    BOOST_REQUIRE_EQUAL(2u, m.item_count(1));
     BOOST_REQUIRE(m.erase(3));
-    BOOST_REQUIRE_EQUAL(3, m.group_count());
+    BOOST_REQUIRE_EQUAL(3u, m.group_count());
     BOOST_REQUIRE(m.erase(129));
-    BOOST_REQUIRE_EQUAL(2, m.group_count());
-    BOOST_REQUIRE_EQUAL(0, m.item_count(129));
+    BOOST_REQUIRE_EQUAL(2u, m.group_count());
+    BOOST_REQUIRE_EQUAL(0u, m.item_count(129));
 
     m.clear();
 
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
         double elapsed1, elapsed2;
 
         {
-            utxx::clustered_map<int, int, 2> m;
+            utxx::clustered_map<size_t, int, 2> m;
 
             #if __cplusplus >= 201103L
             std::default_random_engine generator;

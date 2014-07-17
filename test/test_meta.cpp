@@ -50,6 +50,13 @@ BOOST_AUTO_TEST_CASE( test_meta )
     BOOST_STATIC_ASSERT(0x0100   == to_int<'\1', '\0'>::value);
     BOOST_STATIC_ASSERT(0x0102   == to_int<'\1', '\2'>::value);
     BOOST_STATIC_ASSERT(0x010203 == to_int<'\1', '\2', '\3'>::value);
+
+    BOOST_STATIC_ASSERT(0  == upper_power<0,  2>::value);
+    BOOST_STATIC_ASSERT(1  == upper_power<1,  2>::value);
+    BOOST_STATIC_ASSERT(2  == upper_power<2,  2>::value);
+    BOOST_STATIC_ASSERT(4  == upper_power<3,  2>::value);
+    BOOST_STATIC_ASSERT(16 == upper_power<15, 2>::value);
+    BOOST_STATIC_ASSERT(32 == upper_power<32, 2>::value);
 }
 
 #endif
