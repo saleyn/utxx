@@ -83,6 +83,28 @@ template <typename E>
 constexpr typename std::underlying_type<E>::type to_underlying(E e) {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
+
+namespace {
+    template<int N, char... Chars>
+    struct to_int_helper;
+
+    template<int N, char C>
+    struct to_int_helper<N, C> {
+        static const size_t value = ((size_t)C) << (8*N);
+    };
+
+    template <int N, char C, char... Tail>
+    struct to_int_helper<N, C, Tail...> {
+        static const size_t value =
+            ((size_t)C) << (8*N) | to_int_helper<N-1, Tail...>::value;
+    };
+}
+
+template <char... Chars>
+struct to_int {
+    static const size_t value = to_int_helper<(sizeof...(Chars))-1, Chars...>::value;
+};
+
 #endif
 
 } // namespace utxx
