@@ -240,6 +240,16 @@ BOOST_AUTO_TEST_CASE( test_convert )
         BOOST_REQUIRE_EQUAL(-1, rp-buf);
     }
     {
+        char buf[]  = {'-',' ',' ','1','0','5'};
+        long n, m;
+        const char* lp = atoi_left(buf, n);
+        const char* rp = atoi_right(buf, m);
+        BOOST_REQUIRE_EQUAL(0,   n); // This is really invalid input
+        BOOST_REQUIRE_EQUAL(105, m); // Invalid input
+        BOOST_REQUIRE_EQUAL(1,  lp-buf);
+        BOOST_REQUIRE_EQUAL(2,  rp-buf);
+    }
+    {
         char buf[19];
         int64_t n = std::numeric_limits<int64_t>::max();
         std::stringstream s; s << n;
@@ -333,6 +343,7 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
         { "-123   ",              -123000,           false, 7 },   // 7
         { "-\0\0\000123",         -123,              false, 7 },   // 8
         { "\0\0\000-123",         0,                 false, 7 },   // 8
+        { "-   123",              -123,              true,  7 },   // 9
     };
 
     typedef const char* (*fun_u)(const char*, uint64_t&);

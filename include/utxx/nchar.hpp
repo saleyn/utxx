@@ -98,16 +98,16 @@ namespace detail {
 
         char& operator[] (size_t n) { return m_data[n]; }
 
-        const char*   data() const  { return m_data; }
-        char*         data()        { return m_data; }
-        size_t        size() const  { return N; }
-        const char*   end()  const  { return m_data + N; }
+        const char*   data()    const  { return m_data; }
+        char*         data()           { return m_data; }
+        size_t        size()    const  { return N; }
+        const char*   end()     const  { return m_data + N; }
 
-        operator uint8_t* () const  { return reinterpret_cast<uint8_t*>(m_data); }
-        operator uint8_t* ()        { return reinterpret_cast<uint8_t*>(m_data); }
+        operator uint8_t* ()    const  { return reinterpret_cast<uint8_t*>(m_data); }
+        operator uint8_t* ()           { return reinterpret_cast<uint8_t*>(m_data); }
 
-        operator char* () const     { return m_data; }
-        operator char* ()           { return m_data; }
+        operator const  char*() const  { return m_data; }
+        operator        char*()        { return m_data; }
 
         std::string to_string(char rtrim = '\0') const {
             const char* end = m_data+N;
