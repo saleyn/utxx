@@ -61,8 +61,9 @@ class concurrent_spsc_queue : private boost::noncopyable
     //=======================================================================//
     // Implementation:                                                       //
     //=======================================================================//
-    // header (can also be located in ShMem along with the data):
-    //
+    //-----------------------------------------------------------------------//
+    // Header (can also be located in ShMem along with the data):            //
+    //-----------------------------------------------------------------------//
     struct header
     {
         std::atomic<uint32_t>  m_head;
@@ -97,16 +98,19 @@ class concurrent_spsc_queue : private boost::noncopyable
             assert((m_capacity & (m_capacity-1)) == 0);  // Power of 2 indeed
             if (m_capacity < 2)
                 throw std::runtime_error
-                    ("utxx::concurrent_spsc_queue: capacity must be a positive "
-                     "power of 2");
+                    ("utxx::concurrent_spsc_queue: invalid capacity=" +
+                     std::to_string(m_capacity));
         }
     };
 
-    // Index increment, with wrap-up:
-    uint32_t increment(uint32_t h) const { return (h + 1) & m_mask; }
+    //-----------------------------------------------------------------------//
+    // Index increment and decrement, with wrap-up:                          //
+    //-----------------------------------------------------------------------//
+    uint32_t increment(uint32_t h, int val = 1) const
+      { return (h + val) & m_mask; }
 
-    // Index decrement, with wrap-up around 0:
-    uint32_t decrement(uint32_t h) const { return (h - 1) & m_mask; }
+    uint32_t decrement(uint32_t h, int val = 1) const
+      { return (h - val) & m_mask; }
 
 public:
     //=======================================================================//
@@ -119,6 +123,9 @@ public:
     static uint32_t memory_size(uint32_t a_capacity)
       { return sizeof(header) + a_capacity * sizeof(T); }
 
+    //-----------------------------------------------------------------------//
+    // Ctors, Dtor:                                                          //
+    //-----------------------------------------------------------------------//
     /// Non-Default Ctor for using external memory (e.g. shared memory)
     /// Size must be obtained by the call to memory_size(). Only enabled if the
     /// StaticCapacity is 0.
@@ -181,7 +188,7 @@ public:
     concurrent_spsc_queue()
         : m_header     (StaticCapacity)
         , m_header_ptr (&m_header)
-        , m_rec_ptr    (&m_records)
+        , m_rec_ptr    ((T*)(&m_records)) // (T*) needed for StaticCapacity==0
         , m_shared_data(false)
         , m_is_producer(false)  // irrelevant in this case
         , m_mask       (m_header.m_capacity-1)
@@ -211,6 +218,9 @@ public:
       }
     }
 
+    //-----------------------------------------------------------------------//
+    // Data Push / Pop / Peek operations:                                    //
+    //-----------------------------------------------------------------------//
     /// Write a T object constructed with the "recordArgs" to the queue.
     /// @return the ptr to the installed entry on success, or NULL when
     /// the queue is full:
@@ -284,7 +294,7 @@ public:
         uint32_t h = head().load(std::memory_order_relaxed);
         return
             (h == tail().load(std::memory_order_acquire))
-            ? nullptr /* queue is empty */
+            ? nullptr    // queue is empty
             : (m_rec_ptr + h);
     }
 
@@ -299,10 +309,13 @@ public:
         uint32_t h = head().load(std::memory_order_relaxed);
         return
             (h == tail().load(std::memory_order_acquire))
-            ? nullptr /* queue is empty */
+            ? nullptr    // queue is empty
             : (m_rec_ptr + h);
     }
 
+    //-----------------------------------------------------------------------//
+    // Queue Status:                                                         //
+    //-----------------------------------------------------------------------//
     /// UNSAFE test for the queue being empty (because == is not synchronised):
     bool empty() const
     {
@@ -335,130 +348,208 @@ public:
         return uint32_t(ret);
     }
 
+    /// Queue Capacity (static or dynamic):
+    uint32_t capacity() const { return m_header.m_capacity; }
+
     //=======================================================================//
     // UNSAFE iterators over the queue:                                      //
     //=======================================================================//
     // No locking is performed by this class, it is a responsibility of the
     // caller!
+  private:
     //-----------------------------------------------------------------------//
-    // The "iterator" class:                                                 //
+    // "iterator_gen":                                                       //
     //-----------------------------------------------------------------------//
-    class iterator
+    // The base class providing common functionality for "iterator", "reverse_
+    // iterator", "const_iterator" and "const_reverse_iterator" below:
+    //
+    template<bool IsConst, bool IsReverse>
+    class iterator_gen
     {
     private:
-        uint32_t                  m_ind;
-        concurrent_spsc_queue<T>* m_queue;
+        uint32_t                             m_ind;
+        typename std::conditional
+          <IsConst,
+           concurrent_spsc_queue<T> const*,
+           concurrent_spsc_queue<T>*
+          >::type                            m_queue;
 
-        // Non-default Ctor is available for use from the outer class only:
+        // This ctor is only visible from the outer class which is made a "fri-
+        // end":
         friend class concurrent_spsc_queue<T>;
 
-        iterator(uint32_t ind, concurrent_spsc_queue<T>* queue)
+        iterator_gen
+        (
+            uint32_t                         ind,
+            typename std::conditional
+              <IsConst,
+               concurrent_spsc_queue<T> const*,
+               concurrent_spsc_queue<T>*
+              >::type                        queue
+        )
             : m_ind(ind),
             m_queue(queue)
         {}
 
+    public:
         // NB: The following ctor requires that "entry" and "queue" must be
         // valid non-NULL ptrs:
-        iterator(T* entry,     concurrent_spsc_queue<T>* queue)
+        iterator_gen
+        (
+            typename std::conditional<IsConst, T const*, T*>::type entry,
+            typename std::conditional
+              <IsConst, concurrent_spsc_queue<T> const*,
+                        concurrent_spsc_queue<T>*>::type           queue
+        )
             : m_ind(entry - queue->m_rec_ptr),
             m_queue(queue)
         {}
 
-    public:
         // Default Ctor: creates an invalid "iterator":
-        iterator()
+        iterator_gen()
             : m_ind(0),
             m_queue(nullptr)
         {}
-        // Dtor, copy ctor, assignemnt and equality are auto-generated
-
-        // Increment: XXX: no checks are performed on whether the iterator is
-        // valid:
-        iterator& operator++() { m_ind = m_queue->increment(m_ind);  }
 
         // De-referencing:
-        T* operator->() const  { return m_queue->m_rec_ptr + m_ind;  }
-        T& operator*()  const  { return m_queue->m_rec_ptr  [m_ind]; }
+        typename std::conditional<IsConst, T const*, T*>::type
+        operator->() const
+          { return m_queue->m_rec_ptr + m_ind;  }
+
+        typename std::conditional<IsConst, T const&, T&>::type
+        operator*()  const
+          { return m_queue->m_rec_ptr  [m_ind]; }
 
         // Equality:
-        bool operator==(iterator const& right) const
+        bool operator==(iterator_gen const& right) const
           { return m_ind == right.m_ind && m_queue == right.m_queue; }
 
-        bool operator!=(iterator const& right) const
+        bool operator!=(iterator_gen const& right) const
           { return m_ind != right.m_ind || m_queue != right.m_queue; }
+
+        // Increment / Decrement:
+        // XXX: no checks are performed on whether the iterator is valid;
+        // (++): in case of IsReverse, the underlying index is actually
+        //       DECREMENTED;
+        // (--): inverse behaviour wrt (++):
+        //
+        iterator_gen& operator++()
+        {
+            m_ind =
+              IsReverse
+              ? m_queue->decrement(m_ind)
+              : m_queue->increment(m_ind);
+            return *this;
+        }
+
+        iterator_gen& operator+=(int val)
+        {
+            m_ind =
+              IsReverse
+              ? m_queue->decrement(m_ind, val)
+              : m_queue->increment(m_ind, val);
+            return *this;
+        }
+
+        iterator_gen operator+(int val) const
+        {
+          iterator_gen res = *this;
+          res += val;
+          return res;
+        }
+
+        iterator_gen& operator--()
+        {
+            m_ind =
+              IsReverse
+              ? m_queue->increment(m_ind)
+              : m_queue->decrement(m_ind);
+            return *this;
+        }
+
+        iterator_gen& operator-=(int val)
+        {
+            m_ind =
+              IsReverse
+              ? m_queue->increment(m_ind, val)
+              : m_queue->decrement(m_ind, val);
+            return *this;
+        }
+
+        iterator_gen operator-(int val) const
+        {
+          iterator_gen res = *this;
+          res -= val;
+          return res;
+        }
+
     };
 
     //-----------------------------------------------------------------------//
-    // The "const_iterator" class:                                           //
-    //-----------------------------------------------------------------------//
-    struct const_iterator
-    {
-    private:
-        uint32_t                        m_ind;
-        concurrent_spsc_queue<T> const* m_queue;
-
-        // Non-default Ctor is available for use from the outer class only:
-        friend class concurrent_spsc_queue<T>;
-
-        const_iterator(uint32_t ind, concurrent_spsc_queue<T> const* queue)
-            : m_ind  (ind),
-            m_queue(queue)
-        {}
-
-        // NB: The following ctor requires that "entry" and "queue" must be
-        // valid non-NULL ptrs:
-        const_iterator(T const* entry, concurrent_spsc_queue<T> const* queue)
-            : m_ind(entry - queue->m_rec_ptr),
-            m_queue(queue)
-        {}
-    public:
-        // Default Ctor: creates an invalid "const_iterator":
-        const_iterator()
-            : m_ind  (0),
-            m_queue(nullptr)
-        {};
-
-        // Dtor, copy ctor, assignemnt and equality are auto-generated
-
-        // Increment: XXX: no checks are performed on whether this
-        // const_iterator is valid:
-        const_iterator& operator++() { m_ind = m_queue->increment(m_ind); }
-
-        // De-referencing:
-        T const* operator->() const { return m_queue->m_rec_ptr + m_ind;  }
-        T const& operator*()  const { return m_queue->m_rec_ptr  [m_ind]; }
-
-        // Equality:
-        bool operator==(const_iterator const& right) const
-          { return m_ind == right.m_ind  && m_queue == right.m_queue; }
-
-        bool operator!=(const_iterator const& right) const
-          { return m_ind != right.m_ind  || m_queue != right.m_queue; }
-    };
-
-    //-----------------------------------------------------------------------//
-    // "*begin" and "*end" iterators:                                        //
+    // "begend": for "*begin" and "*end" iterator values:                    //
     //-----------------------------------------------------------------------//
     // Iterating goes from the oldest to the most recent items, ie from front
     // to back, ie from head (where the items are popped from) to tail (where
     // the items are pushed into):
+    //   begin = head,   end  = tail;    and
+    //  rbegin = tail-1, rend = head-1:
+    // XXX: The method is marked "const" so it can always be invoked from both
+    // const and non-const user-visible methods:
     //
-    // "begin" is non-const because the queue can be modified via the iterator
-    // returned:
-    iterator begin()
-        { return iterator(head().load(std::memory_order_acquire), this); }
+    template<bool IsConst, bool IsReverse, bool IsBegin>
+    iterator_gen <IsConst, IsReverse> begend() const
+    {
+        uint32_t ind = ((IsReverse ^ IsBegin) ? head() : tail()).load();
+        if (IsReverse)
+          ind = decrement(ind);
 
-    // "cbegin":
-    const_iterator cbegin() const
-        { return iterator(head().load(std::memory_order_acquire), this); }
+        return iterator_gen<IsConst, IsReverse>
+        (
+          ind,
+          // NB: As this method is a "const" one, "this" ptr is a "const" ptr
+          // as well. This is OK for "const" iterators (when IsConst is set);
+          // otherwise, we need to cast it into a non-const ptr. What we actu-
+          // ally do, is cast it in any case -- if IsConst is set, it is auto-
+          // matically (and safely) cast back to "const":
+          //
+          const_cast<concurrent_spsc_queue*>(this)
+        );
+    }
 
-    // "end" is non-const for same reason as "begin":
-    iterator end()
-        { return iterator(tail().load(std::memory_order_acquire), this); }
+  public:
+    //-----------------------------------------------------------------------//
+    // Client-Visible Iterators and Their Limiting Values:                   //
+    //-----------------------------------------------------------------------//
+    // "iterator":               IsConst=false, IsReverse=false:
+    //
+    typedef iterator_gen<false, false> iterator;
 
-    // "cend":
-    const_iterator cend() const
-        { return iterator(tail().load(std::memory_order_acquire), this); }
+    iterator begin()              { return begend<false, false, true>();  }
+    iterator end ()               { return begend<false, false, false>(); }
+
+    // "const_iterator":         IsConst=true,  IsReverse=false:
+    //
+    typedef iterator_gen<true,  false> const_iterator;
+
+    const_iterator cbegin() const { return begend<true,  false, true>();  }
+    const_iterator cend()   const { return begend<true,  false, false>(); }
+
+    // "reverse_iterator":       IsConst=false, IsReverse=true:
+    //
+    typedef iterator_gen<false, true>  reverse_iterator;
+
+    reverse_iterator rbegin()     { return begend<false, true,  true>();  }
+    reverse_iterator rend()       { return begend<false, true,  false>(); }
+
+    // "const_reverse_iterator": IsConst=true,  IsReverse=true:
+    //
+    typedef iterator_gen<true,  true>  const_reverse_iterator;
+
+    const_reverse_iterator crbegin() const
+        { return begend<true,  true,  true>();  }
+
+    const_reverse_iterator crend()   const
+        { return begend<true,  true,  false>(); }
 
     //-----------------------------------------------------------------------//
     // "erase":                                                              //
@@ -467,7 +558,8 @@ public:
     /// (NOT *end). No explicit validity checks on the iterator are performed.
     /// This method is thread-safe safe only on the Consumer side:
     ///
-    void erase(iterator it)
+    template<bool IsReverse>
+    void erase(iterator_gen<false, IsReverse> const& it)
     {
         assert((!m_shared_data || !m_is_producer) && it.m_queue == this);
         uint32_t h = head().load(std::memory_order_acquire);
@@ -480,6 +572,8 @@ public:
             i = p;
         }
         pop();
+        // NB: The iteratir itself is NOT invalidated, and now points to ano-
+        // ther data item (or the end...)
     }
 
 private:
