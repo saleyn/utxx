@@ -369,16 +369,23 @@ public:
         iterator()
             : m_ind(0),
             m_queue(nullptr)
-        {};
+        {}
         // Dtor, copy ctor, assignemnt and equality are auto-generated
 
         // Increment: XXX: no checks are performed on whether the iterator is
         // valid:
-        iterator& operator++() { m_ind = m_queue->increment(m_ind); }
+        iterator& operator++() { m_ind = m_queue->increment(m_ind);  }
 
         // De-referencing:
-        T* operator->() const { return m_queue->m_rec_ptr + m_ind;  }
-        T& operator*()  const { return m_queue->m_rec_ptr  [m_ind]; }
+        T* operator->() const  { return m_queue->m_rec_ptr + m_ind;  }
+        T& operator*()  const  { return m_queue->m_rec_ptr  [m_ind]; }
+
+        // Equality:
+        bool operator==(iterator const& right) const
+          { return m_ind == right.m_ind && m_queue == right.m_queue; }
+
+        bool operator!=(iterator const& right) const
+          { return m_ind != right.m_ind || m_queue != right.m_queue; }
     };
 
     //-----------------------------------------------------------------------//
@@ -420,6 +427,13 @@ public:
         // De-referencing:
         T const* operator->() const { return m_queue->m_rec_ptr + m_ind;  }
         T const& operator*()  const { return m_queue->m_rec_ptr  [m_ind]; }
+
+        // Equality:
+        bool operator==(const_iterator const& right) const
+          { return m_ind == right.m_ind  && m_queue == right.m_queue; }
+
+        bool operator!=(const_iterator const& right) const
+          { return m_ind != right.m_ind  || m_queue != right.m_queue; }
     };
 
     //-----------------------------------------------------------------------//
