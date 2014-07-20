@@ -58,6 +58,7 @@ namespace utxx {
 template<class T, uint32_t StaticCapacity=0>
 class concurrent_spsc_queue : private boost::noncopyable
 {
+private:
     //=======================================================================//
     // Implementation:                                                       //
     //=======================================================================//
@@ -104,7 +105,7 @@ class concurrent_spsc_queue : private boost::noncopyable
     };
 
     //-----------------------------------------------------------------------//
-    // Index increment and decrement, with wrap-up:                          //
+    // Index increment and decrement, with roll-over:                        //
     //-----------------------------------------------------------------------//
     uint32_t increment(uint32_t h, int val = 1) const
       { return (h + val) & m_mask; }
@@ -123,10 +124,19 @@ public:
     static uint32_t memory_size(uint32_t a_capacity)
       { return sizeof(header) + a_capacity * sizeof(T); }
 
+    /// Role: Producer / Consumer / Both (eg in a single-threaded testing mode):
+    enum class side_t
+    {
+        invalid  = 0,
+        producer = 1,
+        consumer = 2,
+        both     = 3
+    };
+
     //-----------------------------------------------------------------------//
     // Ctors, Dtor:                                                          //
     //-----------------------------------------------------------------------//
-    /// Non-Default Ctor for using external memory (e.g. shared memory)
+    /// Non-Default Ctor for using external memory (eg shared memory).
     /// Size must be obtained by the call to memory_size(). Only enabled if the
     /// StaticCapacity is 0.
     /// NB: In this case, Arg2 is really a memory size in bytes, NOT the capac-
@@ -135,14 +145,14 @@ public:
     (
         void*    a_storage,
         uint32_t a_size,
-        bool     a_is_producer
+        side_t   a_side
     )
         : m_header     ((a_size - sizeof(header)) / sizeof(T))
         , m_header_ptr (static_cast<header*>(a_storage))
         , m_rec_ptr    (reinterpret_cast<T*>(static_cast<char*>(a_storage) +
                                              sizeof(header)))
         , m_shared_data(true)
-        , m_is_producer(a_is_producer)
+        , m_side       (a_side)
         , m_mask       (m_header.m_capacity-1)
     {
         // Verify that the sizes are correct (as would indeed be the case if
@@ -164,6 +174,8 @@ public:
     /// Also, note that the number of usable slots in the queue at any given
     /// time is actually (\a capacity-1), so if you start with an empty queue,
     /// full() will return true after \a capacity-1 insertions.
+    /// XXX: Because the "side" cannot be made thread-local here as yet, we
+    /// have to set it to "side_t::both":
     ///
     explicit concurrent_spsc_queue(uint32_t a_capacity)
         : m_header     (a_capacity)
@@ -171,7 +183,7 @@ public:
         , m_rec_ptr    (reinterpret_cast<T*>
                        (::malloc(sizeof(T)*m_header.m_capacity)))
         , m_shared_data(false)
-        , m_is_producer(false)   // irrelevant in this case
+        , m_side       (side_t::both)
         , m_mask       (m_header.m_capacity-1)
     {
         if (unlikely(StaticCapacity != 0))
@@ -180,42 +192,47 @@ public:
                    "capacity are specified");
     }
 
-    /// Default Ctor:
-    /// Uses the StaticCapacity template parameter. Always enabled (as there
-    /// are no typed arguments), but if StaticCapacity is 0, using this Ctor
-    /// will result in a run-time error:
+    /// Default Ctor which uses the "StaticCapacity" template parameter. If
+    /// StaticCapacity is 0, using this Ctor will result in a run-time error.
+    /// Again, "side" has to be set to "both" here (unless we can make it
+    /// thread-local):
     ///
     concurrent_spsc_queue()
         : m_header     (StaticCapacity)
         , m_header_ptr (&m_header)
         , m_rec_ptr    ((T*)(&m_records)) // (T*) needed for StaticCapacity==0
         , m_shared_data(false)
-        , m_is_producer(false)  // irrelevant in this case
+        , m_side       (side_t::both)
         , m_mask       (m_header.m_capacity-1)
     {}
 
     /// Dtor:
     /// We need to destruct anything that may still exist in our queue,   XXX
-    /// even if the queue space is shared, but only if our role is "consumer"
+    /// even if the queue space is shared, but only if our side is "consumer"
     /// XXX: no synchronisation is performed at Dtor time, so it is a rerspon-
     /// sibility of the caller to ensure that the Producer is not trying to
     /// write into the queue at the same time:
     ///
     ~concurrent_spsc_queue()
     {
-      if (!std::is_trivially_destructible<T>::value &&
-          !(m_shared_data && m_is_producer))
-          for (uint32_t read = head(), end  = tail();
-               read != end;    read = increment(read))
-              m_rec_ptr[read].~T();
+        // If the data are shared, don't clear or de-allocate the queue: it may
+        // (or may not) need to be persistent, so its lifetime is managed by
+        // the callers:
+        if (m_shared_data)
+            return;
 
-      // If the memory allocation is dynamic (ie non-shared, non-static), then
-      // de-allocate the storage space:
-      if (StaticCapacity == 0 && !m_shared_data)
-      {
-        assert(m_rec_ptr != NULL && m_rec_ptr != m_records);
-        ::free(m_rec_ptr);
-      }
+        // Otherwise: If necessary, invoke the Dtors on the stored contents (but
+        // pass a flag indicating that we are calling "clear" from the Dtor, so
+        // it will not check which side we are on):
+        clear(true);
+
+        // If the memory allocation is dynamic (ie non-shared and non-static),
+        // then de-allocate the storage space:
+        if (StaticCapacity == 0)
+        {
+            assert(m_rec_ptr != NULL && m_rec_ptr != m_records);
+            ::free(m_rec_ptr);
+        }
     }
 
     //-----------------------------------------------------------------------//
@@ -230,9 +247,8 @@ public:
     template<class ...Args>
     T* push(Args&&... recordArgs)
     {
-        // NB: the side check is for ShM only, and in the debug mode only:
-        // must be on the Producer side:
-        assert(!m_shared_data || m_is_producer);
+        // Must NOT be on the Consumer side:
+        assert(m_side != side_t::consumer);
 
         uint32_t t    = tail().load(std::memory_order_relaxed);
         uint32_t next = increment(t);
@@ -251,9 +267,8 @@ public:
     /// Move (or copy) the value at the front of the queue to given variable
     bool pop(T* record)
     {
-        // NB: the side check is for ShM only, and in the debug mode only:
-        // must be on the Consumer side:
-        assert(record != NULL && (!m_shared_data || !m_is_producer));
+        // Must NOT be on the Producer side:
+        assert(m_side != side_t::producer && record != NULL);
 
         uint32_t h = head().load(std::memory_order_relaxed);
         if (h == tail().load(std::memory_order_acquire))
@@ -271,9 +286,8 @@ public:
     /// Queue must not be empty!
     void pop()
     {
-        // NB: the side check is for ShM only, and in the debug mode only:
-        // must be on the Consumer side:
-        assert(!m_shared_data || !m_is_producer);
+        // Must NOT be on the Producer side:
+        assert(m_side != side_t::producer);
 
         uint32_t h = head().load(std::memory_order_relaxed);
         assert(h  != tail().load(std::memory_order_acquire));
@@ -285,11 +299,11 @@ public:
 
     /// Pointer to the value at the front of the queue (for use in-place) or
     /// nullptr if empty.
-    T* peek()
+    T const* peek() const
     {
         // NB: the side check is for ShM only, and in the debug mode only:
-        // must be on the Consumer side:
-        assert(!m_shared_data || !m_is_producer);
+        // must NOT be on the Producer side:
+        assert(m_side != side_t::producer);
 
         uint32_t h = head().load(std::memory_order_relaxed);
         return
@@ -300,35 +314,47 @@ public:
 
     /// Pointer to the value at the front of the queue (for use in-place) or
     /// nullptr if empty.
-    T const* peek() const
+    T* peek()
     {
-        // NB: the side check is for ShM only, and in the debug mode only:
-        // must be on the Consumer side:
-        assert(!m_shared_data || !m_is_producer);
+        return const_cast<T*>
+              (const_cast<concurrent_spsc_queue const*>(this)->peek());
+    }
 
-        uint32_t h = head().load(std::memory_order_relaxed);
-        return
-            (h == tail().load(std::memory_order_acquire))
-            ? nullptr    // queue is empty
-            : (m_rec_ptr + h);
+    /// Clear: Remove all entries from the queue. Only safe if invoked on the
+    /// Consumer side:
+    void clear(bool force = false)
+    {
+        // Unless the "force" mode is set (eg invoked from the Dtor), we must
+        // NOT be on the Producer side:
+        assert(force || m_side != side_t::producer);
+
+        if (std::is_trivially_destructible<T>::value)
+            head().store
+                (tail().load(std::memory_order_acquire),
+                 std::memory_order_release);
+        else
+            // Have to do it by-one so the Dtor is called every time:
+            while (!empty())
+                pop();
     }
 
     //-----------------------------------------------------------------------//
     // Queue Status:                                                         //
     //-----------------------------------------------------------------------//
-    /// UNSAFE test for the queue being empty (because == is not synchronised):
+    /// Test for the queue being empty, safe if invoked from the consumer side:
     bool empty() const
     {
-        return head().load(std::memory_order_consume)
-            == tail().load(std::memory_order_consume);
+        assert(m_side != side_t::producer);
+        return head().load(std::memory_order_relaxed)
+            == tail().load(std::memory_order_acquire);
     }
 
-    /// UNSAFE test for the queue begin full (because == is not synchronised):
+    /// Test for the queue begin full, safe if invoked from the producer side:
     bool full() const
     {
-        uint32_t next =
-             increment(tail().load(std::memory_order_consume));
-        return next == head().load(std::memory_order_consume);
+        assert(m_side != side_t::consumer);
+        uint32_t next =  increment(tail().load(std::memory_order_relaxed));
+        return   next == head().load(std::memory_order_acquire);
     }
 
     /// UNSAFE current count of T objects stored in the queue:
@@ -337,11 +363,29 @@ public:
     /// If called by producer, then true count may be less (because consumer may
     ///   be removing items concurrently).
     /// It is undefined to call this from any other thread:
-    ///
-    uint32_t count() const
+    /// NB: Here the caller can explicitly provide their Role for better preci-
+    ///   sion:
+    uint32_t count(side_t side = side_t::invalid) const
     {
-        int ret = int(tail().load(std::memory_order_consume))
-                - int(head().load(std::memory_order_consume));
+        if (side == side_t::invalid)
+            // Side arg not specified, use the recoded one:
+            side = m_side;
+
+        // If we are a Producer (or Both), can use "relaxed" memory order on the
+        // side under our own control (tail):
+        int tn = int(tail().load
+                       ((side != side_t::consumer)
+                        ? std::memory_order_relaxed
+                        : std::memory_order_consume));
+
+        // Similarly, if we are a Consumer (or Both), can use "relaxed" memory
+        // order on the head side which is under our own control:
+        int hn = int(head().load
+                        ((side != side_t::producer)
+                         ? std::memory_order_relaxed
+                         : std::memory_order_consume));
+                                  
+        int ret = tn - hn;
         if (ret < 0)
             ret += m_header_ptr->m_capacity;
         assert(ret >= 0);
@@ -356,7 +400,7 @@ public:
     //=======================================================================//
     // No locking is performed by this class, it is a responsibility of the
     // caller!
-  private:
+private:
     //-----------------------------------------------------------------------//
     // "iterator_gen":                                                       //
     //-----------------------------------------------------------------------//
@@ -364,27 +408,30 @@ public:
     // iterator", "const_iterator" and "const_reverse_iterator" below:
     //
     template<bool IsConst, bool IsReverse>
+    friend class  iterator_gen;
+
+    template<bool IsConst, bool IsReverse>
     class iterator_gen
     {
     private:
         uint32_t                             m_ind;
         typename std::conditional
           <IsConst,
-           concurrent_spsc_queue<T> const*,
-           concurrent_spsc_queue<T>*
+           concurrent_spsc_queue const*,
+           concurrent_spsc_queue*
           >::type                            m_queue;
 
         // This ctor is only visible from the outer class which is made a "fri-
         // end":
-        friend class concurrent_spsc_queue<T>;
+        friend class concurrent_spsc_queue;
 
         iterator_gen
         (
             uint32_t                         ind,
             typename std::conditional
               <IsConst,
-               concurrent_spsc_queue<T> const*,
-               concurrent_spsc_queue<T>*
+               concurrent_spsc_queue const*,
+               concurrent_spsc_queue*
               >::type                        queue
         )
             : m_ind(ind),
@@ -398,12 +445,19 @@ public:
         (
             typename std::conditional<IsConst, T const*, T*>::type entry,
             typename std::conditional
-              <IsConst, concurrent_spsc_queue<T> const*,
-                        concurrent_spsc_queue<T>*>::type           queue
+              <IsConst, concurrent_spsc_queue const*,
+                        concurrent_spsc_queue*>::type              queue
         )
             : m_ind(entry - queue->m_rec_ptr),
             m_queue(queue)
-        {}
+        {
+            // NB: Need some guards against invalid ptrs -- eg if "entry" does
+            // not really belong to the "queue":
+            if (utxx::unlikely(m_ind > m_queue->capacity()))
+                throw std::invalid_argument
+                      ("concurrent_spsc_queue::iterator_gen: "
+                       "Entry not in Queue?");
+        }
 
         // Default Ctor: creates an invalid "iterator":
         iterator_gen()
@@ -413,19 +467,19 @@ public:
 
         // De-referencing:
         typename std::conditional<IsConst, T const*, T*>::type
-        operator->() const
-          { return m_queue->m_rec_ptr + m_ind;  }
+            operator->() const
+            { return m_queue->m_rec_ptr + m_ind; }
 
         typename std::conditional<IsConst, T const&, T&>::type
-        operator*()  const
-          { return m_queue->m_rec_ptr  [m_ind]; }
+            operator*()  const
+            { return m_queue->m_rec_ptr  [m_ind]; }
 
         // Equality:
         bool operator==(iterator_gen const& right) const
-          { return m_ind == right.m_ind && m_queue == right.m_queue; }
+            { return m_ind == right.m_ind && m_queue == right.m_queue; }
 
         bool operator!=(iterator_gen const& right) const
-          { return m_ind != right.m_ind || m_queue != right.m_queue; }
+            { return m_ind != right.m_ind || m_queue != right.m_queue; }
 
         // Increment / Decrement:
         // XXX: no checks are performed on whether the iterator is valid;
@@ -436,53 +490,52 @@ public:
         iterator_gen& operator++()
         {
             m_ind =
-              IsReverse
-              ? m_queue->decrement(m_ind)
-              : m_queue->increment(m_ind);
+                IsReverse
+                ? m_queue->decrement(m_ind)
+                : m_queue->increment(m_ind);
             return *this;
         }
 
         iterator_gen& operator+=(int val)
         {
             m_ind =
-              IsReverse
-              ? m_queue->decrement(m_ind, val)
-              : m_queue->increment(m_ind, val);
+                IsReverse
+                ? m_queue->decrement(m_ind, val)
+                : m_queue->increment(m_ind, val);
             return *this;
         }
 
         iterator_gen operator+(int val) const
         {
-          iterator_gen res = *this;
-          res += val;
-          return res;
+            iterator_gen res = *this;
+            res += val;
+            return res;
         }
 
         iterator_gen& operator--()
         {
             m_ind =
-              IsReverse
-              ? m_queue->increment(m_ind)
-              : m_queue->decrement(m_ind);
+                IsReverse
+                ? m_queue->increment(m_ind)
+                : m_queue->decrement(m_ind);
             return *this;
         }
 
         iterator_gen& operator-=(int val)
         {
             m_ind =
-              IsReverse
-              ? m_queue->increment(m_ind, val)
-              : m_queue->decrement(m_ind, val);
+                IsReverse
+                ? m_queue->increment(m_ind, val)
+                : m_queue->decrement(m_ind, val);
             return *this;
         }
 
         iterator_gen operator-(int val) const
         {
-          iterator_gen res = *this;
-          res -= val;
-          return res;
+            iterator_gen res = *this;
+            res -= val;
+            return res;
         }
-
     };
 
     //-----------------------------------------------------------------------//
@@ -497,29 +550,48 @@ public:
     // const and non-const user-visible methods:
     //
     template<bool IsConst, bool IsReverse, bool IsBegin>
-    iterator_gen <IsConst, IsReverse> begend() const
+    iterator_gen <IsConst, IsReverse> begend(side_t side = side_t::invalid)
+    const
     {
-        uint32_t ind = ((IsReverse ^ IsBegin) ? head() : tail()).load();
+        if (side == side_t::invalid)
+            // Side arg not specified, use the recoded one:
+            side = m_side;
+
+        // Here again, the memory order depends on which side we are on:
+        // for tail, can use "relaxed" if Producer or Both (ie !Consumer);
+        // for head, can use "relaxed" if Consumer or Both (ie !Producer):
+        //
+        bool constexpr IsHead = IsReverse ^ IsBegin;
+        std::memory_order ord =
+            (( IsHead && (side != side_t::producer)) ||
+             (!IsHead && (side != side_t::consumer)))
+            ? std::memory_order_relaxed
+            : std::memory_order_consume;
+
+        uint32_t ind = (IsHead ? head() : tail()).load(ord);
         if (IsReverse)
-          ind = decrement(ind);
+            ind = decrement(ind);
 
         return iterator_gen<IsConst, IsReverse>
-        (
-          ind,
-          // NB: As this method is a "const" one, "this" ptr is a "const" ptr
-          // as well. This is OK for "const" iterators (when IsConst is set);
-          // otherwise, we need to cast it into a non-const ptr. What we actu-
-          // ally do, is cast it in any case -- if IsConst is set, it is auto-
-          // matically (and safely) cast back to "const":
-          //
-          const_cast<concurrent_spsc_queue*>(this)
-        );
+            (
+             ind,
+             // NB: As this method is a "const" one, "this" ptr is a "const" ptr
+             // as well. This is OK for "const" iterators (when IsConst is set);
+             // otherwise, we need to cast it into a non-const ptr. What we act-
+             // ually do, is cast it in any case -- if IsConst is set, it is au-
+             // tomatically (and safely) cast back to "const":
+             //
+             const_cast<concurrent_spsc_queue*>(this)
+            );
     }
 
   public:
     //-----------------------------------------------------------------------//
     // Client-Visible Iterators and Their Limiting Values:                   //
     //-----------------------------------------------------------------------//
+    // NB: Iterators are "friends"  of "concurrent_spsc_queue" (and conversely,
+    // the latter is a "friend" of "iterator_gen" -- see above):
+    //
     // "iterator":               IsConst=false, IsReverse=false:
     //
     typedef iterator_gen<false, false> iterator;
@@ -556,13 +628,18 @@ public:
     //-----------------------------------------------------------------------//
     /// Remove the entry specified by the iterator, which must be a valid one
     /// (NOT *end). No explicit validity checks on the iterator are performed.
-    /// This method is thread-safe safe only on the Consumer side:
+    /// This method is safe only on the Consumer side:
     ///
     template<bool IsReverse>
     void erase(iterator_gen<false, IsReverse> const& it)
     {
-        assert((!m_shared_data || !m_is_producer) && it.m_queue == this);
-        uint32_t h = head().load(std::memory_order_acquire);
+        assert(m_side != side_t::producer);
+        if (utxx::unlikely(it.m_queue != this))
+            throw std::invalid_argument
+                  ("concurrent_spsc_queue::erase: Invalid Iterator");
+
+        // But if we are on the right side, can use the "relaxed" memory order:
+        uint32_t h = head().load(std::memory_order_relaxed);
 
         // Shift the data items backwards, freeing the front:
         for (uint32_t i = it.m_ind; i != h; )
@@ -576,6 +653,21 @@ public:
         // ther data item (or the end...)
     }
 
+    //-----------------------------------------------------------------------//
+    // "set_side":                                                           //
+    //-----------------------------------------------------------------------//
+    // XXX: This is currenytly only possible if shared data are used. A valid
+    // use case is altering one's side after a process "fork":
+    //
+    void set_side(side_t side)
+    {
+        if (utxx::unlikely(!m_shared_data || side == side_t::invalid))
+            throw std::logic_error
+                  ("concurrent_spsc_queue::set_side: Side must be valid, and "
+                   "only allowed with Shared Data");
+        m_side = side;
+    }
+
 private:
     //=======================================================================//
     // Data Flds:                                                            //
@@ -584,7 +676,7 @@ private:
     header*  const  m_header_ptr;   // Ptr to the actual hdr  (mb to m_header)
     T*       const  m_rec_ptr;      // Ptr to the actual data (mb to m_records)
     bool     const  m_shared_data;
-    bool     const  m_is_producer;  // Only relevant if "m_shared_data" is set
+    side_t          m_side;
     uint32_t const  m_mask;
     T               m_records[StaticCapacity];
 
