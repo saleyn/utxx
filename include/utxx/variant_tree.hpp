@@ -218,8 +218,7 @@ public:
     {}
 
     // Creates node with no children
-    basic_variant_tree
-    (
+    basic_variant_tree(
         const variant& a_data,
         const path_type& a_root_path = path_type(),
         const config::validator* a_validator = NULL
@@ -240,8 +239,7 @@ public:
         , m_schema_validator(a_validator)
     {}
 
-    basic_variant_tree
-    (
+    basic_variant_tree(
         const Ch* a_data,
         const path_type& a_root_path = path_type(),
         const config::validator* a_validator = NULL
