@@ -342,8 +342,9 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
         { "-123ABC",              -123123,           false, 7 },   // 6
         { "-123   ",              -123000,           false, 7 },   // 7
         { "-\0\0\000123",         -123,              false, 7 },   // 8
-        { "\0\0\000-123",         0,                 false, 7 },   // 8
-        { "-   123",              -123,              true,  7 },   // 9
+        { "\0\0\000-123",         0,                 false, 7 },   // 9
+        { "-   123",              -123,              false, 7 },   // 10
+        { "-000123",              -123,              true,  7 },   // 11
     };
 
     typedef const char* (*fun_u)(const char*, uint64_t&);
@@ -398,6 +399,11 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
     unsigned long u;
 
     for (uint32_t i=0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
+        bool res = fast_atoi(tests[i].test, &n);
+        if (tests[i].fatoi_success != res)
+            BOOST_MESSAGE(
+                "Case i=" << i << ", res=" << res <<
+                ", n=" << n << ", test=" << tests[i].test);
         BOOST_REQUIRE_EQUAL(tests[i].fatoi_success,
                             fast_atoi(tests[i].test, &n));
         if (tests[i].fatoi_success) BOOST_REQUIRE_EQUAL(tests[i].expected, n);
@@ -616,6 +622,8 @@ BOOST_AUTO_TEST_CASE( test_convert_ftoa_right )
 BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )
 {
     BOOST_REQUIRE_EQUAL("0001", (itoa_right<int, 4>(1, '0')));
-    BOOST_REQUIRE_EQUAL("1", (itoa_right<int, 10>(1)));
+    BOOST_REQUIRE_EQUAL("0000", (itoa_right<int, 4>(0, '0')));
+    BOOST_REQUIRE_EQUAL("   0", (itoa_right<int, 4>(0, ' ')));
+    BOOST_REQUIRE_EQUAL("1",    (itoa_right<int, 10>(1)));
 }
 
