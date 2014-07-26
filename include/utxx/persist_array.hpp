@@ -48,7 +48,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/thread.hpp>
 #include <boost/filesystem.hpp>
 #include <utxx/compiler_hints.hpp>
-#include <utxx/atomic.hpp>
 #include <utxx/error.hpp>
 #include <stdexcept>
 #include <fstream>
@@ -57,6 +56,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cstring>
 #include <cstddef>
 #include <cstdlib>
+#include <atomic>
 #include <unistd.h>
 
 namespace utxx {
@@ -72,13 +72,13 @@ namespace utxx {
     struct persist_array {
         struct header {
             static const uint32_t s_version = 0xa0b1c2d3;
-            uint32_t        version;
-            volatile long   rec_count;
-            size_t          max_recs;
-            size_t          rec_size;
-            Lock            locks[NLocks];
-            ExtraHeaderData extra_header_data;
-            T               records[0];
+            uint32_t            version;
+            std::atomic<long>   rec_count;
+            size_t              max_recs;
+            size_t              rec_size;
+            Lock                locks[NLocks];
+            ExtraHeaderData     extra_header_data;
+            T                   records[0];
         };
 
         static const size_t s_locks = NLocks;
@@ -138,11 +138,21 @@ namespace utxx {
         /// Allocate next record and return its ID.
         /// @return
         size_t allocate_rec() throw(std::runtime_error) {
-            size_t n = static_cast<size_t>(atomic::add(&m_header->rec_count,1));
-            if (n >= capacity()) {
-                atomic::dec(&m_header->rec_count);
-                throw std::runtime_error("Out of storage capacity!");
+            size_t   n = size_t(m_header->rec_count.load(std::memory_order_relaxed));
+            auto error = [this]() {
+                throw std::runtime_error(
+                    to_string("persist_array: Out of storage capacity (",
+                              this->m_file.get_name(), ")!"));
+            };
+
+            if (unlikely(n >= capacity()))
+                error();
+            n = size_t(m_header->rec_count.fetch_add(1, std::memory_order_relaxed));
+            if (unlikely(n >= capacity())) {
+                m_header->rec_count.store(capacity(), std::memory_order_relaxed);
+                error();
             }
+
             return n;
         }
 
@@ -157,7 +167,7 @@ namespace utxx {
 
         /// Add a record with given ID to the store
         void add(size_t a_id, const T& a_rec) {
-            BOOST_ASSERT(a_id < m_header->rec_count);
+            BOOST_ASSERT(a_id < m_header->rec_count.load(std::memory_order_relaxed));
             scoped_lock guard(get_lock(a_id));
             *get(a_id) = a_rec;
         }
@@ -181,11 +191,11 @@ namespace utxx {
         }
 
         const T* get(size_t a_rec_id) const {
-            return likely(a_rec_id < m_header->max_recs) ? m_begin+a_rec_id : NULL;
+            return likely(a_rec_id < capacity()) ? m_begin+a_rec_id : NULL;
         }
 
         T* get(size_t a_rec_id) {
-            return likely(a_rec_id < m_header->max_recs) ? m_begin+a_rec_id : NULL;
+            return likely(a_rec_id < capacity()) ? m_begin+a_rec_id : NULL;
         }
 
         /// Flush header to disk
@@ -302,7 +312,7 @@ namespace utxx {
 
                 header h;
                 h.version   = header::s_version;
-                h.rec_count = 0;
+                h.rec_count.store(0);
                 h.max_recs  = a_max_recs;
                 h.rec_size  = sizeof(T);
 

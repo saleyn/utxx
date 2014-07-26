@@ -48,22 +48,22 @@ static const char* s_filename = "/tmp/persist_array.bin";
 
 enum { ITERATIONS = 100000 };
 
-struct test_blob {
+struct blob {
     long i1;
     long i2;
     long data[10];
 
-    test_blob() : i1(0), i2(0) {}
-    test_blob(long i, long j) : i1(i), i2(j) {}
-    bool operator== (const test_blob& rhs) {
-        return memcmp(this, &rhs, sizeof(test_blob));
+    blob() : i1(0), i2(0) {}
+    blob(long i, long j) : i1(i), i2(j) {}
+    bool operator== (const blob& rhs) {
+        return memcmp(this, &rhs, sizeof(blob));
     }
     std::ostream& operator<< (std::ostream& out) {
         return out << "i1=" << i1 << ", i2=" << i2;
     }
 };
 
-typedef persist_array<test_blob, 4> persist_type;
+typedef persist_array<blob, 4> persist_type;
 
 //-----------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
     ::unlink(s_filename);
     {
         persist_type a;
-        test_blob orig(1, 2);
+        blob orig(1, 2);
 
         bool l_created;
         BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         BOOST_REQUIRE_EQUAL(0u, n);
         BOOST_REQUIRE_THROW(a.allocate_rec(), std::runtime_error);
 
-        test_blob* b = a.get(n);
+        blob* b = a.get(n);
         BOOST_REQUIRE(b);
 
         {
@@ -98,7 +98,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
 
     {
         persist_type a;
-        test_blob orig(1, 2);
+        blob orig(1, 2);
 
         bool l_created;
         BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
@@ -106,7 +106,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         BOOST_REQUIRE_EQUAL(1u, a.count());
         BOOST_REQUIRE_EQUAL(1u, a.capacity());
         
-        test_blob* b = a.get(0);
+        blob* b = a.get(0);
         BOOST_REQUIRE(b);
 
         BOOST_REQUIRE_EQUAL(10, a[0].i1);
@@ -132,7 +132,7 @@ namespace {
 
         void operator() () {
             for (size_t i = 0; m_storage.count() < m_iterations; i++) {
-                test_blob o(m_instance, i+1);
+                blob o(m_instance, i+1);
                 try {
                     m_storage.add(o);
                 } catch (std::runtime_error& e) {
@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
         std::vector<long> l_stats(n);
 
         for (size_t i=0; i < l_storage.count(); i++) {
-            test_blob& b = l_storage[i];
+            blob& b = l_storage[i];
             BOOST_REQUIRE_EQUAL(l_stats[b.i1-1], b.i2-1);
             l_stats[b.i1-1] = b.i2;
         }
