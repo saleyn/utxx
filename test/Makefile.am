@@ -47,6 +47,7 @@ TEST_UTXX_SRCS = \
 	test_pidfile.cpp \
 	test_robust_mutex.cpp \
 	test_running_stat.cpp \
+    test_scope_exit.cpp \
 	test_shared_queue.cpp \
 	test_static_polymorphism.cpp \
 	test_stream64.cpp \

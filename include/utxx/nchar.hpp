@@ -100,7 +100,7 @@ namespace detail {
 
         const char*   data()    const  { return m_data; }
         char*         data()           { return m_data; }
-        size_t        size()    const  { return N; }
+        constexpr size_t size() const  { return N; }
         const char*   end()     const  { return m_data + N; }
 
         operator uint8_t* ()    const  { return reinterpret_cast<uint8_t*>(m_data); }
