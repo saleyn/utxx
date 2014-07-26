@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_VERBOSITY_HPP_
 
 #include <stdlib.h>
-#include <string.h>
+#include <utxx/compiler_hints.hpp>
 
 namespace utxx {
 
@@ -56,31 +56,36 @@ enum verbose_type {
  * Parse application verbosity setting
  */
 class verbosity {
+    static verbose_type s_verbose;
 public:
-    static verbose_type level() {
-        static verbose_type verbose = parse(env());
-        return verbose;
+    static verbose_type level() { return s_verbose; }
+
+    static void level(verbose_type a_level) { s_verbose = a_level; }
+
+    /// Returns true if current verbosity level is equal or greater
+    /// than \a tp.
+    static bool enabled(verbose_type tp) {
+        return unlikely(level() >= tp);
     }
 
     static const char* c_str(int a) {
         return c_str(static_cast<verbose_type>(a));
     }
 
-    static const char* c_str(verbose_type a) {
-        switch (a) {
-            case VERBOSE_TEST:      return "test";
-            case VERBOSE_DEBUG:     return "debug";
-            case VERBOSE_INFO:      return "info";
-            case VERBOSE_MESSAGE:   return "message";
-            case VERBOSE_WIRE:      return "wire";
-            case VERBOSE_TRACE:     return "trace";
-            default:                return "none";
-        }
-    }
+    /// Return current verbosity level as a string
+    static const char* c_str() { return c_str(s_verbose); }
+
+    static const char* c_str(verbose_type a);
 
     static const char* env() {
         const char* p = getenv("VERBOSE");
         return p ? p : "";
+    }
+
+    template <typename Lambda>
+    static void if_enabled(verbose_type a_level, const Lambda& a_fun) {
+        if (enabled(a_level))
+            a_fun();
     }
 
     /// Validate if \a a_verbosity is a valid argument and
@@ -92,21 +97,7 @@ public:
     }
 
     static verbose_type parse(const char* a_verbosity,
-        const char* a_default = NULL, bool a_validate = false)
-    {
-        const char* p = a_verbosity;
-        if (!p || p[0] == '\0') p = a_default;
-        if (!p || p[0] == '\0') return a_validate ? VERBOSE_INVALID : VERBOSE_NONE;
-        int n = atoi(p);
-        if      (n == 1 || strncmp("test",    p, 4) == 0) return VERBOSE_TEST;
-        if      (n == 2 || strncmp("debug",   p, 3) == 0) return VERBOSE_DEBUG;
-        else if (n == 3 || strncmp("info",    p, 4) == 0) return VERBOSE_INFO; 
-        else if (n == 4 || strncmp("message", p, 4) == 0) return VERBOSE_MESSAGE; 
-        else if (n == 5 || strncmp("wire",    p, 4) == 0) return VERBOSE_WIRE; 
-        else if (n >= 6 || strncmp("trace",   p, 4) == 0) return VERBOSE_TRACE; 
-        else if (a_validate)                              return VERBOSE_INVALID;
-        else                                              return VERBOSE_NONE;
-    }
+        const char* a_default = NULL, bool a_validate = false);
 };
 
 } // namespace utxx

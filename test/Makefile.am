@@ -58,7 +58,8 @@ TEST_UTXX_SRCS = \
 	test_url.cpp \
 	test_utxx.cpp \
 	test_variant.cpp \
-	test_variant_tree_scon_parser.cpp
+	test_variant_tree_scon_parser.cpp \
+    test_verbosity.cpp
 
 example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp

@@ -72,7 +72,6 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
 
     const int COUNT      = 1 << 20;
-    const int MASK       = COUNT - 1;
     const int ITERATIONS = getenv("ITERATIONS")
                          ? atoi(getenv("ITERATIONS"))
                          : 10;
