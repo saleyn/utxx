@@ -177,8 +177,8 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
     in += "couple", "strings", "more";
 
     int c2p[2], p2c[2];
-    pipe(c2p);
-    pipe(p2c);
+    (void)pipe(c2p);
+    (void)pipe(p2c);
     int marker = 0;
 
     pid_t pid = fork();
@@ -191,15 +191,15 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
         write_file(fname, in);
 
         BOOST_TEST_MESSAGE( "CHILD: 1st write done, signalling..." );
-        write(c2p[1], &marker, sizeof(marker));
+        (void)write(c2p[1], &marker, sizeof(marker));
 
         BOOST_TEST_MESSAGE( "CHILD: 1st write done, waiting..." );
-        read(p2c[0], &marker, sizeof(marker));
+        (void)read(p2c[0], &marker, sizeof(marker));
 
         write_file(fname, in);
 
         BOOST_TEST_MESSAGE( "CHILD: 2nd write done, signalling..." );
-        write(c2p[1], &marker, sizeof(marker));
+        (void)write(c2p[1], &marker, sizeof(marker));
 
         exit(0);
 
@@ -208,7 +208,7 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
         close(p2c[0]);
 
         BOOST_TEST_MESSAGE( "PARNT: waiting for 1st write to complete..." );
-        read(c2p[0], &marker, sizeof(marker));
+        (void)read(c2p[0], &marker, sizeof(marker));
 
         BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
 
@@ -219,10 +219,10 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
         BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 
         BOOST_TEST_MESSAGE( "PARNT: 1st read done, signalling..." );
-        write(p2c[1], &marker, sizeof(marker));
+        (void)write(p2c[1], &marker, sizeof(marker));
 
         BOOST_TEST_MESSAGE( "PARNT: waiting for 2nd write to complete..." );
-        read(c2p[0], &marker, sizeof(marker));
+        (void)read(c2p[0], &marker, sizeof(marker));
 
         BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
 

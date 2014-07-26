@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex )
     int zfd = open("/dev/zero", O_RDWR);
     buffer = (buffer_t *)mmap(NULL, sizeof(buffer_t),
         PROT_READ|PROT_WRITE, MAP_SHARED, zfd, 0);
-    ftruncate(zfd, sizeof(buffer_t));
+    (void)ftruncate(zfd, sizeof(buffer_t));
     close(zfd);
 
     bzero(buffer->data, sizeof(buffer->data));

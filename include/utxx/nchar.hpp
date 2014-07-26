@@ -93,7 +93,9 @@ namespace detail {
         }
 
         void fill(char a_ch, int a_offset = 0) {
-            memset(&m_data[a_offset], a_ch, std::max(0, N - a_offset));
+            const int n = N - a_offset;
+            if (n > 0)
+                memset(&m_data[a_offset], a_ch, n);
         }
 
         char& operator[] (size_t n) { return m_data[n]; }

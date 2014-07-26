@@ -115,11 +115,13 @@ long        tot_ooo_count = 0, tot_gap_count = 0;
 long        ooo_count     = 0, gap_count = 0;
 long        tot_bytes     = 0, tot_pkts      = 0, max_pkts = LONG_MAX;
 int         last_bytes    = 0, bytes         = 0, pkts     = 0, last_pkts = 0;
-int         output_lines_count          = 0;
-int         next_legend_count           = 1;
-int         next_sock_report_lines      = 5;
-int         max_channel_report_lines    = 10;
-int         display_packets             = 0;
+int         output_lines_count        = 0;
+int         next_legend_count         = 1;
+int         next_sock_report_lines    = 5;
+int         max_channel_report_lines  = 10;
+int         display_packets           = 0;
+const char* output_file               = NULL;
+const char* write_file                = NULL;
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
@@ -247,7 +249,7 @@ long get_seqno(struct address* addr, const char* buf, int n, long last_seqno, in
 
 void inc_addrs() {
   if (++addrs_count == sizeof(addrs)/sizeof(addrs[0])) {
-    fprintf(stderr, "Too many addresses provided (max=%d)\n",
+    fprintf(stderr, "Too many addresses provided (max=%lu)\n",
       sizeof(addrs)/sizeof(addrs[0]));
     exit(1);
   }
@@ -367,8 +369,6 @@ void main(int argc, char *argv[])
   struct timeval        tv;
   int                   use_epoll = 1, efd = -1, tfd = -1;
   struct epoll_event    timer_event;
-  const char*           output_file = NULL;
-  const char*           write_file  = NULL;
 
   char*                 iaddr       = NULL;
   char*                 imcast_addr = NULL;
@@ -973,7 +973,7 @@ void print_report() {
   gettimeofday(&tv, NULL);
 
   if (verbose > 3)
-    printf("%06d Reporting event\n", tv.tv_sec % 86400);
+    printf("%06ld Reporting event\n", tv.tv_sec % 86400);
 
   if (quiet || !(interval && verbose))
     return;
@@ -1014,8 +1014,8 @@ void print_report() {
 
     if (sec == 0.0) sec = 1.0;
 
-    printf("II|%02d:%02d:%02d|%9.1f|%6d|%6d|%5d|%2d|%2d|%2d|TOT|"
-           "%8.1f|%8ld|%8ld|%8ld|%5d|%4.1f|%2d|%5d|\n",
+    printf("II|%02d:%02d:%02d|%9.1f|%6d|%6ld|%5ld|%2d|%2d|%2d|TOT|"
+           "%8.1f|%8ld|%8ld|%8ld|%5ld|%4.1f|%2ld|%5ld|\n",
         tm->tm_hour, tm->tm_min, tm->tm_sec,
         (double)bytes / 1024 / sec, (int)(pkts / sec),
         ooo_count, gap_count,
@@ -1081,7 +1081,11 @@ void process_packet(struct address* addr, const char* buf, int n) {
   }
 
   if (wfd != -1) {
-    write(wfd, buf, n);
+    if (write(wfd, buf, n) < 0) {
+      fprintf(stderr, "Error writing to the output file %s: %s\n",
+        write_file, strerror(errno));
+      exit(1);
+    }
   }
 
   if (seqno) {
@@ -1109,7 +1113,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
       }
     }
     if (verbose > 3)
-      printf("%02d -> %d (last_seqno=%ld)\n", addr->id, seqno, addr->last_seqno);
+      printf("%02d -> %ld (last_seqno=%ld)\n", addr->id, seqno, addr->last_seqno);
 
     addr->last_seqno = seqno;
   }
