@@ -625,10 +625,11 @@ char* itoa(T value, char*& result, int base = 10) {
     } while ( value );
 
     if (tmp < 0) *p++ = '-';
-    *p-- = '\0';
 
     char* begin = result;
     result = p;
+
+    *p-- = '\0';
 
     // Reverse the string
     while(q < p) {

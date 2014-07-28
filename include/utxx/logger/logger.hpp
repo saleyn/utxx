@@ -49,9 +49,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdarg.h>
 #include <stdio.h>
 #include <boost/function.hpp>
-#include <boost/scope_exit.hpp>
 #include <utxx/config_tree.hpp>
-//#include <utxx/singleton.hpp>
 #include <boost/thread/mutex.hpp>
 
 #include <utxx/logger/logger_impl.hpp>
