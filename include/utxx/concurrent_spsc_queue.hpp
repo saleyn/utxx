@@ -505,7 +505,7 @@ private:
                ((t  < h) && (t <= m_ind) && (m_ind < h)))
                 throw std::runtime_error
                       (to_string("concurrent_spsc_queue::iterator_gen::verify:"
-                                 "head=", h, "tail=", t, "ind=", m_ind));
+                                 "head=", h, ", tail=", t, ", ind=", m_ind));
 #       endif
         }
 
