@@ -49,6 +49,10 @@
 #include <type_traits>
 #include <utility>
 
+#ifndef NDEBUG
+#include <utxx/string.hpp>
+#endif
+
 namespace utxx {
 
 //===========================================================================//
@@ -277,7 +281,8 @@ public:
 
         uint32_t next = increment(h);
         *record = std::move(m_rec_ptr[h]);
-        m_rec_ptr[h].~T();
+        if (!std::is_trivially_destructible<T>::value)
+            m_rec_ptr[h].~T();
         head().store(next, std::memory_order_release);
         return true;
     }
@@ -293,7 +298,8 @@ public:
         assert(h  != tail().load(std::memory_order_acquire));
 
         uint32_t next = increment(h);
-        m_rec_ptr[h].~T();
+        if (!std::is_trivially_destructible<T>::value)
+            m_rec_ptr[h].~T();
         head().store(next, std::memory_order_release);
     }
 
@@ -349,7 +355,11 @@ public:
             == tail().load(std::memory_order_acquire);
     }
 
-    /// Test for the queue begin full, safe if invoked from the producer side:
+    /// Test for the queue begin full, safe if invoked from the producer side.
+    /// Physically, the queue is not completely full yet when full() returns
+    /// "true" -- there is still an empty entry at tail, but it cannot be used
+    /// as otherwise we would not be able to distinguish between "empty" and
+    /// "full" states:
     bool full() const
     {
         assert(m_side != side_t::consumer);
@@ -465,16 +475,57 @@ private:
             m_queue(nullptr)
         {}
 
+        // Iterator verification: chec whether the curr iteratir is suitable
+        // for de-referencing and as a base of arithmetic operations (though
+        // results of such operations may of course become invalid):
+        //
+        void verify(char const* where) const
+        {
+#       ifndef NDEBUG
+            assert(m_queue != NULL);
+            // XXX: If enabled, "verify" is currently NOT optimised wrt the
+            // side (producer or consumer) -- using the same generic "consume"
+            // memory order (NB: it is NOT related to the consumer side!):
+            //
+            uint32_t h = m_queue->head().load(std::memory_order_consume);
+            uint32_t t = m_queue->tail().load(std::memory_order_consume);
+            assert(h < m_queue->capacity() && t < m_queue->capacity());
+
+            // The following is OK:
+            // h <= m_ind < t ||
+            // (t < h) && (m_ind < t  || h <= m_ind)
+            //
+            // So the following is NOT OK:
+            // (h == t)                                ||
+            // (h  < t) && (m_ind < h || t <= m_ind)   ||
+            // (t  < h) && (t <= m_ind < h)
+            //
+            if ((h == t)                               ||
+               ((h  < t) && (m_ind < h || t <= m_ind)) ||
+               ((t  < h) && (t <= m_ind) && (m_ind < h)))
+                throw std::runtime_error
+                      (to_string("concurrent_spsc_queue::iterator_gen::verify "
+                                 "FAILED: ", where, ": head=", h, ", tail=", t,
+                                 ", ind=", m_ind));
+#       endif
+        }
+
         // De-referencing:
         typename std::conditional<IsConst, T const*, T*>::type
-            operator->() const
-            { return m_queue->m_rec_ptr + m_ind; }
+        operator->() const
+        {
+            verify("operator->");
+            return m_queue->m_rec_ptr + m_ind;
+        }
 
         typename std::conditional<IsConst, T const&, T&>::type
-            operator*()  const
-            { return m_queue->m_rec_ptr  [m_ind]; }
+        operator*("operator*")  const
+        {
+            verify();
+            return m_queue->m_rec_ptr  [m_ind];
+        }
 
-        // Equality:
+        // Equality: NB: Verification is not required:
         bool operator==(iterator_gen const& right) const
             { return m_ind == right.m_ind && m_queue == right.m_queue; }
 
@@ -489,6 +540,7 @@ private:
         //
         iterator_gen& operator++()
         {
+            verify("operator++");
             m_ind =
                 IsReverse
                 ? m_queue->decrement(m_ind)
@@ -498,6 +550,7 @@ private:
 
         iterator_gen& operator+=(int val)
         {
+            verify("operator+=");
             m_ind =
                 IsReverse
                 ? m_queue->decrement(m_ind, val)
@@ -507,6 +560,7 @@ private:
 
         iterator_gen operator+(int val) const
         {
+            verify("operator+");
             iterator_gen res = *this;
             res += val;
             return res;
@@ -514,6 +568,7 @@ private:
 
         iterator_gen& operator--()
         {
+            verify("operator--");
             m_ind =
                 IsReverse
                 ? m_queue->increment(m_ind)
@@ -523,6 +578,7 @@ private:
 
         iterator_gen& operator-=(int val)
         {
+            verify("operator-=");
             m_ind =
                 IsReverse
                 ? m_queue->increment(m_ind, val)
@@ -532,6 +588,7 @@ private:
 
         iterator_gen operator-(int val) const
         {
+            verify("operator-");
             iterator_gen res = *this;
             res -= val;
             return res;
@@ -550,7 +607,7 @@ private:
     // const and non-const user-visible methods:
     //
     template<bool IsConst, bool IsReverse, bool IsBegin>
-    iterator_gen <IsConst, IsReverse> begend(side_t side = side_t::invalid)
+    iterator_gen <IsConst, IsReverse> begend(side_t side)
     const
     {
         if (side == side_t::invalid)
@@ -596,32 +653,41 @@ private:
     //
     typedef iterator_gen<false, false> iterator;
 
-    iterator begin()              { return begend<false, false, true>();  }
-    iterator end ()               { return begend<false, false, false>(); }
+    iterator begin(side_t side = side_t::invalid)
+        { return begend<false, false, true> (side); }
+
+    iterator end  (side_t side = side_t::invalid)
+        { return begend<false, false, false>(side); }
 
     // "const_iterator":         IsConst=true,  IsReverse=false:
     //
     typedef iterator_gen<true,  false> const_iterator;
 
-    const_iterator cbegin() const { return begend<true,  false, true>();  }
-    const_iterator cend()   const { return begend<true,  false, false>(); }
+    const_iterator cbegin(side_t side = side_t::invalid) const
+        { return begend<true,  false, true> (side); }
+
+    const_iterator cend  (side_t side = side_t::invalid) const
+        { return begend<true,  false, false>(side); }
 
     // "reverse_iterator":       IsConst=false, IsReverse=true:
     //
     typedef iterator_gen<false, true>  reverse_iterator;
 
-    reverse_iterator rbegin()     { return begend<false, true,  true>();  }
-    reverse_iterator rend()       { return begend<false, true,  false>(); }
+    reverse_iterator rbegin(side_t side = side_t::invalid)
+        { return begend<false, true,  true> (side); }
+
+    reverse_iterator rend  (side_t side = side_t::invalid)
+        { return begend<false, true,  false>(side); }
 
     // "const_reverse_iterator": IsConst=true,  IsReverse=true:
     //
     typedef iterator_gen<true,  true>  const_reverse_iterator;
 
-    const_reverse_iterator crbegin() const
-        { return begend<true,  true,  true>();  }
+    const_reverse_iterator crbegin(side_t side = side_t::invalid) const
+        { return begend<true,  true,  true> (side); }
 
-    const_reverse_iterator crend()   const
-        { return begend<true,  true,  false>(); }
+    const_reverse_iterator crend  (side_t side = side_t::invalid) const
+        { return begend<true,  true,  false>(side); }
 
     //-----------------------------------------------------------------------//
     // "erase":                                                              //
@@ -633,6 +699,7 @@ private:
     template<bool IsReverse>
     void erase(iterator_gen<false, IsReverse> const& it)
     {
+        it.verify("erase");
         assert(m_side != side_t::producer);
         if (utxx::unlikely(it.m_queue != this))
             throw std::invalid_argument
