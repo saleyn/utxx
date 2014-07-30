@@ -431,50 +431,6 @@ private:
            concurrent_spsc_queue*
           >::type                            m_queue;
 
-        // This ctor is only visible from the outer class which is made a "fri-
-        // end":
-        friend class concurrent_spsc_queue;
-
-        iterator_gen
-        (
-            uint32_t                         ind,
-            typename std::conditional
-              <IsConst,
-               concurrent_spsc_queue const*,
-               concurrent_spsc_queue*
-              >::type                        queue
-        )
-            : m_ind(ind),
-            m_queue(queue)
-        {}
-
-    public:
-        // NB: The following ctor requires that "entry" and "queue" must be
-        // valid non-NULL ptrs:
-        iterator_gen
-        (
-            typename std::conditional<IsConst, T const*, T*>::type entry,
-            typename std::conditional
-              <IsConst, concurrent_spsc_queue const*,
-                        concurrent_spsc_queue*>::type              queue
-        )
-            : m_ind(entry - queue->m_rec_ptr),
-            m_queue(queue)
-        {
-            // NB: Need some guards against invalid ptrs -- eg if "entry" does
-            // not really belong to the "queue":
-            if (utxx::unlikely(m_ind > m_queue->capacity()))
-                throw std::invalid_argument
-                      ("concurrent_spsc_queue::iterator_gen: "
-                       "Entry not in Queue?");
-        }
-
-        // Default Ctor: creates an invalid "iterator":
-        iterator_gen()
-            : m_ind(0),
-            m_queue(nullptr)
-        {}
-
         // Iterator verification: chec whether the curr iteratir is suitable
         // for de-referencing and as a base of arithmetic operations (though
         // results of such operations may of course become invalid):
@@ -509,6 +465,47 @@ private:
                                  ", ind=", m_ind));
 #       endif
         }
+
+        // This ctor is only visible from the outer class which is made a "fri-
+        // end":
+        friend class concurrent_spsc_queue;
+
+        iterator_gen
+        (
+            uint32_t                         ind,
+            typename std::conditional
+              <IsConst,
+               concurrent_spsc_queue const*,
+               concurrent_spsc_queue*
+              >::type                        queue
+        )
+            : m_ind(ind),
+            m_queue(queue)
+        {
+            verify("iterator_gen::Ctor(ind,queue)");
+        }
+
+    public:
+        // NB: The following ctor requires that "entry" and "queue" must be
+        // valid non-NULL ptrs:
+        iterator_gen
+        (
+            typename std::conditional<IsConst, T const*, T*>::type entry,
+            typename std::conditional
+              <IsConst, concurrent_spsc_queue const*,
+                        concurrent_spsc_queue*>::type              queue
+        )
+            : m_ind(entry - queue->m_rec_ptr),
+            m_queue(queue)
+        {
+            verify("iterator_gen::Ctor(entry*,queue)");
+        }
+
+        // Default Ctor: creates an invalid "iterator":
+        iterator_gen()
+            : m_ind(0),
+            m_queue(nullptr)
+        {}
 
         // De-referencing:
         typename std::conditional<IsConst, T const*, T*>::type
