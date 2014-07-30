@@ -550,7 +550,7 @@ inline const char* atoi_right(const Char (&bytes)[N], T& value, Char skip = '\0'
 
 //--------------------------------------------------------------------------------
 /// Fallback implementation of itoa. Prints \a a_value into \a a_data buffer
-/// left padded with \a a_pad character.
+/// right-adjusted, left padded with \a a_pad character.
 /// @return pointer to the beginning of the buffer.
 // 2010-10-15 Serge Aleynikov
 //--------------------------------------------------------------------------------
@@ -609,7 +609,8 @@ const char* fast_atoi(const char* a_str, const char* a_end, T* result, bool till
 ///
 /// Note: the function doesn't perform boundary checking. Make sure there's enough
 /// space in the \a result buffer (10 bytes for 32bit, and 20 bytes for 64bit)
-/// @return pointer to the end
+/// @return pointer to the beginning of the string; "result" contains ptr to the
+/// end:
 template <typename T>
 char* itoa(T value, char*& result, int base = 10) {
     BOOST_ASSERT(base >= 2 || base <= 36);
