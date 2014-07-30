@@ -470,6 +470,8 @@ private:
         // end":
         friend class concurrent_spsc_queue;
 
+        // NB: Do NOT invoke "verify" here as this Ctor may very well produce
+        // an invalid iterator (end(), cend(), rend(), crend()):
         iterator_gen
         (
             uint32_t                         ind,
@@ -481,9 +483,7 @@ private:
         )
             : m_ind(ind),
             m_queue(queue)
-        {
-            verify("iterator_gen::Ctor(ind,queue)");
-        }
+        {}
 
     public:
         // NB: The following ctor requires that "entry" and "queue" must be

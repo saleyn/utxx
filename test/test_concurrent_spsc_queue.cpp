@@ -256,4 +256,55 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_destructor ) {
     BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 0);
 }
 
+BOOST_AUTO_TEST_CASE( test_concurrent_spsc_iterator )
+{
+    size_t       C        = 10;
+    const size_t CAPACITY = 8;
+    size_t       sizes[]  = { 6, 7, 8, 9 };
+
+    srand48(time(NULL));
+
+    for (size_t N : sizes) {
+        BOOST_MESSAGE("Capacity=" << C << ", NItems=" << N);
+
+        concurrent_spsc_queue<size_t> q(C);
+        BOOST_REQUIRE_EQUAL(size_t(CAPACITY), q.capacity());
+
+        for (size_t i = 0; i < N; ++i) {
+            size_t* res = q.push(i);
+            BOOST_REQUIRE((i < (CAPACITY-1)) == (res != NULL));
+        }
+
+        size_t n = q.count();
+        BOOST_REQUIRE_EQUAL(n, size_t(std::min(N, CAPACITY-1)));
+
+        size_t i = 0;
+        for (concurrent_spsc_queue<size_t>::iterator it = q.begin();
+                it != q.end(); ++it)
+            BOOST_REQUIRE_EQUAL(i++, *it);
+
+        size_t r = size_t(floor(drand48() * double(n)));
+        BOOST_REQUIRE(0 <= r && r < n);
+        BOOST_MESSAGE("r =" << r);
+        q.erase(q.begin() + r);
+
+        BOOST_REQUIRE_EQUAL(n-1, q.count());
+
+        i = 0;
+        for (concurrent_spsc_queue<size_t>::const_iterator cit = q.cbegin();
+                cit != q.cend(); ++cit, ++i)
+            BOOST_REQUIRE_EQUAL(i < r ? i : i+1, *cit);
+
+        i = n-1;
+        for (concurrent_spsc_queue<size_t>::reverse_iterator rit = q.rbegin();
+                rit != q.rend(); ++rit, --i)
+            BOOST_REQUIRE_EQUAL(i > r ? i : i-1, *rit);
+
+        i = n-1;
+        for (concurrent_spsc_queue<size_t>::const_reverse_iterator crit = q.crbegin();
+                crit != q.crend(); ++crit, --i)
+            BOOST_REQUIRE_EQUAL(i > r ? i : i-1, *crit);
+    }
+}
+
 } // namespace utxx
