@@ -38,6 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/persist_array.hpp>
 #include <utxx/string.hpp>
 #include <utxx/verbosity.hpp>
+#include <utxx/lock.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -63,7 +64,8 @@ struct blob {
     }
 };
 
-typedef persist_array<blob, 4> persist_type;
+typedef persist_array<blob, 4>            persist_type;
+typedef persist_array<blob, 4, null_lock> persist_nolock_type;
 
 //-----------------------------------------------------------------------------
 BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
@@ -98,6 +100,23 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
 
     {
         persist_type a;
+        blob orig(1, 2);
+
+        bool l_created;
+        BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
+        BOOST_REQUIRE(!l_created);
+        BOOST_REQUIRE_EQUAL(1u, a.count());
+        BOOST_REQUIRE_EQUAL(1u, a.capacity());
+        
+        blob* b = a.get(0);
+        BOOST_REQUIRE(b);
+
+        BOOST_REQUIRE_EQUAL(10, a[0].i1);
+        BOOST_REQUIRE_EQUAL(20, a[0].i2);
+    }
+
+    {
+        persist_nolock_type a;
         blob orig(1, 2);
 
         bool l_created;

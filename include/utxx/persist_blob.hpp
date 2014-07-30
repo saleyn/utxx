@@ -51,7 +51,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/meta.hpp>
 #include <utxx/path.hpp>
 #include <utxx/error.hpp>
-#include <utxx/robust_mutex.hpp>
+#include <utxx/lock.hpp>
 
 namespace utxx {
 
@@ -59,41 +59,8 @@ namespace utxx {
         namespace bip = boost::interprocess;
     }
 
-    namespace detail {
-
-        struct robust_lock : public robust_mutex {
-            struct lock_data {
-                pthread_mutex_t mutex;
-            };
-            explicit robust_lock(bool a_destroy_on_exit = false)
-                : robust_mutex(a_destroy_on_exit) {}
-            void init(lock_data& a_data) { robust_mutex::init(a_data.mutex); }
-            void set(lock_data& a_data)  { robust_mutex::set(a_data.mutex);  }
-        };
-
-        struct null_lock {
-            typedef robust_mutex::make_consistent_functor make_consistent_functor;
-            typedef void* native_handle_type;
-            typedef boost::unique_lock<null_lock> scoped_lock;
-            typedef boost::detail::try_lock_wrapper<null_lock> scoped_try_lock;
-
-            struct lock_data {};
-
-            explicit null_lock(bool a_destroy_on_exit = false) {}
-            void init(lock_data&) {}
-            void set(lock_data&) {}
-            void lock() {}
-            void unlock() {}
-            bool try_lock() { return true; }
-            int  make_consistent() { return 0; }
-            void destroy() {}
-            native_handle_type native_handle() { return NULL; }
-            robust_mutex::make_consistent_functor on_make_consistent;
-        };
-    }
-
 /// Persistent blob of type T stored in memory mapped file.
-template<typename T, typename Lock = detail::robust_lock>
+template<typename T, typename Lock = robust_lock>
 class persist_blob
 {
 private:
