@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_LOGGER_IMPL_IPP_
 #define _UTXX_LOGGER_IMPL_IPP_
 
+#include <utxx/scope_exit.hpp>
+
 namespace utxx {
 
 template <int N>
@@ -78,7 +80,7 @@ inline log_msg_info::log_msg_info(
 
 inline void log_msg_info::log(const char* fmt, ...) {
     va_list args; va_start(args, fmt);
-    BOOST_SCOPE_EXIT( (&args) ) { va_end(args); } BOOST_SCOPE_EXIT_END;
+    scope_exit g([&args]() { va_end(args); });
     logger* l = m_logger ? m_logger : &logger::instance();
     l->log(*this, fmt, args);
 }

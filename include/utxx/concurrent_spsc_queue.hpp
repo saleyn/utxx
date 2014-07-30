@@ -519,9 +519,9 @@ private:
         }
 
         typename std::conditional<IsConst, T const&, T&>::type
-        operator*("operator*")  const
+        operator*()  const
         {
-            verify();
+            verify("operator*");
             return m_queue->m_rec_ptr  [m_ind];
         }
 

@@ -302,6 +302,13 @@ BOOST_AUTO_TEST_CASE( test_convert )
         BOOST_REQUIRE_EQUAL((int)sizeof(buf), lp-buf);
         BOOST_REQUIRE_EQUAL(-1, rp-buf);
     }
+    {
+        char buf[10];
+        char* p = buf;
+        itoa<int>(0, p);
+        BOOST_REQUIRE_EQUAL("0", buf);
+        BOOST_REQUIRE_EQUAL(1, p - buf);
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi2 )

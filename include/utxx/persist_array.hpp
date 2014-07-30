@@ -124,7 +124,7 @@ namespace utxx {
         bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
             int a_mode = default_file_mode()) throw (io_error);
 
-        size_t count()    const { return static_cast<size_t>(m_header->rec_count); }
+        size_t count()    const { return m_header->rec_count.load(std::memory_order_relaxed); }
         size_t capacity() const { return m_header->max_recs; }
 
         /// Return internal storage header.
@@ -138,16 +138,15 @@ namespace utxx {
         /// Allocate next record and return its ID.
         /// @return
         size_t allocate_rec() throw(std::runtime_error) {
-            size_t   n = size_t(m_header->rec_count.load(std::memory_order_relaxed));
             auto error = [this]() {
                 throw std::runtime_error(
                     to_string("persist_array: Out of storage capacity (",
                               this->m_file.get_name(), ")!"));
             };
 
-            if (unlikely(n >= capacity()))
+            if (unlikely(count() >= capacity()))
                 error();
-            n = size_t(m_header->rec_count.fetch_add(1, std::memory_order_relaxed));
+            size_t n = size_t(m_header->rec_count.fetch_add(1, std::memory_order_relaxed));
             if (unlikely(n >= capacity())) {
                 m_header->rec_count.store(capacity(), std::memory_order_relaxed);
                 error();
@@ -312,7 +311,7 @@ namespace utxx {
 
                 header h;
                 h.version   = header::s_version;
-                h.rec_count.store(0);
+                h.rec_count.store(0, std::memory_order_release);
                 h.max_recs  = a_max_recs;
                 h.rec_size  = sizeof(T);
 
