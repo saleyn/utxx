@@ -71,6 +71,17 @@ namespace utxx
                     '[' + a_option_with_value.second + ']');
     }
 
+    inline tree_path make_tree_path_pair(const char* a_path, const char* a_data) {
+        tree_path t;
+        return t / std::make_pair(a_path, a_data);
+    }
+
+    inline tree_path make_tree_path_pair(
+            const std::string& a_path, const std::string& a_data) {
+        tree_path t;
+        return t / std::make_pair(a_path, a_data);
+    }
+
 } // namespace utxx
 
 #endif // _UTXX_VARIANT_TREE_PATH_IPP_

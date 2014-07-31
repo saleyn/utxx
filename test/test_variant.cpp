@@ -346,6 +346,8 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         BOOST_REQUIRE_EQUAL("a.b.c", s2.dump());
         s2 /= "d.e";
         BOOST_REQUIRE_EQUAL("a.b.c.d.e", s2.dump());
+        config_path s3 = make_tree_path_pair("a", "b");
+        BOOST_REQUIRE_EQUAL("a[b]", s3.dump());
     }
 
     {

@@ -53,6 +53,11 @@ basic_tree_path<Ch> operator/
     const basic_tree_path<Ch>& b
 );
 
+/// Constructs a path in the form "Node[Data]"
+tree_path make_tree_path_pair(const char*,const char*);
+/// Constructs a path in the form "Node[Data]"
+tree_path make_tree_path_pair(const std::string&, const std::string&);
+
 tree_path  operator/ (const tree_path& a, const std::string& s);
 tree_path& operator/ (tree_path& a,       const std::string& s);
 tree_path  operator/ (const std::string& a, const tree_path& s);
