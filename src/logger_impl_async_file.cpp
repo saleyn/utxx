@@ -134,14 +134,14 @@ void logger_impl_async_file::send_data(
     throw(io_error)
 {
     if (!m_engine.running())
-        throw io_error("Logger terminated!");
+        throw runtime_error("Logger terminated!");
 
     char* p = m_engine.allocate(a_size);
 
     if (!p) {
         std::stringstream s("Out of memory allocating ");
         s << a_size << " bytes!";
-        throw io_error(s.str());
+        throw runtime_error(s.str());
     }
 
     memcpy(p, a_msg, a_size);

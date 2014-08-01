@@ -206,7 +206,7 @@ public:
                 break;
             }
             if (n < 0)
-                throw io_error("decode error", n, " at ", m_data_offset,
+                throw runtime_error("decode error", n, " at ", m_data_offset,
                         " when reading ", base::filename());
             // n == 0: not enough data in buffer
             if (!base::read()) {

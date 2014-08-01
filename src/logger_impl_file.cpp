@@ -57,7 +57,7 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
 }
 
 bool logger_impl_file::init(const variant_tree& a_config)
-    throw(badarg_error) 
+    throw(badarg_error, io_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);
     finalize();
@@ -115,7 +115,7 @@ public:
 
 void logger_impl_file::log_msg(
     const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
-    throw(io_error) 
+    throw(runtime_error) 
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.
     // Note that since the use of mutex is conditional, we can't use the
@@ -126,11 +126,11 @@ void logger_impl_file::log_msg(
     int len = logger_impl::format_message(buf, sizeof(buf), true, 
                 m_show_ident, m_show_location, a_tv, info, fmt, args);
     if (write(m_fd, buf, len) < 0)
-        io_error("Error writing to file:", m_filename, ' ', info.src_location());
+        runtime_error("Error writing to file:", m_filename, ' ', info.src_location());
 }
 
 void logger_impl_file::log_bin(
-    const std::string& a_category, const char* msg, size_t size) throw(io_error)
+    const std::string& a_category, const char* msg, size_t size) throw(runtime_error)
 {
     guard g(m_mutex, m_use_mutex);
 

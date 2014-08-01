@@ -262,7 +262,7 @@ namespace utxx {
             try {
                 boost::filesystem::create_directories(l_name.parent_path());
             } catch (boost::system::system_error& e) {
-                throw io_error("Cannot create directory: ",
+                throw io_error(errno, "Cannot create directory: ",
                     l_name.parent_path(), ": ", e.what());
             }
 
@@ -280,10 +280,10 @@ namespace utxx {
                     f.sgetn(reinterpret_cast<char*>(&h), sizeof(header));
 
                     if (h.version != header::s_version) {
-                        throw io_error("Invalid file format ", a_filename);
+                        throw runtime_error("Invalid file format ", a_filename);
                     }
                     if (h.rec_size != sizeof(T)) {
-                        throw io_error("Invalid item size in file ", a_filename,
+                        throw runtime_error("Invalid item size in file ", a_filename,
                             " (expected ", sizeof(T), " got ", h.rec_size, ')');
                     }
                     // Increase the file size if instructed to do so.
@@ -356,7 +356,7 @@ namespace utxx {
         } catch (io_error& e) {
             throw;
         } catch (std::exception& e) {
-            throw io_error(e.what());
+            throw runtime_error(e.what());
         }
 
         return !l_exists;

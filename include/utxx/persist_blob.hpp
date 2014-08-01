@@ -163,7 +163,7 @@ bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
         } else if (buf.st_size != sizeof(blob_t)) {
             // Something is wrong - blob size on disk must match the blob size.
             close();
-            throw io_error("Size of file ", a_file, " has wrong size - likely old version."
+            throw runtime_error("Size of file", a_file, " is wrong - likely old version."
                 " Delete it and try again!");
         }
 
@@ -198,7 +198,7 @@ bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
     } else if (blob_t::s_version != m_blob->version) {
         // Wrong software version
         close();
-        throw io_error("Wrong version of data in the file ", a_file,
+        throw runtime_error("Wrong version of data in the file", a_file,
             " (expected: ", blob_t::s_version, ", got: ", m_blob->version, ')');
     } else {
         m_lock.set(m_blob->lock_data);
@@ -241,6 +241,10 @@ void persist_blob<T,L>::reset() {
     scoped_lock g(m_lock);
     bzero(m_blob->data, sizeof(T));
 }
+
+/// Persistent blob of type T stored in memory mapped file.
+template<typename T, typename L>
+const uint32_t persist_blob<T,L>::blob_t::s_version;
 
 } // namespace utxx
 

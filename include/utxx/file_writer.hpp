@@ -155,7 +155,7 @@ public:
         if (try_write(a_data)) return;
         base::flush();
         if (try_write(a_data)) return;
-        throw io_error("encode error", "short buffer: ", base::capacity());
+        throw runtime_error("encode error", "short buffer: ", base::capacity());
     }
 
     /// offset for the next record to encode

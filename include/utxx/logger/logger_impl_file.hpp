@@ -103,9 +103,9 @@ public:
         throw(badarg_error, io_error);
 
     void log_msg(const log_msg_info& info, const timeval* a_tv,
-        const char* fmt, va_list args) throw(io_error);
+        const char* fmt, va_list args) throw(runtime_error);
     void log_bin(const std::string& a_category, const char* msg, size_t size)
-        throw(io_error);
+        throw(runtime_error);
 };
 
 } // namespace utxx
