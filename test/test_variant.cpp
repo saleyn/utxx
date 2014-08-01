@@ -106,6 +106,42 @@ BOOST_AUTO_TEST_CASE( test_variant )
 
     }
 
+    { variant v;            BOOST_REQUIRE(!v.is_type<bool>()); }
+    { variant v;            BOOST_REQUIRE(!v.is_type<int>()); }
+    { variant v;            BOOST_REQUIRE(!v.is_type<long>()); }
+    { variant v;            BOOST_REQUIRE(!v.is_type<double>()); }
+    { variant v;            BOOST_REQUIRE(!v.is_type<std::string>()); }
+
+    { variant v(true);      BOOST_REQUIRE( v.is_type<bool>()); }
+    { variant v(true);      BOOST_REQUIRE(!v.is_type<int>()); }
+    { variant v(true);      BOOST_REQUIRE(!v.is_type<long>()); }
+    { variant v(true);      BOOST_REQUIRE(!v.is_type<double>()); }
+    { variant v(true);      BOOST_REQUIRE(!v.is_type<std::string>()); }
+
+    { variant v(1);         BOOST_REQUIRE(!v.is_type<bool>()); }
+    { variant v(1);         BOOST_REQUIRE( v.is_type<int>()); }
+    { variant v(1);         BOOST_REQUIRE( v.is_type<long>()); }
+    { variant v(1);         BOOST_REQUIRE(!v.is_type<double>()); }
+    { variant v(1);         BOOST_REQUIRE(!v.is_type<std::string>()); }
+
+    { variant v(1.0);       BOOST_REQUIRE(!v.is_type<bool>()); }
+    { variant v(1.0);       BOOST_REQUIRE(!v.is_type<int>()); }
+    { variant v(1.0);       BOOST_REQUIRE(!v.is_type<long>()); }
+    { variant v(1.0);       BOOST_REQUIRE( v.is_type<double>()); }
+    { variant v(1.0);       BOOST_REQUIRE(!v.is_type<std::string>()); }
+
+    { variant v("a");       BOOST_REQUIRE(!v.is_type<bool>()); }
+    { variant v("a");       BOOST_REQUIRE(!v.is_type<int>()); }
+    { variant v("a");       BOOST_REQUIRE(!v.is_type<long>()); }
+    { variant v("a");       BOOST_REQUIRE(!v.is_type<double>()); }
+    { variant v("a");       BOOST_REQUIRE( v.is_type<std::string>()); }
+
+
+    { variant v(1.0);       BOOST_REQUIRE_EQUAL(variant::TYPE_DOUBLE, v.type()); }
+    { variant v("test");    BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type()); }
+    { std::string s("test");
+      variant v(s);         BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type()); }
+
     { variant v(true);      BOOST_REQUIRE_EQUAL(variant::TYPE_BOOL,   v.type()); }
     { variant v(1.0);       BOOST_REQUIRE_EQUAL(variant::TYPE_DOUBLE, v.type()); }
     { variant v("test");    BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type()); }
@@ -338,6 +374,11 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
     BOOST_REQUIRE_EQUAL(std::string(s_path) + ".four", (a / "four").dump());
 
     {
+        variant_tree tree;
+        tree.put("one.xxxx", 1);
+        BOOST_CHECK_THROW(tree.get<bool>("one.xxxx"), std::runtime_error);
+    }
+    {
         config_path s1;
         config_path s2 = s1 / "a.b.c";
         BOOST_REQUIRE_EQUAL("a.b.c", s2.dump());
@@ -433,7 +474,7 @@ void gen_test_case(Stream& stream, ReadFun read_fun, const char* a_test_name)
     BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
     BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
     BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
-    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), boost::bad_get);
+    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), std::runtime_error);
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_xml )

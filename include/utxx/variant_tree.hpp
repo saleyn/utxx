@@ -171,7 +171,8 @@ private:
                     if (el->first == kp || kp.empty())
                         if (el->second.data().is_string() && el->second.data().to_str() == dp)
                             break;
-            tree = el != tend
+            bool is_end = el == tend;
+            tree = !is_end
                  ? &el->second
                  : (put_val
                     ? add(tree, kp, dp.empty() ? variant() : variant(dp))
@@ -292,17 +293,17 @@ public:
     template <class T>
     T get_value() const {
         boost::optional<T> o = get_value_optional<T>();
-        if (o) return *o;
-        throw variant_tree_bad_data(
-            utxx::to_string(
-                "Path '", m_root_path.dump(), "' data conversion to type '",
-                type_to_string<T>(), "' failed"),
-            base::data());
+        if (!o)
+            throw_bad_type<T>(path_type(), base::data());
+        return *o;
     }
 
     template <class T>
     T get_value(const T& default_value) const {
-        return base::get_value(default_value, detail::variant_translator<T>());
+        try { return detail::variant_translator<T>().get_value(this->data()); }
+        catch (const boost::bad_get& e) {
+            throw_bad_type<T>(path_type(), this->data());
+        }
     }
 
     std::basic_string<Ch> get_value(const Ch* default_value) const {
@@ -312,7 +313,15 @@ public:
 
     template <class T>
     boost::optional<T> get_value_optional() const {
-        return detail::variant_translator<T>().get_value(this->data());
+        if (!this->data().is_null()) {
+//             if (!(this->data().is_type<T>()))
+//                throw_bad_type<T>(path_type(), this->data());
+            try { return detail::variant_translator<T>().get_value(this->data()); }
+            catch (const std::exception& e) {
+                throw_bad_type<T>(path_type(), this->data());
+            }
+        }
+        return boost::optional<T>();
     }
 
     template <class T>
@@ -329,7 +338,7 @@ public:
     template <class T>
     T get(const path_type& path, const T& default_value) const {
         path_type p(path);
-        const base* t = navigate(this, p, (const int*)NULL);
+        const base* t = navigate(this, p, (const int*)NULL, false);
         return t ? t->get_value<T>(detail::variant_translator<T>()) : default_value;
     }
 
@@ -338,13 +347,20 @@ public:
         return get<std::basic_string<Ch>>(path, std::basic_string<Ch>(default_value));
     }
 
-    template <class T>
+    template <typename T>
     boost::optional<T> get_optional(const path_type& path) const {
         path_type p(path);
-        const base* t = navigate(this, p, (const int*)NULL);
-        return t
-            ? boost::optional<T>(t->get_value<T>(detail::variant_translator<T>()))
-            : boost::optional<T>();
+        const base* t = navigate(this, p, (const int*)NULL, false);
+        if (t && !t->data().is_null()) {
+//             if (!t->data().is_type<T>())
+//                 throw_bad_type<T>(path, t->data());
+//             return boost::optional<T>(t->get<T>());
+            try { return t->get_value<T>(detail::variant_translator<T>()); }
+            catch (const std::exception& e) {
+                throw_bad_type<T>(path, t->data());
+            }
+        }
+        return boost::optional<T>();
     }
 
     template <class T>
@@ -634,6 +650,15 @@ private:
     static const variant& update_fun(
         const basic_variant_tree::path_type& a, const variant& v)
     { return v; }
+    
+    template <typename T>
+    void throw_bad_type(const path_type& a_path, const variant& a_data) const {
+        throw variant_tree_bad_data(
+            utxx::to_string("Path '",
+                (m_root_path / a_path).dump(), "' data conversion to type '",
+                type_to_string<T>(), "' failed"),
+            a_data);
+    }
 };
 
 

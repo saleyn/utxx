@@ -94,6 +94,18 @@ public:
         boost::mpl::vector<null,bool,double,std::string,variant>
     > valid_get_types;
 
+    // For integers - cast them all to long type
+    template <typename T>
+    class normal_type {
+        typedef typename boost::mpl::find<int_types, T>::type int_iter;
+    public:
+        typedef
+            typename boost::mpl::if_
+                <boost::is_same<boost::mpl::end<int_types>::type, int_iter>,
+                 T, long>::type
+            type;
+    };
+
     enum value_type {
           TYPE_NULL
         , TYPE_BOOL
@@ -177,6 +189,12 @@ public:
     bool is_double()    const { return type() == TYPE_DOUBLE; }
     bool is_string()    const { return type() == TYPE_STRING; }
 
+    template <typename T>
+    bool is_type()      const {
+        variant::type_visitor<T> v;
+        return boost::apply_visitor(v, *this);
+    }
+
     bool                to_bool()   const { return boost::get<bool>(*this); }
     long                to_int()    const { return boost::get<long>(*this); }
     long                to_float( ) const { return boost::get<double>(*this); }
@@ -204,15 +222,8 @@ public:
         typedef typename boost::mpl::find<valid_get_types, T>::type valid_iter;
         BOOST_STATIC_ASSERT(
             (!boost::is_same<boost::mpl::end<valid_get_types>::type, valid_iter>::value));
-
         // For integers - cast them to long type when fetching from the variant.
-        typedef typename boost::mpl::find<int_types, T>::type int_iter;
-        typedef typename boost::mpl::if_<
-                boost::is_same<boost::mpl::end<int_types>::type, int_iter>,
-                T,
-                long
-            >::type type;
-        type* dummy(NULL);
+        typename normal_type<T>::type* dummy(NULL);
         return get(dummy);
     }
 
@@ -285,6 +296,15 @@ private:
     static std::string to_std_string(const std::basic_string<Ch>& a) {
         return boost::property_tree::info_parser::convert_chtype<char, Ch>(a);
     }
+
+    template <typename U>
+    struct type_visitor: public boost::static_visitor<bool> {
+        typedef typename normal_type<U>::type Type;
+        bool operator() (Type v) const { return true; }
+
+        template <typename T>
+        bool operator() (T v)    const { return false; }
+    };
 };
 
 static inline std::ostream& operator<< (std::ostream& out, const variant& a) {
