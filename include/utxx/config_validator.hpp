@@ -287,8 +287,8 @@ namespace config {
             throw ();
 
     protected:
-        tree_path   m_root;       // Path from configuration root
-        option_map  m_options;
+        mutable tree_path m_root;       // Path from configuration root
+        option_map        m_options;
 
         void validate(const tree_path& a_root, variant_tree_base& a_config,
             const option_map& a_opts, bool fill_defaults,
@@ -311,8 +311,10 @@ namespace config {
 
         /// Derived classes must implement this method
         template <class Derived>
-        static const Derived* instance() {
+        static const Derived* instance(const tree_path& a_root = tree_path()) {
             static Derived s_instance;
+            if (!a_root.empty())
+                s_instance.m_root = a_root;
             return &s_instance;
         }
 
@@ -349,7 +351,8 @@ namespace config {
 
         /// @return root path of this configuration from the XML /config/@namespace
         ///              property
-        const tree_path& root()   const { return m_root; }
+        const tree_path& root()             const { return m_root;   }
+        void  root(const tree_path& a_root) const { m_root = a_root; }
 
         void validate(variant_tree& a_config, bool a_fill_defaults,
             const custom_validator& a_custom_validator = NULL
