@@ -122,8 +122,8 @@ public:
     const T& dirty_get() const          { BOOST_ASSERT(m_blob); return m_blob->data; }
     void     dirty_set(const T& src)    { BOOST_ASSERT(m_blob); m_blob->data = src;  }
 
-    T*       operator->()               { return dirty_get(); }
-    const T* operator->()       const   { return dirty_get(); }
+    T*       operator->()               { return &dirty_get(); }
+    const T* operator->()       const   { return &dirty_get(); }
 
 };
 
