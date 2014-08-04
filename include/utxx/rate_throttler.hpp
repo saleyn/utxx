@@ -103,9 +103,9 @@ public:
     }
 
     /// Return running interval.
-    int     interval()      const { return m_interval >> s_log_buckets_sec; }
+    int     interval()     const { return m_interval >> s_log_buckets_sec; }
     /// Return current running sum over the interval.
-    int     running_sum()  const { return m_sum; }
+    long    running_sum()  const { return m_sum; }
     /// Return current running sum over the interval.
     double  running_avg()  const { return (double)m_sum / (m_interval >> s_log_buckets_sec); }
 
@@ -113,10 +113,10 @@ public:
     /// @param a_time is monotonically increasing time value.
     /// @param a_count is the count to add to the bucket associated with \a a_time.
     /// @return current running sum.
-    size_t add(const timeval& a_time, int a_count = 1);
+    long   add(const timeval& a_time, int a_count = 1);
 
     /// Update current timestamp.
-    size_t refresh(const timeval& a_time) { return add(a_time, 0); }
+    long   refresh(const timeval& a_time) { return add(a_time, 0); }
 
     /// Dump the internal state to stream
     void dump(std::ostream& out, const timeval& a_time);
@@ -134,7 +134,7 @@ private:
 // Implementation
 //------------------------------------------------------------------------------
 template<size_t MaxSeconds, size_t BucketsPerSec>
-size_t basic_rate_throttler<MaxSeconds, BucketsPerSec>::
+long basic_rate_throttler<MaxSeconds, BucketsPerSec>::
 add(const timeval& a_time, int a_count)
 {
     time_t l_now = (time_t)( ((double)a_time.tv_sec +
