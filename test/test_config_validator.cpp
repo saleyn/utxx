@@ -509,17 +509,21 @@ BOOST_AUTO_TEST_CASE( test_config_validator_def )
     BOOST_REQUIRE(l_opt);
     BOOST_REQUIRE_EQUAL("enabled", l_opt->name);
     BOOST_REQUIRE_EQUAL(true, l_opt->default_value.data().to_bool());
+
     try {
         l_validator->def("name", "test.country");
         BOOST_REQUIRE(false);
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("test.country.name", e.path());
     }
-    try {
-        l_validator->def("", "test.country.name");
-    } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("test.country.name", e.path());
-    }
+
+    try   { l_validator->def("", "test.country.name"); }
+    catch ( variant_tree_error& e )
+          { BOOST_CHECK_EQUAL("", e.path()); }
+
+    try   { l_validator->def("test.country.name"); }
+    catch ( variant_tree_error& e )
+          { BOOST_CHECK_EQUAL("test.country.name", e.path()); }
 
     std::string s = l_config.get<std::string>("test.tmp_str");
     BOOST_REQUIRE(s.find('$') == std::string::npos);

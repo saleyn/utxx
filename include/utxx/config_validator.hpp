@@ -280,7 +280,8 @@ namespace config {
             return true;
         }
 
-        tree_path strip_root(const tree_path& a_root_path) const
+        tree_path strip_root(const tree_path& a_root_path,
+                             const tree_path& a_root = tree_path()) const
             throw(variant_tree_error);
 
         static const option* find(tree_path& a_suffix, const option_map& a_options)

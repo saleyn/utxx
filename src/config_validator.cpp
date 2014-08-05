@@ -133,24 +133,30 @@ variant option::default_subst_value() const {
 }
 
 tree_path validator::
-strip_root(const tree_path& a_root_path) const throw(variant_tree_error)
+strip_root(const tree_path& a_path, const tree_path& a_root) const throw(variant_tree_error)
 {
-    /// Example: m_root      = a.b.c
-    ///          a_root_path = a.b.c.d.e
-    ///          Return     -> d.e
+    /// Example: m_root = a.b.c
+    ///          a_path = a.b.c.d.e
+    ///          Return ->      d.e
 
-    char sep = a_root_path.separator();
-    std::string s(a_root_path.dump());
-    std::string r(m_root.dump());
+    /// Example: m_root = a.b
+    ///          a_root = a.b.c
+    ///          a_path = a.b.c.d.e
+    ///          Return ->      d.e
 
-    if (s.size() < r.size())
-        throw variant_tree_error(a_root_path, "Path is shorter than root!");
+    char sep = a_path.separator();
+    std::string s(a_path.dump());
+    std::string r(a_root.empty() ? m_root.dump() : a_root.dump());
     if (r.empty())
-        return a_root_path;
-    if (s.substr(0, r.size()) != r || (s.size() > r.size() && s[r.size()] != sep))
-        throw variant_tree_error(a_root_path, "Sub-path not found in root path");
+        return a_path;
+    if (s.substr(0, r.size()) == r) {
+        size_t n = r.size() + (s[r.size()] == sep ? 1 : 0);
+        return s.erase(0, n);
+    }
+    if (s.size() < r.size() && r.substr(0, s.size()) == s)
+        throw variant_tree_error(a_path, "Path is shorter than root!");
 
-    return s.erase(0, s.size() > r.size() ? r.size()+1 : r.size());
+    return a_path;
 }
 
 const option* validator::
@@ -181,9 +187,7 @@ const option* validator::find
     const throw ()
 {
     try {
-        tree_path p = a_root_path.empty()
-            ? strip_root(a_path)
-            : (strip_root(a_root_path) / a_path.dump());
+        tree_path p = strip_root(a_path, a_root_path);
         return find(p, m_options);
     } catch (variant_tree_error&) {
         return NULL;
@@ -192,11 +196,12 @@ const option* validator::find
 
 const option& validator::get(const tree_path& a_path, const tree_path& a_root) const
 {
-    tree_path p(a_root.empty() ? strip_root(a_path) : (strip_root(a_root) / a_path.dump()));
+    tree_path p(strip_root(a_path, a_root));
     const option* o = find(p, m_options);
     if (o) return *o;
     tree_path ep(p.dump());
-    throw variant_tree_error(m_root / ep, "Configuration option not found!");
+    throw variant_tree_error(
+        (a_root.empty() ? m_root : a_root) / ep, "Configuration option not found!");
 }
 
 const variant_tree_base& validator::def
