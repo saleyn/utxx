@@ -114,13 +114,16 @@ namespace utxx {
         time_val(time_val&& a) : m_tv(std::move(a.m_tv)) {}
         #endif
 
-        const struct timeval&   timeval() const { return m_tv; }
-        struct timeval&         timeval()       { return m_tv; }
-        long                    sec()     const { return m_tv.tv_sec;  }
-        long                    usec()    const { return m_tv.tv_usec; }
-        time_t&                 sec()           { return m_tv.tv_sec;  }
-        suseconds_t&            usec()          { return m_tv.tv_usec; }
-        time_t                  msec()    const { return m_tv.tv_usec / 1000; }
+        const struct timeval&   timeval()  const { return m_tv; }
+        struct timeval&         timeval()        { return m_tv; }
+        struct timespec         timespec() const { struct timespec ts = {sec(),nanosec()};
+                                                   return ts; }
+        long                    sec()      const { return m_tv.tv_sec;  }
+        long                    usec()     const { return m_tv.tv_usec; }
+        time_t&                 sec()            { return m_tv.tv_sec;  }
+        suseconds_t&            usec()           { return m_tv.tv_usec; }
+        time_t                  msec()     const { return m_tv.tv_usec / 1000; }
+        long                    nanosec()  const { return m_tv.tv_usec * 1000; }
 
         uint64_t microseconds() const {
             return (uint64_t)m_tv.tv_sec*N10e6 + (uint64_t)m_tv.tv_usec;

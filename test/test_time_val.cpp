@@ -60,9 +60,14 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     BOOST_REQUIRE_EQUAL(2,          rel.sec());
     BOOST_REQUIRE_EQUAL(4003,       rel.usec());
     BOOST_REQUIRE_EQUAL(4,          rel.msec());
+    BOOST_REQUIRE_EQUAL(4003000,    rel.nanosec());
     BOOST_REQUIRE_EQUAL(2004,       rel.milliseconds());
     BOOST_REQUIRE_EQUAL(2004003u,   rel.microseconds());
     BOOST_REQUIRE_EQUAL(2.004003,   rel.seconds());
+
+    struct timespec ts = rel.timespec();
+    BOOST_REQUIRE_EQUAL(2,          ts.tv_sec);
+    BOOST_REQUIRE_EQUAL(4003000,    ts.tv_nsec);
 
     time_val add = now + rel;
 
