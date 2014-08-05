@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdint.h>
 #include <ctime>
 #include <sys/time.h>
+#include <math.h>
 
 namespace utxx {
     class time_val;
@@ -90,6 +91,9 @@ namespace utxx {
     public:
         time_val()                   { m_tv.tv_sec=0; m_tv.tv_usec=0; }
         time_val(long _s, long _us)  { m_tv.tv_sec=_s; m_tv.tv_usec=_us; normalize(); }
+        time_val(double  _interval)  { long n = long(round(_interval*1e6));
+                                       m_tv.tv_sec = n / N10e6; m_tv.tv_usec = n - m_tv.tv_sec*N10e6;
+                                       normalize(); }
         time_val(const time_val& tv, long _s, long _us=0) {
             set(tv, _s, _us);
         }

@@ -84,6 +84,17 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_MESSAGE("Local time: " << loc.sec());
         BOOST_REQUIRE_NE(gmt.sec() - loc.sec(), tm.tm_gmtoff);
     }
+
+    {
+        time_val t(10.123);
+        BOOST_CHECK_EQUAL(10,     t.sec());
+        BOOST_CHECK_EQUAL(123000, t.usec());
+    }
+    {
+        time_val t(0.999999);
+        BOOST_CHECK_EQUAL(0,      t.sec());
+        BOOST_CHECK_EQUAL(999999, t.usec());
+    }
 }
 
 
