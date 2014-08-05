@@ -52,4 +52,7 @@ BOOST_AUTO_TEST_CASE( test_error )
     { auto e = utxx::io_error(0, "a");                 BOOST_REQUIRE_EQUAL("a: Success",     e.str()); }
     { auto e = utxx::io_error(0, "a") << ". b";        BOOST_REQUIRE_EQUAL("a: Success. b",  e.str()); }
     { auto e = utxx::io_error(0, "a") << ". b" << "c"; BOOST_REQUIRE_EQUAL("a: Success. bc", e.str()); }
+
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    BOOST_REQUIRE_EQUAL("test: Success", utxx::sock_error(fd, "test").str());
 }

@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <iostream>
 #include <utxx/string.hpp>
 #include <boost/shared_ptr.hpp>
+#include <sys/socket.h>
 
 namespace utxx {
 
@@ -303,6 +304,50 @@ public:
     }
 };
 
+#if __cplusplus >= 201103L
+
+/**
+ * \brief Exception class for socket-related errors.
+ */
+class sock_error : public runtime_error {
+    std::string get_error(int a_fd) {
+        int ec;
+        socklen_t errlen = sizeof(ec);
+
+        if (getsockopt(a_fd, SOL_SOCKET, SO_ERROR, (void *)&ec, &errlen) < 0)
+            ec = errno;
+        
+        return errno_string(ec);
+    }
+public:
+    sock_error(int a_fd) : runtime_error(get_error(a_fd))
+    {}
+
+    sock_error(int a_fd, const char* a_prefix) {
+        *this << a_prefix << ": " << get_error(a_fd);
+    }
+
+    sock_error(int a_fd, const std::string& a_prefix) {
+        *this << a_prefix << ": " << get_error(a_fd);
+    }
+
+    template <class T, class... Args>
+    sock_error(int a_fd, T&& a_prefix, Args&&... args) {
+        *this << std::forward<T>(a_prefix);
+        output(std::forward<Args>(args)...) << ": " << get_error(a_fd);
+    }
+
+    virtual ~sock_error() throw() {}
+
+    /// This streaming operator allows throwing exceptions in the form:
+    /// <tt>throw sock_error("Test") << ' ' << 10 << " failed";
+    template <class T>
+    sock_error& operator<< (T a) {
+        *static_cast<detail::streamed_exception*>(this) << a; return *this;
+    }
+};
+
+#endif
 
 typedef runtime_error gen_error;         ///< General error
 typedef runtime_error sys_error;         ///< System error
