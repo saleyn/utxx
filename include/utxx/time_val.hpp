@@ -88,16 +88,21 @@ namespace utxx {
             m_tv.tv_sec  = n;
             m_tv.tv_usec = val - n*divisor;
         }
+
+        void setd(double interval) {
+            long n = long(round(interval*1e6));
+            m_tv.tv_sec = n / N10e6; m_tv.tv_usec = n - m_tv.tv_sec*N10e6;
+        }
+
     public:
         time_val()                   { m_tv.tv_sec=0; m_tv.tv_usec=0; }
         time_val(long _s, long _us)  { m_tv.tv_sec=_s; m_tv.tv_usec=_us; normalize(); }
-        time_val(double  _interval)  { long n = long(round(_interval*1e6));
-                                       m_tv.tv_sec = n / N10e6; m_tv.tv_usec = n - m_tv.tv_sec*N10e6;
-                                       normalize(); }
-        time_val(const time_val& tv, long _s, long _us=0) {
-            set(tv, _s, _us);
-        }
+        time_val(const time_val& tv, long _s, long _us=0) { set(tv, _s,  _us); }
+        time_val(const time_val& tv, double interval)     { set(tv, interval); }
         time_val(const time_val& a) : m_tv(a.m_tv) {}
+
+        explicit time_val(double interval)  { setd(interval); normalize(); }
+
         explicit time_val(const struct timeval& a) {
             m_tv.tv_sec=a.tv_sec; m_tv.tv_usec=a.tv_usec; normalize();
         }
@@ -153,6 +158,10 @@ namespace utxx {
         void set(const struct timeval& tv, long _s=0, long _us=0) {
             m_tv.tv_sec = tv.tv_sec + _s; m_tv.tv_usec = tv.tv_usec + _us; normalize();
         }
+        void set(const time_val& tv, double interval) {
+            setd(interval); m_tv.tv_sec += tv.sec(); m_tv.tv_usec += tv.usec();
+            normalize();
+        }
 
         void copy_to(struct timeval& tv) const {
             tv.tv_sec = m_tv.tv_sec; tv.tv_usec = m_tv.tv_usec;
@@ -179,6 +188,12 @@ namespace utxx {
         void add(long _sec, long _us) {
             m_tv.tv_sec += _sec; m_tv.tv_usec += _us;
             if (_sec || _us) normalize();
+        }
+
+        void add(double interval) {
+            long n = long(round(interval*1e6));
+            long s = n / N10e6, u = n - s*N10e6;
+            add(s, u);
         }
 
         void now() { ::gettimeofday(&m_tv, 0); }
@@ -261,6 +276,10 @@ namespace utxx {
         time_val operator+ (const time_val& tv) const {
             return time_val(m_tv.tv_sec + tv.sec(), m_tv.tv_usec + tv.usec());
         }
+
+        time_val operator- (double interval) const { return operator-(time_val(interval)); }
+        time_val operator+ (double interval) const { return operator+(time_val(interval)); }
+
         time_val operator- (const struct timeval& tv) const {
             return time_val(m_tv.tv_sec - tv.tv_sec, m_tv.tv_usec - tv.tv_usec);
         }
@@ -277,6 +296,7 @@ namespace utxx {
         void operator+= (const time_val& tv) {
             m_tv.tv_sec += tv.sec(); m_tv.tv_usec += tv.usec(); normalize();
         }
+        void operator+= (double  _interval) { add(_interval); }
         void operator+= (int32_t _sec)      { m_tv.tv_sec += _sec; }
         void operator+= (int64_t _microsec) {
             int64_t n = _microsec / N10e6;
