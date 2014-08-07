@@ -56,6 +56,7 @@ TEST_UTXX_SRCS = \
 	test_throttler.cpp \
 	test_time_val.cpp \
 	test_timestamp.cpp \
+    test_type_traits.cpp \
 	test_url.cpp \
 	test_utxx.cpp \
 	test_variant.cpp \
