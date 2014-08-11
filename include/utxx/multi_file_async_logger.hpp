@@ -60,6 +60,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/types.h>
 #include <sys/uio.h>
 #include <fcntl.h>
+#include <sched.h>
 
 namespace utxx {
 
@@ -150,7 +151,7 @@ private:
 
     std::mutex                                      m_mutex;
     std::condition_variable                         m_cond_var;
-    std::atomic<std::thread*>                       m_thread;
+    std::shared_ptr<std::thread>                    m_thread;
     cmd_allocator                                   m_cmd_allocator;
     msg_allocator                                   m_msg_allocator;
     std::atomic<command_t*>                         m_head;
@@ -248,7 +249,7 @@ public:
     void stop();
 
     /// Returns true if the async logger's thread is running
-    bool running() { return !m_cancel && m_thread.load(std::memory_order_relaxed); }
+    bool running() { return m_thread.get(); }
 
     /// Start a new log file
     /// @param a_filename is the name of the output file
@@ -485,7 +486,7 @@ public:
 
     static iovec def_on_format(const std::string& a_category, iovec& a_msg) { return a_msg; }
 
-    void reset();
+    void reset(int a_errno = 0);
 
     stream_info* reset(const std::string& a_name, msg_writer a_writer,
                        stream_state_base* a_state, int a_fd);
@@ -552,25 +553,21 @@ stream_info::stream_info(
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
-stream_info::reset() {
-    if (fd < 0) return;
-    int lfd = fd;
-    fd      = -1;
-    error   = 0;
-    state   = NULL;
-    error_msg.clear();
-    ASYNC_TRACE(("Resetting stream %p (fd=%d)\n", this, lfd));
-    if (m_logger) {
-        if (!pending_queue_empty()) {
-            for (command_t* p = m_pending_writes_head, *next; p; p = next) {
-                next = p->next;
-                m_logger->deallocate_command(p);
-            }
-            m_pending_writes_head = m_pending_writes_tail = NULL;
-        }
-        m_logger->internal_close(this, 0);
-        if (m_logger->check_range(lfd))
-            m_logger->m_files[lfd] = NULL;
+stream_info::reset(int a_errno) {
+    ASYNC_TRACE(("Resetting stream %p (fd=%d)\n", this, fd));
+    state = NULL;
+
+    if (a_errno >= 0)
+        set_error(a_errno, NULL);
+
+    if (fd != -1) {
+        (void)::close(fd);
+        fd = -1;
+    }
+
+    if (on_close) {
+        on_close->signal();
+        on_close.reset();
     }
 }
 
@@ -580,25 +577,19 @@ basic_multi_file_async_logger<traits>::
 stream_info::reset(const std::string& a_name, msg_writer a_writer,
                    stream_state_base* a_state, int a_fd)
 {
-    name    = a_name;
-    fd      = a_fd;
-    error   = 0;
-    state   = a_state;
-    on_write= a_writer;
+    name     = a_name;
+    fd       = a_fd;
+    error    = 0;
+    state    = a_state;
+    on_write = a_writer;
     return this;
 }
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 stream_info::set_error(int a_errno, const char* a_err) {
-    if (a_err)
-        error_msg = a_err;
-    else {
-        char buf[128];
-        strerror_r(a_errno, buf, sizeof(buf));
-        error_msg = buf;
-    }
-    error = a_errno;
+    error_msg = a_err ? a_err : (a_errno ? errno_string(a_errno) : std::string());
+    error     = a_errno;
 }
 
 template<typename traits>
@@ -641,6 +632,8 @@ stream_info::push(const command_t*& a_cmd) {
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 stream_info::erase(command_t* item) {
+    if (m_pending_writes_head == item) m_pending_writes_head = item->next;
+    if (m_pending_writes_tail == item) m_pending_writes_tail = item->prev;
     if (item->prev) item->prev->next = item->next;
     if (item->next) item->next->prev = item->prev;
     m_logger->deallocate_command(item);
@@ -651,7 +644,7 @@ stream_info::erase(command_t* item) {
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 stream_info::erase(command_t* first, const command_t* end) {
-    ASYNC_TRACE(("xxx stream %p purging items [%p .. %p) from queue\n",
+    ASYNC_TRACE(("xxx stream_info(%p)::erase: purging items [%p .. %p) from queue\n",
                  this, first, end));
     for (command_t* p = first, *next; p != end; p = next) {
         next = p->next;
@@ -668,11 +661,14 @@ template<typename traits>
 basic_multi_file_async_logger<traits>::
 basic_multi_file_async_logger(
     size_t a_max_files, int a_reconnect_msec, const msg_allocator& alloc)
-    : m_msg_allocator(alloc), m_head(nullptr), m_cancel(false)
+    : m_thread(nullptr)
+    , m_msg_allocator(alloc)
+    , m_head(nullptr)
+    , m_cancel(false)
     , m_max_queue_size(0)
     , m_event(0)
     , m_active_count(0)
-    , m_files(a_max_files, NULL)
+    , m_files(a_max_files, nullptr)
     , m_last_version(0)
     , m_reconnect_sec((double)a_reconnect_msec / 1000)
 {}
@@ -689,18 +685,15 @@ int basic_multi_file_async_logger<traits>::
 start() {
     std::unique_lock<std::mutex> lock(m_mutex);
 
-    if (m_thread.load())
+    if (running())
         return -1;
 
     m_event.reset();
-
-    m_head.store(NULL);
     m_cancel = false;
 
-    m_thread.store(
+    m_thread.reset(
         new std::thread(
-            std::bind(&basic_multi_file_async_logger<traits>::run, this)),
-        std::memory_order_release
+            std::bind(&basic_multi_file_async_logger<traits>::run, this))
     );
 
     m_cond_var.wait(lock);
@@ -714,12 +707,14 @@ stop() {
     if (!running())
         return;
 
-    ASYNC_TRACE(("Stopping async logger (head %p)\n", m_head.load()));
+    ASYNC_TRACE((">>> Stopping async logger (head %p)\n", m_head.load()));
 
-    std::thread* t = m_thread.load(std::memory_order_acquire);
+    std::shared_ptr<std::thread> t = m_thread;
     if (t) {
         m_cancel = true;
         m_event.signal();
+
+        t->join();
     }
 }
 
@@ -753,9 +748,9 @@ run() {
 
     ASYNC_TRACE(("Logger loop finished - calling close()\n"));
     internal_close();
-    ASYNC_TRACE(("Logger notifying all of exiting\n"));
+    ASYNC_TRACE(("Logger notifying all of exiting (%d)\n", m_thread.use_count()));
 
-    m_thread.store(nullptr, std::memory_order_release);
+    m_thread.reset();
 }
 
 template<typename traits>
@@ -774,26 +769,30 @@ internal_close(stream_info* a_si, int a_errno) {
     if (!a_si || a_si->fd < 0)
         return;
 
-    ::close(a_si->fd);
-    if (a_errno)
-        a_si->set_error(a_errno);
+    int fd = a_si->fd;
 
-    m_active_count.fetch_sub(1, std::memory_order_relaxed);
+    assert(fd > 0);
+
+    if (!a_si->pending_queue_empty()) {
+        for (command_t* p = a_si->m_pending_writes_head, *next; p; p = next) {
+            next = p->next;
+            deallocate_command(p);
+        }
+        a_si->m_pending_writes_head = a_si->m_pending_writes_tail = NULL;
+    }
+
     close_event_type_ptr on_close = a_si->on_close;
     ASYNC_TRACE(("----> close(%p, %d) (fd=%d) %s event_val=%d, "
                  "use_count=%ld, active=%ld\n",
-            a_si, a_si->error, a_si->fd,
+            a_si, a_si->error, fd,
             on_close ? "notifying caller" : "will NOT notify caller",
             on_close ? on_close->value() : 0,
             on_close.use_count(), m_active_count.load()));
-    if (on_close) {
-        on_close->signal();
-        a_si->on_close.reset();
-    }
 
-    m_files[a_si->fd] = NULL;
-    a_si->fd = -1;
-    a_si->name.clear();
+    a_si->reset(a_errno);
+    m_files[fd] = NULL;
+
+    m_active_count.fetch_sub(1, std::memory_order_relaxed);
 }
 
 template<typename traits>
@@ -887,6 +886,8 @@ internal_update_stream(stream_info* a_si, int a_fd) {
     if (!check_range(a_fd))
         return false;
 
+    assert(a_fd > 0);
+
     std::unique_lock<std::mutex> lock(m_mutex);
 
     a_si->fd = a_fd;
@@ -915,8 +916,9 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
 
     stream_info* si = a_id.stream();
 
-    if (!m_thread.load(std::memory_order_relaxed)) {
+    if (!m_thread) {
         si->reset();
+        a_id.reset();
         return 0;
     }
 
@@ -933,7 +935,7 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
     if (!n && ev) {
         ASYNC_TRACE(("----> close_file(%d) is waiting for ack secs=%d (event_val={%ld,%d})\n",
                      fd, a_wait_secs, event_val, ev->value()));
-        if (m_thread.load(std::memory_order_relaxed)) {
+        if (m_thread) {
             if (a_wait_secs < 0)
                 n = ev->wait(&event_val);
             else {
@@ -1043,8 +1045,8 @@ deallocate_command(command_t* a_cmd) {
         default:
             break;
     }
-    ASYNC_TRACE(("FD=%d, deallocating command (type=%s) %p\n",
-                a_cmd->fd(), a_cmd->type_str(), a_cmd));
+    ASYNC_TRACE(("FD=%d, deallocating command %p (type=%s)\n",
+                a_cmd->fd(), a_cmd, a_cmd->type_str()));
     a_cmd->~command_t();
     m_cmd_allocator.deallocate(a_cmd, 1);
 }
@@ -1057,7 +1059,7 @@ commit(const struct timespec* tsp)
 
     int event_val = m_event.value();
 
-    while (!m_head.load(std::memory_order_relaxed)) {
+    while (!m_cancel && !m_head.load(std::memory_order_relaxed)) {
         #ifdef DEBUG_ASYNC_LOGGER
         int n =
         #endif
@@ -1065,10 +1067,11 @@ commit(const struct timespec* tsp)
 
         ASYNC_TRACE(("    COMMIT awakened (res=%d, val=%d, futex=%d), cancel=%d, head=%p\n",
                      n, event_val, m_event.value(), m_cancel, m_head.load()));
-
-        if (m_cancel && !m_head.load(std::memory_order_relaxed))
-            return 0;
+        event_val = m_event.reset(-1);
     }
+
+    if (m_cancel && !m_head.load(std::memory_order_relaxed))
+        return 0;
 
     command_t* cur_head;
 
@@ -1211,19 +1214,20 @@ commit(const struct timespec* tsp)
         }
 
         // Close associated file descriptor
-        if (si->error || status != SI_OK)
+        if (si->error || status != SI_OK) {
+            bool destroy_si = (status & SI_DESTROY);
+
+            if (destroy_si || si->fd < 0) {
+                ASYNC_TRACE(("Removing %p stream from list of pending data streams\n", si));
+                m_pending_data_streams.erase(si);
+            }
+
             internal_close(si, si->error);
 
-        bool destroy_si = (status & SI_DESTROY) == SI_DESTROY;
-
-        if (destroy_si || si->pending_queue_empty()) {
-            ASYNC_TRACE(("Removing %p stream from list of pending data streams\n", si));
-            m_pending_data_streams.erase(si);
-        }
-
-        if (destroy_si) {
-            ASYNC_TRACE(("<<< Destroying %p stream\n", si));
-            delete si;
+            if (destroy_si) {
+                ASYNC_TRACE(("<<< Destroying %p stream\n", si));
+                delete si;
+            }
         }
     }
     return count;

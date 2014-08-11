@@ -156,8 +156,8 @@ public:
     futex(int initialize = 1);
 
     /// This is mainly for debugging
-    int  value() const { return m_count; }
-    int  reset()       { commit(1); return 1; }
+    int  value()               const { return m_count; }
+    int  reset(int a_init = 1)       { commit(a_init); return m_count; }
 
     #ifdef PERF_STATS
     unsigned int wake_count()      const { return m_wake_count; }
@@ -202,6 +202,7 @@ public:
     /// @param <old_val> - pointer to the old <value()> of futex
     ///         known just before calling <wait()> function.
     /// @return 0           - woken up or value changed before sleep
+    ///         2           - if value changed before futex_wait call
     ///         -1          - timeout or some other error occured
     ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
     ///                                  being returned)
@@ -213,6 +214,7 @@ public:
     /// @param <old_val> - pointer to the old <value()> of futex
     ///         known just before calling <wait()> function.
     /// @return 0           - woken up or value changed before sleep
+    ///         2           - if value changed before futex_wait call
     ///         -1          - timeout or some other error occured
     ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
     ///                                  being returned)

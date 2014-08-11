@@ -130,41 +130,44 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
 
     ::unlink(s_filename[0]);
 
-    logger_t l_logger;
+    {
+        logger_t l_logger;
 
-    logger_t::file_id l_fd;
-    BOOST_REQUIRE(!l_fd);
-    int ec = l_logger.close_file(l_fd);
-    BOOST_REQUIRE_EQUAL(0, ec);
+        logger_t::file_id l_fd;
+        BOOST_REQUIRE(!l_fd);
+        int ec = l_logger.close_file(l_fd);
+        BOOST_REQUIRE_EQUAL(0, ec);
 
-    l_fd = l_logger.open_file(s_filename[0], false);
-    BOOST_REQUIRE(l_fd.fd() >= 0);
-    BOOST_REQUIRE(l_fd);
+        l_fd = l_logger.open_file(s_filename[0], false);
+        BOOST_REQUIRE(l_fd.fd() >= 0);
+        BOOST_REQUIRE(l_fd);
 
-    int ok = l_logger.start();
+        int ok = l_logger.start();
 
-    BOOST_REQUIRE_EQUAL(0, ok);
+        BOOST_REQUIRE_EQUAL(0, ok);
 
-    for (int i = 0; i < ITERATIONS; i++) {
-        char buf[128];
-        int n = snprintf(buf, sizeof(buf), s_str1, i);
-        char* p = l_logger.allocate(n);
-        strncpy(p, buf, n);
-        n = l_logger.write(l_fd, std::string(), p, n);
-        BOOST_REQUIRE_EQUAL(0, n);
+        for (int i = 0; i < ITERATIONS; i++) {
+            char buf[128];
+            int n = snprintf(buf, sizeof(buf), s_str1, i);
+            char* p = l_logger.allocate(n);
+            strncpy(p, buf, n);
+            n = l_logger.write(l_fd, std::string(), p, n);
+            BOOST_REQUIRE_EQUAL(0, n);
+        }
+
+        ec = l_logger.last_error(l_fd);
+        BOOST_REQUIRE_EQUAL(0, ec);
+
+        l_logger.close_file(l_fd, false);
+
+        ec = l_logger.open_files_count();
+        BOOST_REQUIRE_EQUAL(0,  ec);
+        ec = l_logger.last_error(l_fd);
+        BOOST_REQUIRE_EQUAL(-1, ec);
+
+        l_logger.stop();
     }
 
-    ec = l_logger.last_error(l_fd);
-    BOOST_REQUIRE_EQUAL(0, ec);
-
-    l_logger.close_file(l_fd, false);
-
-    ec = l_logger.open_files_count();
-    BOOST_REQUIRE_EQUAL(0,  ec);
-    ec = l_logger.last_error(l_fd);
-    BOOST_REQUIRE_EQUAL(-1, ec);
-
-    l_logger.stop();
     ::unlink(s_filename[0]);
 }
 
