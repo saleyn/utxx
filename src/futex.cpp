@@ -124,10 +124,6 @@ wakeup_result futex::wait(const struct timespec *timeout, int* old_val) {
         goto wait_done;
     }
 
-    #ifdef PERF_STATS
-    ++m_wait_fast_count;
-    #endif
-
 wait_done:
     if (old_val)
         *old_val = val;
