@@ -96,10 +96,12 @@ namespace utxx {
         static const size_t s_bits_per_c = 6;
         static const size_t s_len_bits   = 4;
         static const size_t s_len_shift  = sizeof(uint64_t)*8 - s_len_bits;
+        static const size_t s_max_size   = s_len_shift / s_bits_per_c;
         static const size_t s_len_mask   = ~0llu << s_len_shift;
         static const size_t s_val_mask   = ~s_len_mask;
         static const size_t s_char_mask  = (1 << s_bits_per_c) - 1;
-        BOOST_STATIC_ASSERT(s_size < 11);
+        BOOST_STATIC_ASSERT(s_size <= s_max_size);
+        BOOST_STATIC_ASSERT(s_size <  11);
         BOOST_STATIC_ASSERT(sizeof(s_fwd_name_lookup_table) == 256);
         BOOST_STATIC_ASSERT(sizeof(s_rev_name_lookup_table) == 256);
         BOOST_STATIC_ASSERT(s_len_mask == 0xF000000000000000);
@@ -119,7 +121,7 @@ namespace utxx {
 
         inline char* right_pad(char ch, char* begin, char* end) const {
             if (begin == end) return begin;
-            if (!ch) { end = begin + 1; return begin; }
+            if (!ch) { return begin; }
             while (begin < end)
                 *begin++ = ch;
             return begin;
@@ -134,6 +136,12 @@ namespace utxx {
                     -rc, " in '",
                     std::string(a_buf, a_size && !*(a_buf+a_size-1) ? a_size-1 : a_size),
                     "'");
+        }
+
+        uint64_t masked_value(size_t len) const {
+            int n = (s_bits_per_c * (s_max_size - len));
+            uint64_t v = (m_value & s_val_mask) >> n;
+            return v;
         }
 
         bool valid_char(char ch) { return s_fwd_name_lookup_table[static_cast<int>(ch)]; }
@@ -166,7 +174,7 @@ namespace utxx {
         /// @param a_no_case if true perform upper case conversion.
         /// @return 0 on success.
         ///        -N on failure indicating position of the invalid character.
-        int set(const char* a_buf, size_t a_size, bool a_no_case = false) {
+        int set(const char* a_buf, size_t a_size, bool a_no_case = false, char pad = '\0') {
             size_t sz = std::min(Size, a_size);
             const char* p = a_buf, *e = a_buf+sz;
             int rc = 0;
@@ -230,11 +238,10 @@ namespace utxx {
         operator uint64_t() const { return m_value; }
         uint64_t to_int()   const { return m_value; }
 
-        /*
-        bool operator==(const basic_name<Size>& a_rhs) const {
-            return m_value == a_rhs.m_value;
+        bool operator==(const self_type& a_rhs) const {
+            size_t l1 = length(), l2 = a_rhs.length();
+            return l1 == l2 && masked_value(l1) == a_rhs.masked_value(l2);
         }
-        */
         bool operator< (const self_type& a_rhs) const {
             return (m_value & s_val_mask) < (a_rhs.m_value & s_val_mask);
         }
@@ -270,6 +277,11 @@ namespace utxx {
     template <size_t Size>
     static inline std::size_t hash_value(basic_short_name<Size> v) {
         return boost::hash_value(v.to_int());
+    }
+
+    template <size_t Size>
+    static inline bool equal_to(basic_short_name<Size> a_lhs, basic_short_name<Size> a_rhs) {
+        return a_lhs.operator==(a_rhs);
     }
 
 } // namespace utxx

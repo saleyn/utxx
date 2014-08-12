@@ -45,6 +45,19 @@ BOOST_AUTO_TEST_CASE( test_name )
         BOOST_REQUIRE_EQUAL(expect, result);
     }
     {
+        name_t s1("ABC");
+        name_t s2("ABC");
+        BOOST_CHECK_EQUAL(s1, s2);
+        BOOST_CHECK(s1 == s2);
+    }
+    {
+        name_t s1("ABCD.EFGH1");
+        name_t s2("ABCD.EFGH1");
+        BOOST_CHECK_EQUAL(s1, s2);
+        BOOST_CHECK(s1 == s2);
+        BOOST_CHECK(s1 != name_t("ABCD0EFGH1"));
+    }
+    {
         char expect[] = "ABC_EF";
         name_t s("aBc_Ef", 7, true);
         const std::string& result = s.to_string();
