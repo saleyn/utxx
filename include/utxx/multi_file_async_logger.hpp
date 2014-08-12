@@ -159,7 +159,7 @@ private:
     cmd_allocator                                   m_cmd_allocator;
     msg_allocator                                   m_msg_allocator;
     std::atomic<command_t*>                         m_head;
-    bool                                            m_cancel;
+    volatile bool                                   m_cancel;
     int                                             m_max_queue_size;
     std::atomic<long>                               m_total_msgs_processed;
     event_type                                      m_event;
@@ -357,7 +357,8 @@ public:
     const int   max_queue_size()        const { return m_max_queue_size; }
     const long  total_msgs_processed()  const { return m_total_msgs_processed
                                                 .load(std::memory_order_relaxed); }
-    const int   open_files_count()      const { return m_active_count; }
+    const int   open_files_count()      const { return m_active_count
+                                                .load(std::memory_order_relaxed); }
 
     const event_type& event()           const { return m_event; }
 
@@ -744,7 +745,7 @@ run() {
 
     m_total_msgs_processed = 0;
 
-    while (1) {
+    while (true) {
         #if defined(DEBUG_ASYNC_LOGGER) && DEBUG_ASYNC_LOGGER != 2
         int rc =
         #endif
@@ -753,13 +754,22 @@ run() {
         ASYNC_TRACE(( "Async thread commit result: %d (head: %p, cancel=%s)\n",
             rc, m_head.load(), m_cancel ? "true" : "false" ));
 
-        if (!m_head.load(std::memory_order_relaxed) && m_cancel)
-            break;
+        // CPU-friendly spin for 250us
+        time_val deadline(rel_time(0, 250));
+        while (!m_head.load(std::memory_order_relaxed)) {
+            if (m_cancel)
+                goto DONE;
+            if (now_utc() > deadline)
+                break;
+            sched_yield();
+        }
     }
 
+DONE:
     ASYNC_TRACE(("Logger loop finished - calling close()\n"));
     internal_close();
-    ASYNC_TRACE(("Logger notifying all of exiting (%d)\n", m_thread.use_count()));
+    ASYNC_DEBUG_TRACE(("Logger notifying all of exiting (%d) active_files=%d\n",
+                       m_thread.use_count(), open_files_count()));
 
     m_thread.reset();
 }
@@ -800,10 +810,11 @@ internal_close(stream_info* a_si, int a_errno) {
             on_close ? on_close->value() : 0,
             on_close.use_count(), m_active_count.load()));
 
+    // Have to decrement it before resetting the si on the next line
+    m_active_count.fetch_sub(1, std::memory_order_relaxed);
+
     a_si->reset(a_errno);
     m_files[fd] = NULL;
-
-    m_active_count.fetch_sub(1, std::memory_order_relaxed);
 }
 
 template<typename traits>
@@ -979,7 +990,8 @@ internal_enqueue(command_t* a_cmd) {
     } while(!m_head.compare_exchange_weak(old_head, a_cmd,
                 std::memory_order_release, std::memory_order_relaxed));
 
-    m_event.signal();
+    if (!old_head)
+        m_event.signal();
 
     ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%s) - "
                  "cur head: %p, prev head: %p%s\n",

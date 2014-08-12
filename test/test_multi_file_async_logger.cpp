@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         BOOST_REQUIRE(l_fds[i].fd() < 0);
     }
 
-    BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
+    BOOST_CHECK_EQUAL(0,  l_logger.open_files_count());
 
     std::stringstream s;
     perf.dump(s);
