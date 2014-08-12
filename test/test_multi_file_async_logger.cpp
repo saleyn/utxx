@@ -84,6 +84,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
     for (size_t i = 0; i < s_file_num; i++) {
         l_fds[i] = l_logger.open_file(s_filename[i], false);
         BOOST_REQUIRE(l_fds[i].fd() >= 0);
+        //l_logger.set_batch_size(l_fds[i], 100);
     }
 
     int ok = l_logger.start();
@@ -105,7 +106,22 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         int m = l_logger.write(l_fds[1], std::string(), q, sizeof(s_str3));
         perf.stop();
         BOOST_REQUIRE_EQUAL(0, m);
+        if (i == ITERATIONS-1 || (i % (ITERATIONS/10)) == 0) {
+            std::stringstream s;
+            s << "Wrote " << (i+1) << " records (processed="
+              << l_logger.total_msgs_processed() << ")";
+            BOOST_MESSAGE(s.str());
+        }
     }
+
+#ifdef PERF_STATS
+    std::cout << "Futex wake          count = " << l_logger.event().wake_count()          << std::endl;
+    std::cout << "Futex wake_signaled count = " << l_logger.event().wake_signaled_count() << std::endl;
+    std::cout << "Futex wait          count = " << l_logger.event().wait_count()          << std::endl;
+    std::cout << "Futex wake_fast     count = " << l_logger.event().wake_fast_count()     << std::endl;
+    std::cout << "Futex wait_fast     count = " << l_logger.event().wait_fast_count()     << std::endl;
+    std::cout << "Futex wait_spin     count = " << l_logger.event().wait_spin_count()     << std::endl;
+#endif
 
     for (size_t i = 0; i < s_file_num; i++) {
         l_logger.close_file(l_fds[i], false);
@@ -114,10 +130,10 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 
     BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
 
-    if (verbosity::level() != VERBOSE_NONE) {
-        perf.dump(std::cout);
-        printf("Max queue size = %d\n", l_logger.max_queue_size());
-    }
+    std::stringstream s;
+    perf.dump(s);
+    s << "Max queue size = " << l_logger.max_queue_size();
+    BOOST_MESSAGE(s.str());
 
     l_logger.stop();
     unlink();

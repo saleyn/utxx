@@ -174,7 +174,7 @@ public:
 /// queue is full/empty.
 /// Implementation can be bound or unbound depending on the chosen allocator.
 //-----------------------------------------------------------------------------
-template <typename T, typename AllocT, bool IsBound, typename EventT = synch::futex>
+template <typename T, typename AllocT, bool IsBound, typename EventT = futex>
 class blocking_lock_free_queue {
     AllocT&                     m_allocator;
     lock_free_queue<T, AllocT>  m_queue;
@@ -212,10 +212,10 @@ public:
             m_not_empty_condition.signal();
             return 0;
         }
-        int res = m_not_full_condition.wait(timeout, &sync_val);
-        if (res < 0 || m_terminated) {
+        wakeup_result res = m_not_full_condition.wait(timeout, &sync_val);
+        if ((res != wakeup_result::SIGNALED && res != wakeup_result::CHANGED) || m_terminated) {
             m_not_empty_condition.signal();
-            return res;
+            return -1;
         }
         if (try_enqueue(item)) {
             m_not_empty_condition.signal();
@@ -233,11 +233,11 @@ public:
                 m_not_full_condition.signal();
             return 0;
         }
-        int res = m_not_empty_condition.wait(timeout, &sync_val);
-        if (res < 0 || m_terminated) {
+        wakeup_result res = m_not_empty_condition.wait(timeout, &sync_val);
+        if ((res != wakeup_result::SIGNALED && res != wakeup_result::CHANGED) || m_terminated) {
             if (IsBound)
                 m_not_full_condition.signal();
-            return res;
+            return -1;
         }
         if (try_dequeue(item)) {
             if (IsBound)

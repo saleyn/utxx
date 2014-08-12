@@ -22,12 +22,13 @@ TEST_UTXX_SRCS = \
 	test_collections.cpp \
 	test_concurrent_stack.cpp \
 	test_concurrent_update.cpp \
-    test_concurrent_spsc_queue.cpp \
-    test_concurrent_mpsc_queue.cpp \
+	test_concurrent_spsc_queue.cpp \
+	test_concurrent_mpsc_queue.cpp \
 	test_config_validator.cpp \
 	test_convert.cpp \
 	test_error.cpp \
 	test_file_reader.cpp \
+	test_futex.cpp \
 	test_hashmap.cpp \
 	test_high_res_timer.cpp \
 	test_iovec.cpp \
@@ -48,7 +49,7 @@ TEST_UTXX_SRCS = \
 	test_pidfile.cpp \
 	test_robust_mutex.cpp \
 	test_running_stat.cpp \
-    test_scope_exit.cpp \
+	test_scope_exit.cpp \
 	test_shared_queue.cpp \
 	test_static_polymorphism.cpp \
 	test_stream64.cpp \
@@ -56,12 +57,12 @@ TEST_UTXX_SRCS = \
 	test_throttler.cpp \
 	test_time_val.cpp \
 	test_timestamp.cpp \
-    test_type_traits.cpp \
+	test_type_traits.cpp \
 	test_url.cpp \
 	test_utxx.cpp \
 	test_variant.cpp \
 	test_variant_tree_scon_parser.cpp \
-    test_verbosity.cpp
+	test_verbosity.cpp
 
 example_repeating_timer_SOURCES = \
 	example_repeating_timer.cpp

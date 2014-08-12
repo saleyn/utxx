@@ -81,7 +81,7 @@ public:
 struct async_logger_traits {
     typedef std::allocator<char>    allocator;
     typedef text_msg<allocator>     msg_type;
-    typedef synch::futex            event_type;
+    typedef futex                   event_type;
     enum {
           commit_timeout    = 1000  // commit this number of usec
         , write_buf_sz      = 256
@@ -285,7 +285,7 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
     int l_old_val = m_event.value();
 
     while (!m_head) {
-        l_old_val = m_event.wait(tsp, &l_old_val);
+        m_event.wait(tsp, &l_old_val);
 
         if (m_cancel && !m_head)
             return 0;

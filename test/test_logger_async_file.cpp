@@ -10,6 +10,7 @@
 #include <utxx/verbosity.hpp>
 #include <utxx/test_helper.hpp>
 #include <utxx/high_res_timer.hpp>
+#include <atomic>
 
 using namespace boost::property_tree;
 using namespace utxx;
@@ -162,25 +163,26 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
 }
 
 struct worker {
-    int              id;
-    volatile long&   count;
-    int              iterations;
-    boost::barrier&  barrier;
+    int                 id;
+    std::atomic<long>&  count;
+    int                 iterations;
+    boost::barrier&     barrier;
 
-    worker(int a_id, int it, volatile long& a_cnt, boost::barrier& b)
+    worker(int a_id, int it, std::atomic<long>& a_cnt, boost::barrier& b)
         : id(a_id), count(a_cnt), iterations(it), barrier(b)
     {}
 
     void operator() () {
         barrier.wait();
         for (int i=0, n=-1; i < iterations; i++) {
-            atomic::inc(&count);
+            count.fetch_add(1, std::memory_order_relaxed);
             LOG_ERROR  (("%d %9d This is an error #%d", id, ++n, 123));
             LOG_WARNING(("%d %9d This is a %s", id, ++n, "warning"));
             LOG_FATAL  (("%d %9d This is a %s", id, ++n, "fatal error"));
         }
         if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
-            fprintf(stderr, "Worker %d finished (count=%ld)\n", id, count);
+            fprintf(stderr, "Worker %d finished (count=%ld)\n",
+                    id, count.load(std::memory_order_relaxed));
     }
 };
 
@@ -204,7 +206,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
 
     const int threads = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 3;
     boost::barrier barrier(threads+1);
-    volatile long  count = 0;
+    std::atomic<long> count(0);
     int id = 0;
 
     boost::shared_ptr<worker> workers[threads];

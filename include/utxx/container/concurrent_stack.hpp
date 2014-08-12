@@ -186,7 +186,7 @@ protected:
 // VIRSIONED STACK
 //-----------------------------------------------------------------------------
 
-template <typename EventT = synch::futex>
+template <typename EventT = futex>
 class blocking_versioned_stack: public versioned_stack {
     EventT not_empty_condition;
     //char __pad[CACHELINE_SIZE - sizeof(versioned_stack) - sizeof(EventT)];
@@ -235,9 +235,10 @@ public:
     node_t* reset(struct timespec* timeout, bool reverse = false) {
         int sync_val = not_empty_condition.value();
         node_t* p = try_reset(reverse);
-        return p ? p 
-                 : not_empty_condition.wait(timeout, &sync_val) == 0
-                     ? try_reset(reverse) : NULL;
+        return p
+             ? p
+             : not_empty_condition.wait(timeout, &sync_val) == wakeup_result::SIGNALED
+             ? try_reset(reverse) : NULL;
     }
 
     /// Signals all waiting threads calling pop() or reset() forcing them to unblock.

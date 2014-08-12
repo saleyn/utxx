@@ -64,19 +64,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-#ifdef DEBUG_ASYNC_LOGGER
+#if DEBUG_ASYNC_LOGGER == 2
+#   include <utxx/timestamp.hpp>
+#   define ASYNC_DEBUG_TRACE(x) do { printf x; fflush(stdout); } while(0)
+#   define ASYNC_TRACE(x)
+#elif defined(DEBUG_ASYNC_LOGGER)
 #   define ASYNC_TRACE(x) do { printf x; fflush(stdout); } while(0)
+#   define ASYNC_DEBUG_TRACE(x) ASYNC_TRACE(x)
 #else
 #   define ASYNC_TRACE(x)
+#   define ASYNC_DEBUG_TRACE(x)
 #endif
 
 /// Traits of asynchronous logger
 struct multi_file_async_logger_traits {
     typedef boost::fast_pool_allocator<void>    allocator;
-    typedef synch::futex                        event_type;
-    enum {
-          commit_timeout    = 2000  // commit this number of usec
-    };
+    typedef futex                               event_type;
+    static const int commit_timeout = 2000;  // commit this number of usec
 };
 
 /// Multi-stream asynchronous message logger
@@ -157,6 +161,7 @@ private:
     std::atomic<command_t*>                         m_head;
     bool                                            m_cancel;
     int                                             m_max_queue_size;
+    std::atomic<long>                               m_total_msgs_processed;
     event_type                                      m_event;
     std::atomic<long>                               m_active_count;
     stream_info_vec                                 m_files;
@@ -349,9 +354,12 @@ public:
     int write(const file_id& a_id, const std::string& a_category, const std::string& a_data);
 
     /// @return max size of the commit queue
-    const int max_queue_size()  const { return m_max_queue_size; }
+    const int   max_queue_size()        const { return m_max_queue_size; }
+    const long  total_msgs_processed()  const { return m_total_msgs_processed
+                                                .load(std::memory_order_relaxed); }
+    const int   open_files_count()      const { return m_active_count; }
 
-    const int open_files_count() const { return m_active_count; }
+    const event_type& event()           const { return m_event; }
 
 };
 
@@ -666,6 +674,7 @@ basic_multi_file_async_logger(
     , m_head(nullptr)
     , m_cancel(false)
     , m_max_queue_size(0)
+    , m_total_msgs_processed(0)
     , m_event(0)
     , m_active_count(0)
     , m_files(a_max_files, nullptr)
@@ -733,8 +742,10 @@ run() {
     static const timespec ts =
         {traits::commit_timeout / 1000, (traits::commit_timeout % 1000) * 1000000 };
 
+    m_total_msgs_processed = 0;
+
     while (1) {
-        #ifdef DEBUG_ASYNC_LOGGER
+        #if defined(DEBUG_ASYNC_LOGGER) && DEBUG_ASYNC_LOGGER != 2
         int rc =
         #endif
         commit(&ts);
@@ -910,7 +921,7 @@ int basic_multi_file_async_logger<traits>::
 close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
     if (!a_id) return 0;
 
-    #ifdef DEBUG_ASYNC_LOGGER
+    #if defined(DEBUG_ASYNC_LOGGER) && DEBUG_ASYNC_LOGGER != 2
     int fd = a_id.fd();
     #endif
 
@@ -968,11 +979,12 @@ internal_enqueue(command_t* a_cmd) {
     } while(!m_head.compare_exchange_weak(old_head, a_cmd,
                 std::memory_order_release, std::memory_order_relaxed));
 
-    if (!old_head)
-        m_event.signal();
+    m_event.signal();
 
-    ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%s) - cur head: %p, prev head: %p%s\n",
-        a_cmd, a_cmd->type_str(), m_head.load(), old_head, !old_head ? " (signaled)" : ""));
+    ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%s) - "
+                 "cur head: %p, prev head: %p%s\n",
+        a_cmd, a_cmd->type_str(), m_head.load(),
+        old_head, !old_head ? " (signaled)" : ""));
 
     return 0;
 }
@@ -1015,6 +1027,8 @@ do_writev_and_free(stream_info* a_si, command_t* a_end,
                    const char** a_categories, const iovec* a_vec, size_t a_sz)
 {
     int n = a_sz ? a_si->on_write(*a_si, a_categories, a_vec, a_sz) : 0;
+    ASYNC_TRACE(("Written %d bytes to stream %s\n", n, a_si->name.c_str()));
+
     if (likely(n >= 0)) {
         // Data was successfully written to stream - adjust internal queue's head/tail
         a_si->erase(a_si->pending_writes_head(), a_end);
@@ -1061,13 +1075,15 @@ commit(const struct timespec* tsp)
 
     while (!m_cancel && !m_head.load(std::memory_order_relaxed)) {
         #ifdef DEBUG_ASYNC_LOGGER
-        int n =
+        wakeup_result n =
         #endif
         m_event.wait(tsp, &event_val);
 
-        ASYNC_TRACE(("    COMMIT awakened (res=%d, val=%d, futex=%d), cancel=%d, head=%p\n",
-                     n, event_val, m_event.value(), m_cancel, m_head.load()));
-        event_val = m_event.reset(-1);
+        ASYNC_DEBUG_TRACE(
+            ("  %s COMMIT awakened (res=%s, val=%d, futex=%d), cancel=%d, head=%p\n",
+             timestamp::to_string().c_str(), to_string(n), event_val, m_event.value(),
+             m_cancel, m_head.load())
+        );
     }
 
     if (m_cancel && !m_head.load(std::memory_order_relaxed))
@@ -1092,7 +1108,7 @@ commit(const struct timespec* tsp)
         stream_info* si = const_cast<stream_info*>(p->stream);
         BOOST_ASSERT(si);
 
-        #ifdef DEBUG_ASYNC_LOGGER
+        #if defined(DEBUG_ASYNC_LOGGER) && DEBUG_ASYNC_LOGGER != 2
         const command_t* last = p;
         #endif
 
@@ -1105,11 +1121,14 @@ commit(const struct timespec* tsp)
                      si, si->fd, last, n, si->pending_writes_head(), p));
     }
 
-    ASYNC_TRACE(("Processed total count: %d.\n", count));
-
     // Process each fd's pending command queue
     if (m_max_queue_size < count)
         m_max_queue_size = count;
+
+    m_total_msgs_processed.fetch_add(count, std::memory_order_relaxed);
+
+    ASYNC_DEBUG_TRACE(("Processed count: %d / %ld. (MaxQsz = %d)\n",
+                       count, m_total_msgs_processed.load(), m_max_queue_size));
 
     for(typename pending_data_streams_set::iterator
             it = m_pending_data_streams.begin(), e = m_pending_data_streams.end();
@@ -1176,9 +1195,10 @@ commit(const struct timespec* tsp)
                              "write(%p, %lu) free(%p, %lu)\n",
                              si->fd, si, p, n, p->next, iov[n].iov_base, iov[n].iov_len,
                              p->args.msg.data.iov_base, p->args.msg.data.iov_len));
+                assert(n < si->max_batch_sz);
+
                 if (++n == si->max_batch_sz) {
                     int ec = do_writev_and_free(si, end, cats, iov, n);
-                    ASYNC_TRACE(("Written %d bytes to %s\n", ec, si->name.c_str()));
                     if (ec > 0)
                         n = 0;
                 }
@@ -1201,14 +1221,10 @@ commit(const struct timespec* tsp)
         if (si->error) {
             ASYNC_TRACE(("Written total %lu bytes to %p (fd=%d) %s with error: %s\n",
                          sz, si, si->fd, si->name.c_str(), si->error_msg.c_str()));
-        } else if (n > 0) {
-            #ifdef DEBUG_ASYNC_LOGGER
-            int k =
-            #endif
-            do_writev_and_free(si, end, cats, iov, n);
-            ASYNC_TRACE(("Written %d bytes to (fd=%d) %s (total = %lu)\n", k,
-                    si->fd, si->name.c_str(), sz));
         } else {
+            if (n > 0)
+                do_writev_and_free(si, end, cats, iov, n);
+
             ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n",
                          sz, si->fd, si->name.c_str()));
         }
@@ -1218,7 +1234,7 @@ commit(const struct timespec* tsp)
             bool destroy_si = (status & SI_DESTROY);
 
             if (destroy_si || si->fd < 0) {
-                ASYNC_TRACE(("Removing %p stream from list of pending data streams\n", si));
+                ASYNC_DEBUG_TRACE(("Removing %p stream from list of pending data streams\n", si));
                 m_pending_data_streams.erase(si);
             }
 

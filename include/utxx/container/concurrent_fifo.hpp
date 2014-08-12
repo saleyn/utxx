@@ -72,7 +72,7 @@ public:
 /// @class blocking_unbound_fifo
 //-----------------------------------------------------------------------------
 
-template <typename T, int Size, typename EventT = synch::futex>
+template <typename T, int Size, typename EventT = futex>
 class blocking_bound_fifo
     : public detail::blocking_lock_free_queue<
         T, detail::bound_allocator<T,Size>, true, EventT> {
@@ -87,7 +87,7 @@ public:
 /// @class blocking_unbound_fifo
 //-----------------------------------------------------------------------------
 
-template <typename T, typename EventT = synch::futex>
+template <typename T, typename EventT = futex>
 class blocking_unbound_fifo
     : public detail::blocking_lock_free_queue<
         T, detail::unbound_cached_allocator<T>, false, EventT> {

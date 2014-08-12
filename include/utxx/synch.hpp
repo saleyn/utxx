@@ -35,14 +35,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_SYNCH_HPP_
 #define _UTXX_SYNCH_HPP_
 
-#include <limits.h>
-#include <errno.h>
 #include <pthread.h>
-#include <unistd.h>
-#include <sys/mman.h>
-#include <sys/syscall.h>
-#include <linux/futex.h>
-#include <utxx/atomic.hpp>
+#include <utxx/futex.hpp>
+#include <utxx/meta.hpp>
 
 #if __cplusplus >= 201103L
 #include <chrono>
@@ -57,206 +52,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //-----------------------------------------------------------------------------
 
 namespace utxx {
-
-#ifdef __linux__
-
-#if defined(SYS_futex)
-inline int futex_wait(volatile void* futex, int val, struct timespec* timeout = NULL) {
-    return ::syscall(SYS_futex,(futex),FUTEX_WAIT,(val),(timeout));
-}
-inline int futex_wake(volatile void* futex, int val, struct timespec* timeout = NULL) {
-    return ::syscall(SYS_futex,(futex),FUTEX_WAKE,(val),(timeout));
-}
-#else
-#  error "Missing SYS_futex definition!"
-#endif
-
-#endif
-
 namespace synch {
-
-#ifdef __linux__
-
-/** Fast futex-based concurrent notification primitive.
- * Supports signal/wait semantics.
- */
-class futex {
-    volatile int m_count;
-    #ifdef PERF_STATS
-    unsigned int m_wait_count;
-    unsigned int m_wake_count;
-    unsigned int m_wait_fast_count;
-    unsigned int m_wake_fast_count;
-    #endif
-
-    static const int FUTEX_PASSED = -(1 << 30);
-
-    /// @return -1 - fail, 0 - wakeup, 1 - pass, 2 - didn't sleep
-    int wait_slow(int val, const struct timespec *rel = NULL);
-    int signal_slow(int count = 1);
-
-    /// Atomic dec of internal counter.
-    /// @return 0 when value is different from old_value or someone updated
-    ///           it during wait_fast call.
-    ///       < 0 when current value is negative
-    ///        -1 when the thread should wait for another signal
-    int wait_fast(int* old_value = NULL) {
-        int val = m_count;
-
-        if (old_value && *old_value != val) {
-            if (old_value)
-                *old_value = val;
-            return 0;
-        }
-
-        // Don't decrement if already negative.
-        if (val < 0) return val;
-
-        //int cur_val = atomic::cmpxchg(&m_count, val, val-1);
-        unsigned char eqz;
-
-        // decrement the counter and check if it's changed to 0.
-        __asm__ __volatile__(
-            "lock; decl %0; sete %1"
-            :"=m" (m_count), "=qm" (eqz)
-            :"m"  (m_count) : "memory");
-
-        // If eqz - we know m_count is 0 - it's an uncontended case, waiting is done.
-        // Otherwise, return we have no way of knowing the value. Return -1 to
-        // indicate that the thread should wait for another thread to "up" the futex.
-        return eqz ? 0 : -1;
-    }
-
-    /// Atomic inc
-    /// @return 1 if counter incremented from 0 to 1.
-    ///         0 otherwise.
-    int signal_fast() {
-        int res = 1;
-
-        // r = ++m_count >= 1 ? 1 : 0;
-        __asm__ __volatile__ (
-            "   lock; incl %1\n"
-            "   jg 1f\n"
-            "   decl %0\n"
-            "1:\n"
-                : "=q"(res), "=m"(m_count) : "0"(res));
-        return res;
-    }
-
-    void commit(int n) {
-        m_count = n;
-        // Probably overkill, but some non-Intel clones support
-        // out-of-order stores, according to 2.5.5-pre1's
-        // linux/include/asm-i386/system.h
-        //__asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory");
-        atomic::memory_barrier();
-    }
-
-public:
-    futex(int initialize = 1);
-
-    /// This is mainly for debugging
-    int  value()               const { return m_count; }
-    int  reset(int a_init = 1)       { commit(a_init); return m_count; }
-
-    #ifdef PERF_STATS
-    unsigned int wake_count()      const { return m_wake_count; }
-    unsigned int wait_count()      const { return m_wait_count; }
-    unsigned int wake_fast_count() const { return m_wake_fast_count; }
-    unsigned int wait_fast_count() const { return m_wait_fast_count; }
-    #endif
-
-    /// Signal the futex by incrementing the internal
-    /// variable and optionally making a system call.
-    /// @return 0 if someone was waiting
-    ///         1 if a process was waken up by a futex system call
-    int signal() {
-        if (!signal_fast())
-            return signal_slow();
-        #ifdef PERF_STATS
-        ++m_wake_fast_count;
-        #endif
-        return 0;
-    }
-
-    /// If signal_fast() increments count from 0 -> 1, no one was waiting.
-    /// Otherwise, set to 1 and tell kernel to wake them up.  Because of
-    /// an additional memory barrier and a sys_futex call this method
-    /// is slower than <signal()>.  This function passes a token to one of
-    /// the waiters to prevent starvation - all waiters are queued up
-    /// behind each other in the order they started waiting.
-    int signal_fair();
-
-    /// Signal all waiting threads.
-    /// @return number of processes woken up.
-    int signal_all() { return signal_slow(INT_MAX); };
-
-    /// Non-blocking attempt to wait for signal
-    /// @return 0 - success, -1 - no pending signal
-    int try_wait(int* old_val = NULL) {
-        return wait_fast(old_val) == 0 ? 0 : -1;
-    }
-
-    /// Wait for signaled condition up to \a timeout. Note that
-    /// the call ignores spurious wakeups.
-    /// @param <old_val> - pointer to the old <value()> of futex
-    ///         known just before calling <wait()> function.
-    /// @return 0           - woken up or value changed before sleep
-    ///         2           - if value changed before futex_wait call
-    ///         -1          - timeout or some other error occured
-    ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
-    ///                                  being returned)
-    int wait(int* old_val = NULL) { return wait(NULL, old_val); }
-
-    /// Wait for signaled condition up to \a timeout. Note that
-    /// the call ignores spurious wakeups.
-    /// @param <timeout> - max time to wait (NULL means infinity)
-    /// @param <old_val> - pointer to the old <value()> of futex
-    ///         known just before calling <wait()> function.
-    /// @return 0           - woken up or value changed before sleep
-    ///         2           - if value changed before futex_wait call
-    ///         -1          - timeout or some other error occured
-    ///         -ETIMEDOUT  - timed out (FIXME: this error code is presently not
-    ///                                  being returned)
-    int wait(const struct timespec *timeout, int* old_val = NULL);
-
-#if __cplusplus >= 201103L
-
-    /// Wait for signaled condition until \a wait_until_abs_time.
-    /// \copydetails wait()
-    template<class Clock, class Duration>
-    int wait
-    (
-        const std::chrono::time_point<Clock, Duration>& wait_until_abs_time,
-        int* old_val = NULL
-    ) {
-        auto sec =
-            std::chrono::duration_cast<std::chrono::seconds>(wait_until_abs_time);
-        auto nsec =
-            std::chrono::duration_cast<std::chrono::nanoseconds>(wait_until_abs_time);
-        struct timespec ts = { sec.count(), nsec.count() };
-        return wait(&ts, old_val);
-    }
-
-#else
-
-    /// Wait for signaled condition until \a wait_until_abs_time.
-    /// \copydetails wait()
-    int wait(const boost::system_time& wait_until_abs_time, int* old_val = NULL) {
-        struct timespec ts =
-            #if BOOST_VERSION >= 105300
-            boost::detail::to_timespec(wait_until_abs_time);
-            #else
-            boost::detail::get_timespec(wait_until_abs_time);
-            #endif
-        return wait(&ts, old_val);
-    }
-
-#endif
-
-};
-
-#endif
 
 // Use this event when futex is not available.
 #if __cplusplus >= 201103L
@@ -322,6 +118,7 @@ public:
         return m_cond.wait_until(g, wait_until_abs_time) == std::cv_status::no_timeout
              ? 0 : ETIMEDOUT;
     }
+};
 
 #else
 
@@ -383,12 +180,13 @@ public:
         }
     }
 
-#endif
-
 };
+
+#endif
 
 #ifdef __linux__
 
+/*
 /// Futex based read-write lock.  This is a 
 /// C++ implementation of Rusty Russell's furwock.
 class read_write_lock {
@@ -413,12 +211,16 @@ class read_write_lock {
         // out-of-order stores, according to 2.5.5-pre1's
         // linux/include/asm-i386/system.h
         // __asm__ __volatile__ ("lock; addl $0,0(%%esp)": : :"memory");
+#if __cplusplus >= 201103L
+        std::atomic_thread_fence(std::memory_order_acquire);
+#else
         atomic::memory_barrier();
+#endif
     }
 
 public:
     read_write_lock(): count(0) {
-        /* count 0 means "completely unlocked" */
+        // count 0 means "completely unlocked"
         wait.try_wait();
     }
 
@@ -442,7 +244,7 @@ public:
     }
 
     void read_unlock() {
-        /* Last one out wakes and writer waiting. */
+        // Last one out wakes and writer waiting.
         if (dec_negative())
             wait.signal();
     }
@@ -472,49 +274,56 @@ public:
         gate.signal();
     }
 };
-
+*/
 #endif
 
 //-----------------------------------------------------------------------------
 
-enum lock_state { UNLOCKED = 0, LOCKED = 1 };
+enum class lock_state { UNLOCKED = 0, LOCKED = 1 };
 
 //-----------------------------------------------------------------------------
 
 class read_write_spin_lock {
-    volatile unsigned long m_lock;
+    std::atomic<long> m_lock;
+
+    long value() { return m_lock.load(std::memory_order_relaxed); }
 public:
-    read_write_spin_lock() : m_lock(UNLOCKED) {}
+    read_write_spin_lock() : m_lock(to_underlying(lock_state::UNLOCKED)) {}
 
     void write_lock() {
         while (1) {
-            while (m_lock == LOCKED);
-            if (atomic::cas(&m_lock, UNLOCKED, LOCKED))
+            while (value() == to_underlying(lock_state::LOCKED));
+            long old = to_underlying(lock_state::UNLOCKED);
+            if (m_lock.compare_exchange_weak(old, to_underlying(lock_state::LOCKED),
+                    std::memory_order_release, std::memory_order_relaxed))
                 return;
         }
     }
 
     void write_unlock() {
-        m_lock = UNLOCKED;
-        //atomic::memory_barrier();
+        m_lock.store(
+            to_underlying(lock_state::UNLOCKED), std::memory_order_relaxed);
     }
 
     void read_lock() {
-        unsigned long oldval, newval;
+        long oldval, newval;
         while (1) {
-            while ((oldval = m_lock) == LOCKED); // lower bit is 1 when there's a write lock
+            // lower bit is 1 when there's a write lock
+            while ((oldval = value()) == to_underlying(lock_state::LOCKED));
             newval = oldval + 2;
-            if (atomic::cas(&m_lock, oldval, newval))
+            if (m_lock.compare_exchange_weak(oldval, newval,
+                    std::memory_order_release, std::memory_order_relaxed))
                 break;
         }
     }
 
     void read_unlock() {
-        unsigned long oldval, newval;
+        long oldval, newval;
         while (1) {
-            oldval = m_lock;
+            oldval = value();
             newval = oldval - 2;
-            if (atomic::cas(&m_lock, oldval, newval))
+            if (m_lock.compare_exchange_weak(oldval, newval,
+                    std::memory_order_release, std::memory_order_relaxed))
                 break;
         }
     }
@@ -523,27 +332,34 @@ public:
 //-----------------------------------------------------------------------------
 
 class spin_lock {
-    volatile unsigned long m_lock;
+    std::atomic<long> m_lock;
+    long value() { return m_lock.load(std::memory_order_relaxed); }
 public:
-    spin_lock() : m_lock(UNLOCKED) {}
+    spin_lock() : m_lock(to_underlying(lock_state::UNLOCKED)) {}
 
     void lock() {
         while (1) {
-            while (m_lock == LOCKED);
-            if (atomic::cas(&m_lock, UNLOCKED, LOCKED))
+            while (m_lock == to_underlying(lock_state::LOCKED));
+            long old = to_underlying(lock_state::UNLOCKED);
+            if (m_lock.compare_exchange_weak(old, to_underlying(lock_state::LOCKED),
+                    std::memory_order_release, std::memory_order_relaxed))
                 return;
         }
     }
 
     int try_lock() {
-        if (m_lock)                                      return -1;
-        else if (atomic::cas(&m_lock, UNLOCKED, LOCKED)) return 0;
-        else                                             return -1;
+        if (value())
+            return -1;
+        long old = to_underlying(lock_state::UNLOCKED);
+        if (m_lock.compare_exchange_weak(old, to_underlying(lock_state::LOCKED),
+                    std::memory_order_release, std::memory_order_relaxed))
+            return 0;
+        else
+            return -1;
     }
 
     void unlock() {
-        m_lock = UNLOCKED;
-        //atomic::memory_barrier();
+        m_lock.store(to_underlying(lock_state::UNLOCKED), std::memory_order_relaxed);
     }
 };
 
@@ -553,7 +369,6 @@ typedef std::mutex mutex_lock;
 
 struct null_lock {
     typedef std::lock_guard<null_lock> scoped_lock;
-    //typedef std::try_lock_wrapper<null_lock> scoped_try_lock;
     void lock()     {}
     int  try_lock() { return 0; }
     void unlock()   {}
@@ -573,12 +388,8 @@ struct null_lock {
 
 #endif
 
-}   // namespace sync
-}   // namespace utxx
-
-//-----------------------------------------------------------------------------
-// Implementation
-//-----------------------------------------------------------------------------
+} // namespace synch
+} // namespace utxx
 
 #endif // _UTXX_SYNCH_HPP_
 
