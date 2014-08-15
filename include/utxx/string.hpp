@@ -50,12 +50,18 @@ namespace utxx {
 
     /// Return the static length of an array of type T
     template <typename T, int N>
+    #if __cplusplus >= 201103L
+    constexpr
+    #endif
     size_t length(const T (&a)[N]) {
         return N;
     }
 
     /// Return the static length of a character string
     template <int N>
+    #if __cplusplus >= 201103L
+    constexpr
+    #endif
     size_t length(const char (&a)[N]) {
         return N-1;
     }
@@ -70,7 +76,10 @@ namespace utxx {
     }
 
     template <int N>
-    constexpr uint64_t to_int64(const char (&a)[N]) {
+    #if __cplusplus >= 201103L
+    constexpr
+    #endif
+    uint64_t to_int64(const char (&a)[N]) {
         return to_int64(a, N-1);
     }
 
