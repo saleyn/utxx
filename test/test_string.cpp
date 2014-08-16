@@ -38,7 +38,11 @@ using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_string_length )
 {
+    char const* s_values[] = {"One", "Two", "Three"};
+    static_assert(length(s_values) == 3, "Wrong length");
+
     const char s[] = "abc";
+    static_assert(length(s) == 3, "Wrong length");
     BOOST_REQUIRE_EQUAL(3u, length(s));
     
     static const char* s_ops[] = {"a", "b", "c"};

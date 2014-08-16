@@ -66,6 +66,11 @@ namespace utxx {
         return N-1;
     }
 
+    /// Convert boolean to string
+    inline constexpr const char* to_string(bool a_value) {
+        return a_value ? "true" : "false";
+    }
+
     /// Convert a string to an integer value
     /// \code
     /// std::cout << to_int64("\1\2") << std::endl;
