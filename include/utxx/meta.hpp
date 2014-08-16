@@ -33,9 +33,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_META_HPP_
 #define _UTXX_META_HPP_
 
-#include <boost/static_assert.hpp>
+#include <type_traits>
 
 namespace utxx {
+
+/// A helper function used to signify an "out" argument in a function call
+/// \code
+///   int i = 10;
+///   test("abc", out(i));
+/// \endcode
+template <typename T>
+constexpr T& out(T& arg) { return arg; }
 
 template <size_t N, size_t Base>
 struct log {

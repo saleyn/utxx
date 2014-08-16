@@ -31,16 +31,24 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
+#include <boost/static_assert.hpp>
 #include <utxx/meta.hpp>
 #include <iostream>
 
 using namespace utxx;
+
+int& test_it (int& i) { return i; }
 
 #if __cplusplus >= 201103L
 
 BOOST_AUTO_TEST_CASE( test_meta )
 {
     enum class B { B1 = 1, B2 = 2 };
+
+    int t = 10;
+    int j = test_it(out(t));
+
+    BOOST_REQUIRE_EQUAL(10, j);
 
     BOOST_STATIC_ASSERT(1 == to_underlying(B::B1));
     BOOST_REQUIRE_EQUAL(1, to_underlying(B::B1));
