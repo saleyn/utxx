@@ -78,7 +78,8 @@ namespace utxx {
 
 /// Traits of asynchronous logger
 struct multi_file_async_logger_traits {
-    typedef boost::fast_pool_allocator<void>    allocator;
+    typedef boost::pool_allocator<void>         allocator;
+    typedef boost::fast_pool_allocator<void>    fixed_size_allocator;
     typedef futex                               event_type;
     static const int commit_timeout = 2000;  // commit this number of usec
 };
@@ -142,7 +143,7 @@ private:
         bool operator()(const stream_info* a, const stream_info* b) { return a < b; }
     };
 
-    typedef typename traits::allocator::template
+    typedef typename traits::fixed_size_allocator::template
         rebind<stream_info*>::other                 ptr_allocator;
     typedef std::set<
         stream_info*, stream_info_lt, ptr_allocator
@@ -150,7 +151,7 @@ private:
 
 
     typedef std::vector<stream_info*>               stream_info_vec;
-    typedef typename traits::allocator::template
+    typedef typename traits::fixed_size_allocator::template
         rebind<command_t>::other                    cmd_allocator;
 
     std::mutex                                      m_mutex;
