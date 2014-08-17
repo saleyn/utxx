@@ -39,18 +39,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <limits>
 #include <algorithm>
 #include <stdexcept>
-
-/*
-#include <boost/mpl/range_c.hpp>
-#include <boost/mpl/deref.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <boost/mpl/integral_c.hpp>
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/insert_range.hpp>
-#include <boost/mpl/transform_view.hpp>
-#include <boost/mpl/zip_view.hpp>
-#include <boost/mpl/single_view.hpp>
-*/
+#include <utxx/detail/running_stat_impl.hpp>
+#include <utxx/compiler_hints.hpp>
 
 namespace utxx {
 
@@ -156,9 +146,14 @@ public:
     double   deviation() const { return sqrt(variance()); }
 };
 
-template <typename T, int N = 0>
+template <typename T, int N = 0, bool FastMinMax = false>
 struct basic_moving_average
+    : public detail::minmax_impl<basic_moving_average<T,N,FastMinMax>, T, FastMinMax>
 {
+    typedef
+        detail::minmax_impl<basic_moving_average<T,N,FastMinMax>, T, FastMinMax>
+        base;
+
     explicit basic_moving_average(size_t a_capacity = 0)
       : MASK(N ? N-1 : a_capacity-1)
       , m_data(m_samples)
@@ -187,50 +182,39 @@ struct basic_moving_average
     }
 
     void add(T sample) {
-        if (m_full) {
-            T& oldest = m_data[m_size];
-            m_sum += sample - oldest;
-            oldest = sample;
-        } else {
-            m_data[m_size] = sample;
-            m_sum += sample;
-        }
+        T& oldest = m_data[m_end & MASK];
+        m_sum    += sample;
 
-        if (!m_full && m_size == MASK)
-            m_full = true;
+        if (m_end > MASK)
+           m_sum -= oldest;
 
-        m_size = (m_size+1) & MASK;
+        oldest = sample;
+
+        this->update_minmax(sample);
+
+        ++m_end;
     }
 
     void clear() {
         memset(m_data, 0, capacity()*sizeof(T));
-        m_full = false;
         m_sum  = 0.0;
-        m_size = 0;
+        m_end  = 0;
     }
 
-    bool   empty()    const { return !m_full && !m_size; }
+    bool   empty()    const { return m_end == 0; }
     size_t capacity() const { return MASK+1; }
-    size_t samples()  const { return m_full ? capacity() : m_size; }
-    double mean()     const { return m_sum / ((m_full || !m_size) ? capacity() : m_size); }
-    size_t sum()      const { return m_sum; }
+    size_t size()     const { return m_end > MASK  ? capacity() : m_end; }
+    double mean()     const { return likely(m_end) ? double(m_sum) / size() : 0.0; }
+    T      sum()      const { return m_sum; }
 
-    std::pair<T,T> minmax() const {
-        if (empty()) return std::make_pair(0, 0);
+    std::pair<T,T> minmax() const { return this->get_minmax(); }
 
-        T min = std::numeric_limits<T>::max();
-        T max = std::numeric_limits<T>::min();
-        for (T const* p=m_data, *e=m_full ? m_data+capacity() : m_data+m_size; p != e; ++p) {
-            if (*p > max) max = *p;
-            if (*p < min) min = *p;
-        }
-        return std::make_pair(min, max);
-    }
+protected:
+    template <class D, class U, class F> friend class detail::minmax_impl;
 
-private:
     const size_t    MASK;
     bool            m_full;
-    size_t          m_size;
+    size_t          m_end;
     double          m_sum;
     T*              m_data;
     T               m_samples[N];

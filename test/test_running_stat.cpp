@@ -121,18 +121,18 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
     ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
 
     BOOST_REQUIRE_EQUAL(std::make_pair(2, 8), ma.minmax());
-    BOOST_REQUIRE_EQUAL(4u, ma.samples());
+    BOOST_REQUIRE_EQUAL(4u, ma.size());
 
     ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
     ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
 
     BOOST_REQUIRE_EQUAL(std::make_pair(6,10), ma.minmax());
-    BOOST_REQUIRE_EQUAL(4u, ma.samples());
-    BOOST_REQUIRE_EQUAL(32u,ma.sum()); 
+    BOOST_REQUIRE_EQUAL(4u, ma.size());
+    BOOST_REQUIRE_EQUAL(32, ma.sum()); 
 
     ma.clear();
 
-    BOOST_REQUIRE_EQUAL(0u,  ma.samples());
+    BOOST_REQUIRE_EQUAL(0u,  ma.size());
     BOOST_REQUIRE_EQUAL(0.0, ma.mean());
 }
 
