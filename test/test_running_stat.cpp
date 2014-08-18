@@ -240,11 +240,11 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
             }
             elapsed2 = t.elapsed();
         }
-        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %s", i,
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %2.0f", i,
                 (elapsed1 / ITERATIONS * 1000000),
                 (elapsed2 / ITERATIONS * 1000000),
                 (elapsed1 / elapsed2),
-                dummy > 0.0 ? "ok" : "ok"
+                dummy
                );
         BOOST_MESSAGE(buf);
     }
@@ -275,11 +275,11 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
             }
             elapsed2 = t.elapsed();
         }
-        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %s", i,
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %2.0f", i,
                 (elapsed1 / ITERATIONS * 1000000),
                 (elapsed2 / ITERATIONS * 1000000),
                 (elapsed1 / elapsed2),
-                dummy > 0.0 ? "ok" : "ok"
+                dummy
                );
         BOOST_MESSAGE(buf);
     }
