@@ -298,9 +298,6 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_check )
                 ms.add(v); auto rs = ms.minmax();
                 mf.add(v); auto rf = mf.minmax();
 
-                if (j++ < 2)
-                    continue;
-
                 if (rs != rf) {
                     BOOST_MESSAGE("Window " << i << " mismatch at " <<
                                     j << " (value=" << v <<
@@ -316,12 +313,12 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_check )
                         mrs.add(d); auto rrs = mrs.minmax();
                         mrf.add(d); auto rrf = mrf.minmax();
 
-                        BOOST_MESSAGE("[" << std::setw(8) << k++ << "]: "
+                        if (k++ == j+5) break;
+
+                        BOOST_MESSAGE("[" << std::setw(8) << k << "]: "
                                       << std::setw(15) << d
                                       << std::setw(25) << rrs
                                       << std::setw(25) << rrf);
-
-                        if (k == j) break;
                     }
                     BOOST_REQUIRE_EQUAL(rs, rf);
                 }

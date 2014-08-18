@@ -215,18 +215,17 @@ struct basic_moving_average
         if (unlikely(empty()))
             return std::make_pair
                 (std::numeric_limits<T>::max(), std::numeric_limits<T>::min());
-        return this->get_minmax();
+        return base::minmax();
     }
+
+    T min() const { return base::min(); }
+    T max() const { return base::max(); }
 
 protected:
     template <class D, class U, class F> friend class detail::minmax_impl;
     size_t  begin_idx()        const { return m_end - size(); }
     size_t  end_idx()          const { return m_end;          }
-
-    T       data(size_t a_idx) const {
-        assert(a_idx < m_end);
-        return m_data[a_idx & MASK];
-    }
+    T       data(size_t a_idx) const { return m_data[a_idx & MASK]; }
 
     const size_t    MASK;
     size_t          m_end;
