@@ -380,7 +380,13 @@ namespace utxx {
 
         void   reset() { m_started = time_val::universal_time(); }
 
-        double elapsed() const { return time_val::now_diff(m_started); }
+        double elapsed()      const { return time_val::now_diff(m_started); }
+        double elapsed_msec() const { return elapsed() * 1000; }
+        double elapsed_usec() const { return elapsed() * 1000000; }
+
+        double latency_usec(size_t a_count) const { return elapsed_usec() / a_count; }
+        double latency_msec(size_t a_count) const { return elapsed()*1000 / a_count; }
+        double latency_sec (size_t a_count) const { return elapsed()      / a_count; }
     };
 
 } // namespace utxx

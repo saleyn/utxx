@@ -53,8 +53,8 @@ namespace detail {
     class minmax_impl<Derived, T, true> {
         std::deque<size_t> m_min_fifo;
         std::deque<size_t> m_max_fifo;
-        T m_last_min;
-        T m_last_max;
+        size_t m_min_idx;
+        size_t m_max_idx;
 
         Derived const* derived_this() const { return static_cast<Derived const*>(this); }
 
@@ -78,7 +78,7 @@ namespace detail {
 
         void update_minmax(T a_sample) {
             if (unlikely(derived_this()->empty())) {
-                m_last_min = m_last_max = a_sample;
+                m_min_idx = m_max_idx = end();
                 return;
             }
 
@@ -92,8 +92,8 @@ namespace detail {
                     size_t idx = m_max_fifo.back();
                     if (a_sample <= data(idx)) {
                         if (outside_window(m_max_fifo.front())) {
-                            if (m_last_max == data(m_max_fifo.front()))
-                                m_last_max = a_sample;
+                            if (m_max_idx == m_max_fifo.front())
+                                m_max_idx = end();
                             m_max_fifo.pop_front();
                         }
                         break;
@@ -108,6 +108,8 @@ namespace detail {
                     size_t idx = m_min_fifo.back();
                     if (a_sample >= data(idx)) {
                         if (outside_window(m_min_fifo.front())) {
+                            if (m_min_idx == m_min_fifo.front())
+                                m_min_idx = end();
                             m_min_fifo.pop_front();
                         }
                         break;
@@ -116,15 +118,11 @@ namespace detail {
                 }
             }
 
-            m_last_max = std::max(a_sample, m_max_fifo.empty() ? m_last_max : data(m_max_fifo.front()));
-            m_last_min = std::min(a_sample, m_min_fifo.empty() ? m_last_min : data(m_min_fifo.front()));
+            auto  idx = m_max_fifo.empty() ? m_max_idx : m_max_fifo.front();
+            m_max_idx = a_sample > data(idx) ? end() : idx;
+            idx       = m_min_fifo.empty() ? m_min_idx : m_min_fifo.front();
+            m_min_idx = a_sample < data(idx) ? end() : idx;
 
-            /*
-            m_last_min = m_min_fifo.empty()
-                       ? std::min(a_sample, m_last_min) : data(m_min_fifo.front());
-            m_last_max = m_max_fifo.empty()
-                       ? std::max(a_sample, m_last_max) : data(m_max_fifo.front());
-            */
             #ifdef UTXX_RUNNING_MINMAX_DEBUG
             std::cout << "========";
             for (size_t i = derived_this()->begin_idx(), e = end(); i < e; ++i)
@@ -139,8 +137,8 @@ namespace detail {
             #endif
         }
 
-        T min() const { return m_last_min; }
-        T max() const { return m_last_max; }
+        T min() const { return data(m_min_idx); }
+        T max() const { return data(m_max_idx); }
 
         std::pair<T,T> minmax() const {
             return std::make_pair(min(), max());

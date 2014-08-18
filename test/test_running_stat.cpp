@@ -216,7 +216,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
     std::vector<int> windows{ 16, 32, 64, 128, 256, 1024, 4096 };
     char buf[256];
 
-    sprintf(buf, "== Add == (win) | std (us) | fast (us) | Ratio");
+    sprintf(buf, "== Add == (win) | std (us) | fast (us)| Ratio");
     BOOST_MESSAGE(buf);
 
     for (auto i : windows) {
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
         BOOST_MESSAGE(buf);
     }
 
-    sprintf(buf, "== MinMax (win) | std (us) | fast (us) | Ratio");
+    sprintf(buf, "== MinMax (win) | std (us) | fast (us)| Ratio");
     BOOST_MESSAGE(buf);
 
     for (auto i : windows) {
