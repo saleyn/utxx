@@ -221,25 +221,31 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
 
     for (auto i : windows) {
         double elapsed1, elapsed2;
-
+        double dummy = 0;
         {
             basic_moving_average<double, 0, false> ma(i);
             timer t;
-            for (auto v : data)
+            for (auto v : data) {
                 ma.add(v);
+                dummy += ma.last();
+            }
             elapsed1 = t.elapsed();
         }
         {
             basic_moving_average<double, 0, true> ma(i);
             timer t;
-            for (auto v : data)
+            for (auto v : data) {
                 ma.add(v);
+                dummy += ma.last();
+            }
             elapsed2 = t.elapsed();
         }
-        sprintf(buf, "  %13d | %8.3f | %8.3f | %.3f", i,
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %s", i,
                 (elapsed1 / ITERATIONS * 1000000),
                 (elapsed2 / ITERATIONS * 1000000),
-                (elapsed1 / elapsed2));
+                (elapsed1 / elapsed2),
+                dummy > 0.0 ? "ok" : "ok"
+               );
         BOOST_MESSAGE(buf);
     }
 
@@ -248,12 +254,14 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
 
     for (auto i : windows) {
         double elapsed1, elapsed2;
+        double dummy = 0;
         {
             basic_moving_average<double, 0, false> ma(i);
             timer t;
             for (auto v : data) {
                 ma.add(v);
                 ma.minmax();
+                dummy += ma.last();
             }
             elapsed1 = t.elapsed();
         }
@@ -263,13 +271,16 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
             for (auto v : data) {
                 ma.add(v);
                 ma.minmax();
+                dummy += ma.last();
             }
             elapsed2 = t.elapsed();
         }
-        sprintf(buf, "  %13d | %8.3f | %8.3f | %.3f", i,
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %s", i,
                 (elapsed1 / ITERATIONS * 1000000),
                 (elapsed2 / ITERATIONS * 1000000),
-                (elapsed1 / elapsed2));
+                (elapsed1 / elapsed2),
+                dummy > 0.0 ? "ok" : "ok"
+               );
         BOOST_MESSAGE(buf);
     }
 }
