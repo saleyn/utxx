@@ -240,11 +240,11 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
             }
             elapsed2 = t.elapsed();
         }
-        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %2.0f", i,
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %s", i,
                 (elapsed1 / ITERATIONS * 1000000),
                 (elapsed2 / ITERATIONS * 1000000),
                 (elapsed1 / elapsed2),
-                dummy
+                dummy != 0 ? "ok" : "not ok"
                );
         BOOST_MESSAGE(buf);
     }
@@ -260,8 +260,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
             timer t;
             for (auto v : data) {
                 ma.add(v);
-                ma.minmax();
-                dummy += ma.last();
+                dummy += ma.minmax().first;
             }
             elapsed1 = t.elapsed();
         }
@@ -270,16 +269,15 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
             timer t;
             for (auto v : data) {
                 ma.add(v);
-                ma.minmax();
-                dummy += ma.last();
+                dummy += ma.minmax().first;
             }
             elapsed2 = t.elapsed();
         }
-        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %2.0f", i,
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %8.3f | %s", i,
                 (elapsed1 / ITERATIONS * 1000000),
                 (elapsed2 / ITERATIONS * 1000000),
                 (elapsed1 / elapsed2),
-                dummy
+                dummy != 0 ? "ok" : "not ok"
                );
         BOOST_MESSAGE(buf);
     }
