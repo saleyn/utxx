@@ -71,6 +71,19 @@ BOOST_AUTO_TEST_CASE( test_running_sum )
     BOOST_REQUIRE_EQUAL(15.0, stat.max());
 }
 
+BOOST_AUTO_TEST_CASE( test_running_variance )
+{
+    running_sum      sum;
+    running_variance var;
+
+    for (int i=0; i < 10; i++) {
+        sum.add(i);
+        var.add(i);
+        BOOST_CHECK_EQUAL(sum.mean(), var.mean());
+        BOOST_MESSAGE("Mean: " << sum.mean() << " Variance: " << var.variance());
+    }
+}
+
 BOOST_AUTO_TEST_CASE( test_running_stat )
 {
     running_variance rs;
@@ -207,7 +220,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
 BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
 {
     const long ITERATIONS = getenv("ITERATIONS")
-                          ? atoi(getenv("ITERATIONS")) : 100000;
+                          ? atoi(getenv("ITERATIONS")) : 10000;
     std::vector<double> data(ITERATIONS);
     data[0] = 0.0;
     for (long k = 1; k < ITERATIONS; ++k)

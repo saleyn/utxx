@@ -575,17 +575,20 @@ option_type_t validator::to_option_type(variant::value_type a_type) {
     }
 }
 
-std::string validator::usage(const std::string& a_indent) const {
+std::string validator::usage(const std::string& a_indent, bool a_colorize) const {
     std::stringstream s;
-    dump(s, a_indent, 0, m_options);
+    dump(s, a_indent, 0, m_options, a_colorize);
     return s.str();
 }
 
 std::ostream& validator::dump
 (
     std::ostream& out, const std::string& a_indent,
-    int a_level, const option_map& a_opts
+    int a_level, const option_map& a_opts, bool a_colorize
 ) {
+    static const char GREEN[]  = "\E[1;32;40m";
+    static const char YELLOW[] = "\E[1;33;40m";
+    static const char NORMAL[] = "\E[0m";
     std::regex eol_re("\n *");
 
     std::string       l_indent = a_indent + std::string(a_level, ' ');
@@ -593,13 +596,17 @@ std::ostream& validator::dump
 
     BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
         const option& opt = ovt.second;
-        out << l_indent << opt.name
+        out << l_indent << (a_colorize ? GREEN  : "")
+            << opt.name << (a_colorize ? NORMAL : "")
             << (opt.opt_type == ANONYMOUS ? " (anonymous): " : ": ")
-            << type_to_string(opt.value_type) << std::endl;
-        if (!opt.description.empty())
-            out << l_indent << "  Description: "
-                << std::regex_replace(opt.description, eol_re, l_nl_15)
-                << std::endl;
+            << (a_colorize ? YELLOW : "")
+            << type_to_string(opt.value_type) << (a_colorize ? NORMAL : "")
+            << std::endl;
+        if (!opt.description.empty()) {
+            auto desc = std::regex_replace(opt.description, eol_re, l_nl_15,
+                                           std::regex_constants::match_any);
+            out << l_indent << "  Description: " << desc << std::endl;
+        }
         if (!opt.unique)
             out << l_indent << "       Unique: true" << std::endl;
         if (!opt.required) {
@@ -643,7 +650,8 @@ std::ostream& validator::dump
                 if (!v.desc().empty()) {
                     std::string pfx =
                         "\n" + l_indent + std::string(max_len+2,' ') + "| ";
-                    out << " " << std::regex_replace(v.desc(), eol_re, pfx);
+                    out << " " << std::regex_replace(v.desc(), eol_re, pfx,
+                                                     std::regex_constants::match_any);
                 }
                 out << std::endl;
                 first = false;
@@ -669,14 +677,15 @@ std::ostream& validator::dump
                 if (!v.desc().empty()) {
                     std::string pfx =
                         "\n" + l_indent + std::string(max_len+2,' ') + "| ";
-                    out << " " << std::regex_replace(v.desc(), eol_re, pfx);
+                    out << " " << std::regex_replace(v.desc(), eol_re, pfx,
+                                                     std::regex_constants::match_any);
                 }
                 out << std::endl;
                 first = false;
             }
         }
         if (opt.children.size())
-            dump(out, l_indent, a_level+2, opt.children);
+            dump(out, l_indent, a_level+2, opt.children, a_colorize);
     }
     return out;
 }

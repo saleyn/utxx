@@ -70,7 +70,7 @@ public:
     void clear() { 
         m_count = 0; m_last = 0.0; m_sum = 0.0;
         m_min = std::numeric_limits<double>::max();
-        m_max = std::numeric_limits<double>::min();
+        m_max = std::numeric_limits<double>::lowest();
     }
 
     /// Add a sample measurement.
@@ -102,17 +102,17 @@ public:
 
     double      last()  const { return m_last; }
     double      sum()   const { return m_sum;  }
-    double      mean()  const { return m_count ? m_sum / m_count : 0.0; }
+    double      mean()  const { return likely(m_count) ? m_sum / m_count : 0.0; }
     double      min()   const { return m_min == std::numeric_limits<double>::max()
                                      ? 0.0 : m_min; }
-    double      max()   const { return m_max == std::numeric_limits<double>::min()
+    double      max()   const { return m_max == std::numeric_limits<double>::lowest()
                                      ? 0.0 : m_max; }
 };
 
 template <typename CntType = size_t>
 class basic_running_variance : public basic_running_sum<CntType> {
     typedef basic_running_sum<CntType> base;
-    double m_mean, m_var;
+    double m_var;
 public:
     basic_running_variance() {
         clear();
@@ -120,30 +120,27 @@ public:
 
     basic_running_variance(const basic_running_variance& rhs) 
         : base(rhs)
-        , m_mean(rhs.m_mean), m_var(rhs.m_var)
+        , m_var(rhs.m_var)
     {}
 
     /// Reset the internal state.
     void clear() { 
         base::clear();
-        m_mean = 0.0; m_var = 0.0;
+        m_var = 0.0;
     }
 
     /// Add a sample measurement.
     inline void add(double x) {
+        double old = base::mean();
         base::add(x);
         // See Knuth TAOCP v.2, 3rd ed, p.232
-        double old  = m_mean;
         double diff = x - old;
-        if (diff != 0.0) {
-            m_mean += diff / base::m_count;
-            m_var  += (x - old) * (x - m_mean);
-        }
+        if (diff != 0.0)
+            m_var += diff * (x - base::mean());
     }
 
     /// Number of samples since last invocation of clear().
-    double   mean()      const { return base::m_count > 0 ? m_mean : 0.0; }
-    double   variance()  const { return base::m_count > 0 ? m_var/base::m_count : 0.0; }
+    double   variance()  const { return likely(base::m_count) ? m_var/base::m_count : 0.0; }
     double   deviation() const { return sqrt(variance()); }
 };
 

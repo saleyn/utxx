@@ -26,7 +26,8 @@
             <option name="address" val_type="string" desc="Server address"/>
         </option>
     </option>
-    <option name="section">
+    <option name="section" desc="First line\n
+                                 Second line">
         <option name="location" val_type="int"/>
     </option>
     <option name="section2" required="false">

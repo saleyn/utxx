@@ -312,7 +312,7 @@ namespace config {
             tree_path& a_req_option_path) const;
 
         static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
-            int a_level, const option_map& a_opts);
+            int a_level, const option_map& a_opts, bool a_colorize = true);
 
         static inline bool all_anonymous(const option_map& a_opts) {
             BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts)
@@ -368,7 +368,11 @@ namespace config {
         }
 
         /// @return config option details
-        std::string usage(const std::string& a_indent=std::string()) const;
+        std::string usage
+        (
+            const std::string&  a_indent   = std::string(),
+            bool                a_colorize = true
+        ) const;
 
         /// @return default variant for a given option's path.
         const variant_tree_base& def(
