@@ -50,9 +50,14 @@ def node_path_to_string(e, ids=None):
     k.insert(0, e)
     s = "";
     for i in reversed(k):
-        s += "/%s[%s]" % \
-            ('<comment>' if type(i) == et._Comment else i.tag,
-             (i.attrib[ids] if ids else (id(i)/1000,id(i)%1000)))
+        s  += "/"
+        tag = '<comment>' if type(i) == et._Comment else i.tag
+        if   i.tag == 'config': s += 'config'
+        elif i.tag == 'option': s += 'option[%s]' % i.attrib.get('name', default='')
+        elif i.tag == 'value' : s += 'value[%s]'  % i.attrib.get('val',  default='')
+        elif i.tag == 'name'  : s += 'name[%s]'   % i.attrib.get('val',  default='')
+        elif ids              : s += '%s[%s]'     % (tag, i.attrib[ids])
+        else                  : s += '%s[%s]'     % (tag, (id(i)/1000,id(i)%1000))
     return s;
 
 def node_to_string(e, with_offset=True, ids=None):
@@ -152,6 +157,15 @@ class ConfigGenerator(object):
         except Exception as e:
             print >> sys.stderr, e.message
             exit(10)
+
+    def check_valid_attribs(self, attribs, valid_attr_names, name, node):
+        attribs.remove('_ID_')
+        for k in attribs:
+            try: valid_attr_names.index(k)
+            except ValueError:
+                text = "Option '%s' has invalid attribute: '%s'\n  path: %s" \
+                       % (name, k, node_path_to_string(node))
+                raise Exception(text)
 
     def copy_and_check_loops(self, root, skip, visited):
         copies = root.xpath(".//copy")
@@ -406,24 +420,30 @@ class ConfigGenerator(object):
             self.process_options(f, node, level+1, 'l_children'+str(level))
 
             subopts = len(node.xpath("./option"))
+            
+            valid_opt_attrs = [
+                ('name',        ""),
+                ('desc',        ""),
+                ('val',         None),
+                ('type',        None),
+                ('val_type',    None),
+                ('default',     None),
+                ('macros',      'false'),
+                ('required',    'true'),
+                ('unique',      'true'),
+                ('min',         None),
+                ('max',         None),
+                ('min_length',  None),
+                ('max_length',  None)
+            ]
+
+            valid_opt_attr_names = [s for s,d in valid_opt_attrs]
 
             [name, desc, val, tp, valtype, default, macros,
              required, unique, min, max, minlen, maxlen] = \
-                [node.attrib.get(a[0], default=a[1]) for a in [
-                    ('name',        ""),
-                    ('desc',        ""),
-                    ('val',         None),
-                    ('type',        None),
-                    ('val_type',    None),
-                    ('default',     None),
-                    ('macros',      'false'),
-                    ('required',    'true'),
-                    ('unique',      'true'),
-                    ('min',         None),
-                    ('max',         None),
-                    ('min_length',  None),
-                    ('max_length',  None)]
-                ]
+                [node.attrib.get(a[0], default=a[1]) for a in valid_opt_attrs]
+
+            self.check_valid_attribs(node.attrib.keys(), valid_opt_attr_names, name, node)
 
             err = None
 
@@ -438,8 +458,8 @@ class ConfigGenerator(object):
 
             if len(filter(lambda x: x not in ['true', 'false'], [unique, required])):
                 err = "unique/required (must be 'true' or 'false'): %s" % node.attrib
-
-            if not valtype                                      : err = "'val_type' is missing"
+            if not valtype:
+                valtype = tp if tp else 'string'
             elif (valtype=='int' or valtype=='float') and min   : pass
             elif valtype == 'string' and minlen                 : min = minlen
             elif min                                            : err = "'min': %s " % min
@@ -452,13 +472,21 @@ class ConfigGenerator(object):
 
             if default != None: required = 'false'
 
+            if err:
+                text = "Option '%s' error: %s\n  path: %s" % (name, err, node_path_to_string(node,ids='_ID_'))
+                raise Exception(text)
+
             for n in node.xpath("./name"):
-                f.write('%sl_names.insert("%s");\n' % \
-                        (ws1, self.value_to_string(n.attrib.get('val'), tp)))
+                self.check_valid_attribs(n.attrib.keys(), ['val','desc'], n.tag, n)
+                f.write('%sl_names.insert("%s", "%s");\n' % \
+                        (ws1, self.value_to_string(n.attrib.get('val'), tp),
+                         n.attrib.get('desc', default="")))
 
             for n in node.xpath("./value"):
-                f.write('%sl_values.insert(variant(%s));\n' % \
-                        (ws1, self.value_to_string(n.attrib.get('val'), valtype)))
+                self.check_valid_attribs(n.attrib.keys(), ['val','desc'], n.tag, n)
+                f.write('%sl_values.insert(variant(%s), "%s");\n' % \
+                        (ws1, self.value_to_string(n.attrib.get('val'), valtype),
+                         n.attrib.get('desc', default="")))
 
             if tp:
                 str_tp = self.string_to_type(tp)

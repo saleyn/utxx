@@ -171,9 +171,50 @@ namespace config {
         , ENV_VARS_AND_DATETIME_UTC // Same as ENV_VARS_AND_DATETIME but using UTC clock
     };
 
-    typedef std::set<variant>               variant_set;
-    typedef std::map<std::string, option>   option_map;
-    typedef std::set<std::string>           string_set;
+    struct option;
+
+    template <typename T>
+    class typed_val {
+        T           m_value;
+        std::string m_desc;
+
+    public:
+        bool operator<(const typed_val<T>& a_rhs) const {
+            return m_value < a_rhs.m_value;
+        };
+
+        typed_val() {}
+
+        typed_val(const T& a_val, const std::string& a_desc = std::string())
+            : m_value(a_val), m_desc(a_desc)
+        {}
+
+        const T&            value() const { return m_value; }
+        const std::string&  desc()  const { return m_desc;  }
+    };
+
+    template <typename T>
+    struct typed_val_set
+        : public std::set<typed_val<T>>
+    {
+        typedef std::set<typed_val<T>> base;
+        typedef typename base::iterator         iterator;
+        typedef typename base::const_iterator   const_iterator;
+
+        void insert(const T& a_val, const std::string& a_desc = std::string()) {
+            base::insert(typed_val<T>(a_val, a_desc));
+        }
+        iterator find(const T& a_val) const {
+            typed_val<T> x(a_val);
+            return base::find(x);
+        }
+    };
+
+    typedef typed_val<std::string>        string_val;
+    typedef typed_val<variant>            variant_val;
+    typedef typed_val_set<std::string>    string_set;
+    typedef typed_val_set<variant>        variant_set;
+    typedef std::map<std::string, option> option_map;
 
     const char* type_to_string(option_type_t a_type);
 
@@ -288,8 +329,11 @@ namespace config {
             throw ();
 
     protected:
-        mutable tree_path m_root;       // Path from configuration root
-        option_map        m_options;
+        mutable tree_path                m_root;   // Path from configuration root
+        mutable const variant_tree_base* m_config; // If set, the derived class can use typed
+                                                   // accessor methods as syntactic sugar to
+                                                   // access named option values
+        option_map                       m_options;
 
         void validate(const tree_path& a_root, variant_tree_base& a_config,
             const option_map& a_opts, bool fill_defaults,
@@ -305,17 +349,21 @@ namespace config {
             a.insert(std::make_pair(a_opt.name, a_opt));
         }
 
-        validator() {}
+        validator() : m_config(nullptr) {}
         virtual ~validator() {}
 
     public:
 
         /// Derived classes must implement this method
         template <class Derived>
-        static const Derived* instance(const tree_path& a_root = tree_path()) {
+        static const Derived* instance
+            (const tree_path& a_root = tree_path(), const variant_tree* a_config = nullptr)
+        {
             static Derived s_instance;
             if (!a_root.empty())
                 s_instance.m_root = a_root;
+            if (a_config)
+                s_instance.m_config = a_config;
             return &s_instance;
         }
 
@@ -352,8 +400,11 @@ namespace config {
 
         /// @return root path of this configuration from the XML /config/@namespace
         ///              property
-        const tree_path& root()             const { return m_root;   }
-        void  root(const tree_path& a_root) const { m_root = a_root; }
+        const tree_path& root()                      const { return m_root;     }
+        void  root(const tree_path& a_root)          const { m_root = a_root;   }
+
+        const variant_tree_base* config()            const { return m_config;   }
+        void  config(const variant_tree_base& a_cfg) const { m_config = &a_cfg; }
 
         void validate(variant_tree& a_config, bool a_fill_defaults,
             const custom_validator& a_custom_validator = NULL
@@ -362,6 +413,10 @@ namespace config {
         void validate(const variant_tree& a_config,
             const custom_validator& a_custom_validator = NULL
         ) const throw(variant_tree_error);
+
+        // Validate configuration tree stored in config()
+        void validate(const custom_validator& a_custom_validator = NULL)
+            const throw(variant_tree_error);
     };
 
 } // namespace config

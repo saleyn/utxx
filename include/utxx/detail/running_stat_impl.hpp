@@ -35,6 +35,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_RUNNING_STAT_IMPL_HPP_
 
 #include <deque>
+#include <utxx/compiler_hints.hpp>
+
+#ifdef UTXX_RUNNING_MINMAX_DEBUG
+#include <iostream>
+#endif
 
 namespace utxx {
 
@@ -42,29 +47,48 @@ namespace detail {
     template<typename Derived, typename T, bool FastMinMax>
     struct minmax_impl;
 
+    // See:
+    // http://www.archipel.uqam.ca/309/1/webmaximinalgo.pdf
     template <typename Derived, typename T>
     class minmax_impl<Derived, T, true> {
         std::deque<size_t> m_min_fifo;
         std::deque<size_t> m_max_fifo;
+        T m_last_min;
+        T m_last_max;
 
         Derived const* derived_this() const { return static_cast<Derived const*>(this); }
+
+        T      data(size_t a_idx) const { return derived_this()->data(a_idx); }
+        size_t end()              const { return derived_this()->end_idx();   }
+        #ifdef UTXX_RUNNING_MINMAX_DEBUG
+        size_t capacity()         const { return derived_this()->capacity();  }
+        #endif
     protected:
         bool outside_window(size_t a_idx) const {
-            return (Derived::m_end - Derived::MASK) > a_idx; 
+            size_t n = end();
+            bool res = (n > derived_this()->MASK ? n - derived_this()->MASK : 0) > a_idx;
+            #ifdef UTXX_RUNNING_MINMAX_DEBUG
+            std::cout << "Check outside [" << a_idx << "]: " << (res ? "true" : "false")
+                      << std::endl;
+            #endif
+            return res;
         }
 
         void update_minmax(T a_sample) {
-            size_t prev = Derived::m_end - 1;
+            if (derived_this()->empty()) {
+                m_last_min = m_last_max = a_sample;
+                return;
+            }
 
-            if (a_sample > Derived::m_data[prev]) { //overshoot
+            size_t prev = end() - 1;
+
+            if (a_sample > data(prev)) { //overshoot
                 m_min_fifo.push_back(prev);
-                //if (i == width + m_min_fifo.front())
                 if (outside_window(m_min_fifo.front()))
                     m_min_fifo.pop_front();
                 while (!m_max_fifo.empty()) {
                     size_t idx = m_max_fifo.back();
-                    if (a_sample <= Derived::m_data[idx]) {
-                        //if (i == width + m_max_fifo.front())
+                    if (a_sample <= data(idx)) {
                         if (outside_window(m_max_fifo.front()))
                             m_max_fifo.pop_front();
                         break;
@@ -73,13 +97,11 @@ namespace detail {
                 }
             } else {
                 m_max_fifo.push_back(prev);
-                //if (i == width + m_max_fifo.front())
                 if (outside_window(m_max_fifo.front()))
                     m_max_fifo.pop_front();
                 while (!m_min_fifo.empty()) {
                     size_t idx = m_min_fifo.back();
-                    if (a_sample >= Derived::m_data[idx]) {
-                        //if (i == width + m_min_fifo.front())
+                    if (a_sample >= data(idx)) {
                         if (outside_window(m_min_fifo.front()))
                             m_min_fifo.pop_front();
                         break;
@@ -87,31 +109,71 @@ namespace detail {
                     m_min_fifo.pop_back();
                 }
             }
+
+            m_last_min = m_min_fifo.empty()
+                       ? std::min(a_sample, m_last_min) : data(m_min_fifo.front());
+            m_last_max = m_max_fifo.empty()
+                       ? std::max(a_sample, m_last_max) : data(m_max_fifo.front());
+
+            #ifdef UTXX_RUNNING_MINMAX_DEBUG
+            std::cout << "========";
+            for (size_t i = end() < capacity()
+                        ? 0 : end()-capacity()+1; i < end(); ++i)
+                std::cout << " [" << i << "]" << data(i);
+            std::cout << " [" << (end() & derived_this()->MASK)
+                      <<  "]" << a_sample << std::endl;
+            std::cout << "Max: " << max() << " |";
+            for (auto i : m_max_fifo) std::cout << " [" << i << "]" << data(i);
+            std::cout << std::endl;
+            std::cout << "Min: " << min() << " |";
+            for (auto i : m_min_fifo) std::cout << " [" << i << "]" << data(i);
+            std::cout << std::endl;
+            #endif
         }
 
+        T min() const { return m_min_fifo.empty() ? m_last_min : data(m_min_fifo.front()); }
+        T max() const { return m_max_fifo.empty() ? m_last_max : data(m_max_fifo.front()); }
+
         std::pair<T,T> get_minmax() const {
-            return std::make_pair(m_min_fifo.front(), m_max_fifo.front());
+            return std::make_pair(min(), max());
         }
     };
 
     template <typename Derived, typename T>
     class minmax_impl<Derived, T, false> {
         Derived const* derived_this() const { return static_cast<Derived const*>(this); }
+        size_t begin_idx()   const { return derived_this()->begin_idx(); }
+        size_t end_idx()     const { return derived_this()->end_idx();   }
+        T data(size_t a_idx) const { return derived_this()->data(a_idx); }
+        void max();
     protected:
 
-        std::pair<T,T> get_minmax() const {
-            if (derived_this()->empty()) return std::make_pair(0, 0);
-
-            T min = std::numeric_limits<T>::max();
-            T max = std::numeric_limits<T>::min();
-            for (T const *p=derived_this()->m_data,
-                         *e=derived_this()->m_data + derived_this()->size();
-                 p != e; ++p)
-            {
-                if (*p > max) max = *p;
-                if (*p < min) min = *p;
+        T min() const {
+            T n = std::numeric_limits<T>::max();
+            for (size_t i = begin_idx(), e = end_idx(); i != e; ++i) {
+                T d = data(i);
+                if (d < n) n = d;
             }
-            return std::make_pair(min, max);
+            return n;
+        }
+        T max() const {
+            T n = std::numeric_limits<T>::min();
+            for (size_t i = begin_idx(), e = end_idx(); i != e; ++i) {
+                T d = data(i);
+                if (d > n) n = d;
+            }
+            return n;
+        }
+
+        std::pair<T,T> get_minmax() const {
+            T mn = std::numeric_limits<T>::max();
+            T mx = std::numeric_limits<T>::min();
+            for (size_t i = begin_idx(), e = end_idx(); i != e; ++i) {
+                T d = data(i);
+                if (d > mx) mx = d;
+                if (d < mn) mn = d;
+            }
+            return std::make_pair(mn, mx);
         }
 
         void update_minmax(T sample) {}

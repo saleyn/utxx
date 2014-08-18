@@ -16,8 +16,9 @@
         default="1.5" min="0.0"/>
     <option name="country" val_type="string"
         desc="Sample choice required entry" unique="false">
-        <value val="US"/>   <!-- restricts option's values -->
-        <value val="CA"/>
+        <value val="US" desc="USA"/>   <!-- restricts option's values -->
+        <value val="CA" desc="Canada"/>
+        <value val="MX"/>
         <option name="connection" type="anonymous" val_type="string"
             desc="Server connection" default="">
             <name val="ARCA"/>

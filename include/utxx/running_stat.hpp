@@ -39,6 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <limits>
 #include <algorithm>
 #include <stdexcept>
+#include <assert.h>
 #include <utxx/detail/running_stat_impl.hpp>
 #include <utxx/compiler_hints.hpp>
 
@@ -182,22 +183,24 @@ struct basic_moving_average
     }
 
     void add(T sample) {
+        m_last    = sample;
         T& oldest = m_data[m_end & MASK];
         m_sum    += sample;
 
         if (m_end > MASK)
            m_sum -= oldest;
 
-        oldest = sample;
-
         this->update_minmax(sample);
+
+        oldest = sample;
 
         ++m_end;
     }
 
     void clear() {
         memset(m_data, 0, capacity()*sizeof(T));
-        m_sum  = 0.0;
+        m_sum  = 0;
+        m_last = 0;
         m_end  = 0;
     }
 
@@ -205,17 +208,30 @@ struct basic_moving_average
     size_t capacity() const { return MASK+1; }
     size_t size()     const { return m_end > MASK  ? capacity() : m_end; }
     double mean()     const { return likely(m_end) ? double(m_sum) / size() : 0.0; }
-    T      sum()      const { return m_sum; }
+    T      sum()      const { return m_sum;  }
+    T      last()     const { return m_last; }
 
-    std::pair<T,T> minmax() const { return this->get_minmax(); }
+    std::pair<T,T> minmax() const {
+        if (unlikely(empty()))
+            return std::make_pair
+                (std::numeric_limits<T>::max(), std::numeric_limits<T>::min());
+        return this->get_minmax();
+    }
 
 protected:
     template <class D, class U, class F> friend class detail::minmax_impl;
+    size_t  begin_idx()        const { return m_end - size(); }
+    size_t  end_idx()          const { return m_end;          }
+
+    T       data(size_t a_idx) const {
+        assert(a_idx < m_end);
+        return m_data[a_idx & MASK];
+    }
 
     const size_t    MASK;
-    bool            m_full;
     size_t          m_end;
-    double          m_sum;
+    T               m_last;
+    T               m_sum;
     T*              m_data;
     T               m_samples[N];
 };

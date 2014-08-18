@@ -244,10 +244,10 @@ public:
         if (type() != rhs.type()) return false;
         switch (type()) {
             case TYPE_NULL:     return true;
-            case TYPE_BOOL:     return to_bool()   == rhs.to_bool();
-            case TYPE_INT:      return to_int()    == rhs.to_int();
-            case TYPE_DOUBLE:   return to_float()  == rhs.to_float();
-            case TYPE_STRING:   return to_string() == rhs.to_string();
+            case TYPE_BOOL:     return to_bool()  == rhs.to_bool();
+            case TYPE_INT:      return to_int()   == rhs.to_int();
+            case TYPE_DOUBLE:   return to_float() == rhs.to_float();
+            case TYPE_STRING:   return to_str()   == rhs.to_str();
             default:            throw_type_error(type());
                                 return false; // just to pease the compiler
         }
@@ -258,10 +258,10 @@ public:
         if (type() > rhs.type()) return false;
         switch (type()) {
             case TYPE_NULL:     return false;
-            case TYPE_BOOL:     return to_bool()    < rhs.to_bool();
-            case TYPE_INT:      return to_int()     < rhs.to_int();
-            case TYPE_DOUBLE:   return to_float()   < rhs.to_float();
-            case TYPE_STRING:   return to_string()  < rhs.to_string();
+            case TYPE_BOOL:     return to_bool()  < rhs.to_bool();
+            case TYPE_INT:      return to_int()   < rhs.to_int();
+            case TYPE_DOUBLE:   return to_float() < rhs.to_float();
+            case TYPE_STRING:   return to_str()   < rhs.to_str();
             default:            throw_type_error(type());
                                 return false; // just to pease the compiler
         }
@@ -272,10 +272,10 @@ public:
         if (type() < rhs.type()) return false;
         switch (type()) {
             case TYPE_NULL:     return false;
-            case TYPE_BOOL:     return to_bool()    > rhs.to_bool();
-            case TYPE_INT:      return to_int()     > rhs.to_int();
-            case TYPE_DOUBLE:   return to_float()   > rhs.to_float();
-            case TYPE_STRING:   return to_string()  > rhs.to_string();
+            case TYPE_BOOL:     return to_bool()  > rhs.to_bool();
+            case TYPE_INT:      return to_int()   > rhs.to_int();
+            case TYPE_DOUBLE:   return to_float() > rhs.to_float();
+            case TYPE_STRING:   return to_str()   > rhs.to_str();
             default:            throw_type_error(type());
                                 return false; // just to pease the compiler
         }

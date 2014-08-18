@@ -32,9 +32,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 #include <boost/bind.hpp>
+#include <boost/concept_check.hpp>
 #include <algorithm>
 #include <utxx/running_stat.hpp>
 #include <utxx/detail/mean_variance.hpp>
+#include <utxx/time_val.hpp>
+#include <utxx/persist_array.hpp>
 
 using namespace utxx;
 
@@ -106,33 +109,262 @@ namespace std
 
 BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
 {
-    basic_moving_average<int, 4> ma;
+    {
+        basic_moving_average<int, 4, true> ma;
 
-    BOOST_REQUIRE_EQUAL(std::make_pair(0, 0), ma.minmax());
+        auto ZERO = std::make_pair
+            (std::numeric_limits<int>::max(), std::numeric_limits<int>::min());
 
-    BOOST_REQUIRE_EQUAL(4u, ma.capacity());
+        BOOST_REQUIRE_EQUAL(ZERO, ma.minmax());
 
-    ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
-    ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+        ma.add(0);
+        BOOST_REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
+        ma.clear();
 
-    BOOST_REQUIRE_EQUAL(std::make_pair(2, 4), ma.minmax());
+        BOOST_REQUIRE_EQUAL(4u, ma.capacity());
 
-    ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
-    ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
+        ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
+        ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
 
-    BOOST_REQUIRE_EQUAL(std::make_pair(2, 8), ma.minmax());
-    BOOST_REQUIRE_EQUAL(4u, ma.size());
+        auto mm = ma.minmax();
+        BOOST_CHECK_EQUAL(std::make_pair(2, 4), mm);
 
-    ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
-    ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+        ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
+        ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
 
-    BOOST_REQUIRE_EQUAL(std::make_pair(6,10), ma.minmax());
-    BOOST_REQUIRE_EQUAL(4u, ma.size());
-    BOOST_REQUIRE_EQUAL(32, ma.sum()); 
+        mm = ma.minmax();
+        BOOST_CHECK_EQUAL  (std::make_pair(2, 8), mm);
+        BOOST_REQUIRE_EQUAL(4u, ma.size());
 
-    ma.clear();
+        ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
 
-    BOOST_REQUIRE_EQUAL(0u,  ma.size());
-    BOOST_REQUIRE_EQUAL(0.0, ma.mean());
+        mm = ma.minmax();
+        BOOST_CHECK_EQUAL  (std::make_pair(6,10), mm);
+
+        ma.add(2);  BOOST_REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(16); BOOST_REQUIRE_EQUAL(9.0, ma.mean());
+
+        mm = ma.minmax();
+        BOOST_CHECK_EQUAL  (std::make_pair(2,16), mm);
+
+        ma.add(6);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+        ma.add(4);  BOOST_REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(10); BOOST_REQUIRE_EQUAL(9.0, ma.mean());
+
+        mm = ma.minmax();
+        BOOST_CHECK_EQUAL  (std::make_pair(4,16), mm);
+
+        BOOST_REQUIRE_EQUAL(4u, ma.size());
+        BOOST_REQUIRE_EQUAL(36, ma.sum());
+
+        ma.clear();
+
+        BOOST_REQUIRE_EQUAL(0u,   ma.size());
+        BOOST_REQUIRE_EQUAL(0.0,  ma.mean());
+        BOOST_REQUIRE_EQUAL(ZERO, ma.minmax());
+    }
+
+    {
+        basic_moving_average<int, 4> ma;
+
+        auto ZERO = std::make_pair
+            (std::numeric_limits<int>::max(), std::numeric_limits<int>::min());
+
+        BOOST_REQUIRE_EQUAL(ZERO, ma.minmax());
+
+        ma.add(0);
+        BOOST_REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
+        ma.clear();
+
+        BOOST_REQUIRE_EQUAL(4u, ma.capacity());
+
+        ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
+        ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+
+        BOOST_REQUIRE_EQUAL(std::make_pair(2, 4), ma.minmax());
+
+        ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
+        ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
+
+        BOOST_REQUIRE_EQUAL(std::make_pair(2, 8), ma.minmax());
+        BOOST_REQUIRE_EQUAL(4u, ma.size());
+
+        ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+
+        BOOST_REQUIRE_EQUAL(std::make_pair(6,10), ma.minmax());
+        BOOST_REQUIRE_EQUAL(4u, ma.size());
+        BOOST_REQUIRE_EQUAL(32, ma.sum());
+
+        ma.clear();
+
+        BOOST_REQUIRE_EQUAL(0u,  ma.size());
+        BOOST_REQUIRE_EQUAL(0.0, ma.mean());
+    }
 }
 
+BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
+{
+    const long ITERATIONS = getenv("ITERATIONS")
+                          ? atoi(getenv("ITERATIONS")) : 100000;
+    std::vector<double> data(ITERATIONS);
+    data[0] = 0.0;
+    for (long k = 1; k < ITERATIONS; ++k)
+        data[k] = (1.0 * rand() / (RAND_MAX)) - 0.5 + data[k - 1];
+
+    std::vector<int> windows{ 16, 32, 64, 128, 256, 1024, 4096 };
+    char buf[256];
+
+    sprintf(buf, "== Add == (win) | std (us) | fast (us) | Ratio");
+    BOOST_MESSAGE(buf);
+
+    for (auto i : windows) {
+        double elapsed1, elapsed2;
+
+        {
+            basic_moving_average<double, 0, false> ma(i);
+            timer t;
+            for (auto v : data)
+                ma.add(v);
+            elapsed1 = t.elapsed();
+        }
+        {
+            basic_moving_average<double, 0, true> ma(i);
+            timer t;
+            for (auto v : data)
+                ma.add(v);
+            elapsed2 = t.elapsed();
+        }
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %.3f", i,
+                (elapsed1 / ITERATIONS * 1000000),
+                (elapsed2 / ITERATIONS * 1000000),
+                (elapsed1 / elapsed2));
+        BOOST_MESSAGE(buf);
+    }
+
+    sprintf(buf, "== MinMax (win) | std (us) | fast (us) | Ratio");
+    BOOST_MESSAGE(buf);
+
+    for (auto i : windows) {
+        double elapsed1, elapsed2;
+        {
+            basic_moving_average<double, 0, false> ma(i);
+            timer t;
+            for (auto v : data) {
+                ma.add(v);
+                ma.minmax();
+            }
+            elapsed1 = t.elapsed();
+        }
+        {
+            basic_moving_average<double, 0, true> ma(i);
+            timer t;
+            for (auto v : data) {
+                ma.add(v);
+                ma.minmax();
+            }
+            elapsed2 = t.elapsed();
+        }
+        sprintf(buf, "  %13d | %8.3f | %8.3f | %.3f", i,
+                (elapsed1 / ITERATIONS * 1000000),
+                (elapsed2 / ITERATIONS * 1000000),
+                (elapsed1 / elapsed2));
+        BOOST_MESSAGE(buf);
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_check )
+{
+    const long ITERATIONS = getenv("ITERATIONS")
+                          ? atoi(getenv("ITERATIONS")) : 100000;
+    std::vector<int> windows{ 16, 32, 64, 128, 256, 1024, 4096 };
+    char buf[256];
+
+    sprintf(buf, "== Match  (win) | Result");
+    BOOST_MESSAGE(buf);
+
+    {
+        std::vector<int> data(ITERATIONS);
+        data[0] = 0;
+        for (long k = 1; k < ITERATIONS; ++k)
+            data[k] = rand() % 1000; // - (data[k - 1] / 2);
+
+        for (auto i : windows) {
+            basic_moving_average<double, 0, false> ms(i);
+            basic_moving_average<double, 0, true>  mf(i);
+            long j = 0;
+            for (auto v : data) {
+                ms.add(v); auto rs = ms.minmax();
+                mf.add(v); auto rf = mf.minmax();
+
+                if (j++ < 2)
+                    continue;
+
+                if (rs != rf) {
+                    BOOST_MESSAGE("Window " << i << " mismatch at " <<
+                                    j << " (value=" << v <<
+                                    ") diff: " << (rs.first - rf.first));
+                    int k = 0;
+                    basic_moving_average<double, 0, false> mrs(i);
+                    basic_moving_average<double, 0, true>  mrf(i);
+
+                    for (auto d : data) {
+                        if (k == j-1) {
+                            (void)0;
+                        }
+                        mrs.add(d); auto rrs = mrs.minmax();
+                        mrf.add(d); auto rrf = mrf.minmax();
+
+                        BOOST_MESSAGE("[" << std::setw(8) << k++ << "]: "
+                                      << std::setw(15) << d
+                                      << std::setw(25) << rrs
+                                      << std::setw(25) << rrf);
+
+                        if (k == j) break;
+                    }
+                    BOOST_REQUIRE_EQUAL(rs, rf);
+                }
+            }
+            sprintf(buf, "  %13d | ok", i);
+            BOOST_MESSAGE(buf);
+        }
+    }
+
+    {
+        std::vector<double> data(ITERATIONS);
+        data[0] = 0.0;
+        for (long k = 1; k < ITERATIONS; ++k)
+            data[k] = (1.0 * rand() / (RAND_MAX)) - 0.5 + data[k - 1];
+
+        for (auto i : windows) {
+            basic_moving_average<double, 0, false> ms(i);
+            basic_moving_average<double, 0, true>  mf(i);
+            long j = 0;
+            for (auto v : data) {
+                ms.add(v);
+                auto rs = ms.minmax();
+                mf.add(v);
+                auto rf = mf.minmax();
+
+                static const double eps = 0.0000000001;
+                if (j++ > 0 && (rs.first - rf.first) > eps) {
+                    if (rs != rf) {
+                        BOOST_MESSAGE("Window " << i << " mismatch at " <<
+                                      j << " (value=" << v <<
+                                      ") diff: " << (rs.first - rf.first));
+                        int k = 0;
+
+                        for (auto d : data) {
+                            BOOST_MESSAGE("[" << std::setw(8) << k++ << "]: " << d);
+                            if (k == j) break;
+                        }
+                    }
+                    BOOST_REQUIRE((rs.first - rf.first) < eps);
+                }
+            }
+            sprintf(buf, "  %13d | ok", i);
+            BOOST_MESSAGE(buf);
+        }
+    }
+}

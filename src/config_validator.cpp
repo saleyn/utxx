@@ -32,10 +32,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/variant_tree.hpp>
 #include <utxx/config_validator.hpp>
+#include <utxx/string.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <regex>
+#include <iomanip>
 
 namespace utxx {
 namespace config {
@@ -66,19 +69,19 @@ std::string option::to_string() const {
         s << ",desc=\"" << description << '"';
     if (name_choices.size()) {
         s << ",names=["; bool l_first = true;
-        BOOST_FOREACH(const std::string& v, name_choices) {
+        BOOST_FOREACH(const string_val& v, name_choices) {
             if (!l_first) s << ";";
             l_first = false;
-            s << '"' << v << '"';
+            s << '"' << v.value() << '"';
         }
         s << ']';
     }
     if (value_choices.size()) {
         s << ",values=["; bool l_first = true;
-        BOOST_FOREACH(const variant& v, value_choices) {
+        BOOST_FOREACH(const variant_val& v, value_choices) {
             if (!l_first) s << ";";
             l_first = false;
-            s << value(v);
+            s << value(v.value());
         }
         s << "]";
     }
@@ -88,8 +91,8 @@ std::string option::to_string() const {
         s << (value_type == STRING ? ",min_length=" : ",min=") << value(min_value);
     if (!max_value.is_null())
         s << (value_type == STRING ? ",max_length=" : ",max=") << value(max_value);
-    s << ",required="   << (required ? "true" : "false");
-    s << ",unique="     << (unique ? "true" : "false");
+    s << ",required="   << utxx::to_string(required);
+    s << ",unique="     << utxx::to_string(unique);
     if (children.size()) {
         bool l_first = true;
         s << ",children=[";
@@ -232,7 +235,8 @@ tree_path validator::format_name
 
 void validator::validate
 (
-    variant_tree& a_config, bool a_fill_defaults,
+    variant_tree&           a_config,
+    bool                    a_fill_defaults,
     const custom_validator& a_custom_validator
 )
     const throw(variant_tree_error)
@@ -240,12 +244,26 @@ void validator::validate
     validate(a_config, m_options, a_fill_defaults, a_custom_validator);
 }
 
-void validator::validate(const variant_tree& a_config,
+void validator::validate
+(
+    const variant_tree&     a_config,
     const custom_validator& a_custom_validator
-) const throw(variant_tree_error)
+)
+    const throw(variant_tree_error)
 {
     variant_tree l_config(a_config);
     validate(l_config, false, a_custom_validator);
+}
+
+void validator::validate(const custom_validator& a_custom_validator)
+    const throw(variant_tree_error)
+{
+    if (!m_config || m_config->empty())
+        throw variant_tree_error(std::string(), "validator: unassigned field 'config()'!");
+    // Note that the following const cast is safe - since fill_defaults is false
+    // the tree will not be updated
+    validate(m_root, *const_cast<variant_tree_base*>(m_config),
+             m_options, false, a_custom_validator);
 }
 
 void validator::validate
@@ -272,6 +290,20 @@ void validator::validate
     check_unique(a_root, a_config, a_opts);
     check_required(a_root, a_config, a_opts);
 
+    // If the options tree is arranged such that all options are children
+    // of a single branch, then don't validate non-matching named options
+    // at the branch level. E.g.:
+    //   Suppose we have a signle config tree, and try to validate a component
+    //   called 'strategy' that has its own validator, which doesn't include
+    //   definition of 'logger' that is defined using a separate validator:
+    //      strategy { a=1,   b=2 }
+    //      logger   { file="abc" }
+    //
+    //   then the variable below detects the options tree layout and prevents
+    //   the validation error that the 'logger' sub-tree is undefined.
+    bool single_nested_tree =
+        (m_options.size() == 1 && m_options.begin()->second.children.size() > 0);
+
     BOOST_FOREACH(variant_tree::value_type& vt, a_config) {
         bool l_match = false;
         BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
@@ -287,6 +319,9 @@ void validator::validate
                 break;
             } else if (opt.name == vt.first) {
                 check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
+                l_match = true;
+                break;
+            } else if (single_nested_tree) {
                 l_match = true;
                 break;
             }
@@ -551,7 +586,11 @@ std::ostream& validator::dump
     std::ostream& out, const std::string& a_indent,
     int a_level, const option_map& a_opts
 ) {
-    std::string l_indent = a_indent + std::string(a_level, ' ');
+    std::regex eol_re("\n *");
+
+    std::string       l_indent = a_indent + std::string(a_level, ' ');
+    const std::string l_nl_15  = l_indent + std::string(15, ' ');
+
     BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
         const option& opt = ovt.second;
         out << l_indent << opt.name
@@ -559,8 +598,7 @@ std::ostream& validator::dump
             << type_to_string(opt.value_type) << std::endl;
         if (!opt.description.empty())
             out << l_indent << "  Description: "
-                << boost::algorithm::replace_all_copy(
-                    opt.description, l_indent + std::string(15, ' '), "-")
+                << std::regex_replace(opt.description, eol_re, l_nl_15)
                 << std::endl;
         if (!opt.unique)
             out << l_indent << "       Unique: true" << std::endl;
@@ -571,7 +609,7 @@ std::ostream& validator::dump
         } else
             out << l_indent << "     Required: true" << std::endl;
 
-        if (!opt.min_value.is_null() || !opt.max_value.is_null())
+        if (!opt.min_value.is_null() || !opt.max_value.is_null()) {
             out << l_indent << "         "
                 << (!opt.min_value.is_null()
                         ? std::string(opt.value_type == STRING
@@ -582,8 +620,61 @@ std::ostream& validator::dump
                         ? std::string(opt.value_type == STRING
                                        ? "MaxLength: " : " Max: ")
                             + value(opt.max_value)
-                        : std::string());
-        out << std::endl;
+                        : std::string())
+                << std::endl;
+        }
+        if (!opt.name_choices.empty()) {
+            std::vector<string_val> r(opt.name_choices.size());
+            std::copy(opt.name_choices.begin(), opt.name_choices.end(), r.begin());
+            std::sort(r.begin(), r.end());
+            out << l_indent << "        Names: ";
+            bool first    = true;
+            bool has_desc = false;
+            int  max_len  = 0;
+            for (const auto& v : r) {
+                has_desc |= !v.desc().empty();
+                max_len   = std::max<int>(max_len, v.value().size());
+            }
+            for (const auto& v : r) {
+                out << (first ? "" : l_nl_15);
+                if (has_desc) out << std::setw(max_len+1) << std::left;
+                out << v.value();
+                if (has_desc) out << "|";
+                if (!v.desc().empty()) {
+                    std::string pfx =
+                        "\n" + l_indent + std::string(max_len+2,' ') + "| ";
+                    out << " " << std::regex_replace(v.desc(), eol_re, pfx);
+                }
+                out << std::endl;
+                first = false;
+            }
+        }
+        if (!opt.value_choices.empty()) {
+            std::vector<variant_val> r(opt.value_choices.size());
+            std::copy(opt.value_choices.begin(), opt.value_choices.end(), r.begin());
+            std::sort(r.begin(), r.end());
+            out << l_indent << "       Values: ";
+            bool first    = true;
+            bool has_desc = false;
+            int  max_len  = 0;
+            for (const auto& v : r) {
+                has_desc |= !v.desc().empty();
+                max_len   = std::max<int>(max_len, v.value().to_string().size());
+            }
+            for (const auto& v : opt.value_choices) {
+                out << (first ? "" : l_nl_15);
+                if (has_desc) out << std::setw(max_len+1) << std::left;
+                out << v.value().to_string();
+                if (has_desc) out << "|";
+                if (!v.desc().empty()) {
+                    std::string pfx =
+                        "\n" + l_indent + std::string(max_len+2,' ') + "| ";
+                    out << " " << std::regex_replace(v.desc(), eol_re, pfx);
+                }
+                out << std::endl;
+                first = false;
+            }
+        }
         if (opt.children.size())
             dump(out, l_indent, a_level+2, opt.children);
     }
