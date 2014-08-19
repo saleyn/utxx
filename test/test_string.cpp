@@ -36,6 +36,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
+BOOST_AUTO_TEST_CASE( test_string_conversion )
+{
+    std::stringstream s;
+    s << fixed(10.123, 8, 4);
+    BOOST_CHECK_EQUAL(" 10.1230", s.str());
+}
+
 BOOST_AUTO_TEST_CASE( test_string_length )
 {
     char const* s_values[] = {"One", "Two", "Three"};

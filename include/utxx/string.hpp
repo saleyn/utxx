@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <cctype>
 #include <string.h>
 #include <algorithm>
@@ -70,6 +71,22 @@ namespace utxx {
     inline constexpr const char* to_string(bool a_value) {
         return a_value ? "true" : "false";
     }
+
+    /// Output a float to stream formatted with fixed precision
+    struct fixed {
+        fixed(double a_val, int a_digits, int a_precision)
+            : m_value(a_val), m_digits(a_digits), m_precision(a_precision)
+        {}
+
+        inline friend std::ostream& operator<<(std::ostream& out, const fixed& f) {
+            return out << std::fixed << std::setw(f.m_digits)
+                       << std::setprecision(f.m_precision) << f.m_value;
+        }
+    private:
+        double m_value;
+        int    m_digits;
+        int    m_precision;
+    };
 
     /// Convert a string to an integer value
     /// \code
