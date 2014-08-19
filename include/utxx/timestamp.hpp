@@ -189,7 +189,7 @@ public:
     /// Write formatted timestamp string to the given \a a_buf buffer.
     /// The function always put a NULL terminator at the last written
     /// position.
-    /// @param a_sz is the size of a_buf buffer and must be greater than 26.
+    /// @param a_sz is the size of a_buf buffer and must be greater than 25.
     /// @return number of bytes written or -1 if \a a_tp is not known.
     inline static int write(stamp_type a_tp, char* a_buf, size_t a_sz, bool a_utc=false) {
         return format(a_tp, last_time(), a_buf, a_sz, a_utc);
