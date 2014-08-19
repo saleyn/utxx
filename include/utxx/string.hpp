@@ -115,15 +115,21 @@ namespace utxx {
         return end;
     }
 
+    /// Compare strings optionally using non-case-sensitive comparator
+    inline int compare(const char* a, const char* b, size_t sz, bool a_nocase) {
+        return (a_nocase ? strncasecmp(a, b, sz) : strncmp(a, b, sz));
+    }
+
     /// Find \a s in the static array of string \a choices.
     /// @return position of \a s in the \a choices array or \a def if
     ///         the string not found.
     /// 
     template <typename T>
     inline T find_index(const char* choices[], size_t n, 
-                        const std::string& s,  T def = static_cast<T>(-1)) {
+                        const std::string& s,  T def = static_cast<T>(-1),
+                        bool a_nocase = false) {
         for (size_t i=0; i < n; ++i)
-            if (s == choices[i])
+            if (!compare(s.c_str(), choices[i], s.size(), a_nocase))
                 return static_cast<T>(i);
         return def;
     }
@@ -136,10 +142,11 @@ namespace utxx {
     template <typename T>
     inline T find_index(const char* choices[], size_t n, 
                         const char* value,     size_t len,
-                        T def = static_cast<T>(-1)) {
+                        T def = static_cast<T>(-1),
+                        bool a_nocase = false) {
         if (!len) return def;
         for (size_t i=0; i < n; ++i)
-            if (!strncmp(value, choices[i], len))
+            if (!compare(value, choices[i], len, a_nocase))
                 return static_cast<T>(i);
         return def;
     }
@@ -150,9 +157,9 @@ namespace utxx {
     /// 
     template <typename T, int N>
     inline T find_index(const char* (&choices)[N], const std::string& value,
-        T def = static_cast<T>(-1))
+        T def = static_cast<T>(-1), bool a_nocase = false)
     {
-        return find_index(choices, N, value, def);
+        return find_index(choices, N, value, def, a_nocase);
     }
 
     /// Find \a value in the static array of string \a choices.
@@ -162,15 +169,16 @@ namespace utxx {
     /// 
     template <typename T, int N>
     inline T find_index(const char* (&choices)[N], const char* value, size_t len,
-        T def = static_cast<T>(-1))
+        T def = static_cast<T>(-1), bool a_nocase = false)
     {
-        return find_index(choices, N, value, len, def);
+        return find_index(choices, N, value, len, def, a_nocase);
     }
 
     template <typename T, int N>
-    inline T find_index_or_throw(const char* (&choices)[N], const std::string& s)
+    inline T find_index_or_throw(const char* (&choices)[N], const std::string& s,
+        T def = static_cast<T>(-1), bool a_nocase = false)
     {
-        T result = find_index<T>(choices, N, s, (T)-1);
+        T result = find_index<T>(choices, N, s, def, a_nocase);
         if (result == (T)-1)
             throw std::runtime_error(std::string("String not found: ")+s);
         return result;

@@ -261,9 +261,20 @@ public:
     /// @param a_filename is the name of the output file
     /// @param a_append   if true the file is open in append mode
     /// @param a_mode     file permission mode (default 660)
-    file_id open_file(const std::string& a_filename,
-                      bool      a_append = true,
-                      int       a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+    file_id open_file
+    (
+        const std::string& a_filename,
+        bool               a_append = true,
+        int                a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
+    );
+
+    /// Same as open_file() but throws io_error exception on error 
+    file_id open_file_or_throw
+    (
+        const std::string& a_filename,
+        bool               a_append = true,
+        int                a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
+    );
 
     /// Start a new logging stream
     ///
@@ -274,10 +285,22 @@ public:
     /// @param a_writer a callback executed on writing messages to stream
     /// @param a_state  custom state available to the implementation's writer
     /// @param a_fd     is an optional file descriptor associated with the stream
-    file_id open_stream(const std::string&  a_name,
-                        msg_writer          a_writer,
-                        stream_state_base*  a_state = NULL,
-                        int                 a_fd = -1);
+    file_id open_stream
+    (
+        const std::string&  a_name,
+        msg_writer          a_writer,
+        stream_state_base*  a_state = NULL,
+        int                 a_fd = -1
+    );
+
+    /// Same as open_stream() but throws io_error exception on error
+    file_id open_stream_or_throw
+    (
+        const std::string&  a_name,
+        msg_writer          a_writer,
+        stream_state_base*  a_state = NULL,
+        int                 a_fd = -1
+    );
 
     /// This callback will be called from within the logger's thread
     /// to format a message prior to writing it to a log file. The formatting
@@ -334,12 +357,15 @@ public:
         return p;
     }
 
+    /// Allocate a message that can be passed to the loggers' write() function
+    /// as its \a a_data argument
     char* allocate(size_t a_sz) {
         char* p = m_msg_allocator.allocate(a_sz);
         ASYNC_TRACE(("+allocate(%lu) -> %p\n", a_sz, p));
         return p;
     }
 
+    /// Deallocate a message previously allocated by the call to allocate()
     void deallocate(char* a_data, size_t a_size) {
         ASYNC_TRACE(("-Deallocating msg(%p, %lu)\n", a_data, a_size));
         m_msg_allocator.deallocate(a_data, a_size);
@@ -352,7 +378,7 @@ public:
     int write(const file_id& a_id, const std::string& a_category, void* a_data, size_t a_sz);
 
     /// Write a copy of the string a_data to a file.
-    int write(const file_id& a_id, const std::string& a_category, const std::string& a_data);
+    int write(const file_id& a_id, const std::string& a_category, const std::string& a_msg);
 
     /// @return max size of the commit queue
     const int   max_queue_size()        const { return m_max_queue_size; }
@@ -360,7 +386,7 @@ public:
                                                 .load(std::memory_order_relaxed); }
     const int   open_files_count()      const { return m_active_count
                                                 .load(std::memory_order_relaxed); }
-
+    /// Signaling event that can be used to wake up the logging I/O thread
     const event_type& event()           const { return m_event; }
 
 };
@@ -868,6 +894,21 @@ open_file(const std::string& a_filename, bool a_append, int a_mode)
 template<typename traits>
 typename basic_multi_file_async_logger<traits>::file_id
 basic_multi_file_async_logger<traits>::
+open_file_or_throw(const std::string& a_filename, bool a_append, int a_mode)
+{
+    int n = ::open(a_filename.c_str(),
+                a_append ? O_CREAT|O_APPEND|O_WRONLY|O_LARGEFILE
+                         : O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE,
+                a_mode);
+    if (n < 0)
+        throw io_error(errno, "Cannot open file '", a_filename,
+                       "' for writing");
+    return internal_register_stream(a_filename, &writev, NULL, n);
+}
+
+template<typename traits>
+typename basic_multi_file_async_logger<traits>::file_id
+basic_multi_file_async_logger<traits>::
 open_stream(const std::string&  a_name,
             msg_writer          a_writer,
             stream_state_base*  a_state,
@@ -875,6 +916,21 @@ open_stream(const std::string&  a_name,
 {
     // Reserve a valid file descriptor by allocating a socket
     int n = a_fd < 0 ? socket(AF_INET, SOCK_DGRAM, 0) : a_fd;
+    return internal_register_stream(a_name, a_writer, a_state, n);
+}
+
+template<typename traits>
+typename basic_multi_file_async_logger<traits>::file_id
+basic_multi_file_async_logger<traits>::
+open_stream_or_throw(const std::string&  a_name,
+                     msg_writer          a_writer,
+                     stream_state_base*  a_state,
+                     int                 a_fd)
+{
+    // Reserve a valid file descriptor by allocating a socket
+    int n = a_fd < 0 ? socket(AF_INET, SOCK_DGRAM, 0) : a_fd;
+    if (n < 0)
+        throw io_error(errno, "Cannot allocate stream '", a_name, "' socket");
     return internal_register_stream(a_name, a_writer, a_state, n);
 }
 

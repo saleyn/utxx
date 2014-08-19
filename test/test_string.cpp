@@ -76,11 +76,14 @@ BOOST_AUTO_TEST_CASE( test_string_find_pos )
 BOOST_AUTO_TEST_CASE( test_string_find_index )
 {
     static const char* s_ops[] = {"add", "remove", "replace", "update"};
-    BOOST_REQUIRE(OP_REMOVE    == utxx::find_index<op_type>(s_ops, "remove  ", 6));
-    BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "remove  ", 0));
-    BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace"));
-    BOOST_REQUIRE(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace ", 7));
-    BOOST_REQUIRE(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "xxx"));
+    BOOST_CHECK(OP_REMOVE    == utxx::find_index<op_type>(s_ops, "remove  ", 6));
+    BOOST_CHECK(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "remove  ", 0));
+    BOOST_CHECK(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace"));
+    BOOST_CHECK(OP_REPLACE   == utxx::find_index<op_type>(s_ops, sizeof(s_ops), "replace ", 7));
+    BOOST_CHECK(OP_UNDEFINED == utxx::find_index<op_type>(s_ops, "xxx"));
+    BOOST_CHECK(OP_ADD       == utxx::find_index<op_type>(s_ops, "Add",    OP_UNDEFINED, true));
+    BOOST_CHECK(OP_ADD       == utxx::find_index<op_type>(s_ops, "ADD", 3, OP_UNDEFINED, true));
+    BOOST_CHECK(OP_ADD       == utxx::find_index_or_throw<op_type>(s_ops, "ADD", OP_UNDEFINED, true));
 }
 
 BOOST_AUTO_TEST_CASE( test_string_to_int64 )
