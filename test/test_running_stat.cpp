@@ -122,22 +122,44 @@ namespace std
 
 BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
 {
+    #if __cplusplus >= 201103L
+    {
+        typedef basic_moving_average<int, 4, false> moving_avg;
+        moving_avg a;
+        a.add(1);
+        a.add(2);
+        auto sum = a.sum();
+
+        moving_avg b(a);
+        BOOST_CHECK_EQUAL(sum, a.sum());
+
+        moving_avg c(std::move(a));
+        BOOST_CHECK_EQUAL(sum,      c.sum());
+        BOOST_CHECK_EQUAL(0,        a.sum());
+        BOOST_CHECK(a.samples() == nullptr);
+    }
+    #endif
+
     {
         basic_moving_average<int, 4, true> ma;
 
         auto ZERO = std::make_pair
             (std::numeric_limits<int>::max(), std::numeric_limits<int>::min());
 
-        BOOST_REQUIRE_EQUAL(ZERO, ma.minmax());
+        BOOST_CHECK_EQUAL(ZERO, ma.minmax());
 
         ma.add(0);
         BOOST_REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
         ma.clear();
 
-        BOOST_REQUIRE_EQUAL(4u, ma.capacity());
+        BOOST_CHECK_EQUAL(4u, ma.capacity());
+        BOOST_CHECK_EQUAL(0u, ma.total());
 
         ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
         ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+
+        BOOST_CHECK_EQUAL(2u, ma.total());
+        BOOST_CHECK_EQUAL(2u, ma.size());
 
         auto mm = ma.minmax();
         BOOST_CHECK_EQUAL(std::make_pair(2, 4), mm);
@@ -168,9 +190,9 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
         mm = ma.minmax();
         BOOST_CHECK_EQUAL  (std::make_pair(4,16), mm);
 
-        BOOST_REQUIRE_EQUAL(4u, ma.size());
-        BOOST_REQUIRE_EQUAL(36, ma.sum());
-
+        BOOST_CHECK_EQUAL(4u,  ma.size());
+        BOOST_CHECK_EQUAL(36,  ma.sum());
+        BOOST_CHECK_EQUAL(11u, ma.total());
         ma.clear();
 
         BOOST_REQUIRE_EQUAL(0u,   ma.size());

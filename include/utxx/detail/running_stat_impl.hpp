@@ -63,6 +63,34 @@ namespace detail {
         #ifdef UTXX_RUNNING_MINMAX_DEBUG
         size_t capacity()         const { return derived_this()->capacity();  }
         #endif
+    public:
+        minmax_impl()
+            : m_min_idx(0)
+            , m_max_idx(0)
+        {}
+
+        minmax_impl(const minmax_impl& a_rhs)
+            : m_min_fifo(a_rhs.m_min_fifo)
+            , m_max_fifo(a_rhs.m_max_fifo)
+            , m_min_idx (a_rhs.m_min_idx)
+            , m_max_idx (a_rhs.m_max_idx)
+        {}
+
+        #if __cplusplus >= 201103L
+        minmax_impl(minmax_impl&& a_rhs)
+            : m_min_idx(a_rhs.m_min_idx)
+            , m_max_idx(a_rhs.m_max_idx)
+        {
+            m_min_fifo.swap(a_rhs.m_min_fifo);
+            m_max_fifo.swap(a_rhs.m_max_fifo);
+        }
+        #endif
+
+        void clear() {
+            m_min_fifo.clear();
+            m_max_fifo.clear();
+            m_min_idx = m_max_idx = 0;
+        }
     protected:
         bool outside_window(size_t a_idx) const {
             size_t iend  = end();
@@ -152,8 +180,17 @@ namespace detail {
         size_t end_idx()     const { return derived_this()->end_idx();   }
         T data(size_t a_idx) const { return derived_this()->data(a_idx); }
         void max();
-    protected:
+    public:
+        minmax_impl() {}
+        minmax_impl(const minmax_impl& a_rhs) {}
 
+        #if __cplusplus >= 201103L
+        minmax_impl(minmax_impl&& a_rhs) {}
+        #endif
+
+        void clear() {}
+
+    protected:
         T min() const {
             T n = std::numeric_limits<T>::max();
             for (size_t i = begin_idx(), e = end_idx(); i != e; ++i) {

@@ -153,8 +153,8 @@ struct basic_moving_average
         base;
 
     explicit basic_moving_average(size_t a_capacity = 0)
-      : MASK(N ? N-1 : a_capacity-1)
-      , m_data(m_samples)
+        : MASK(N ? N-1 : a_capacity-1)
+        , m_data(m_samples)
     {
         #if __cplusplus >= 201103L
         static_assert(!N || (N & (N-1)) == 0, "N must be 0 or power of 2");
@@ -173,6 +173,46 @@ struct basic_moving_average
 
         clear();
     }
+
+    basic_moving_average(const basic_moving_average& a_rhs)
+        : base(a_rhs)
+        , MASK  (a_rhs.MASK)
+        , m_end (a_rhs.m_end)
+        , m_last(a_rhs.m_last)
+        , m_sum (a_rhs.m_sum)
+    {
+        if (a_rhs.m_data == a_rhs.m_samples)
+            m_data = m_samples;
+        else {
+            assert(N == 0);
+            m_data = new T[capacity()];
+        }
+
+        memcpy(m_data, a_rhs.m_data, sizeof(T)*capacity());
+    }
+
+    #if __cplusplus >= 201103L
+    basic_moving_average(basic_moving_average&& a_rhs)
+        : base(a_rhs)
+        , MASK  (a_rhs.MASK)
+        , m_end (a_rhs.m_end)
+        , m_last(a_rhs.m_last)
+        , m_sum (a_rhs.m_sum)
+    {
+        if (a_rhs.m_data != a_rhs.m_samples) {
+            assert(N == 0);
+            m_data = a_rhs.m_data;
+        } else {
+            m_data = m_samples;
+            memcpy(m_samples, a_rhs.m_samples, sizeof(T)*capacity());
+        }
+        // Reset the data pointer so that it's not 
+        a_rhs.m_data = nullptr;
+        a_rhs.m_sum  = 0;
+        a_rhs.m_last = 0;
+        a_rhs.m_end  = 0;
+    }
+    #endif
 
     ~basic_moving_average() {
         if (m_data != m_samples)
@@ -195,18 +235,27 @@ struct basic_moving_average
     }
 
     void clear() {
+        base::clear();
         memset(m_data, 0, capacity()*sizeof(T));
         m_sum  = 0;
         m_last = 0;
         m_end  = 0;
     }
 
-    bool   empty()    const { return m_end == 0; }
-    size_t capacity() const { return MASK+1; }
-    size_t size()     const { return m_end > MASK  ? capacity() : m_end; }
-    double mean()     const { return likely(m_end) ? double(m_sum) / size() : 0.0; }
-    T      sum()      const { return m_sum;  }
-    T      last()     const { return m_last; }
+    bool     empty()    const { return m_end == 0; }
+    /// Capacity of the window
+    size_t   capacity() const { return MASK+1; }
+    /// Number of windowed items (<= capacity())
+    size_t   size()     const { return m_end > MASK  ? capacity() : m_end; }
+    /// Total number of samples processed since initialization
+    size_t   total()    const { return m_end; }
+
+    /// Access to raw samples
+    const T* samples()  const { return m_data; }
+
+    double   mean()     const { return likely(m_end) ? double(m_sum) / size() : 0.0; }
+    T        sum()      const { return m_sum;  }
+    T        last()     const { return m_last; }
 
     std::pair<T,T> minmax() const {
         if (unlikely(empty()))
