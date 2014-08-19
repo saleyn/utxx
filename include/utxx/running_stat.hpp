@@ -236,7 +236,8 @@ struct basic_moving_average
 
     void clear() {
         base::clear();
-        memset(m_data, 0, capacity()*sizeof(T));
+        if (m_data)
+            memset(m_data, 0, capacity()*sizeof(T));
         m_sum  = 0;
         m_last = 0;
         m_end  = 0;
