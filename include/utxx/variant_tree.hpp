@@ -301,9 +301,7 @@ public:
     template <class T>
     T get_value(const T& default_value) const {
         try { return detail::variant_translator<T>().get_value(this->data()); }
-        catch (const boost::bad_get& e) {
-            throw_bad_type<T>(path_type(), this->data());
-        }
+        catch (const boost::bad_get&) { throw_bad_type<T>(path_type(), this->data()); }
     }
 
     std::basic_string<Ch> get_value(const Ch* default_value) const {
@@ -317,9 +315,7 @@ public:
 //             if (!(this->data().is_type<T>()))
 //                throw_bad_type<T>(path_type(), this->data());
             try { return detail::variant_translator<T>().get_value(this->data()); }
-            catch (const std::exception& e) {
-                throw_bad_type<T>(path_type(), this->data());
-            }
+            catch (...) { throw_bad_type<T>(path_type(), this->data()); }
         }
         return boost::optional<T>();
     }
@@ -330,6 +326,8 @@ public:
         if (r) return *r;
         if (m_schema_validator) {
             const config::option& o = m_schema_validator->get(path, m_root_path);
+            if (!o.default_subst_value().is_type<T>())
+                throw_bad_type<T>(path, o.default_subst_value());
             return o.default_subst_value().get<T>();
         }
         throw variant_tree_bad_path("Path not found", path);
@@ -339,7 +337,10 @@ public:
     T get(const path_type& path, const T& default_value) const {
         path_type p(path);
         const base* t = navigate(this, p, (const int*)NULL, false);
-        return t ? t->get_value<T>(detail::variant_translator<T>()) : default_value;
+        if (t)
+            try { return  t->get_value<T>(detail::variant_translator<T>()); }
+            catch (...) { throw_bad_type<T>(path, t->data()); }
+        return default_value;
     }
 
     std::basic_string<Ch>
@@ -356,9 +357,7 @@ public:
 //                 throw_bad_type<T>(path, t->data());
 //             return boost::optional<T>(t->get<T>());
             try { return t->get_value<T>(detail::variant_translator<T>()); }
-            catch (const std::exception& e) {
-                throw_bad_type<T>(path, t->data());
-            }
+            catch (...) { throw_bad_type<T>(path, t->data()); }
         }
         return boost::optional<T>();
     }
