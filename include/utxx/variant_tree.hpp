@@ -466,7 +466,7 @@ public:
 
     base& put_child(const path_type& path, const self_type& value) {
         path_type p(path);
-        base* c = navigate(this, p, false);
+        base* c = navigate(this, p, &value);
         if (!c) throw variant_tree_bad_path("Path doesn't exist", p);
         return c->put_child(p, value);
     }

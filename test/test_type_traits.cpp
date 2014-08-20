@@ -37,8 +37,17 @@ struct check_has_print {
     struct get {};
 };
 
+struct check_has_derived_print {
+    template <typename T, void (T::derived::*)(std::ostream&) const = &T::derived::print>
+    struct get {};
+};
+
 template <typename T>
 struct has_print : has_member<T, check_has_print>
+{};
+
+template <typename T>
+struct has_derived_print : has_member<T, check_has_derived_print>
 {};
 
 struct check_has_x {
@@ -62,6 +71,11 @@ struct WrongSig {
     float x;
 };
 
+template <class Derived>
+struct DerivedYes : public Derived {
+    using derived = Derived;
+};
+
 template <typename T>
 typename std::enable_if<has_print<T>::value, std::ostream&>::type
 operator<< (std::ostream& stream, const T& value) {
@@ -75,9 +89,11 @@ BOOST_AUTO_TEST_CASE( test_type_traits )
     static_assert(!has_print<No>::value,       "No: doesn't have print()");
     static_assert(!has_print<WrongSig>::value, "WrongSig: wrong signature of print()");
 
-    static_assert(has_x<Yes>::value,           "Yes: has x");
-    static_assert(!has_x<No>::value,           "No: doesn't have x");
-    static_assert(!has_x<WrongSig>::value,     "WrongSig: has wrong x");
+    static_assert(has_x<Yes>::value,           "Yes: doesn't have x");
+    static_assert(!has_x<No>::value,           "No: has x");
+    static_assert(!has_x<WrongSig>::value,     "WrongSig: has x of improper type");
+
+    static_assert(has_derived_print<DerivedYes<Yes>>::value, "DerivedYes doesn't have x");
 
     BOOST_REQUIRE(true);
 }
