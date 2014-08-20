@@ -83,6 +83,20 @@ protected:
         , m_allocator(reinterpret_cast<const alloc_t&>(a_alloc))
     {}
 
+    #if __cplusplus >= 201103L
+    basic_io_buffer(basic_io_buffer&& a_rhs)
+        : m_begin (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_data)
+        , m_end   (m_begin + (a_rhs.m_end - a_rhs.m_begin))
+        , m_rd_ptr(m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin))
+        , m_wr_ptr(m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin))
+        , m_wr_lwm(a_rhs.m_wr_lwm)
+    {
+        if (a_rhs.size() && a_rhs.m_begin != a_rhs.m_data)
+            memcpy(m_rd_ptr, a_rhs.m_rd_ptr, a_rhs.size());
+        a_rhs.reset();
+    }
+    #endif
+
     ~basic_io_buffer() { deallocate(); }
 
     /// Reset read/write pointers. Any unread content will be lost.

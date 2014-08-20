@@ -48,6 +48,22 @@ namespace utxx {
     inline bool unlikely(bool expr) { return expr; }
 #endif
 
+/// A helper function used to signify an "out" argument in a function call
+/// \code
+///   int i = 10;
+///   test("abc", out(i));
+/// \endcode
+template <typename T>
+constexpr T& out(T& arg) { return arg; }
+
+/// A helper function used to signify an "in/out" argument in a function call
+/// \code
+///   int i = 10;
+///   test("abc", inout(i));
+/// \endcode
+template <typename T>
+constexpr T& inout(T& arg) { return arg; }
+
 } // namespace utxx
 
 #endif // _UTXX_COMPILER_HINTS_HPP_

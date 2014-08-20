@@ -135,7 +135,7 @@ public:
 
     template <class T, class... Args>
     runtime_error(const T& a_first, Args&&... a_rest) {
-        *this << a_first << ' ';
+        *this << a_first;
         output(std::forward<Args>(a_rest)...);
     }
 

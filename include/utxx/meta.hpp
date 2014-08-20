@@ -38,14 +38,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-/// A helper function used to signify an "out" argument in a function call
-/// \code
-///   int i = 10;
-///   test("abc", out(i));
-/// \endcode
-template <typename T>
-constexpr T& out(T& arg) { return arg; }
-
 template <size_t N, size_t Base>
 struct log {
     static const size_t value = 1 + log<N / Base, Base>::value;
