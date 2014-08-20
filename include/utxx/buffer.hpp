@@ -85,12 +85,19 @@ protected:
 
     #if __cplusplus >= 201103L
     basic_io_buffer(basic_io_buffer&& a_rhs)
-        : m_begin (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_data)
-        , m_end   (m_begin + (a_rhs.m_end - a_rhs.m_begin))
-        , m_rd_ptr(m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin))
-        , m_wr_ptr(m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin))
-        , m_wr_lwm(a_rhs.m_wr_lwm)
+        : m_allocator(a_rhs)
     {
+        *this = std::move(a_rhs);
+    }
+
+    void operator=(basic_io_buffer&& a_rhs) {
+        m_begin  = (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_data);
+        m_end    = m_begin + (a_rhs.m_end - a_rhs.m_begin);
+        m_rd_ptr = m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin);
+        m_wr_ptr = m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin);
+        m_wr_lwm = a_rhs.m_wr_lwm;
+        m_allocator = a_rhs.m_allocator;
+
         if (a_rhs.size() && a_rhs.m_begin != a_rhs.m_data)
             memcpy(m_rd_ptr, a_rhs.m_rd_ptr, a_rhs.size());
         a_rhs.reset();
@@ -284,7 +291,7 @@ public:
     size_t      size()      const { return wr_ptr() - rd_ptr(); }
     /// Current number of bytes available to write.
     size_t      capacity()  const { return end()    - wr_ptr(); }
-    
+
     /// Returns true if the buffer space was dynamically allocated.
     bool        allocated() const { return super::allocated(); }
 
