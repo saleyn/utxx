@@ -53,6 +53,12 @@ enum stamp_type {
     , DATE_TIME_WITH_USEC
 };
 
+/// Parse a timestamp from string.
+/// Parsing is case-insensitive. The value is one of:
+/// "none|time|time-msec|time-usec|date-time|date-time-msec|date-time-usec".
+/// Throws badarg_error() on unrecognized value.
+stamp_type parse_stamp_type(const std::string& a_line);
+
 class timestamp {
 protected:
     static boost::mutex             s_mutex;

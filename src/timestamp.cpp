@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/convert.hpp>
 #include <utxx/timestamp.hpp>
 #include <utxx/compiler_hints.hpp>
+#include <utxx/string.hpp>
+#include <utxx/error.hpp>
 #include <stdio.h>
 
 namespace utxx {
@@ -48,6 +50,19 @@ __thread char           timestamp::s_timestamp[16];
 volatile long timestamp::s_hrcalls;
 volatile long timestamp::s_syscalls;
 #endif
+
+stamp_type parse_stamp_type(const std::string& a_line) {
+    static const char* s_values[] = {
+        "none", "time",   "time-msec", "time-usec",
+        "date-time", "date-time-msec", "date-time-usec"
+    };
+
+    stamp_type t = find_index<stamp_type>(s_values, a_line, (stamp_type)-1, true);
+
+    if (int(t) == -1)
+        throw badarg_error("parse_stamp_tpe: invalid timestamp type: ", a_line);
+    return t;
+}
 
 static int internal_write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
