@@ -389,6 +389,9 @@ public:
     /// Signaling event that can be used to wake up the logging I/O thread
     const event_type& event()           const { return m_event; }
 
+    /// True when the logger has unprocessed data in its queue
+    bool  had_pending_data()            const { return m_head
+                                                .load(std::memory_order_relaxed); }
 };
 
 /// Default implementation of multi_file_async_logger
