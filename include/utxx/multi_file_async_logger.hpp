@@ -390,7 +390,7 @@ public:
     const event_type& event()           const { return m_event; }
 
     /// True when the logger has unprocessed data in its queue
-    bool  had_pending_data()            const { return m_head
+    bool  has_pending_data()            const { return m_head
                                                 .load(std::memory_order_relaxed); }
 };
 
