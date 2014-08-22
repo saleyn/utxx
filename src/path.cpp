@@ -140,7 +140,7 @@ std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
     }
     #endif
 
-    if (a_now != NULL) {
+    if (a_now != NULL && x.find('%') != std::string::npos) {
         char buf[384];
         if (strftime(buf, sizeof(buf), x.c_str(), a_now) == 0)
             throw badarg_error("Invalid time specification!");

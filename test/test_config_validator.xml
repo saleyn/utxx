@@ -33,5 +33,5 @@
     <option name="section2" required="false">
         <option name="abc" val_type="string" default="x"/>
     </option>
-    <option name="tmp_str" val_type="string" macros="env" default="$TMP"/>
+    <option name="tmp_str" val_type="string" default="$TMP"/>
 </config>

@@ -86,10 +86,8 @@
 ///     - <tt>max</tt> -  max value of the option (valid only for int/float).
 ///     - <tt>min_length</tt> - min value length (valid only for string type).
 ///     - <tt>max_length</tt> - max value length (valid only for string type).
-///     - <tt>macros</tt>     - perform environment substitution in the value.
-///                       Only valid for string type. Valid values are:
-///                       'false', 'true' (same as 'env'),
-///                       'env', 'env-date', 'env-date-utc'.
+///     - <tt>validate</tt>   - boolean "true/false" indicating whether or
+///                             not to perform validation of this node
 /// </code>
 ///
 /// An option may have an optional 'value' child tag. If provided, the body
@@ -163,14 +161,6 @@ namespace config {
         , BRANCH    // May not have value, but may have children
     };
 
-    /// Environment subsctitution type
-    enum subst_env_type {
-          ENV_NONE                  // No substitution
-        , ENV_VARS                  // Substitute environment variables only
-        , ENV_VARS_AND_DATETIME     // Substitute environment variables and datetime macros
-        , ENV_VARS_AND_DATETIME_UTC // Same as ENV_VARS_AND_DATETIME but using UTC clock
-    };
-
     struct option;
 
     template <typename T>
@@ -236,8 +226,7 @@ namespace config {
         option_map          children;
         bool                required;
         bool                unique;
-        subst_env_type      subst_env;  // If true, the value may have environment
-                                        // variable references that require substitution
+        bool                validate;
 
         option() : opt_type(UNDEF), value_type(UNDEF), required(true), unique(true) {}
 
@@ -249,7 +238,7 @@ namespace config {
             const std::string&  a_desc = std::string(),
             bool                a_unique = true,
             bool                a_required = true,
-            subst_env_type      a_subst_env = ENV_NONE,
+            bool                a_validate = true,
             const variant&      a_def = variant(),
             const variant&      a_min = variant(),
             const variant&      a_max = variant(),
@@ -267,15 +256,14 @@ namespace config {
             , children(a_options)
             , required(!a_required ? false : a_def.type() == variant::TYPE_NULL)
             , unique(a_unique)
-            , subst_env(a_subst_env)
+            , validate(a_validate)
         {}
 
         bool operator== (const option& a_rhs) const { return name == a_rhs.name; }
 
         std::string to_string() const;
 
-        static std::string substitute_vars(
-            subst_env_type a_type, const std::string& a_value);
+        static std::string substitute_vars(const std::string& a_value);
 
         variant default_subst_value() const;
     };

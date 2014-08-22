@@ -428,9 +428,9 @@ class ConfigGenerator(object):
                 ('type',        None),
                 ('val_type',    None),
                 ('default',     None),
-                ('macros',      'false'),
                 ('required',    'true'),
                 ('unique',      'true'),
+                ('validate',    'true'),
                 ('min',         None),
                 ('max',         None),
                 ('min_length',  None),
@@ -439,25 +439,16 @@ class ConfigGenerator(object):
 
             valid_opt_attr_names = [s for s,d in valid_opt_attrs]
 
-            [name, desc, val, tp, valtype, default, macros,
-             required, unique, min, max, minlen, maxlen] = \
+            [name, desc, val, tp, valtype, default,
+             required, unique, validate, min, max, minlen, maxlen] = \
                 [node.attrib.get(a[0], default=a[1]) for a in valid_opt_attrs]
 
             self.check_valid_attribs(node.attrib.keys(), valid_opt_attr_names, name, node)
 
             err = None
 
-            if   macros == 'false' \
-                 or valtype != 'string':    macros = "config::ENV_NONE"
-            elif macros == 'true':          macros = "config::ENV_VARS"
-            elif macros == 'env':           macros = "config::ENV_VARS"
-            elif macros == 'env-date':      macros = "config::ENV_VARS_AND_DATETIME"
-            elif macros == 'env-date-utc':  macros = "config::ENV_VARS_AND_DATETIME_UTC"
-            else: err = "'macros': %s\n  Expected: [%s]" % \
-                        (macros, ','.join(['true','false','env','env-date','env-date-utc']))
-
-            if len(filter(lambda x: x not in ['true', 'false'], [unique, required])):
-                err = "unique/required (must be 'true' or 'false'): %s" % node.attrib
+            if len(filter(lambda x: x not in ['true', 'false'], [unique, required, validate])):
+                err = "non-boolean value given to option (must be 'true' or 'false'): %s" % node.attrib
             if not valtype:
                 valtype = tp if tp else 'string'
             elif (valtype=='int' or valtype=='float') and min   : pass
@@ -508,12 +499,12 @@ class ConfigGenerator(object):
 
             f.write("%sadd_option(%s,\n" % (ws1, arg))
             f.write("%sconfig::option(%s(), %s, %s,\n"
-                    '%s  "%s", %s /*unique*/, %s /*required*/, %s,\n'
+                    '%s  "%s", %s /*unique*/, %s /*required*/, %s /*validate*/,\n'
                     "%s  %s /*default*/, v(%s) /*min*/, v(%s) /*max*/,\n"
                     "%s  l_names, l_values, l_children%d));\n"
                     "%s}\n" % (
                     ws2, format_name(name), str_tp, self.string_to_type(valtp),
-                    ws2, desc, unique, required, macros,
+                    ws2, desc, unique, required, validate,
                     ws2, defval,
                         ('"%s"' % min) if min else "",
                         ('"%s"' % max) if max else "",

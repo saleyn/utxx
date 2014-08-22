@@ -107,31 +107,15 @@ std::string option::to_string() const {
     return s.str();
 }
 
-std::string option::substitute_vars
-(
-    subst_env_type a_type,
-    const std::string& a_value
-) {
+std::string option::substitute_vars(const std::string& a_value) {
     namespace pt = boost::posix_time;
-    switch (a_type) {
-        case ENV_VARS:
-            return path::replace_env_vars(a_value);
-        case ENV_VARS_AND_DATETIME: {
-            struct tm tm = pt::to_tm(pt::second_clock::local_time());
-            return path::replace_env_vars(a_value, &tm);
-        }
-        case ENV_VARS_AND_DATETIME_UTC: {
-            struct tm tm = pt::to_tm(pt::second_clock::universal_time());
-            return path::replace_env_vars(a_value, &tm);
-        }
-        default:
-            return a_value;
-    }
+    struct tm tm = pt::to_tm(pt::second_clock::local_time());
+    return path::replace_env_vars(a_value, &tm);
 }
 
 variant option::default_subst_value() const {
     return default_value.data().is_string()
-         ? variant(substitute_vars(subst_env, default_value.data().to_str()))
+         ? variant(substitute_vars(default_value.data().to_str()))
          : default_value.data();
 }
 
@@ -314,11 +298,13 @@ void validator::validate
                         vt.first, vt.second.data().to_string()),
                         "Check XML spec. Cannot mix anonymous and named options "
                         "in one section!");
-                check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
+                if (opt.validate)
+                    check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
                 l_match = true;
                 break;
             } else if (opt.name == vt.first) {
-                check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
+                if (opt.validate)
+                    check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
                 l_match = true;
                 break;
             } else if (single_nested_tree) {
@@ -603,7 +589,7 @@ std::ostream& validator::dump
             << type_to_string(opt.value_type) << (a_colorize ? NORMAL : "")
             << std::endl;
         if (!opt.description.empty()) {
-            auto desc = std::regex_replace(opt.description, eol_re, l_nl_15,
+            auto desc = std::regex_replace(opt.description, eol_re, "\n"+l_nl_15,
                                            std::regex_constants::match_any);
             out << l_indent << "  Description: " << desc << std::endl;
         }
@@ -615,6 +601,9 @@ std::ostream& validator::dump
                     << value(opt.default_value.data()) << std::endl;
         } else
             out << l_indent << "     Required: true" << std::endl;
+
+        if (!opt.validate)
+            out << l_indent << "     Validate: false" << std::endl;
 
         if (!opt.min_value.is_null() || !opt.max_value.is_null()) {
             out << l_indent << "         "

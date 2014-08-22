@@ -326,9 +326,10 @@ public:
         if (r) return *r;
         if (m_schema_validator) {
             const config::option& o = m_schema_validator->get(path, m_root_path);
-            if (!o.default_subst_value().is_type<T>())
-                throw_bad_type<T>(path, o.default_subst_value());
-            return o.default_subst_value().get<T>();
+            const auto& v = o.default_subst_value();
+            if (!v.is_null() && !v.is_type<T>())
+                throw_bad_type<T>(path, v);
+            return v.get<T>();
         }
         throw variant_tree_bad_path("Path not found", path);
     }
