@@ -229,11 +229,11 @@ Ptree get_test_ptree()
     using namespace boost::property_tree;
     typedef typename Ptree::key_type::value_type Ch;
     Ptree pt;
-    pt.put_value(bpd::widen<Ch>("data0"));
-    pt.put(bpd::widen<Ch>("key1"),       bpd::widen<Ch>("data1"));
-    pt.put(bpd::widen<Ch>("key1.key"),   bpd::widen<Ch>("data2"));
-    pt.put(bpd::widen<Ch>("key2"),       bpd::widen<Ch>("data3"));
-    pt.put(bpd::widen<Ch>("key2.key"),   bpd::widen<Ch>("data4"));
+    pt.put_value(std::basic_string<Ch>("data0"));
+    pt.put(std::basic_string<Ch>("key1"),       std::basic_string<Ch>("data1"));
+    pt.put(std::basic_string<Ch>("key1.key"),   std::basic_string<Ch>("data2"));
+    pt.put(std::basic_string<Ch>("key2"),       std::basic_string<Ch>("data3"));
+    pt.put(std::basic_string<Ch>("key2.key"),   std::basic_string<Ch>("data4"));
     return pt;
 }
 
