@@ -95,7 +95,7 @@ public:
         reset();
     }
 
-    /// Reset the inturnal circular buffer.
+    /// Reset the internal circular buffer.
     void reset() {
         memset(m_buckets, 0, sizeof(m_buckets));
         m_last_time     = 0;

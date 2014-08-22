@@ -405,6 +405,7 @@ class ConfigGenerator(object):
         if type == 'bool':      return 'config::BOOL'
         if type == 'float':     return 'config::FLOAT'
         if type == 'anonymous': return 'config::ANONYMOUS'
+        if type == 'branch':    return 'config::BRANCH'
 
         print >> sys.stderr, "Invalid option type '%s'" % (type)
         exit(6)
