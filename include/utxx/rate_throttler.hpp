@@ -82,6 +82,13 @@ public:
         init(a_interval);
     }
 
+    basic_rate_throttler           (const basic_rate_throttler&) = default;
+    basic_rate_throttler& operator=(const basic_rate_throttler&) = default;
+
+#if __cplusplus >= 201103L
+    basic_rate_throttler           (basic_rate_throttler&&)      = default;
+#endif
+
     /// Initialize the internal buffer setting the throttling interval
     /// measured in seconds.
     void init(int a_throttle_interval)
@@ -90,7 +97,8 @@ public:
         if (a_throttle_interval == m_interval)
             return;
         m_interval = a_throttle_interval << s_log_buckets_sec;
-        if (a_throttle_interval < 0 || (size_t)a_throttle_interval > s_bucket_count / s_buckets_per_sec)
+        if (a_throttle_interval < 0 ||
+            (size_t)a_throttle_interval > s_bucket_count / s_buckets_per_sec)
             throw badarg_error("Invalid throttle interval:", a_throttle_interval);
         reset();
     }
