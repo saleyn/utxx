@@ -38,9 +38,14 @@ using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_string_conversion )
 {
-    std::stringstream s;
-    s << fixed(10.123, 8, 4);
-    BOOST_CHECK_EQUAL(" 10.1230", s.str());
+    {
+        std::stringstream s; s << fixed(10.123, 8, 4);
+        BOOST_CHECK_EQUAL(" 10.1230", s.str());
+    }
+    {
+        std::stringstream s; s << fixed(10.123, 8, 4, '0');
+        BOOST_CHECK_EQUAL("010.1230", s.str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_string_length )

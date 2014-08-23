@@ -74,18 +74,21 @@ namespace utxx {
 
     /// Output a float to stream formatted with fixed precision
     struct fixed {
-        fixed(double a_val, int a_digits, int a_precision)
+        fixed(double a_val, int a_digits, int a_precision, char a_fill = ' ')
             : m_value(a_val), m_digits(a_digits), m_precision(a_precision)
+            , m_fill(a_fill)
         {}
 
         inline friend std::ostream& operator<<(std::ostream& out, const fixed& f) {
-            return out << std::fixed << std::setw(f.m_digits)
+            return out << std::fixed << std::setfill(f.m_fill)
+                       << std::setw(f.m_digits)
                        << std::setprecision(f.m_precision) << f.m_value;
         }
     private:
         double m_value;
         int    m_digits;
         int    m_precision;
+        char   m_fill;
     };
 
     /// Convert a string to an integer value
