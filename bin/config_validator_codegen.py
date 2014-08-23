@@ -372,7 +372,8 @@ class ConfigGenerator(object):
                 f.write('        static constexpr const char* %s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("        //---------- Configuration Values -------------\n")
             for n in values:
-                u = n.upper()
+                u = format_name(n)
+                print u
                 f.write('        static constexpr const char* VAL_%s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("\n")
             f.write("        static const %s* instance(const tree_path& a_root = tree_path()) {\n" % name)
