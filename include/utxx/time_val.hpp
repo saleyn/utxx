@@ -43,6 +43,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 #include <cstddef>
 #include <stdint.h>
+#if __cplusplus >= 201103L
+#include <chrono>
+#endif
 #include <ctime>
 #include <sys/time.h>
 #include <math.h>
@@ -121,6 +124,19 @@ namespace utxx {
 
         #if __cplusplus >= 201103L
         time_val(time_val&& a) : m_tv(std::move(a.m_tv)) {}
+
+        template <class Clock, class Duration = typename Clock::Duration>
+        time_val(const std::chrono::time_point<Clock, Duration>& a_tp) {
+            using std::chrono::microseconds;
+            using std::chrono::seconds;
+            using std::chrono::duration_cast;
+
+            auto duration = a_tp.time_since_epoch();
+            auto sec      = duration_cast<seconds>(duration);
+            auto usec     = duration_cast<microseconds>(duration - sec);
+            m_tv.tv_sec   = sec.count();
+            m_tv.tv_usec  = usec.count();
+        }
         #endif
 
         const struct timeval&   timeval()  const { return m_tv; }
@@ -353,6 +369,21 @@ namespace utxx {
 
     /// Same as gettimeofday() call
     inline time_val now_utc() { return time_val::universal_time(); }
+
+#if __cplusplus >= 201103L
+    /// Convert std::chrono::time_point to timespec
+    template <class Clock, class Duration = typename Clock::Duration>
+    struct timespec to_timespec(const std::chrono::time_point<Clock, Duration>& a_tp) {
+        using std::chrono::nanoseconds;
+        using std::chrono::seconds;
+        using std::chrono::duration_cast;
+
+        auto duration = a_tp.time_since_epoch();
+        auto sec      = duration_cast<seconds>(duration);
+        auto nanosec  = duration_cast<nanoseconds>(duration - sec);
+        return timespec{sec.count(), nanosec.count()}; 
+    }
+#endif
 
     /// Simple timer for measuring interval of time
     ///
