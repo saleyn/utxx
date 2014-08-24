@@ -428,22 +428,30 @@ class ConfigGenerator(object):
                 ('desc',        ""),
                 ('val',         None),
                 ('type',        None),
-                ('val_type',    None),
+                ('val-type',    None),
+                ('val_type',    None),      # Legacy support
                 ('default',     None),
                 ('required',    'true'),
                 ('unique',      'true'),
                 ('validate',    'true'),
                 ('min',         None),
                 ('max',         None),
-                ('min_length',  None),
-                ('max_length',  None)
+                ('min-length',  None),
+                ('min_length',  None),      # Legacy support
+                ('max-length',  None),
+                ('max_length',  None)       # Legacy support
             ]
 
             valid_opt_attr_names = [s for s,d in valid_opt_attrs]
 
-            [name, desc, val, tp, valtype, default,
-             required, unique, validate, min, max, minlen, maxlen] = \
+            [name, desc, val, tp, valtype, val_type, default,
+             required, unique, validate, min, max, minlen, min_len, maxlen, max_len] = \
                 [node.attrib.get(a[0], default=a[1]) for a in valid_opt_attrs]
+
+            # Legacy support
+            if val_type and not valtype: valtype = val_type
+            if min_len  and not min_len: min_len = min_len
+            if max_len  and not max_len: max_len = max_len
 
             self.check_valid_attribs(node.attrib.keys(), valid_opt_attr_names, name, node)
 
@@ -456,12 +464,12 @@ class ConfigGenerator(object):
             elif (valtype=='int' or valtype=='float') and min   : pass
             elif valtype == 'string' and minlen                 : min = minlen
             elif min                                            : err = "'min': %s " % min
-            elif minlen                                         : err = "'min_length': %s " % minlen
+            elif minlen                                         : err = "'min-length': %s " % minlen
 
             if (valtype == 'int' or valtype == 'float') and max : pass
             elif valtype == 'string' and maxlen                 : max = maxlen
             elif max    : err = "'max': %s " % max
-            elif maxlen : err = "'max_length': %s " % maxlen
+            elif maxlen : err = "'max-length': %s " % maxlen
 
             if default != None: required = 'false'
 

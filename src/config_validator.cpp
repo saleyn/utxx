@@ -366,7 +366,9 @@ void validator::check_required
 
                         if (vt.second.data().is_null())
                             throw variant_tree_error(format_name(a_root, opt,
-                                    vt.first, vt.second.data().to_string()),
+                                    vt.first, vt.second.data().is_null()
+                                                ? std::string()
+                                                : vt.second.data().to_string()),
                                 "Missing value of the required option "
                                 "and no default provided!");
                         l_found = true;
