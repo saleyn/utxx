@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
         BOOST_REQUIRE_EQUAL(
-            "Config error [country]: Missing a required child option connection.address",
+            "Config error [country]: Missing a required child option: connection.address",
             e.what());
     }
 }
@@ -214,7 +214,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
         BOOST_REQUIRE_EQUAL(
-            "Config error [country]: Missing a required child option connection.address",
+            "Config error [country]: Missing a required child option: connection.address",
             e.what());
     }
 
@@ -240,7 +240,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator3 )
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("country[US]", e.path());
         BOOST_REQUIRE_EQUAL(
-            "Config error [country[US]]: Option is missing required child option connection.address",
+            "Config error [country[US]]: Option is missing required child option: connection.address",
             e.what());
     }
 }
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator7 )
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("country[US]", e.path());
         BOOST_REQUIRE_EQUAL(
-            "Config error [country[US]]: Option is missing required child option connection.address",
+            "Config error [country[US]]: Option is missing required child option: connection.address",
             e.what());
     }
 
@@ -457,7 +457,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator8 )
         BOOST_REQUIRE_EQUAL("section", e.path());
         std::string s = e.what();
         BOOST_REQUIRE_EQUAL("Config error [section]: "
-            "Missing a required child option location", s);
+            "Missing a required child option: location", s);
     }
 
     l_config.clear();

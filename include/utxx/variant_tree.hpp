@@ -166,17 +166,19 @@ private:
 
             if (dp.empty())
                 el = tree->find(kp);
-            else
-                for(el=tree->ordered_begin(); el != tend; ++el)
-                    if (el->first == kp || kp.empty())
-                        if (el->second.data().is_string() && el->second.data().to_str() == dp)
-                            break;
-            bool is_end = el == tend;
-            tree = !is_end
-                 ? &el->second
-                 : (put_val
-                    ? add(tree, kp, dp.empty() ? variant() : variant(dp))
-                    : NULL);
+            else for(el=tree->ordered_begin(); el != tend; ++el)
+                if (el->first == kp || kp.empty())
+                    if (el->second.data().is_string() && el->second.data().to_str() == dp)
+                        break;
+
+            Base* child = el == tend ? NULL : &el->second;
+
+            if (child)          // Child node by kp name was found
+                tree = child;
+            else if (!do_put)   // Child node not found, and can't mutate the tree
+                tree = NULL;
+            else                // Child node not found, add this sub-path
+                tree = add(tree, kp, dp.empty() ? variant() : variant(dp));
 
             if (q == end || !tree) {
                 path = path_type(key_type(begin, q - begin), separator);
@@ -204,7 +206,7 @@ private:
 
         BOOST_ASSERT(!p.empty());
 
-        TBase* t = navigate(tree, p, (const int*)NULL);
+        TBase* t = navigate(tree, p, (const int*)NULL, false);
         return t ? *t : boost::optional<TBase&>();
     }
 
@@ -371,7 +373,7 @@ public:
     template <class T>
     base& put(const path_type& path, const T& value) {
         path_type p(path);
-        base* r = navigate(this, p, &value);
+        base* r = navigate(this, p, &value, true);
         BOOST_ASSERT(r);
         return *r;
     }
@@ -469,7 +471,8 @@ public:
         path_type p(path);
         base* c = navigate(this, p, (const int*)NULL, true);
         if (!c) throw variant_tree_bad_path("Path doesn't exist", p);
-        return c->put_child(p, value);
+        *c = value;
+        return *c;
     }
 
     template <class Stream>
