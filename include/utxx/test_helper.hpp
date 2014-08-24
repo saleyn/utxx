@@ -38,5 +38,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define BOOST_CURRENT_TEST_NAME \
   boost::unit_test::framework::current_test_case().p_name->c_str()
 
+#define UTXX_REQUIRE_NO_THROW(Expr)     \
+    try { Expr; }                       \
+    catch (std::exception const& e) {   \
+      BOOST_MESSAGE(e.what());          \
+      BOOST_REQUIRE_NO_THROW(Expr);     \
+    }
+
+#define UTXX_CHECK_NO_THROW(Expr)       \
+    try { Expr; }                       \
+    catch (std::exception const& e) {   \
+      BOOST_MESSAGE(e.what());          \
+      BOOST_CHECK_NO_THROW(Expr);       \
+    }
+
 #endif // _UTXX_TEST_HELPER_HPP_
 

@@ -419,7 +419,7 @@ void validator::check_required
                         if (!vt.second.size())
                             throw variant_tree_error(format_name(a_root, opt,
                                     vt.first, vt.second.data().to_string()),
-                                std::string("Option is missing required child option ") +
+                                    "Option is missing required child option: ",
                                     l_req_name.dump());
                         check_required(
                             format_name(a_root, opt, vt.first, vt.second.data().to_string()),
@@ -433,7 +433,8 @@ void validator::check_required
 
             if (!l_found && l_has_req)
                 throw variant_tree_error(format_name(a_root, opt),
-                    std::string("Missing a required child option ") + l_req_name.dump());
+                                         "Missing a required child option: ",
+                                         l_req_name.dump());
         }
     }
 }
