@@ -132,7 +132,8 @@ public:
     variant(const variant& a) : base((const base&)a) {}
 
 #if __cplusplus >= 201103L
-    variant(variant&& a) { swap(a); }
+    variant(variant&& a)            { swap(a); }
+    variant& operator=(variant&& a) { clear(); swap(a); return *this; }
 #endif
 
     variant(value_type v, const std::string& a) { from_string(v, a); }

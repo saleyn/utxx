@@ -157,6 +157,15 @@ BOOST_AUTO_TEST_CASE( test_variant )
         BOOST_REQUIRE(!v.to_bool());
     }
 
+#if __cplusplus >= 201103L
+    {
+        variant v  = std::move(variant(1.0));
+        BOOST_REQUIRE_EQUAL(1.0, v.to_float());
+        variant&& v1 = variant(1.0);
+        BOOST_REQUIRE_EQUAL(1.0, v1.to_float());
+    }
+#endif
+
     {   variant v = variant(1.0);
         BOOST_REQUIRE_EQUAL(variant::TYPE_DOUBLE, v.type());
         BOOST_REQUIRE_EQUAL(1.0, v.to_float()); }
