@@ -35,10 +35,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 
 //#define DEBUG_ASYNC_LOGGER
-#define DEBUG_USE_BOOST_POOL_ALLOC
+//#define USE_BOOST_POOL_ALLOC
 
 #include <boost/test/unit_test.hpp>
+#if defined(USE_BOOST_POOL_ALLOC) || defined(USE_BOOST_FAST_POOL_ALLOC)
 #include <boost/pool/pool_alloc.hpp>
+#elif defined(USE_NO_ALLOC) || defined(USE_CACHED_ALLOC)
+#include <utxx/alloc_cached.hpp>
+#endif
 #include <utxx/multi_file_async_logger.hpp>
 #include <utxx/perf_histogram.hpp>
 #include <utxx/verbosity.hpp>
@@ -54,12 +58,48 @@ using namespace boost::unit_test;
 using namespace utxx;
 
 namespace {
-#ifdef DEBUG_USE_BOOST_POOL_ALLOC
     struct test_traits : public multi_file_async_logger_traits {
-        typedef boost::pool_allocator<void> allocator;
-    };
+#if   defined(USE_BOOST_POOL_ALLOC)
+        typedef boost::pool_allocator<void>      allocator;
+        typedef boost::fast_pool_allocator<void> fixed_size_allocator;
+#elif defined(USE_BOOST_FAST_POOL_ALLOC)
+        typedef boost::fast_pool_allocator<void> allocator;
+        typedef boost::fast_pool_allocator<void> fixed_size_allocator;
+#elif defined(USE_STD_ALLOC)
+        typedef std::allocator<void>            allocator;
+        typedef std::allocator<void>            fixed_size_allocator;
+#elif defined(USE_NO_ALLOC)
+        template <class T>
+        struct no_alloc {
+            static char             s_arena[4096];
+
+            typedef T*              pointer;
+            typedef const T*        const_pointer;
+            typedef T               value_type;
+
+            template <typename U>
+            struct rebind {
+                typedef no_alloc<U> other;
+            };
+
+            T* allocate(size_t n) {
+                assert(n < sizeof(s_arena));
+                return static_cast<T*>(s_arena);
+            }
+            void deallocate(char* p, size_t) {}
+        };
+
+        typedef no_alloc<char>                  allocator;
+        typedef memory::cached_allocator<char>  fixed_size_allocator;
 #else
-    typedef multi_file_async_logger_traits test_traits;
+        typedef memory::cached_allocator<char>  allocator;
+        typedef memory::cached_allocator<char>  fixed_size_allocator;
+#endif
+    };
+
+#if defined(USE_NO_ALLOC)
+    template <class T>
+    char test_traits::no_alloc<T>::s_arena[4096];
 #endif
 } // namespace
 
@@ -81,16 +121,16 @@ auto worker = [&](int id, int iterations, boost::barrier* barrier,
     timer tm;
 
     for (int i=0; i < iterations; i++) {
-        char* p = logger->allocate(sizeof(s_str1));
-        char* q = logger->allocate(sizeof(s_str3));
-        strncpy(p, s_str1, sizeof(s_str1));
-        strncpy(q, s_str3, sizeof(s_str3));
+        char* p = logger->allocate(sizeof(s_str1)-1);
+        char* q = logger->allocate(sizeof(s_str3)-1);
+        strncpy(p, s_str1, sizeof(s_str1)-1);
+        strncpy(q, s_str3, sizeof(s_str3)-1);
         if (!no_histogram) histogram->start();
-        int n = logger->write(files[0], std::string(), p, sizeof(s_str1));
+        logger->write(files[0], std::string(), p, sizeof(s_str1)-1);
         if (!no_histogram) histogram->stop();
         //BOOST_REQUIRE_EQUAL(0, n);
         if (!no_histogram) histogram->start();
-        int m = logger->write(files[1], std::string(), q, sizeof(s_str3));
+        logger->write(files[1], std::string(), q, sizeof(s_str3)-1);
         if (!no_histogram) histogram->stop();
         //BOOST_REQUIRE_EQUAL(0, m);
     }
@@ -125,7 +165,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
     for (size_t i = 0; i < s_file_num; i++) {
         l_fds[i] = logger.open_file(s_filename[i], false);
         BOOST_REQUIRE(l_fds[i].fd() >= 0);
-        //l_logger.set_batch_size(l_fds[i], 100);
+        logger.set_batch_size(l_fds[i], 25);
     }
 
     int ok = logger.start();
@@ -185,13 +225,20 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
     std::cout << "Futex wake_fast     count = " << logger.event().wake_fast_count()     << std::endl;
     std::cout << "Futex wait_fast     count = " << logger.event().wait_fast_count()     << std::endl;
     std::cout << "Futex wait_spin     count = " << logger.event().wait_spin_count()     << std::endl;
+    std::cout << std::endl;
+
+    std::cout << "Enqueue spins: " << logger.stats_enque_spins() << std::endl;
+    std::cout << "Dequeue spins: " << logger.stats_deque_spins() << std::endl;
 #endif
+
 
     logger.stop();
 
     BOOST_CHECK_EQUAL(0, logger.open_files_count());
 
+#ifndef DONT_DELETE_FILE
     unlink();
+#endif
 }
 
 BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )

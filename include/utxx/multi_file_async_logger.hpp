@@ -40,7 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/config.h>
 
-#include <boost/pool/pool_alloc.hpp>
+#include <utxx/alloc_cached.hpp>
 #include <utxx/string.hpp>
 #include <utxx/synch.hpp>
 #include <utxx/compiler_hints.hpp>
@@ -62,6 +62,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <fcntl.h>
 #include <sched.h>
 
+#ifdef PERF_STATS
+#include <utxx/perf_histogram.hpp>
+#endif
+
 namespace utxx {
 
 #if DEBUG_ASYNC_LOGGER == 2
@@ -78,9 +82,9 @@ namespace utxx {
 
 /// Traits of asynchronous logger
 struct multi_file_async_logger_traits {
-    typedef boost::pool_allocator<void>         allocator;
-    typedef boost::fast_pool_allocator<void>    fixed_size_allocator;
-    typedef futex                               event_type;
+    typedef std::allocator<char>      allocator;
+    typedef std::allocator<char>      fixed_size_allocator;
+    typedef futex                     event_type;
     static const int commit_timeout = 2000;  // commit this number of usec
 };
 
@@ -171,6 +175,11 @@ private:
     double                                          m_reconnect_sec;
     err_handler                                     m_err_handler;
 
+#ifdef PERF_STATS
+    std::atomic<size_t>                             m_stats_enque_spins;
+    std::atomic<size_t>                             m_stats_deque_spins;
+#endif
+
     // Default output writer
     static int writev(stream_info& a_si, const char** a_categories,
                       const iovec* a_iovec, size_t a_sz);
@@ -189,7 +198,7 @@ private:
     // Invoked by the async thread
     void run();
     // Enqueues msg to internal queue
-    int  internal_enqueue(command_t* a_cmd);
+    int  internal_enqueue(command_t* a_cmd, const stream_info* a_si);
     // Writes data to internal queue
     int  internal_write(const file_id& a_id, const std::string& a_category,
                         char* a_data, size_t a_sz, bool copied);
@@ -392,6 +401,13 @@ public:
     /// True when the logger has unprocessed data in its queue
     bool  has_pending_data()            const { return m_head
                                                 .load(std::memory_order_relaxed); }
+#ifdef PERF_STATS
+    size_t stats_enque_spins()           const { return m_stats_enque_spins
+                                                .load(std::memory_order_relaxed); }
+    size_t stats_deque_spins()           const { return m_stats_deque_spins
+                                                .load(std::memory_order_relaxed); }
+#endif
+
 };
 
 /// Default implementation of multi_file_async_logger
@@ -616,6 +632,10 @@ basic_multi_file_async_logger<traits>::
 stream_info::reset(const std::string& a_name, msg_writer a_writer,
                    stream_state_base* a_state, int a_fd)
 {
+#ifdef PERF_STATS
+    m_stats_enque_spins.store(0u);
+    m_stats_deque_spins.store(0u);
+#endif
     name     = a_name;
     fd       = a_fd;
     error    = 0;
@@ -711,13 +731,21 @@ basic_multi_file_async_logger(
     , m_files(a_max_files, nullptr)
     , m_last_version(0)
     , m_reconnect_sec((double)a_reconnect_msec / 1000)
+#ifdef PERF_STATS
+    , m_stats_enque_spins(0)
+    , m_stats_deque_spins(0)
+#endif
 {}
 
 template<typename traits>
 inline int basic_multi_file_async_logger<traits>::
 writev(stream_info& a_si, const char** a_categories, const iovec* a_iovec, size_t a_sz)
 {
+#ifdef PERF_NO_WRITEV
+    return a_sz;
+#else
     return a_si.fd < 0 ? 0 : ::writev(a_si.fd, a_iovec, a_sz);
+#endif
 }
 
 template<typename traits>
@@ -979,7 +1007,7 @@ internal_update_stream(stream_info* a_si, int a_fd) {
     stream_info* old_si = m_files[a_fd];
     if (old_si && old_si != a_si) {
         command_t* c = allocate_command(command_t::destroy_stream, old_si);
-        internal_enqueue(c);
+        internal_enqueue(c, a_si);
     }
 
     m_files[a_fd] = a_si;
@@ -1012,7 +1040,7 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
 
     command_t* l_cmd = allocate_command(command_t::destroy_stream, a_id.stream());
     l_cmd->args.close.immediate = a_immediate;
-    int n = internal_enqueue(l_cmd);
+    int n = internal_enqueue(l_cmd, a_id.stream());
 
     if (!n && ev) {
         ASYNC_TRACE(("----> close_file(%d) is waiting for ack secs=%d (event_val={%ld,%d})\n",
@@ -1038,13 +1066,22 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-internal_enqueue(command_t* a_cmd) {
+internal_enqueue(command_t* a_cmd, const stream_info* a_si) {
     BOOST_ASSERT(a_cmd);
 
     command_t* old_head;
 
+#ifdef PERF_STATS
+    size_t i = 0;
+#endif
     // Replace the head with msg
     do {
+#ifdef PERF_STATS
+        i++;
+
+        if (i > 25)
+            sched_yield();
+#endif
         old_head = const_cast<command_t*>(m_head.load(std::memory_order_relaxed));
         a_cmd->next = old_head;
     } while(!m_head.compare_exchange_weak(old_head, a_cmd,
@@ -1052,6 +1089,10 @@ internal_enqueue(command_t* a_cmd) {
 
     if (!old_head)
         m_event.signal();
+
+#ifdef PERF_STATS
+    if (i > 1) m_stats_enque_spins.fetch_add(i, std::memory_order_relaxed);
+#endif
 
     ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%s) - "
                  "cur head: %p, prev head: %p%s\n",
@@ -1074,7 +1115,7 @@ internal_write(const file_id& a_id, const std::string& a_category,
 
     command_t* p = allocate_message(a_id.stream(), a_category, a_data, a_sz);
     ASYNC_TRACE(("->write(%p, %lu) - %s\n", a_data, a_sz, copied ? "allocated" : "no copy"));
-    return internal_enqueue(p);
+    return internal_enqueue(p, a_id.stream());
 }
 
 template<typename traits>
@@ -1163,12 +1204,22 @@ commit(const struct timespec* tsp)
 
     command_t* cur_head;
 
+#ifdef PERF_STATS
+    size_t i = 0;
+#endif
+
     // Find current head and reset the old head to be NULL
     do {
+#ifdef PERF_STATS
+        i++;
+#endif
         cur_head = const_cast<command_t*>(m_head.load(std::memory_order_relaxed));
-    } while(!m_head.compare_exchange_weak(cur_head, static_cast<command_t*>(nullptr),
+    } while(!m_head.compare_exchange_strong(cur_head, static_cast<command_t*>(nullptr),
                 std::memory_order_release, std::memory_order_relaxed));
 
+#ifdef PERF_STATS
+    if (i > 1) m_stats_deque_spins.fetch_add(i, std::memory_order_relaxed);
+#endif
     ASYNC_TRACE((" --> cur head: %p, new head: %p\n", cur_head, m_head.load()));
 
     BOOST_ASSERT(cur_head);

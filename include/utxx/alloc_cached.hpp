@@ -67,11 +67,11 @@ using namespace container;
 /// @tparam   AllocT      - User allocator used when a free list is empty.
 /// @tparam   MinSize     - Minimum allocated memory chunk.
 /// @tparam   SizeClasses - Max number of size class managed by the allocator.
-///                         Objects of size >= 1^SizeClasses are allocated/freed
+///                         Objects of size >= 2^SizeClasses are allocated/freed
 ///                         directly using the AllocT bypassing caching.
 template <
     class T, 
-    class AllocT        = std::allocator<char>,
+    class AllocT        = std::allocator<T>,
     int   MinSize       = 3 * sizeof(long), 
     int   SizeClasses   = 21>
 class cached_allocator {
@@ -97,17 +97,31 @@ public:
     typedef const T&         const_reference;
     typedef T                value_type;
 
+#if __cplusplus >= 201103L
+    // _GLIBCXX_RESOLVE_LIB_DEFECTS
+    // 2103. propagate_on_container_move_assignment
+    typedef std::true_type propagate_on_container_move_assignment;
+#endif
+
     static const unsigned int max_size_class = SizeClasses-1;
     static const unsigned int min_size       = MinSize;
+
+    template <typename U>
+    struct rebind {
+        typedef typename AllocT::template rebind<U>::other ArenaAlloc;
+        typedef cached_allocator<U, ArenaAlloc, MinSize, SizeClasses> other;
+    };
 
     cached_allocator() : m_alloc(default_allocator()), m_large_objects(0) {}
     cached_allocator(AllocT& alloc) : m_alloc(alloc),  m_large_objects(0) {}
 
-    /// Allocate an object of <size>. This operation is thread-safe.
-    void* allocate(size_t size);
+    /// Allocate a count number of objects T. This operation is thread-safe.
+    T* allocate(size_t count);
 
     /// Free an object by returning it to the pool. This operation is thread-safe.
     void free(void* object);
+
+    void deallocate(void* obj, size_t) { free(obj); }
 
     /// For internal use.
     void free_node(node_t* nd);
@@ -140,16 +154,16 @@ public:
 //-----------------------------------------------------------------------------
 
 template <class T, class AllocT, int MinSize, int SizeClasses>
-inline void* cached_allocator<T, AllocT, MinSize, SizeClasses>
-::allocate(size_t sz) 
+inline T* cached_allocator<T, AllocT, MinSize, SizeClasses>
+::allocate(size_t count) 
 {
     using namespace container;
 
-    size_t alloc_sz = sz + versioned_stack::header_size();
+    size_t alloc_sz = sizeof(T)*count + versioned_stack::header_size();
     char size_class = (alloc_sz < min_size)
               ? upper_power<min_size, 2>::value 
               : math::upper_log2(alloc_sz);
-    return alloc_size_class(size_class);
+    return static_cast<T*>(alloc_size_class(size_class));
 }
 
 template <class T, class AllocT, int MinSize, int SizeClasses>
