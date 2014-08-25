@@ -354,19 +354,23 @@ class ConfigGenerator(object):
             max_val_size = max([len(n) for n in values]) if len(values) > 0 else 0
             max_width = max(max_name_size, max_val_size)
 
+            name  = root.attrib['name']
+            alias = root.attrib.get('alias', None)
+
             f.write("\n" +
                     "    namespace {\n" +
                     "        typedef config::option_map    ovec;\n" +
                     "        typedef config::string_set    sset;\n" +
                     "        typedef config::variant_set   vset;\n" +
                     "    }\n\n");
-            name = root.attrib['name']
             f.write("    class %s : public config::validator {\n" % name)
             f.write("        translator tr;\n")
             f.write("        variant v()              const { return variant();        }\n")
             f.write("        variant v(const char* s) const { return *tr.put_value(s); }\n")
             f.write("    public:\n")
             f.write("        //---------- Configuration Options ------------\n")
+            if alias:
+                f.write('        static constexpr const char* alias()%s { return "%s"; }\n' % (' ' * (max_width - 7), alias))
             for n in names:
                 u = format_name(n)
                 f.write('        static constexpr const char* %s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
