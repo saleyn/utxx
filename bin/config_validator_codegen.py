@@ -368,16 +368,15 @@ class ConfigGenerator(object):
             f.write("        variant v()              const { return variant();        }\n")
             f.write("        variant v(const char* s) const { return *tr.put_value(s); }\n")
             f.write("    public:\n")
-            f.write("        //---------- Configuration Options ------------\n")
             if alias:
-                f.write('        static constexpr const char* alias()%s { return "%s"; }\n' % (' ' * (max_width - 7), alias))
+                f.write('        static constexpr const char* alias()%s { return "%s"; }\n\n' % (' ' * (max_width - 5), alias))
+            f.write("        //---------- Configuration Options ------------\n")
             for n in names:
                 u = format_name(n)
                 f.write('        static constexpr const char* %s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("        //---------- Configuration Values -------------\n")
             for n in values:
                 u = format_name(n)
-                print u
                 f.write('        static constexpr const char* VAL_%s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("\n")
             f.write("        static const %s* instance(const tree_path& a_root = tree_path()) {\n" % name)
