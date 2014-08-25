@@ -21,12 +21,12 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     const char* filename = "/tmp/logger.async.file.log";
     const int iterations = 1000;
 
-    pt.put("logger.timestamp",    variant("no_timestamp"));
-    pt.put("logger.show_ident",   variant(false));
-    pt.put("logger.show_location",variant(false));
-    pt.put("logger.async_file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.async_file.filename",  variant(filename));
-    pt.put("logger.async_file.append", variant(false));
+    pt.put("logger.timestamp",    variant("none"));
+    pt.put("logger.show-ident",   variant(false));
+    pt.put("logger.show-location",variant(false));
+    pt.put("logger.async-file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.async-file.filename",  variant(filename));
+    pt.put("logger.async-file.append", variant(false));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         write_info(std::cout, pt);
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     pt.put("logger.timestamp",    variant("date-time-usec"));
     pt.put("logger.show-ident",   variant(false));
     pt.put("logger.show-location",variant(false));
-    pt.put("logger.async-file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.async-file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put("logger.async-file.filename",  variant(filename));
     pt.put("logger.async-file.append", variant(false));
 
@@ -311,7 +311,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     barrier.wait();
 
-    perf_histogram totals("Total logger_async_file performance");
+    perf_histogram totals(to_string("Total ",config_type," performance"));
     double sum_time = 0;
 
     for (int i=0; i < threads; i++) {
