@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
     for (size_t i = 0; i < s_file_num; i++) {
         l_fds[i] = logger.open_file(s_filename[i], false);
         BOOST_REQUIRE(l_fds[i].fd() >= 0);
-        logger.set_batch_size(l_fds[i], 25);
+        //logger.set_batch_size(l_fds[i], 25);
     }
 
     int ok = logger.start();
