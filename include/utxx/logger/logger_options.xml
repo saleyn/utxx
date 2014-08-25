@@ -1,23 +1,22 @@
 <option name="logger" required="false">
-    <option name="show_location" val_type="bool" default="false"
+    <option name="show-location" val-type="bool" default="false"
             desc="When true the log entries end with [File:Line]"/>
-    <option name="show_ident" val_type="bool" default="false"
+    <option name="show-ident" val-type="bool" default="false"
             desc="When true logger's ident property is added to output lines"/>
-    <option name="ident" val_type="string" default=""
-            desc="Process's identifier (can use env variables in the name)"
-            macros="env-date"/>
-    <option name="timestamp" val_type="string" default="time_with_usec"
+    <option name="ident" val-type="string" default=""
+            desc="Process's identifier (can use env variables in the name)"/>
+    <option name="timestamp" val-type="string" default="time-usec"
             desc="Format of the timestamp (case-insensitive)">
-        <value val="no_timestamp"/>
-        <value val="time"/>
-        <value val="time_with_msec"/>
-        <value val="time_with_usec"/>
-        <value val="date_time"/>
-        <value val="date_time_with_msec"/>
-        <value val="date_time_with_usec"/>
+        <value val="none"           desc="No timestamp"/>
+        <value val="time"           desc="HH:MM:DD"/>
+        <value val="time-msec"      desc="HH:MM:DD.sss"/>
+        <value val="time-usec"      desc="HH:MM:DD.ssssss"/>
+        <value val="date-time"      desc="YYYYmmdd-HH:MM:DD"/>
+        <value val="date-time-msec" desc="YYYYmmdd-HH:MM:DD.sss"/>
+        <value val="date-time-usec" desc="YYYYmmdd-HH:MM:DD.ssssss"/>
     </option>
 
-    <option name="min_level_filter" val_type="string" default="info"
+    <option name="min-level-filter" val-type="string" default="info"
             desc="Mask (delimiter: ' |,;') that specifies minimum severity of messages to log">
         <value val="false"/>
         <value val="none"/>
@@ -37,66 +36,65 @@
 
     <option name="file" required="false"
             desc="Logger's backend for writing data synchronously to file">
-        <option name="filename" val_type="string"
-                desc="Filename of a log file (can use env vars and strftime formatting)"
-                macros="env-date"/>
-        <option name="append" val_type="bool" default="true"
+        <option name="filename" val-type="string"
+                desc="Filename of a log file (can use env vars and strftime formatting)"/>
+        <option name="append" val-type="bool" default="true"
                 desc="If true the log file is open in the appending mode"/>
-        <option name="mode" val_type="int" default="0644"
+        <option name="mode" val-type="int" default="0644"
                 desc="Octal file access mask"/>
-        <option name="levels" val_type="string" default="info|warning|error|alert|fatal"
+        <option name="levels" val-type="string" default="info|warning|error|alert|fatal"
                 desc="Filter of log severity levels to be saved">
-            <copy path="../../../option[@name = 'min_level_filter']/value"/>
+            <copy path="../../../option[@name = 'min-level-filter']/value"/>
         </option>
-        <option name="show_location" val_type="bool" default="false"
-                desc="Overrides logger.show_location option"/>
-        <option name="show_ident" val_type="bool" default="false"
-                desc="Overrides logger.show_indent option"/>
+        <option name="show-location" val-type="bool" default="false"
+                desc="Overrides logger.show-location option"/>
+        <option name="show-ident" val-type="bool" default="false"
+                desc="Overrides logger.show-indent option"/>
     </option>
 
-    <option name="async_file" required="false"
+    <option name="async-file" required="false"
             desc="Logger's backend for writing data asynchronously to file">
         <copy path="../../option[@name = 'file']/*"/>
-        <option name="timeout" val_type="int" default="1000"
+        <option name="timeout" val-type="int" default="1000"
                 desc="Backend's number of idling milliseconds"/>
     </option>
 
     <option name="scribe" required="false"
             desc="Logger's backend for writing data to scribed server">
-        <option name="address" val_type="string" desc="URI address of scribed server"
+        <option name="address" val-type="string" desc="URI address of scribed server"
                 required="true"/>
-        <option name="timeout" val_type="int" default="5000"
+        <option name="timeout" val-type="int" default="5000"
                 desc="Connection/send/receive timeout"/>
-        <option name="levels" val_type="string" default="info|warning|error|alert|fatal"
+        <option name="levels" val-type="string" default="info|warning|error|alert|fatal"
                 desc="Filter of log severity levels to be saved">
-            <copy path="../../../option[@name = 'min_level_filter']/value"/>
+            <copy path="../../../option[@name = 'min-level-filter']/value"/>
         </option>
-        <option name="show_location" val_type="bool" default="false"
-                desc="Overrides logger.show_location option"/>
-        <option name="show_ident" val_type="bool" default="false"
-                desc="Overrides logger.show_indent option"/>
+        <option name="show-location" val-type="bool" default="false"
+                desc="Overrides logger.show-location option"/>
+        <option name="show-ident" val-type="bool" default="false"
+                desc="Overrides logger.show-indent option"/>
     </option>
 
     <option name="console" required="false"
             desc="logger's backend for writing messages to console">
-        <option name="stdout_levels" val_type="string"
+        <option name="stdout-levels" val-type="string"
                 desc="filename of a log file (can use env vars and strftime formatting)"
                 macros="env-date"/>
-            <copy path="../../../option[@name = 'min_level_filter']/value"/>
+            <copy path="../../../option[@name = 'min-level-filter']/value"/>
         </option>
-        <option name="stderr_levels" val_type="string" default="error|fatal|alert"
+        <option name="stderr-levels" val-type="string" default="error|fatal|alert"
                 desc="Filter of log severity levels to print to stderr">
-            <copy path="../../../option[@name = 'min_level_filter']/value"/>
+            <copy path="../../../option[@name = 'min-level-filter']/value"/>
         </option>
-        <option name="show_location" val_type="bool" default="false"
-                desc="overrides logger.show_location option"/>
-        <option name="show_ident" val_type="bool" default="false"
-                desc="overrides logger.show_indent option"/>
+        <option name="show-location" val-type="bool" default="false"
+                desc="overrides logger.show-location option"/>
+        <option name="show-ident" val-type="bool" default="false"
+                desc="overrides logger.show-indent option"/>
     </option>
 
     <option name="syslog" required="false"
             desc="logger's backend for writing messages to syslog">
-        <option name="levels" val_type="string" default="info|warning|error|alert|fatal"
+        <option name="levels" val-type="string" default="info|warning|error|alert|fatal"
                 desc="Filter of log severity levels">
             <value val="info"/>
             <value val="warning"/>
@@ -104,19 +102,19 @@
             <value val="fatal"/>
             <value val="alert"/>
         </option>
-        <option name="facility" val_type="string" default="log_local6"
+        <option name="facility" val-type="string" default="log-local6"
                 desc="Filter of log severity levels">
-            <value val="log_user"/>
-            <value val="log_local0"/>
-            <value val="log_local1"/>
-            <value val="log_local2"/>
-            <value val="log_local3"/>
-            <value val="log_local4"/>
-            <value val="log_local5"/>
-            <value val="log_local6"/>
-            <value val="log_daemon"/>
+            <value val="log-user"/>
+            <value val="log-local0"/>
+            <value val="log-local1"/>
+            <value val="log-local2"/>
+            <value val="log-local3"/>
+            <value val="log-local4"/>
+            <value val="log-local5"/>
+            <value val="log-local6"/>
+            <value val="log-daemon"/>
         </option>
-        <option name="show_pid" val_type="bool" default="true"
+        <option name="show-pid" val-type="bool" default="true"
                 desc="When true output includes the pid of current process"/>
     </option>
 </config>

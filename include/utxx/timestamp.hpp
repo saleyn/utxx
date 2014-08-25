@@ -57,7 +57,10 @@ enum stamp_type {
 /// Parsing is case-insensitive. The value is one of:
 /// "none|time|time-msec|time-usec|date-time|date-time-msec|date-time-usec".
 /// Throws badarg_error() on unrecognized value.
-stamp_type parse_stamp_type(const std::string& a_line);
+stamp_type  parse_stamp_type(const std::string& a_line);
+
+/// Convert stamp_type to string.
+const char* to_string(stamp_type a_type);
 
 class timestamp {
 protected:

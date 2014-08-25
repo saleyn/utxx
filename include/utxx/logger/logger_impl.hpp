@@ -54,6 +54,7 @@ namespace utxx {
 /// Temporarily stores msg source location information given to the logger.
 class log_msg_info {
     logger*         m_logger;
+    time_val        m_timestamp;
     log_level       m_level;
     std::string     m_category;
     size_t          m_src_file_len;
@@ -72,6 +73,7 @@ public:
     log_msg_info(log_level a_lv, const std::string& a_category);
 
     logger*             get_logger()        const { return m_logger; }
+    time_val const&     msg_time()          const { return m_timestamp; }
     log_level           level()             const { return m_level; }
     const std::string&  category()          const { return m_category; }
     const char*         src_file()          const { return m_src_file; }

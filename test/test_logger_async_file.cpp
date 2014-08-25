@@ -106,7 +106,7 @@ std::string get_data(std::ifstream& in, int& thread, int& num, struct tm& tm) {
 void verify_result(const char* filename, int threads, int iterations, int thr_msgs)
 {
     std::ifstream in(filename);
-    BOOST_REQUIRE(in);
+    BOOST_REQUIRE(!in.fail());
     std::string s, exp;
     long num[threads], last_time[threads];
 
@@ -192,14 +192,14 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     const char* filename = "/tmp/logger.file.log";
     const int iterations = 100000;
 
-    pt.put("logger.timestamp",    variant("date_time_with_usec"));
-    pt.put("logger.show_ident",   variant(false));
-    pt.put("logger.show_location",variant(false));
-    pt.put("logger.async_file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.async_file.filename",  variant(filename));
-    pt.put("logger.async_file.append", variant(false));
+    pt.put("logger.timestamp",    variant("date-time-usec"));
+    pt.put("logger.show-ident",   variant(false));
+    pt.put("logger.show-location",variant(false));
+    pt.put("logger.async-file.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.async-file.filename",  variant(filename));
+    pt.put("logger.async-file.append", variant(false));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.async_file"));
+    BOOST_REQUIRE(pt.get_child_optional("logger.async-file"));
 
     logger& log = logger::instance();
     log.init(pt);
@@ -272,21 +272,22 @@ enum open_mode {
 
 void run_test(const char* config_type, open_mode mode, int def_threads)
 {
+    BOOST_MESSAGE("Testing back-end: " << config_type);
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
     const int iterations = ::getenv("ITERATIONS") ? atoi(::getenv("ITERATIONS")) : 1000000;
 
     ::unlink(filename);
 
-    pt.put("logger.timestamp",    variant("date_time_with_usec"));
-    pt.put("logger.show_ident",   variant(false));
-    pt.put("logger.show_location",variant(false));
+    pt.put("logger.timestamp",    variant("date-time-usec"));
+    pt.put("logger.show-ident",   variant(false));
+    pt.put("logger.show-location",variant(false));
 
     std::string s("logger."); s += config_type;
-    pt.put(s + ".stdout_levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put(s + ".stdout-levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put(s + ".filename",  filename);
     pt.put(s + ".append",    mode == MODE_APPEND);
-    pt.put(s + ".use_mutex", mode == MODE_OVERWRITE);
+    pt.put(s + ".use-mutex", mode == MODE_OVERWRITE);
 
     logger& log = logger::instance();
     log.init(pt);
@@ -339,7 +340,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
 BOOST_AUTO_TEST_CASE( test_logger_async_file_perf )
 {
-    run_test("async_file", MODE_OVERWRITE, 3);
+    run_test("async-file", MODE_OVERWRITE, 3);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite )

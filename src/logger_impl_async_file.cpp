@@ -42,17 +42,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 static logger_impl_mgr::impl_callback_t f = &logger_impl_async_file::create;
-static logger_impl_mgr::registrar reg("async_file", f);
+static logger_impl_mgr::registrar reg("async-file", f);
 
 logger_impl_async_file::logger_impl_async_file(const char* a_name)
     : m_name(a_name), m_append(true), m_levels(LEVEL_NO_DEBUG)
     , m_mode(0644), m_show_location(true), m_show_ident(false)
+    , m_engine_ptr(new async_logger_engine())
+    , m_engine(m_engine_ptr.get())
 {}
 
 void logger_impl_async_file::finalize()
 {
-    if (!m_engine.running())
-        m_engine.stop();
+    if (m_engine_ptr.get()) {
+        if (m_engine == m_engine_ptr.get() && m_engine->running())
+            m_engine->stop();
+        m_engine_ptr.reset();
+    }
+    m_engine = nullptr;
+}
+
+void logger_impl_async_file::set_engine(multi_file_async_logger& a_engine)
+{
+    m_engine = &a_engine;
+
+    if (m_engine_ptr.get()) {
+        m_engine_ptr->stop();
+        m_engine_ptr.reset();
+    }
 }
 
 std::ostream& logger_impl_async_file::dump(
@@ -63,8 +79,8 @@ std::ostream& logger_impl_async_file::dump(
         << a_pfx << "    append         = " << (m_append ? "true" : "false") << '\n'
         << a_pfx << "    mode           = " << m_mode << '\n'
         << a_pfx << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_pfx << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_pfx << "    show_indent    = " << (m_show_ident    ? "true" : "false")
+        << a_pfx << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_pfx << "    show-indent    = " << (m_show_ident    ? "true" : "false")
         << std::endl;
     return out;
 }
@@ -73,23 +89,31 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
     throw(badarg_error,io_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);
-    finalize();
+
+    if (m_engine->running() && m_engine == m_engine_ptr.get())
+        finalize();
+
+    if (!m_engine) {
+        if (!m_engine_ptr.get())
+            m_engine_ptr.reset(new async_logger_engine());
+        m_engine = m_engine_ptr.get();
+    }
 
     try {
-        m_filename = a_config.get<std::string>("logger.async_file.filename");
+        m_filename = a_config.get<std::string>("logger.async-file.filename");
     } catch (boost::property_tree::ptree_bad_data&) {
         throw badarg_error("logger.async_file.filename not specified");
     }
 
-    m_append        = a_config.get<bool>("logger.async_file.append", true);
-    m_mode          = a_config.get<int> ("logger.async_file.mode", 0644);
+    m_append        = a_config.get<bool>("logger.async-file.append", true);
+    m_mode          = a_config.get<int> ("logger.async-file.mode", 0644);
     m_levels        = logger::parse_log_levels(
-                        a_config.get<std::string>("logger.async_file.levels",
+                        a_config.get<std::string>("logger.async-file.levels",
                                                   logger::default_log_levels));
-    m_fd            = m_engine.open_file(m_filename.c_str(), m_append, m_mode);
-    m_show_location = a_config.get<bool>("logger.async_file.show_location",
+    m_fd            = m_engine->open_file(m_filename.c_str(), m_append, m_mode);
+    m_show_location = a_config.get<bool>("logger.async-file.show-location",
                                          this->m_log_mgr->show_location());
-    m_show_ident    = a_config.get<bool>("logger.async_file.show_ident",
+    m_show_ident    = a_config.get<bool>("logger.async-file.show-ident",
                                          this->m_log_mgr->show_ident());
 
     if (m_fd < 0)
@@ -108,7 +132,9 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
         on_bin_delegate_t::from_method<
             logger_impl_async_file, &logger_impl_async_file::log_bin>(this));
 
-    m_engine.start();
+    if (!m_engine->running())
+        m_engine->start();
+
     return true;
 }
 
@@ -133,10 +159,10 @@ void logger_impl_async_file::send_data(
     log_level level, const std::string& a_category, const char* a_msg, size_t a_size)
     throw(io_error)
 {
-    if (!m_engine.running())
+    if (!m_engine->running())
         throw runtime_error("Logger terminated!");
 
-    char* p = m_engine.allocate(a_size);
+    char* p = m_engine->allocate(a_size);
 
     if (!p) {
         std::stringstream s("Out of memory allocating ");
@@ -146,7 +172,7 @@ void logger_impl_async_file::send_data(
 
     memcpy(p, a_msg, a_size);
 
-    m_engine.write(m_fd, a_category, p, a_size);
+    m_engine->write(m_fd, a_category, p, a_size);
 }
 
 } // namespace utxx

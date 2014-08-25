@@ -51,8 +51,8 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
         << a_prefix << "    append         = " << (m_append ? "true" : "false") << '\n'
         << a_prefix << "    mode           = " << m_mode << '\n'
         << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_prefix << "    show_indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+        << a_prefix << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_prefix << "    show-indent    = " << (m_show_ident    ? "true" : "false") << '\n';
     return out;
 }
 
@@ -73,12 +73,12 @@ bool logger_impl_file::init(const variant_tree& a_config)
     // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
     // Use the "use_mutex=false" option to inhibit this behavior if your
     // platform has thread-safe write(2) call.
-    m_use_mutex     = m_append ? false : a_config.get<bool>("logger.file.use_mutex", true);
+    m_use_mutex     = m_append ? false : a_config.get<bool>("logger.file.use-mutex", true);
     m_mode          = a_config.get<int> ("logger.file.mode", 0644);
     m_levels        = logger::parse_log_levels(
         a_config.get<std::string>("logger.file.levels", logger::default_log_levels));
-    m_show_location = a_config.get<bool>("logger.file.show_location", this->m_log_mgr->show_location());
-    m_show_ident    = a_config.get<bool>("logger.file.show_ident",    this->m_log_mgr->show_ident());
+    m_show_location = a_config.get<bool>("logger.file.show-location", this->m_log_mgr->show_location());
+    m_show_ident    = a_config.get<bool>("logger.file.show-ident",    this->m_log_mgr->show_ident());
 
     if (m_levels != NOLOGGING) {
         m_fd = open(m_filename.c_str(),

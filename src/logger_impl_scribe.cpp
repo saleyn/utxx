@@ -78,8 +78,8 @@ std::ostream& logger_impl_scribe::dump(std::ostream& out,
         << a_prefix << "    address        = " << m_server_addr.to_string() << '\n'
         << a_prefix << "    timeout        = " << m_server_timeout << '\n'
         << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_prefix << "    show_indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+        << a_prefix << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
+        << a_prefix << "    show-indent    = " << (m_show_ident    ? "true" : "false") << '\n';
     return out;
 }
 
@@ -108,10 +108,10 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     m_levels        = logger::parse_log_levels(a_config.get<std::string>(
                         "logger.scribe.levels", logger::default_log_levels));
     m_show_location = a_config.get<bool>(
-                        "logger.scribe.show_location",
+                        "logger.scribe.show-location",
                         this->m_log_mgr && this->m_log_mgr->show_location());
     m_show_ident    = a_config.get<bool>(
-                        "logger.scribe.show_ident",
+                        "logger.scribe.show-ident",
                         this->m_log_mgr && this->m_log_mgr->show_ident());
 
     if (m_levels != NOLOGGING) {

@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_CASE( test_logger_syslog )
     variant_tree pt;
 
     pt.put("logger.syslog.levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.syslog.facility", variant("log_local3"));
+    pt.put("logger.syslog.facility", variant("log-local3"));
 
     logger& log = logger::instance();
 

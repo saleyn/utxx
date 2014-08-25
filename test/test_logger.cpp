@@ -8,12 +8,10 @@
 
 //#define BOOST_TEST_MODULE logger_test
 #include <boost/test/unit_test.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ptree_serialization.hpp>
-#include <boost/property_tree/info_parser.hpp>
 #include <iostream>
 #include <utxx/logger.hpp>
 #include <utxx/verbosity.hpp>
+#include <utxx/variant_tree.hpp>
 
 //#define BOOST_TEST_MAIN
 
@@ -24,14 +22,15 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 {
     variant_tree pt;
 
-    pt.put("logger.timestamp", variant("time_with_usec"));
-    pt.put("logger.console.stdout_levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.show_ident", variant(true));
+    pt.put("logger.timestamp",  variant("time-usec"));
+    pt.put("logger.console.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.show-ident", true);
 
     if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
-        write_info(std::cout, pt);
+        pt.dump(std::cout, 2, false, true, ' ', 2);
 
-    BOOST_REQUIRE_EQUAL(1u, pt.count("logger"));
+    auto count = pt.count("logger");
+    BOOST_REQUIRE_EQUAL(1u, count);
     BOOST_REQUIRE(pt.get_child_optional("logger.console"));
 
     logger& log = logger::instance();

@@ -51,17 +51,17 @@ static int parse_syslog_facility(const std::string& facility)
     throw(std::runtime_error)
 {
     std::string s = facility;
-    boost::to_upper(s);
-    if      (s == "LOG_USER")   return LOG_USER;
-    else if (s == "LOG_LOCAL0") return LOG_LOCAL0;
-    else if (s == "LOG_LOCAL1") return LOG_LOCAL1;
-    else if (s == "LOG_LOCAL2") return LOG_LOCAL2;
-    else if (s == "LOG_LOCAL3") return LOG_LOCAL3;
-    else if (s == "LOG_LOCAL4") return LOG_LOCAL4;
-    else if (s == "LOG_LOCAL5") return LOG_LOCAL5;
-    else if (s == "LOG_LOCAL6") return LOG_LOCAL6;
-    else if (s == "LOG_LOCAL6") return LOG_LOCAL7;
-    else if (s == "LOG_DAEMON") return LOG_DAEMON;
+    boost::to_lower(s);
+    if      (s == "log-user")   return LOG_USER;
+    else if (s == "log-local0") return LOG_LOCAL0;
+    else if (s == "log-local1") return LOG_LOCAL1;
+    else if (s == "log-local2") return LOG_LOCAL2;
+    else if (s == "log-local3") return LOG_LOCAL3;
+    else if (s == "log-local4") return LOG_LOCAL4;
+    else if (s == "log-local5") return LOG_LOCAL5;
+    else if (s == "log-local6") return LOG_LOCAL6;
+    else if (s == "log-local6") return LOG_LOCAL7;
+    else if (s == "log-daemon") return LOG_DAEMON;
     else throw std::runtime_error("Unsupported syslog facility: " + s);
 }
 
@@ -83,7 +83,7 @@ std::ostream& logger_impl_syslog::dump(std::ostream& out,
     out << a_prefix << "logger." << name() << '\n'
         << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
         << a_prefix << "    facility       = " << m_facility << '\n'
-        << a_prefix << "    show_pid       = " << (m_show_pid ? "true" : "false") << '\n';
+        << a_prefix << "    show-pid       = " << (m_show_pid ? "true" : "false") << '\n';
     return out;
 }
 
@@ -102,7 +102,7 @@ bool logger_impl_syslog::init(const variant_tree& a_config)
     m_facility = 
         a_config.get<std::string>("logger.syslog.facility", "log_local6");
     facility   = parse_syslog_facility(m_facility);
-    m_show_pid = a_config.get<bool>("logger.syslog.show_pid", true);
+    m_show_pid = a_config.get<bool>("logger.syslog.show-pid", true);
 
     if (m_levels != NOLOGGING) {
         openlog(this->m_log_mgr->ident().c_str(), (m_show_pid ? LOG_PID : 0), facility);

@@ -41,6 +41,7 @@ template <int N>
 inline log_msg_info::log_msg_info(
     logger& a_logger, log_level a_lv, const char (&a_filename)[N], size_t a_ln)
     : m_logger(&a_logger)
+    , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_src_file_len(N)
     , m_src_file(a_filename)
@@ -60,17 +61,19 @@ inline log_msg_info::log_msg_info(
     log_level a_lv, const std::string& a_category,
     const char (&a_filename)[N], size_t a_ln)
     : m_logger(&logger::instance())
+    , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_category(a_category)
     , m_src_file_len(N)
     , m_src_file(a_filename)
-    , m_src_line(0)
+    , m_src_line(a_ln)
 {}
 
 inline log_msg_info::log_msg_info(
     log_level   a_lv,
     const std::string& a_category)
     : m_logger(NULL)
+    , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_category(a_category)
     , m_src_file_len(0)
@@ -102,11 +105,9 @@ inline void logger::log(logger& a_logger, log_level a_level,
 inline void logger::log(const log_msg_info& a_info, const char* a_fmt, va_list args) {
     if (is_enabled(a_info.level()))
         try {
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-
             m_sig_msg[level_to_signal_slot(a_info.level())](
-                on_msg_delegate_t::invoker_type(a_info, &tv, a_fmt, args));
+                on_msg_delegate_t::invoker_type
+                    (a_info, &a_info.msg_time().timeval(), a_fmt, args));
         } catch (std::runtime_error& e) {
             if (m_error)
                 m_error(e.what());
@@ -120,12 +121,10 @@ inline void logger::log(
 {
     if (is_enabled(a_level))
         try {
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-
             log_msg_info info(a_level, a_category);
             m_sig_msg[level_to_signal_slot(info.level())](
-                on_msg_delegate_t::invoker_type(info, &tv, a_fmt, args));
+                on_msg_delegate_t::invoker_type
+                    (info, &info.msg_time().timeval(), a_fmt, args));
         } catch (std::runtime_error& e) {
             if (m_error)
                 m_error(e.what());

@@ -51,17 +51,24 @@ volatile long timestamp::s_hrcalls;
 volatile long timestamp::s_syscalls;
 #endif
 
-stamp_type parse_stamp_type(const std::string& a_line) {
+namespace {
     static const char* s_values[] = {
         "none", "time",   "time-msec", "time-usec",
         "date-time", "date-time-msec", "date-time-usec"
     };
+}
 
+stamp_type parse_stamp_type(const std::string& a_line) {
     stamp_type t = find_index<stamp_type>(s_values, a_line, (stamp_type)-1, true);
 
     if (int(t) == -1)
         throw badarg_error("parse_stamp_tpe: invalid timestamp type: ", a_line);
     return t;
+}
+
+const char* to_string(stamp_type a_type) {
+    assert(a_type < length(s_values));
+    return s_values[a_type];
 }
 
 static int internal_write_date(

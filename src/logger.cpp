@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <utxx/meta.hpp>
 #include <utxx/string.hpp>
+#include <utxx/timestamp.hpp>
 #include <utxx/synch.hpp>
 #include <utxx/bits.hpp>
 #include <utxx/logger/logger.hpp>
@@ -45,26 +46,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 
 namespace utxx {
-
-    namespace {
-        static const char* s_timestamp_types[] = {
-            "NO_TIMESTAMP", "TIME", "TIME_WITH_MSEC", "TIME_WITH_USEC",
-            "DATE_TIME", "DATE_TIME_WITH_MSEC", "DATE_TIME_WITH_USEC"
-        };
-
-        stamp_type str_to_timestamp_type(const std::string& a_str) {
-            std::string ts(a_str);
-            boost::to_upper(ts);
-            BOOST_STATIC_ASSERT(
-                sizeof(s_timestamp_types)/sizeof(s_timestamp_types[0]) == DATE_TIME_WITH_USEC + 1);
-            return find_index<stamp_type>(s_timestamp_types, ts);
-        }
-
-        const char* timestamp_type_to_str(stamp_type a_type) {
-            BOOST_ASSERT(a_type < sizeof(s_timestamp_types)/sizeof(s_timestamp_types[0]));
-            return s_timestamp_types[a_type];
-        }
-    }
 
 std::string logger::log_levels_to_str(int a_levels)
 {
@@ -167,12 +148,12 @@ void logger::init(const config_tree& config)
     finalize();
 
     try {
-        m_show_location = config.get<bool>       ("logger.show_location", m_show_location);
-        m_show_ident    = config.get<bool>       ("logger.show_ident",    m_show_ident);
+        m_show_location = config.get<bool>       ("logger.show-location", m_show_location);
+        m_show_ident    = config.get<bool>       ("logger.show-ident",    m_show_ident);
         m_ident         = config.get<std::string>("logger.ident",         m_ident);
-        std::string ts  = config.get<std::string>("logger.timestamp",     "time_with_usec");
-        m_timestamp_type= str_to_timestamp_type(ts);
-        std::string ls  = config.get<std::string>("logger.min_level_filter", "info");
+        std::string ts  = config.get<std::string>("logger.timestamp",     "time-usec");
+        m_timestamp_type= parse_stamp_type(ts);
+        std::string ls  = config.get<std::string>("logger.min-level-filter", "info");
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
 
         if ((int)m_timestamp_type < 0)
@@ -311,11 +292,11 @@ std::ostream& logger::dump(std::ostream& out) const
 {
     std::stringstream s;
     s   << "Logger settings:\n"
-        << "    level_filter   = " << log_levels_to_str(m_level_filter) << '\n'
-        << "    show_location  = " << (m_show_location ? "true" : "false") << '\n'
-        << "    show_ident     = " << (m_show_ident    ? "true" : "false") << '\n'
+        << "    level-filter   = " << log_levels_to_str(m_level_filter) << '\n'
+        << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
+        << "    show-ident     = " << (m_show_ident    ? "true" : "false") << '\n'
         << "    ident          = " << m_ident << '\n'
-        << "    timestamp_type = " << timestamp_type_to_str(m_timestamp_type) << '\n';
+        << "    timestamp-type = " << to_string(m_timestamp_type) << '\n';
 
     // Check the list of registered implementations. If corresponding
     // configuration section is found, initialize the implementation.

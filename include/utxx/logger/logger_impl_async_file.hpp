@@ -72,9 +72,10 @@ class logger_impl_async_file: public logger_impl {
 //     };
 
 //    typedef basic_multi_file_async_logger<logger_traits> async_logger_engine;
-    typedef basic_multi_file_async_logger<> async_logger_engine;
-
-    async_logger_engine                     m_engine;
+    typedef multi_file_async_logger         async_logger_engine;
+    
+    std::unique_ptr<async_logger_engine>    m_engine_ptr;
+    async_logger_engine*                    m_engine;
     struct timespec                         m_timeout;
     typename async_logger_engine::file_id   m_fd;
 
@@ -90,6 +91,10 @@ public:
     }
 
     virtual ~logger_impl_async_file() { finalize(); }
+
+    // This method allows the logging implementation to use
+    // an external logging engine
+    void set_engine(multi_file_async_logger& a_engine);
 
     const std::string& name() const { return m_name; }
 

@@ -117,8 +117,7 @@ int logger_impl::format_message(
         int len = info.src_file() + info.src_file_len() - q;
 
         if (q+len+12 < end) {
-            strncpy(p, q, len);
-            p += len;
+            p = stpncpy(p, q, len);
             *p++ = ':';
             itoa(info.src_line(), p);
         }

@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
     variant_tree pt;
 
     #ifdef HAVE_THRIFT_H
-    pt.put("logger.console.stderr_levels",  std::string("info|warning|error|fatal|alert"));
+    pt.put("logger.console.stderr-levels",  std::string("info|warning|error|fatal|alert"));
     pt.put("logger.scribe.address",         std::string("uds:///var/run/scribed"));
     pt.put("logger.scribe.levels",          std::string("debug|info|warning|error|fatal|alert"));
 
