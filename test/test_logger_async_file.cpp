@@ -190,7 +190,8 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
 {
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
-    const int iterations = 100000;
+    const int iterations = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 100000;
+
 
     pt.put("logger.timestamp",    variant("date-time-usec"));
     pt.put("logger.show-ident",   variant(false));
@@ -270,12 +271,14 @@ enum open_mode {
     , MODE_NO_MUTEX
 };
 
+const int ITERATIONS = getenv("ITERATIONS") ? atoi(::getenv("ITERATIONS")) : 1000000;
+const int THREADS    = getenv("THREADS")    ? atoi(getenv("THREADS"))      : 3;
+
 void run_test(const char* config_type, open_mode mode, int def_threads)
 {
     BOOST_MESSAGE("Testing back-end: " << config_type);
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
-    const int iterations = ::getenv("ITERATIONS") ? atoi(::getenv("ITERATIONS")) : 1000000;
 
     ::unlink(filename);
 
@@ -303,13 +306,15 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     for (int i=0; i < threads; i++) {
         workers[i] = boost::shared_ptr<latency_worker>(
-                        new latency_worker(++id, iterations, barrier,
+                        new latency_worker(++id, ITERATIONS, barrier,
                                            &histograms[i], &elapsed[i]));
         thread[i]  = boost::shared_ptr<boost::thread>(
                         new boost::thread(boost::ref(*workers[i])));
     }
 
     barrier.wait();
+
+    BOOST_MESSAGE("Producers started");
 
     perf_histogram totals(to_string("Total ",config_type," performance"));
     double sum_time = 0;
@@ -326,31 +331,31 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
     if (verbosity::level() >= utxx::VERBOSE_DEBUG) {
         sum_time /= threads;
         printf("Avg speed = %8d it/s, latency = %.3f us\n",
-               (int)((double)iterations / sum_time),
-               sum_time * 1000000 / iterations);
+               (int)((double)ITERATIONS / sum_time),
+               sum_time * 1000000 / ITERATIONS);
         if (!getenv("NOHISTOGRAM"))
             totals.dump(std::cout);
     }
 
     if (!getenv("NOVERIFY"))
-        verify_result(filename, threads, iterations, 1);
+        verify_result(filename, threads, ITERATIONS, 1);
 
     ::unlink(filename);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger_async_file_perf )
 {
-    run_test("async-file", MODE_OVERWRITE, 3);
+    run_test("async-file", MODE_OVERWRITE, THREADS);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite )
 {
-    run_test("file", MODE_OVERWRITE, 3);
+    run_test("file", MODE_OVERWRITE, THREADS);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_append )
 {
-    run_test("file", MODE_APPEND, 3);
+    run_test("file", MODE_APPEND, THREADS);
 }
 
 // Note that this test should fail when THREAD environment is set to
