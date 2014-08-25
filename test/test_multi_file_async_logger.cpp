@@ -70,72 +70,127 @@ void unlink() {
         ::unlink(s_filename[i]);
 }
 
+auto worker = [&](int id, int iterations, boost::barrier* barrier,
+                  logger_t* logger, logger_t::file_id* files,
+                  perf_histogram* histogram, double* elapsed)
+{
+    barrier->wait();
+    histogram->reset();
+    bool no_histogram = getenv("NOHISTOGRAM");
+
+    timer tm;
+
+    for (int i=0; i < iterations; i++) {
+        char* p = logger->allocate(sizeof(s_str1));
+        char* q = logger->allocate(sizeof(s_str3));
+        strncpy(p, s_str1, sizeof(s_str1));
+        strncpy(q, s_str3, sizeof(s_str3));
+        if (!no_histogram) histogram->start();
+        int n = logger->write(files[0], std::string(), p, sizeof(s_str1));
+        if (!no_histogram) histogram->stop();
+        //BOOST_REQUIRE_EQUAL(0, n);
+        if (!no_histogram) histogram->start();
+        int m = logger->write(files[1], std::string(), q, sizeof(s_str3));
+        if (!no_histogram) histogram->stop();
+        //BOOST_REQUIRE_EQUAL(0, m);
+    }
+
+    *elapsed = tm.elapsed();
+    auto lat = tm.latency_usec(iterations);
+
+    if (utxx::verbosity::level() != utxx::VERBOSE_NONE) {
+        char buf[128];
+        sprintf(buf,
+                "Performance thread %d finished (speed=%7d ops/s, lat=%.3f us) "
+                "total logged: %lu\n",
+                id, int(double(iterations) / *elapsed), lat,
+                logger->total_msgs_processed());
+        BOOST_MESSAGE(buf);
+    }
+};
+
 BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 {
-    static const int32_t ITERATIONS =
+    static const int ITERATIONS =
         getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 250000u;
+    static const int THREADS    =
+        getenv("THREADS")    ? atoi(getenv("THREADS"))    : 3;
 
     unlink();
 
     logger_t::file_id l_fds[s_file_num];
 
-    logger_t l_logger;
+    logger_t logger;
 
     for (size_t i = 0; i < s_file_num; i++) {
-        l_fds[i] = l_logger.open_file(s_filename[i], false);
+        l_fds[i] = logger.open_file(s_filename[i], false);
         BOOST_REQUIRE(l_fds[i].fd() >= 0);
         //l_logger.set_batch_size(l_fds[i], 100);
     }
 
-    int ok = l_logger.start();
+    int ok = logger.start();
 
     BOOST_REQUIRE_EQUAL(0, ok);
 
-    perf_histogram perf("Async logger latency");
+    std::shared_ptr<std::thread> threads[THREADS];
+    boost::barrier               barrier(THREADS+1);
+    double                       elapsed[THREADS];
+    perf_histogram               histograms[THREADS];
 
-    for (int i = 0; i < ITERATIONS; i++) {
-        char* p = l_logger.allocate(sizeof(s_str1));
-        char* q = l_logger.allocate(sizeof(s_str3));
-        strncpy(p, s_str1, sizeof(s_str1));
-        strncpy(q, s_str3, sizeof(s_str3));
-        perf.start();
-        int n = l_logger.write(l_fds[0], std::string(), p, sizeof(s_str1));
-        perf.stop();
-        BOOST_REQUIRE_EQUAL(0, n);
-        perf.start();
-        int m = l_logger.write(l_fds[1], std::string(), q, sizeof(s_str3));
-        perf.stop();
-        BOOST_REQUIRE_EQUAL(0, m);
-        if (i == ITERATIONS-1 || (i % (ITERATIONS/10)) == 0) {
+    for (int i=0; i < THREADS; i++) {
+        new (&(histograms[i])) perf_histogram();
+        threads[i].reset(
+            new std::thread(worker,
+                i+1, ITERATIONS, &barrier,
+                &logger, l_fds, &(histograms[i]), &(elapsed[i])
+            ));
+    }
+
+    barrier.wait();
+
+    perf_histogram totals("Total performance");
+    double sum_time = 0;
+
+    for (int i=0; i < THREADS; i++) {
+        if (threads[i]) threads[i]->join();
+        totals   += histograms[i];
+        sum_time += elapsed[i];
+    }
+
+    BOOST_MESSAGE("All threads finished!");
+
+    if (verbosity::level() >= utxx::VERBOSE_DEBUG) {
+        sum_time /= THREADS;
+        char buf[128];
+        sprintf(buf, "Avg speed = %8d it/s, latency = %.3f us\n",
+               (int)((double)ITERATIONS / sum_time),
+               sum_time * 1000000 / ITERATIONS);
+        BOOST_MESSAGE(buf);
+        if (!getenv("NOHISTOGRAM")) {
             std::stringstream s;
-            s << "Wrote " << (i+1) << " records (processed="
-              << l_logger.total_msgs_processed() << ")";
+            totals.dump(s);
             BOOST_MESSAGE(s.str());
         }
     }
 
-#ifdef PERF_STATS
-    std::cout << "Futex wake          count = " << l_logger.event().wake_count()          << std::endl;
-    std::cout << "Futex wake_signaled count = " << l_logger.event().wake_signaled_count() << std::endl;
-    std::cout << "Futex wait          count = " << l_logger.event().wait_count()          << std::endl;
-    std::cout << "Futex wake_fast     count = " << l_logger.event().wake_fast_count()     << std::endl;
-    std::cout << "Futex wait_fast     count = " << l_logger.event().wait_fast_count()     << std::endl;
-    std::cout << "Futex wait_spin     count = " << l_logger.event().wait_spin_count()     << std::endl;
-#endif
-
-    for (size_t i = 0; i < s_file_num; i++) {
-        l_logger.close_file(l_fds[i], false);
-        BOOST_REQUIRE(l_fds[i].fd() < 0);
-    }
-
-    BOOST_CHECK_EQUAL(0,  l_logger.open_files_count());
-
     std::stringstream s;
-    perf.dump(s);
-    s << "Max queue size = " << l_logger.max_queue_size();
+    s << "Max queue size = " << logger.max_queue_size();
     BOOST_MESSAGE(s.str());
 
-    l_logger.stop();
+
+#ifdef PERF_STATS
+    std::cout << "Futex wake          count = " << logger.event().wake_count()          << std::endl;
+    std::cout << "Futex wake_signaled count = " << logger.event().wake_signaled_count() << std::endl;
+    std::cout << "Futex wait          count = " << logger.event().wait_count()          << std::endl;
+    std::cout << "Futex wake_fast     count = " << logger.event().wake_fast_count()     << std::endl;
+    std::cout << "Futex wait_fast     count = " << logger.event().wait_fast_count()     << std::endl;
+    std::cout << "Futex wait_spin     count = " << logger.event().wait_spin_count()     << std::endl;
+#endif
+
+    logger.stop();
+
+    BOOST_CHECK_EQUAL(0, logger.open_files_count());
+
     unlink();
 }
 

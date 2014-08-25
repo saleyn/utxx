@@ -306,7 +306,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     for (int i=0; i < threads; i++) {
         workers[i] = boost::shared_ptr<latency_worker>(
-                        new latency_worker(++id, ITERATIONS, barrier,
+                        new latency_worker(++id, ITERATIONS, boost::ref(barrier),
                                            &histograms[i], &elapsed[i]));
         thread[i]  = boost::shared_ptr<boost::thread>(
                         new boost::thread(boost::ref(*workers[i])));
