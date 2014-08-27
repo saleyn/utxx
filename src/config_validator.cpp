@@ -425,13 +425,13 @@ void validator::check_required
                             format_name(a_root, opt, vt.first, vt.second.data().to_string()),
                             vt.second, opt.children);
                     }
-                    if (!opt.children.size() && vt.second.size())
+                    if (!opt.children.size() && vt.second.size() && opt.validate)
                         throw variant_tree_error(format_name(a_root, opt, vt.first,
                                 vt.second.data().to_string()),
                             "Option is not allowed to have child nodes!");
                 }
 
-            if (!l_found && l_has_req)
+            if (!l_found && l_has_req && opt.validate)
                 throw variant_tree_error(format_name(a_root, opt),
                                          "Missing a required child option: ",
                                          l_req_name.dump());

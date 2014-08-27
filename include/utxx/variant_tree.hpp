@@ -273,12 +273,15 @@ public:
     {}
 
     #if __cplusplus >= 201103L
-    basic_variant_tree(basic_variant_tree&& a_rhs)  { swap(a_rhs); }
+    basic_variant_tree(basic_variant_tree&& a_rhs)
+        : basic_variant_tree_base<Ch>(std::move(a_rhs))
+        , m_root_path(std::move(a_rhs.m_root_path))
+        , m_schema_validator(std::move(a_rhs.m_schema_validator))
+    {}
     basic_variant_tree(base&& a_rhs)
-        : m_schema_validator(NULL)
-    {
-        swap(a_rhs);
-    }
+        : basic_variant_tree_base<Ch>(std::move(a_rhs))
+        , m_schema_validator(NULL)
+    {}
     #endif
 
     /// Offset path of this tree from the root configuration
