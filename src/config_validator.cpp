@@ -181,6 +181,26 @@ const option* validator::find
     }
 }
 
+void validator::set_validator(
+    const tree_path& a_path, const validator* a_validator
+) const
+{
+    const option* opt = find(a_path);
+    if (!opt)
+        throw variant_tree_error(a_path, "Option path is not found!");
+    opt->set_validator(a_validator);
+}
+
+void validator::set_validator(
+    const tree_path& a_path, const custom_validator& a_val
+) const
+{
+    const option* opt = find(a_path);
+    if (!opt)
+        throw variant_tree_error(a_path, "Option path is not found!");
+    opt->set_validator(a_val);
+}
+
 const option& validator::get(const tree_path& a_path, const tree_path& a_root) const
 {
     tree_path p(strip_root(a_path, a_root));
@@ -205,15 +225,15 @@ tree_path validator::format_name
 (
     const tree_path& a_root,
     const option& a_opt, const std::string& a_cfg_opt,
-    const std::string& a_cfg_value
+    const variant& a_cfg_value
 )
     const
 {
     tree_path s = a_root / a_opt.name;
     if (!a_cfg_opt.empty() && a_cfg_opt != a_opt.name) // && a_opt.opt_type == ANONYMOUS)
         s /= a_cfg_opt;
-    if (!a_cfg_value.empty()) // && !a_opt.unique)
-        s = s.dump() + '[' + a_cfg_value + ']';
+    if (!a_cfg_value.is_null()) // && !a_opt.unique)
+        s = s.dump() + '[' + a_cfg_value.to_string() + ']';
     return s;
 }
 
@@ -292,22 +312,30 @@ void validator::validate
         bool l_match = false;
         BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
             const option& opt = ovt.second;
+            bool  check = false;
             if (opt.opt_type == ANONYMOUS) {
                 if (!all_anonymous(a_opts))
                     throw variant_tree_error(format_name(a_root, opt,
-                        vt.first, vt.second.data().to_string()),
+                        vt.first, vt.second.data()),
                         "Check XML spec. Cannot mix anonymous and named options "
                         "in one section!");
-                if (opt.validate)
-                    check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
-                l_match = true;
-                break;
+                check = true;
             } else if (opt.name == vt.first) {
-                if (opt.validate)
-                    check_option(a_root, vt, opt, a_fill_defaults, a_custom_validator);
+                check = true;
+            } else if (single_nested_tree) {
                 l_match = true;
                 break;
-            } else if (single_nested_tree) {
+            }
+
+            if (check) {
+                if (!opt.validate)
+                    l_match = true;
+                else if (opt.m_validator)
+                    opt.m_validator->validate(a_root / opt.name, vt.second, opt.children,
+                        a_fill_defaults, opt.m_custom_validator);
+                else
+                    check_option(a_root, vt, opt, a_fill_defaults,
+                        opt.m_custom_validator ? opt.m_custom_validator : a_custom_validator);
                 l_match = true;
                 break;
             }
@@ -353,7 +381,7 @@ void validator::check_required
                     if (vt.first == opt.name) {
                         #ifdef TEST_CONFIG_VALIDATOR
                         std::cout << "    found: "
-                            << format_name(a_root, opt, vt.first, vt.second.data().to_string())
+                            << format_name(a_root, opt, vt.first, vt.second.data())
                             << ", value=" << vt.second.data().to_string()
                             << ", type=" << type_to_string(opt.opt_type)
                             << std::endl;
@@ -366,9 +394,7 @@ void validator::check_required
 
                         if (vt.second.data().is_null())
                             throw variant_tree_error(format_name(a_root, opt,
-                                    vt.first, vt.second.data().is_null()
-                                                ? std::string()
-                                                : vt.second.data().to_string()),
+                                    vt.first, vt.second.data()),
                                 "Missing value of the required option "
                                 "and no default provided!");
                         l_found = true;
@@ -401,7 +427,7 @@ void validator::check_required
             #endif
             BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
                 check_required(
-                    format_name(a_root, opt, vt.first, vt.second.data().to_string()),
+                    format_name(a_root, opt, vt.first, vt.second.data()),
                     vt.second, opt.children);
         } else {
             #ifdef TEST_CONFIG_VALIDATOR
@@ -418,16 +444,16 @@ void validator::check_required
                     if (l_has_req) {
                         if (!vt.second.size())
                             throw variant_tree_error(format_name(a_root, opt,
-                                    vt.first, vt.second.data().to_string()),
+                                    vt.first, vt.second.data()),
                                     "Option is missing required child option: ",
                                     l_req_name.dump());
                         check_required(
-                            format_name(a_root, opt, vt.first, vt.second.data().to_string()),
+                            format_name(a_root, opt, vt.first, vt.second.data()),
                             vt.second, opt.children);
                     }
                     if (!opt.children.size() && vt.second.size() && opt.validate)
                         throw variant_tree_error(format_name(a_root, opt, vt.first,
-                                vt.second.data().to_string()),
+                                vt.second.data()),
                             "Option is not allowed to have child nodes!");
                 }
 
@@ -499,7 +525,7 @@ check_option
                 if (a_opt.opt_type == ANONYMOUS || a_opt.opt_type == BRANCH)
                     break;
                 throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
-                        a_vt.second.data().to_string()),
+                        a_vt.second.data()),
                     "Check XML spec. Option's value_type '",
                     type_to_string(a_opt.value_type),
                     "' is invalid!");
@@ -523,7 +549,7 @@ check_option
             case BOOL:      break;
             default: {
                 throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
-                        a_vt.second.data().to_string()),
+                        a_vt.second.data()),
                     "Check XML spec. Unsupported type of option: ",
                     type_to_string(a_opt.opt_type));
             }
@@ -532,7 +558,7 @@ check_option
         if (!a_opt.name_choices.empty()) {
             if (a_opt.opt_type != ANONYMOUS)
                 throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
-                        a_vt.second.data().to_string()),
+                        a_vt.second.data()),
                     "Check XML spec. Non-anonymous option cannot have name choices!");
             if (a_opt.name_choices.find(a_vt.first) == a_opt.name_choices.end())
                 throw std::invalid_argument("Invalid name given to anonymous option!");
@@ -541,7 +567,7 @@ check_option
         if (!a_opt.value_choices.empty())
             if (a_opt.value_choices.find(a_vt.second.data()) == a_opt.value_choices.end()) {
                 throw variant_tree_error(format_name(a_root, a_opt,
-                        a_vt.first, a_vt.second.data().to_string()),
+                        a_vt.first, a_vt.second.data()),
                     "Value is not allowed for option!");
             }
         if (!a_opt.children.empty())
@@ -549,7 +575,7 @@ check_option
                 a_custom_validator);
     } catch (std::invalid_argument& e) {
         throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
-                a_vt.second.data().to_string()),
+                a_vt.second.data()),
                 e.what());
     }
 }
@@ -698,7 +724,7 @@ void validator::check_unique
                 const option& o = ovt.second;
                 if (o.name == vt.first && o.unique)
                     throw variant_tree_error(format_name(a_root, o, vt.first,
-                          vt.second.data().to_string()),
+                          vt.second.data()),
                           "Non-unique config option found!");
             }
         }

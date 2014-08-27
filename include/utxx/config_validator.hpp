@@ -208,8 +208,16 @@ namespace config {
 
     const char* type_to_string(option_type_t a_type);
 
-    struct option {
+    class validator;
 
+    /// Performs custom validation of unrecognized options
+    /// @return true if given option is valid.
+    typedef std::function
+        <bool (const tree_path&     a_path,
+               const std::string&   a_name,
+               const variant&       a_value)> custom_validator;
+
+    struct option {
         std::string         name;
         option_type_t       opt_type;   // STRING | ANONYMOUS
         string_set          name_choices;
@@ -227,6 +235,11 @@ namespace config {
         bool                required;
         bool                unique;
         bool                validate;
+
+        /// Optional validator for this node
+        mutable const validator* m_validator;
+        /// Optional custom validator for this node
+        mutable custom_validator m_custom_validator;
 
         option() : opt_type(UNDEF), value_type(UNDEF), required(true), unique(true) {}
 
@@ -257,23 +270,21 @@ namespace config {
             , required(!a_required ? false : a_def.type() == variant::TYPE_NULL)
             , unique(a_unique)
             , validate(a_validate)
+            , m_validator(NULL)
+            , m_custom_validator(NULL)
         {}
 
         bool operator== (const option& a_rhs) const { return name == a_rhs.name; }
 
         std::string to_string() const;
 
+        void set_validator(const validator* a_validator)  const { m_validator = a_validator;  }
+        void set_validator(const custom_validator& a_val) const { m_custom_validator = a_val; }
+
         static std::string substitute_vars(const std::string& a_value);
 
         variant default_subst_value() const;
     };
-
-    /// Performs custom validation of unrecognized options
-    /// @return true if given option is valid.
-    typedef std::function
-        <bool (const tree_path&     a_path,
-               const std::string&   a_name,
-               const variant&       a_value)> custom_validator;
 
     class validator {
         void check_option(
@@ -294,7 +305,7 @@ namespace config {
 
         tree_path format_name(const tree_path& a_root, const option& a_opt,
             const std::string& a_cfg_opt   = std::string(),
-            const std::string& a_cfg_value = std::string()) const;
+            const variant&     a_cfg_value = variant()) const;
 
         bool has_required_child_options(const option_map& a_opts,
             tree_path& a_req_option_path) const;
@@ -397,6 +408,9 @@ namespace config {
 
         const variant_tree_base* config()            const { return m_config;   }
         void  config(const variant_tree_base& a_cfg) const { m_config = &a_cfg; }
+
+        void set_validator(const tree_path& a_path, const validator* a_validator)  const;
+        void set_validator(const tree_path& a_path, const custom_validator& a_val) const;
 
         void validate(variant_tree& a_config, bool a_fill_defaults,
             const custom_validator& a_custom_validator = NULL
