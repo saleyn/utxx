@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/path.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/buffer.hpp>
+#include <boost/concept_check.hpp>
 
 using namespace std;
 
@@ -53,15 +54,16 @@ void usage(std::string const& a_err = "")
     std::cerr << "Error: " << a_err << endl << endl;
 
   std::cerr << utxx::path::program::name()
-    << " [-k KeyRegEx] [-s N] Filename\n"
+    << " [-k KeyRegEx] [-s S] Filename\n"
     << "Extended tail that allows to batch changes on lines matching\n"
     << "regular expressions and print them per interval\n\n"
     << "-k KeyRegEx              use KeyRegEx to determine a key ID of a line\n"
+    << "-n N                     start tail from last N lines\n"
     << "-i                       ignore case\n"
     << "-a                       use regex awk grammar\n"
     << "-g                       use regex grep grammar\n"
     << "-e                       use regex egrep grammar\n"
-    << "-s, --sleep-interval=N   sleep for approximately N seconds (default 1s)\n"
+    << "-s, --sleep-interval=S   sleep for approximately S seconds (default 1s)\n"
     << "-h, --help               help\n"
     << endl;
 
@@ -71,18 +73,52 @@ void usage(std::string const& a_err = "")
 void print(const vector<string>& a_lines, bool changed[])
 {
   for (int i=0, e = a_lines.size(); i < e; ++i)
-    if (changed[i])
-    {
+    if (changed[i]) {
       changed[i] = false;
       std::cout << a_lines[i] << endl;
     }
   flush(std::cout);
 }
 
+void find_last_line(long a_count, istream* a_file)
+{
+  if (a_count <= 0)
+    return;
+
+  a_file->seekg(-1, ios_base::end);
+
+  long count = 0, pos = a_file->tellg();
+
+  while(count < a_count && pos > 0) {
+    long sz = std::min<long>(1024, pos);
+    a_file->seekg(-sz, ios_base::cur);
+    long new_pos = a_file->tellg();
+
+    char  buf[1024];
+    int   n = a_file->readsome(buf, sz);
+
+    if (n < 0)
+        exit(1);
+
+    char* p = buf + n;
+
+    for (; p != buf; --p)
+        if (*p == '\n' && ++count == a_count) {
+            a_file->seekg(new_pos + p - buf);
+            return;
+        }
+
+    pos = new_pos;
+  }
+
+  a_file->clear();
+}
+
 int main(int argc, char* argv[])
 {
   int    interval = 1;
   string filename;
+  long   last = 0;
   regex_constants::syntax_option_type regex_opts =
     regex_constants::syntax_option_type(0);
   vector<string> regexs;
@@ -93,23 +129,23 @@ int main(int argc, char* argv[])
   ifstream input;
   istream* file = &std::cin;
 
-  for (int i=1; i < argc; ++i)
-  {
+  for (int i=1; i < argc; ++i) {
     if ((!strcmp(argv[i], "-s") || !strcmp(argv[i], "--sleep-interval")) &&
         i < argc-1 && argv[i+1][0] != '-')
       interval = atoi(argv[++i]);
     else if (!strcmp("-k", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
       regexs.push_back(argv[++i]);
-    else if ((!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) &&
-        i < argc-1 && argv[i+1][0] != '-')
+    else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
       usage();
-    else if (!strcmp("-i", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
+    else if (!strcmp("-n", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
+      last = atoi(argv[++i]);
+    else if (!strcmp("-i", argv[i]))
       regex_opts |= regex_constants::icase;
-    else if (!strcmp("-a", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
+    else if (!strcmp("-a", argv[i]))
       regex_opts |= regex_constants::awk;
-    else if (!strcmp("-g", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
+    else if (!strcmp("-g", argv[i]))
       regex_opts |= regex_constants::grep;
-    else if (!strcmp("-e", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
+    else if (!strcmp("-e", argv[i]))
       regex_opts |= regex_constants::egrep;
     else if (argv[i][0] != '-')
     {
@@ -129,43 +165,42 @@ int main(int argc, char* argv[])
   for (auto& s : regexs)
     keys.push_back(regex(s, regex_opts));
 
-  bool changed[keys.size()];
+  size_t sz = std::max<size_t>(1, keys.size());
+
+  bool changed[sz];
   memset(changed, 0, sizeof(changed));
 
-  lines    .resize(keys.size());
-  old_lines.resize(keys.size());
+  lines    .resize(sz);
+  old_lines.resize(sz);
 
   utxx::time_val deadline = utxx::now_utc() + 1.0, last_time;
   int change_count = 0;
 
+  find_last_line(last, file);
+
   auto now = utxx::now_utc();
 
-  while(true)
-  {
+  while(true) {
     if (now < deadline)
       usleep(long(deadline.diff(now) * 1000000));
 
     string s;
-    while (getline(*file, s))
-    {
+    while (getline(*file, s)) {
       if (s.empty())
         continue;
 
-      for (size_t i = 0, e = keys.size(); i < e; ++i)
-      {
+      for (size_t i = 0, e = sz; i < e; ++i) {
         auto& k = keys[i];
         std::smatch rmatch;
-        if (regex_search(s, rmatch, k))
+        if (keys.empty() || regex_search(s, rmatch, k))
         {
           lines[i] = s;
 
           bool& b = changed[i];
 
-          if (!b)
-          {
+          if (!b) {
             b |= old_lines[i] != s;
-            if (b)
-            {
+            if (b) {
               old_lines[i] = s;
               change_count++;
             }
@@ -175,8 +210,7 @@ int main(int argc, char* argv[])
 
       now = utxx::now_utc();
 
-      if (now >= deadline && change_count)
-      {
+      if (now >= deadline && change_count) {
         print(lines, changed);
         change_count = 0;
         deadline = now + utxx::time_val(interval, 0);
