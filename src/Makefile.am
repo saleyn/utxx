@@ -1,6 +1,6 @@
 utxx_LTLIBRARIES = libutxx.la
 
-bin_PROGRAMS = mreceive
+bin_PROGRAMS = mreceive tailagg
 
 UTXX64_SRCS = \
 	name.cpp
@@ -40,6 +40,11 @@ libutxx_la_CXXFLAGS = -I${top_srcdir}/include $(THRIFT_CPPFLAGS) \
 
 mreceive_SOURCES    = mreceive.c
 mreceive_CFLAGS     = -g
+
+tailagg_SOURCES     = tailagg.cpp
+tailagg_CPPFLAGS    = -g -O3 -I${top_srcdir}/include
+tailagg_LDFLAGS     = -rpath $(libdir)
+tailagg_LDADD       = -lutxx $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB)
 
 bin_SCRIPTS = ${top_srcdir}/bin/config_validator_codegen.py
 

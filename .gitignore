@@ -14,6 +14,7 @@ install
 src/libutil.la
 src/libutil_la*
 src/mreceive
+src/tailagg
 test/test_utxx
 test/example_repeating_timer
 test/example_delegate
