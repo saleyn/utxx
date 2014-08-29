@@ -43,7 +43,7 @@ mreceive_CFLAGS     = -g
 
 tailagg_SOURCES     = tailagg.cpp
 tailagg_CPPFLAGS    = -g -O3 -I${top_srcdir}/include
-tailagg_LDFLAGS     = -rpath $(libdir)
+tailagg_LDFLAGS     = -rpath $(libdir) -L$(srcdir)/../src/.libs) $(BOOST_LDFLAGS)
 tailagg_LDADD       = -lutxx $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB)
 
 bin_SCRIPTS = ${top_srcdir}/bin/config_validator_codegen.py
