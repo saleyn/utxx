@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <unordered_map>
 #include <regex>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,17 +55,21 @@ void usage(std::string const& a_err = "")
     std::cerr << "Error: " << a_err << endl << endl;
 
   std::cerr << utxx::path::program::name()
-    << " [-k KeyRegEx] [-s S] Filename\n"
+    << " [-k KeyRegEx] [-e RegEx] [-s S] [-n N] Filename\n"
     << "Extended tail that allows to batch changes on lines matching\n"
     << "regular expressions and print them per interval\n\n"
-    << "-k KeyRegEx              use KeyRegEx to determine a key ID of a line\n"
-    << "-n N                     start tail from last N lines\n"
-    << "-i                       ignore case\n"
-    << "-a                       use regex awk grammar\n"
-    << "-g                       use regex grep grammar\n"
-    << "-e                       use regex egrep grammar\n"
-    << "-s, --sleep-interval=S   sleep for approximately S seconds (default 1s)\n"
-    << "-h, --help               help\n"
+    << "    -e RegEx                 - process line containing regular expression\n"
+    << "    -k[I] KeyRegEx           - use KeyRegEx to determine a key ID of a line\n"
+    << "                               (the line will be printed if its content changes\n"
+    << "                                for this key. If -k3 is given, this means to use\n"
+    << "                                3rd group in the regex pattern)\n"
+    << "    -n N                     - start tail from last N lines\n"
+    << "    -s, --sleep-interval=S   - sleep for approximately S seconds (default 1s)\n"
+    << "    -i, --no-case            - ignore case in regex\n"
+    << "    --awk                    - use regex awk grammar\n"
+    << "    --grep                   - use regex grep grammar\n"
+    << "    --egrep                  - use regex egrep grammar\n"
+    << "    -h, --help               - help\n"
     << endl;
 
   exit(1);
@@ -114,6 +119,25 @@ void find_last_line(long a_count, istream* a_file)
   a_file->clear();
 }
 
+enum class rex {
+  KEY,      // Find a match by regex key
+  SEARCH    // Apply regex to the line without key checking of result
+};
+
+struct rex_info {
+  rex      type;
+  int      group;
+  unique_ptr<regex> exp;
+  string   last_key;
+  string   str_exp;
+
+  rex_info(rex tp, int grp, string val)
+    : type(tp)
+    , group(grp)
+    , str_exp(val)
+  {}
+};
+
 int main(int argc, char* argv[])
 {
   int    interval = 1;
@@ -121,31 +145,42 @@ int main(int argc, char* argv[])
   long   last = 0;
   regex_constants::syntax_option_type regex_opts =
     regex_constants::syntax_option_type(0);
-  vector<string> regexs;
-  vector<string> lines;
-  vector<string> old_lines;
-  vector<regex>  keys;
+  vector<rex_info> regex_vals;
+  vector<string>   lines;
 
   ifstream input;
   istream* file = &std::cin;
 
+  auto matchopt = [&](int i, const char* sv, const char* lv)
+                  { return !strcmp(argv[i], sv) || !lv || !strcmp(argv[i], lv); };
+  auto matchopt_n = [&](int i, int len, const char* sv)
+                  { return !strncmp(argv[i], sv, len); };
+  auto hasarg   = [&](int i)
+                  { return i < argc-1 && argv[i+1][0] != '-'; };
+
   for (int i=1; i < argc; ++i) {
-    if ((!strcmp(argv[i], "-s") || !strcmp(argv[i], "--sleep-interval")) &&
-        i < argc-1 && argv[i+1][0] != '-')
+    if (matchopt(i, "-s", "--sleep-interval") && hasarg(i))
       interval = atoi(argv[++i]);
-    else if (!strcmp("-k", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
-      regexs.push_back(argv[++i]);
-    else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help"))
+    else if (matchopt(i, "-e", nullptr) && hasarg(i))
+      regex_vals.push_back(rex_info(rex::SEARCH, 0, argv[++i]));
+    else if (matchopt_n(i, 2, "-k") && hasarg(i)) {
+      regex_vals.push_back(rex_info(
+          rex::KEY,
+          argv[i][2] != ' ' ? argv[i][2] - '0' : 1,
+          argv[i]));
+      i++;
+    }
+    else if (matchopt(i, "-h", "--help"))
       usage();
-    else if (!strcmp("-n", argv[i]) && i < argc-1 && argv[i+1][0] != '-')
+    else if (matchopt(i, "-n", nullptr) && hasarg(i))
       last = atoi(argv[++i]);
-    else if (!strcmp("-i", argv[i]))
+    else if (matchopt(i, "-i", "--no-case"))
       regex_opts |= regex_constants::icase;
-    else if (!strcmp("-a", argv[i]))
+    else if (matchopt(i, "--awk", nullptr))
       regex_opts |= regex_constants::awk;
-    else if (!strcmp("-g", argv[i]))
+    else if (matchopt(i, "--grep", nullptr))
       regex_opts |= regex_constants::grep;
-    else if (!strcmp("-e", argv[i]))
+    else if (matchopt(i, "--egrep", nullptr))
       regex_opts |= regex_constants::egrep;
     else if (argv[i][0] != '-')
     {
@@ -162,16 +197,15 @@ int main(int argc, char* argv[])
       usage(string("Invalid option: ") + argv[i]);
   }
 
-  for (auto& s : regexs)
-    keys.push_back(regex(s, regex_opts));
+  for (auto& e : regex_vals)
+    e.exp.reset(new regex(e.str_exp, regex_opts));
 
-  size_t sz = std::max<size_t>(1, keys.size());
+  size_t sz = std::max<size_t>(1, regex_vals.size());
 
   bool changed[sz];
   memset(changed, 0, sizeof(changed));
 
-  lines    .resize(sz);
-  old_lines.resize(sz);
+  lines.resize(sz);
 
   utxx::time_val deadline = utxx::now_utc() + 1.0, last_time;
   int change_count = 0;
@@ -190,21 +224,25 @@ int main(int argc, char* argv[])
         continue;
 
       for (size_t i = 0, e = sz; i < e; ++i) {
-        auto& k = keys[i];
+        auto& re = regex_vals[i];
         std::smatch rmatch;
-        if (keys.empty() || regex_search(s, rmatch, k))
+        if (regex_vals.empty() || regex_search(s, rmatch, *re.exp))
         {
-          lines[i] = s;
+          bool&   line_changed = changed[i];
+          string& last_key     = re.last_key;
 
-          bool& b = changed[i];
+          if (!line_changed) {
+            line_changed |= ((re.type == rex::KEY)
+                          ? last_key != rmatch[re.group]
+                          : lines[i] != s);
 
-          if (!b) {
-            b |= old_lines[i] != s;
-            if (b) {
-              old_lines[i] = s;
+            if (line_changed)
               change_count++;
-            }
           }
+
+          if (re.type == rex::KEY)
+            last_key = rmatch[re.group];
+          lines[i] = s;
         }
       }
 

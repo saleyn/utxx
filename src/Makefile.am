@@ -58,4 +58,11 @@ nobase_include_HEADERS = \
 
 nodist_libutxx_la_SOURCES = ${top_srcdir}/config.h
 
+logger.cpp: ${top_srcdir}/include/@PACKAGE@/logger/logger_options.generated.hpp
+
+${top_srcdir}/include/@PACKAGE@/logger/logger_options.generated.hpp: \
+	   	${top_srcdir}/include/@PACKAGE@/logger/logger_options.xml \
+        $(top_srcdir)/bin/config_validator_codegen.py
+	$(PYTHON) $(top_srcdir)/bin/config_validator_codegen.py -f $< -o $@ --overwrite
+
 EXTRA_DIST = config_validator.xsl
