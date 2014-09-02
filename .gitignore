@@ -11,6 +11,7 @@ log
 Makefile
 Makefile.in
 install
+include/utxx/logger/logger_options.generated.hpp
 src/libutil.la
 src/libutil_la*
 src/mreceive

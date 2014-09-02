@@ -123,6 +123,13 @@ public:
 
     void deallocate(void* obj, size_t) { free(obj); }
 
+#if __cplusplus >= 201103L
+    template<typename U>
+    void destroy(U* obj) { obj->~U(); }
+#else
+    void destroy(T* obj) { obj->~T(); }
+#endif
+
     /// For internal use.
     void free_node(node_t* nd);
     static node_t* to_node(void* p) { return node_t::to_node(p); }
