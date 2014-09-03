@@ -53,6 +53,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+namespace detail { template <class Alloc> class basic_dynamic_io_buffer; }
+
 /**
  * \brief Basic buffer providing stack space for data up to N bytes and
  *        heap space when reallocation of space over N bytes is needed.
@@ -60,16 +62,18 @@ namespace utxx {
  * of produced and consumed space. 
  */
 template <int N, typename Alloc = std::allocator<char> >
-class basic_io_buffer: boost::noncopyable {
+class basic_io_buffer
+    : boost::noncopyable
+    , Alloc::template rebind<char>::other                
+{
     typedef typename Alloc::template rebind<char>::other alloc_t;
 protected:
-    char    m_data[N];
     char*   m_begin;
     char*   m_end;
     char*   m_rd_ptr;
     char*   m_wr_ptr;
     size_t  m_wr_lwm;
-    alloc_t m_allocator;
+    char    m_data[N];
 
  public:
     /// Construct the I/O buffer.
@@ -78,25 +82,25 @@ protected:
     ///         in the buffer. When the buffer has less than that amount
     ///         of space left, it'll call the crunch() function.
     explicit basic_io_buffer(size_t a_lwm = LONG_MAX, const Alloc& a_alloc = Alloc())
-        : m_begin(m_data), m_end(m_data+N)
+        : alloc_t(reinterpret_cast<const alloc_t&>(a_alloc))
+        , m_begin(m_data),  m_end(m_data+N)
         , m_rd_ptr(m_data), m_wr_ptr(m_data), m_wr_lwm(a_lwm)
-        , m_allocator(reinterpret_cast<const alloc_t&>(a_alloc))
     {}
 
     #if __cplusplus >= 201103L
     basic_io_buffer(basic_io_buffer&& a_rhs)
-        : m_allocator(a_rhs)
+        : alloc_t(a_rhs)
     {
         *this = std::move(a_rhs);
     }
 
     void operator=(basic_io_buffer&& a_rhs) {
+        *(alloc_t*)this = (alloc_t&&)a_rhs;
         m_begin  = (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_data);
         m_end    = m_begin + (a_rhs.m_end - a_rhs.m_begin);
         m_rd_ptr = m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin);
         m_wr_ptr = m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin);
         m_wr_lwm = a_rhs.m_wr_lwm;
-        m_allocator = a_rhs.m_allocator;
 
         if (a_rhs.size() && a_rhs.m_begin != a_rhs.m_data)
             memcpy(m_rd_ptr, a_rhs.m_rd_ptr, a_rhs.size());
@@ -112,7 +116,7 @@ protected:
     /// Deallocate any heap space occupied by the buffer.
     void deallocate() {
         if (m_begin != m_data && N) {
-            m_allocator.deallocate(m_begin, max_size());
+            alloc_t::deallocate(m_begin, max_size());
             m_begin = m_data;
             m_end   = m_begin + N;
         }
@@ -127,14 +131,14 @@ protected:
         size_t rd_offset = m_rd_ptr - m_begin;
         size_t wr_offset = m_wr_ptr - m_begin;
         char*  old_begin = m_begin;
-        m_begin = m_allocator.allocate(n);
+        m_begin = alloc_t::allocate(n);
         m_end   = m_begin + n;
         if (wr_offset > 0)
             memcpy(m_begin, old_begin, wr_offset);
         m_rd_ptr = m_begin + rd_offset;
         m_wr_ptr = m_begin + wr_offset;
         if (old_begin != m_data)
-            m_allocator.deallocate(old_begin, old_size);
+            alloc_t::deallocate(old_begin, old_size);
     }
 
     /// Make sure there's enough space in the buffer for n additional bytes.
@@ -189,6 +193,10 @@ protected:
     boost::asio::mutable_buffers_1 space() {
         return boost::asio::buffer(m_wr_ptr, capacity());
     }
+
+    /// Cast this buffer to dynamic_io_buffer
+    detail::basic_dynamic_io_buffer<Alloc>&       to_dynamic();
+    const detail::basic_dynamic_io_buffer<Alloc>& to_dynamic() const;
 
     /// Set the low memory watermark indicating when the buffer should be 
     /// automatically crunched by the read() call without releasing allocated memory.
@@ -509,7 +517,17 @@ public:
 
 };
 
-} // namespace IO_UTXX_NAMESPACE
+template <int N, typename Alloc>
+inline detail::basic_dynamic_io_buffer<Alloc>& basic_io_buffer<N,Alloc>::to_dynamic() {
+    return *reinterpret_cast<detail::basic_dynamic_io_buffer<Alloc>*>(this);
+}
+
+template <int N, typename Alloc>
+inline const detail::basic_dynamic_io_buffer<Alloc>& basic_io_buffer<N,Alloc>::to_dynamic() const {
+    return *reinterpret_cast<const detail::basic_dynamic_io_buffer<Alloc>*>(this);
+}
+
+} // namespace UTXX_NAMESPACE
 
 #endif // _UTXX_IO_BUFFER_HPP_
 

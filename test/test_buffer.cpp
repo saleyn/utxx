@@ -39,6 +39,15 @@ namespace utxx {
 BOOST_AUTO_TEST_CASE( test_io_buffer )
 {
     basic_io_buffer<10> v;
+
+    v.write("abcd", 4);
+
+    dynamic_io_buffer& b = v.to_dynamic();
+
+    BOOST_CHECK_EQUAL(4,  b.size());
+    BOOST_CHECK_EQUAL(6,  b.capacity());
+    BOOST_CHECK_EQUAL(10, b.max_size());
+    BOOST_REQUIRE(!b.allocated());
 }
 
 BOOST_AUTO_TEST_CASE( test_bufferred_queue )
