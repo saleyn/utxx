@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE( test_scope_exit )
     BOOST_REQUIRE_EQUAL(4, i);
 
     {
-        UTXX_SCOPE_EXIT(on_exit, [&i] () { ++i; });
+        UTXX_SCOPE_EXIT([&i] () { ++i; });
         BOOST_REQUIRE_EQUAL(4, i);
     }
     BOOST_REQUIRE_EQUAL(5, i);

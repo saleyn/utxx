@@ -73,9 +73,10 @@ public:
     using base::base;
 };
 
-#define UTXX_SCOPE_EXIT(Var, Fun) \
-    auto Var##_fun = Fun; \
-    utxx::on_scope_exit<decltype(Var##_fun)> Var(Var##_fun)
+#define UTXX_SCOPE_EXIT(Fun) \
+    auto __on_exit##__LINE__##_fun = Fun; \
+    utxx::on_scope_exit<decltype(__on_exit##__LINE__##_fun)> \
+        __on_exit##__LINE__(__on_exit##__LINE__##_fun)
 
 } // namespace utxx
 
