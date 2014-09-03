@@ -37,19 +37,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-/// \brief Call lambda function on exiting scope
-class scope_exit {
-    std::function<void()> m_lambda;
-    bool                  m_disable;
+/// Call lambda function on exiting scope
+template <typename Lambda>
+class on_scope_exit {
+    Lambda m_lambda;
+    bool   m_disable;
 
-    scope_exit() = delete;
+    on_scope_exit() = delete;
 public:
-    scope_exit(const std::function<void()>& a_lambda)
+    on_scope_exit(const Lambda& a_lambda)
         : m_lambda (a_lambda)
         , m_disable(false)
     {}
 
-    scope_exit(std::function<void()>&& a_lambda)
+    on_scope_exit(Lambda&& a_lambda)
         : m_lambda(a_lambda)
         , m_disable(false)
     {
@@ -59,10 +60,17 @@ public:
     /// If disabled the lambda won't be called at scope exit
     void disable(bool a_disable) { m_disable = a_disable; }
 
-    ~scope_exit() {
+    ~on_scope_exit() {
         if (!m_disable)
             m_lambda();
     }
+};
+
+/// Call functor on exiting scope
+class scope_exit : public on_scope_exit<std::function<void()>> {
+    using base = on_scope_exit<std::function<void()>>;
+public:
+    using base::base;
 };
 
 } // namespace utxx

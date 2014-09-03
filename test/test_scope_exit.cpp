@@ -69,6 +69,12 @@ BOOST_AUTO_TEST_CASE( test_scope_exit )
     }
     BOOST_REQUIRE_EQUAL(3, i);
 
+    {
+        auto fun = [&i] () { ++i; };
+        on_scope_exit<decltype(fun)> g(fun);
+        BOOST_REQUIRE_EQUAL(3, i);
+    }
+    BOOST_REQUIRE_EQUAL(4, i);
 }
 
 #endif
