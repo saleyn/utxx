@@ -64,7 +64,7 @@ namespace detail { template <class Alloc> class basic_dynamic_io_buffer; }
 template <int N, typename Alloc = std::allocator<char> >
 class basic_io_buffer
     : boost::noncopyable
-    , Alloc::template rebind<char>::other                
+    , Alloc::template rebind<char>::other
 {
     typedef typename Alloc::template rebind<char>::other alloc_t;
 protected:
@@ -86,6 +86,17 @@ protected:
         , m_begin(m_data),  m_end(m_data+N)
         , m_rd_ptr(m_data), m_wr_ptr(m_data), m_wr_lwm(a_lwm)
     {}
+
+    basic_io_buffer(const basic_io_buffer& a_rhs)
+        : alloc_t(static_cast<const alloc_t&>(a_rhs))
+        , m_begin(m_data),  m_end(m_data+N)
+        , m_rd_ptr(m_data), m_wr_ptr(m_data), m_wr_lwm(a_rhs.m_wr_lwm)
+    {
+        if (a_rhs.size()) {
+            reserve(a_rhs.max_size());
+            write(a_rhs.rd_ptr(), a_rhs.size());
+        }
+    }
 
     #if __cplusplus >= 201103L
     basic_io_buffer(basic_io_buffer&& a_rhs)

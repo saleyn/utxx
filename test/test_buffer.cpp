@@ -44,10 +44,16 @@ BOOST_AUTO_TEST_CASE( test_io_buffer )
 
     dynamic_io_buffer& b = v.to_dynamic();
 
-    BOOST_CHECK_EQUAL(4,  b.size());
-    BOOST_CHECK_EQUAL(6,  b.capacity());
-    BOOST_CHECK_EQUAL(10, b.max_size());
+    BOOST_CHECK_EQUAL(4u,  b.size());
+    BOOST_CHECK_EQUAL(6u,  b.capacity());
+    BOOST_CHECK_EQUAL(10u, b.max_size());
     BOOST_REQUIRE(!b.allocated());
+
+    dynamic_io_buffer c(b);
+    BOOST_CHECK_EQUAL(4u,  c.size());
+    BOOST_CHECK_EQUAL(6u,  c.capacity());
+    BOOST_CHECK_EQUAL(10u, c.max_size());
+    BOOST_REQUIRE(c.allocated());
 }
 
 BOOST_AUTO_TEST_CASE( test_bufferred_queue )
