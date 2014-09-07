@@ -84,6 +84,12 @@ namespace utxx {
                        << std::setw(f.m_digits)
                        << std::setprecision(f.m_precision) << f.m_value;
         }
+
+        double value()     const { return m_value;     }
+        int    digits()    const { return m_digits;    }
+        int    precision() const { return m_precision; }
+        char   fill()      const { return m_fill;      }
+
     private:
         double m_value;
         int    m_digits;

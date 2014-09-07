@@ -44,6 +44,7 @@ TEST_UTXX_SRCS = \
 	test_path.cpp \
 	test_pcap.cpp \
 	test_pmap.cpp \
+    test_print.cpp \
 	test_persist_array.cpp \
 	test_persist_blob.cpp \
 	test_pidfile.cpp \

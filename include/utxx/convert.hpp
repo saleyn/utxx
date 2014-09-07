@@ -769,6 +769,38 @@ std::string int_to_string(T n) {
     return buf;
 }
 
+namespace detail {
+    template <typename T>
+    typename std::enable_if<std::is_unsigned<T>::value, int>::type
+    itoa_hex(T a, char*& s, size_t sz) {
+        int len = a ? 0 : 1;
+        if (a)
+            for (T n = a; n; n >>= 4, len++);
+
+        if (likely(len <= sz)) {
+            static const char s_lookup[] = "0123456789ABCDEF";
+            char* p = s + len;
+            char* b = s-1;
+            for (*p-- = '\0'; p != b; a >>=4, *p-- = s_lookup[a & 0xF]);
+            s += len;
+        }
+        return len;
+    }
+} // namespace detail
+
+//--------------------------------------------------------------------------------
+/// Convert an integer to hex string
+/// @return number of bytes that WOULD BE NEEDED to write a hex representaion of
+///         \a a. If it exceeds \a sz - nothing is written.
+//--------------------------------------------------------------------------------
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value, int>::type
+itoa_hex(T a, char*& s, size_t sz) {
+    return (std::is_signed<T>::value && a < 0)
+         ? detail::itoa_hex(std::make_unsigned<T>(a), s, sz)
+         : detail::itoa_hex(a, s, sz);
+}
+
 } // namespace utxx
 
 #endif // _UTXX_ATOI_HPP_

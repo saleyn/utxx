@@ -634,3 +634,17 @@ BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )
     BOOST_REQUIRE_EQUAL("1",    (itoa_right<int, 10>(1)));
 }
 
+BOOST_AUTO_TEST_CASE( test_convert_itoa_hex )
+{
+    char  buf[6];
+    char* p = buf;
+
+    BOOST_CHECK(itoa_hex(0xA23F, p, sizeof(buf)-1));
+    BOOST_CHECK_EQUAL("A23F", buf);
+
+    p = buf;
+    BOOST_CHECK(itoa_hex(0, p, sizeof(buf)-1));
+
+    p = buf;
+    BOOST_CHECK(!itoa_hex(0x12345678, p, sizeof(buf)-1));
+}

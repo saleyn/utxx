@@ -143,6 +143,20 @@ void timestamp::update_slow()
     }
 }
 
+size_t timestamp::format_size(stamp_type a_tp)
+{
+    switch (a_tp) {
+        case TIME:                  return 8;
+        case TIME_WITH_USEC:        return 15;
+        case TIME_WITH_MSEC:        return 12;
+        case DATE_TIME:             return 17;
+        case DATE_TIME_WITH_USEC:   return 24;
+        case DATE_TIME_WITH_MSEC:   return 21;
+        default:
+            assert(false);
+    }
+}
+
 int timestamp::format(stamp_type a_tp,
     const struct timeval* tv, char* a_buf, size_t a_sz, bool a_utc)
 {
