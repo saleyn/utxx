@@ -29,11 +29,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_PRINT_HPP_
-#define _UTXX_PRINT_HPP_
-
 #include <boost/test/unit_test.hpp>
 #include <utxx/print.hpp>
+#include <utxx/time_val.hpp>
 #include <iostream>
 
 using namespace utxx;
@@ -42,11 +40,51 @@ BOOST_AUTO_TEST_CASE( test_print )
 {
     std::string str("xxx");
 
-    { std::string s = print(1);     BOOST_CHECK_EQUAL("1",         s); }
-    { std::string s = print(1.0);   BOOST_CHECK_EQUAL("1.000000",  s); }
-    { std::string s = print(true);  BOOST_CHECK_EQUAL("true",      s); }
-    { std::string s = print(false); BOOST_CHECK_EQUAL("false",     s); }
-    { std::string s = print("abc"); BOOST_CHECK_EQUAL("abc",       s); }
-    { std::string s = print(xxx);   BOOST_CHECK_EQUAL("xxx",       s); }
-    { std::string s = print(fixed(2.123, 6, 3, ' '); BOOST_CHECK_EQUAL(" 2.123", s); }
+    { std::string s = print(1);     BOOST_CHECK_EQUAL("1",     s); }
+    { std::string s = print(1.0);   BOOST_CHECK_EQUAL("1.0",   s); }
+    { std::string s = print(true);  BOOST_CHECK_EQUAL("true",  s); }
+    { std::string s = print('c');   BOOST_CHECK_EQUAL("c",     s); }
+    { std::string s = print(false); BOOST_CHECK_EQUAL("false", s); }
+    { std::string s = print("abc"); BOOST_CHECK_EQUAL("abc",   s); }
+    { std::string s = print(str);   BOOST_CHECK_EQUAL("xxx",   s); }
+    { std::string s = print(fixed(2.123, 6, 3, ' ')); BOOST_CHECK_EQUAL(" 2.123", s); }
 }
+
+
+BOOST_AUTO_TEST_CASE( test_print_perf )
+{
+    static const int ITERATIONS = getenv("ITERATIONS")
+                                ? atoi(getenv("ITERATIONS")) : 1000000;
+    double elapsed1, elapsed2;
+    {
+        char buf[256];
+        timer tm;
+        for (int i=0; i < ITERATIONS; i++) {
+            snprintf(buf, sizeof(buf)-1, "%d",    10000);
+            snprintf(buf, sizeof(buf)-1, "%.6f",  12345.6789);
+            snprintf(buf, sizeof(buf)-1, "%6.3f", 2.123);
+            snprintf(buf, sizeof(buf)-1, "%s",    "this is a test string");
+            snprintf(buf, sizeof(buf)-1, "%s",    i % 2 ? "true" : "false");
+        }
+        elapsed1 = tm.elapsed();
+    }
+
+    {
+        detail::buffered_print<> b;
+        timer tm;
+        for (int i=0; i < ITERATIONS; i++) {
+            b.print(10000);                     b.reset();
+            b.print(12345.6789);                b.reset();
+            b.print(fixed(2.123, 6, 3));        b.reset();
+            b.print("this is a test string");   b.reset();
+            b.print(i % 2);
+        }
+        elapsed2 = tm.elapsed();
+    }
+
+    BOOST_MESSAGE(" printf      speed: " << fixed(double(ITERATIONS)/elapsed1, 10, 0) << " calls/s");
+    BOOST_MESSAGE(" utxx::print speed: " << fixed(double(ITERATIONS)/elapsed2, 10, 0) << " calls/s");
+    BOOST_MESSAGE("    printf / print: " << fixed(elapsed1/elapsed2, 6, 4) << " times");
+
+}
+

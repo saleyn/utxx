@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <string>
 #include <type_traits>
+#include <cstdarg>
 #include <utxx/scope_exit.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/convert.hpp>
@@ -51,24 +52,27 @@ namespace detail {
         char*           m_end;
         char            m_data[N];
 
-        // Terminal case of template recursion:
-        void print() {}
+        void deallocate() {
+            if (m_begin == m_data) return;
+            Alloc::deallocate(m_begin, max_size());
+        }
 
-        void print(char a) { reserve(1); *m_pos++ = a; }
-        void print(bool a) {
+        void do_print(char a) { reserve(1); *m_pos++ = a; }
+        void do_print(bool a) {
             reserve(5);
             if (a) { memcpy(m_pos, "true", 4); m_pos += 4; }
             else   { memcpy(m_pos, "false",5); m_pos += 5; }
         }
-        template <typename T>
-        typename std::enable_if<std::is_integral<T>::value, void>::type
-        print(T a) {
+        void do_print(long a) {
             reserve(20);
             itoa(a, out(m_pos));
         }
-        template <typename T>
-        typename std::enable_if<std::is_floating_point<T>::value, void>::type
-        print(T a) const {
+        void do_print(int a) {
+            reserve(10);
+            itoa(a, out(m_pos));
+        }
+        void do_print(double a)
+        {
             int n = ftoa_fast(a, m_pos, capacity(), 6, true);
             if (unlikely(n < 0)) {
                 n = snprintf(m_pos, capacity(), "%.6f", a);
@@ -76,11 +80,10 @@ namespace detail {
                     reserve(n);
                     snprintf(m_pos, capacity(), "%.6f", a);
                 }
-                m_pos += n;
             }
-            return *this;
+            m_pos += n;
         }
-        void print(const fixed& a) const {
+        void do_print(fixed&& a) {
             char buf[128];
             int n = ftoa_fast(a.value(), buf, sizeof(buf), a.precision(), false);
             if (unlikely(n < 0))
@@ -88,27 +91,32 @@ namespace detail {
             reserve(a.digits());
             int pad = a.digits() - n;
             if (pad > 0)
-                while (pad--) *m_pos += a.fill();
+                while (pad--) *m_pos++ = a.fill();
             memcpy(m_pos, buf, n);
             m_pos += n;
         }
-        void print(const char* a) {
-            char* p = strchr(a, '\0');
+        void do_print(const char* a) {
+            const char* p = strchr(a, '\0');
             assert(p);
-            size_t n = p - 1;
+            size_t n = p - a;
             reserve(n);
             memcpy(m_pos, a, n);
             m_pos += n;
         }
-        void print(const std::string& a) {
+        void do_print(std::string&& a) {
+            size_t n = a.size();
+            reserve(n);
+            memcpy(m_pos, a.c_str(), n);
+            m_pos += n;
+        }
+        void do_print(const std::string& a) {
             size_t n = a.size();
             reserve(n);
             memcpy(m_pos, a.c_str(), n);
             m_pos += n;
         }
         template <typename T>
-        typename std::enable_if<std::is_pointer<T>::value, void>::type
-        print(T a) {
+        void do_print(typename std::enable_if<std::is_pointer<T>::value, T&&>::type a) {
             auto  x = reinterpret_cast<uint64_t>(a);
             char* p = m_pos + 2;
             auto  n = capacity() - 2;
@@ -123,11 +131,10 @@ namespace detail {
             m_pos   += i;
         }
         template <class T>
-        void print(const T& a) const {
+        void do_print(const T& a) {
             std::stringstream s; s << a;
             print(s.str());
         }
-
     public:
         explicit buffered_print(const Alloc& a_alloc = Alloc())
             : Alloc(a_alloc)
@@ -137,8 +144,13 @@ namespace detail {
         {}
 
         ~buffered_print() {
-            if (m_begin == m_data) return;
-            Alloc::deallocate(m_begin);
+            deallocate();
+        }
+
+        void reset() {
+            deallocate();
+            m_begin = m_pos = m_data;
+            m_end   = m_begin + sizeof(m_data)-1;
         }
 
         std::string to_string() const { return std::string(m_begin, size()); }
@@ -179,10 +191,13 @@ namespace detail {
         /// \endcode
         void advance(size_t n) { m_pos += n; }
 
+        // Terminal case of template recursion:
+        void print() {}
+
         template <class T, class... Args>
         void print(T&& a, Args&&... args) {
-            print(a);
-            print(std::forward(args)...);
+            do_print(std::move(a));
+            print(std::forward<Args>(args)...);
         }
 
         void print(const char* a_str, size_t a_size) {
@@ -225,11 +240,12 @@ std::string print_string(const char fmt, ...) {
 }
 
 template <class... Args>
-std::string print(Args... args) {
-    detail::buffered_print<> b(args...);
+std::string print(Args&&... args) {
+    detail::buffered_print<> b;
+    b.print(std::forward<Args>(args)...);
     return b.to_string();
+}
+
 } // namespace utxx
 
 #endif //_UTXX_PRINT_HPP_
-
-

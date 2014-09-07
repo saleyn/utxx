@@ -773,7 +773,7 @@ namespace detail {
     template <typename T>
     typename std::enable_if<std::is_unsigned<T>::value, int>::type
     itoa_hex(T a, char*& s, size_t sz) {
-        int len = a ? 0 : 1;
+        size_t len = a ? 0 : 1;
         if (a)
             for (T n = a; n; n >>= 4, len++);
 
@@ -796,9 +796,8 @@ namespace detail {
 template <typename T>
 typename std::enable_if<std::is_integral<T>::value, int>::type
 itoa_hex(T a, char*& s, size_t sz) {
-    return (std::is_signed<T>::value && a < 0)
-         ? detail::itoa_hex(std::make_unsigned<T>(a), s, sz)
-         : detail::itoa_hex(a, s, sz);
+    typedef typename std::make_unsigned<T>::type U;
+    return detail::itoa_hex<U>(a, s, sz);
 }
 
 } // namespace utxx
