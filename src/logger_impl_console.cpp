@@ -76,10 +76,12 @@ bool logger_impl_console::init(const variant_tree& a_config)
 void logger_impl_console::log_msg(const log_msg_info<>& info)
     throw(std::runtime_error)
 {
-    if (info.level() & m_stdout_levels)
-        std::cout << info.data() << std::endl;
-    else if (info.level() & m_stderr_levels)
-        std::cerr << info.data() << std::endl;
+    if (info.level() & m_stdout_levels) {
+        std::cout << info.data();
+        std::flush(std::cout);
+    } else if (info.level() & m_stderr_levels) {
+        std::cerr << info.data();
+    }
 }
 
 } // namespace utxx

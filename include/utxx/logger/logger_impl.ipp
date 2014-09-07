@@ -57,7 +57,7 @@ inline log_msg_info<Alloc>::log_msg_info(
     : m_logger(&a_logger)
     , m_timestamp(now_utc())
     , m_level(a_lv)
-    , m_src_file_len(N)
+    , m_src_file_len(N-1)
     , m_src_file(a_filename)
     , m_src_line(a_ln)
     , m_data(a_alloc)
@@ -69,7 +69,9 @@ inline log_msg_info<Alloc>::log_msg_info(
             : 0
       )
     */
-{}
+{
+    format_header();
+}
 
 template <class Alloc>
 template <int N>
@@ -82,7 +84,7 @@ inline log_msg_info<Alloc>::log_msg_info(
     , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_category(a_category)
-    , m_src_file_len(N)
+    , m_src_file_len(N-1)
     , m_src_file(a_filename)
     , m_src_line(a_ln)
     , m_data(a_alloc)
@@ -117,7 +119,8 @@ inline void log_msg_info<Alloc>::log(const char* a_fmt, ...) {
 template <class Alloc>
 inline void log_msg_info<Alloc>::format(const char* a_fmt, va_list a_args)
 {
-    m_data.printf(a_fmt, a_args);
+    m_data.vprintf(a_fmt, a_args);
+    format_footer();
 }
 
 template <class Alloc>
@@ -131,7 +134,7 @@ inline void log_msg_info<Alloc>::format(const char* a_fmt, ...)
 template <class Alloc>
 inline void log_msg_info<Alloc>::log() {
     format_footer();
-    logger().log(*this);
+    get_logger()->log(*this);
 }
 
 template <class Alloc>
@@ -145,19 +148,21 @@ void log_msg_info<Alloc>::format_header() {
     m_data.reserve(len+1+7+1);
     timestamp::format(lg->timestamp_type(), msg_time(),
                       m_data.str(), m_data.capacity());
+    m_data.advance(len);
     m_data.print('|');
     // Write Level
-    m_data.print(logger::log_level_to_str(m_level));
-
+    m_data.print(logger::log_level_to_str(m_level)[0]);
+    /*
     static const char s_space[] = "    |";
     len = 7 - logger::log_level_size(m_level);
     assert(len <= sizeof(s_space)-1);
-    m_data.print(s_space + sizeof(s_space)-1-len, len+1);
-
+    m_data.sprint(s_space + sizeof(s_space)-2-len, len+1);
+    */
+    m_data.print('|');
     if (lg->show_ident())
         m_data.print(lg->ident());
     m_data.print('|');
-    if (m_category.empty())
+    if (!m_category.empty())
         m_data.print(m_category);
     m_data.print('|');
 }
@@ -166,7 +171,7 @@ template <class Alloc>
 void log_msg_info<Alloc>::format_footer()
 {
     // Format the message in the form:
-    // Timestamp|Level|Ident|Category|Message|File:Line
+    // Timestamp|Level|Ident|Category|Message|File:Line\n
     logger* lg = get_logger();
     if (has_src_location() && lg->show_location()) {
         static const char s_sep =
@@ -176,11 +181,16 @@ void log_msg_info<Alloc>::format_footer()
         q = q ? q+1 : m_src_file;
         auto len = m_src_file + m_src_file_len - q;
         m_data.reserve(len+12);
-        m_data.print(q, len);
+        m_data.sprint(q, len);
         m_data.print(':');
         m_data.print(m_src_line);
-        m_data.c_str(); // Writes terminating '\0'
     }
+    // We reached the end of the streaming sequence:
+    // log_msg_info lmi; lmi << a << b << c;
+    char& c = m_data.last();
+    if (c != '\n') m_data.print('\n');
+
+    m_data.c_str(); // Writes terminating '\0'
 }
 
 //-----------------------------------------------------------------------------

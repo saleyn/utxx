@@ -120,36 +120,32 @@ public:
         mutable bool  m_last;
     public:
         helper(log_msg_info* a)
-            : m_owner(*a)
+            : m_owner(a)
             , m_last(true)
         {}
 
         helper(const helper& a_rhs) noexcept
             : m_owner(a_rhs.m_owner)
-            , m_last(std::move(a_rhs.m_last))
-        {}
+            , m_last(a_rhs.m_last)
+        {
+            a_rhs.m_last = false;
+        }
 
         ~helper() {
             if (!m_last)
                 return;
-
-            // We reached the end of the streaming sequence:
-            // log_msg_info lmi; lmi << a << b << c;
-            char& c = m_owner->m_data.last();
-            if (c != '\n') m_owner->m_data.print('\n');
-
             m_owner->log();
         }
 
         template <typename T>
         helper operator<< (T&& a) {
-            m_owner->m_data.print(std::forward(a));
-            return *this;
+            m_owner->m_data.print(std::forward<T>(a));
+            return helper(*this);
         }
     };
 
     template <class T>
-    helper operator<< (T&& a) const {
+    helper operator<< (T&& a) {
         return helper(this) << a;
     }
 };

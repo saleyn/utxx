@@ -200,19 +200,19 @@ namespace detail {
             print(std::forward<Args>(args)...);
         }
 
-        void print(const char* a_str, size_t a_size) {
+        void sprint(const char* a_str, size_t a_size) {
             reserve(a_size);
             memcpy(m_pos, a_str, a_size);
             m_pos += a_size;
         }
 
         int vprintf(const char* a_fmt, va_list a_args) {
-            int n = vsnprintf(m_begin, capacity(), a_fmt, a_args);
+            int n = vsnprintf(m_pos, capacity(), a_fmt, a_args);
             if (n < 0)
                 return n;
             if (size_t(n) > capacity()) {
                 reserve(n);
-                n = vsnprintf(m_begin, capacity(), a_fmt, a_args);
+                n = vsnprintf(m_pos, capacity(), a_fmt, a_args);
             }
             m_pos += n;
             return n;

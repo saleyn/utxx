@@ -57,6 +57,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   include <utxx/synch.hpp>
 #   include <utxx/high_res_timer.hpp>
 #   include <utxx/timestamp.hpp>
+#include <utxx/persist_array.hpp>
 #endif
 
 namespace utxx { 
@@ -86,6 +87,10 @@ namespace utxx {
 #define LOG_CAT_ERROR (Cat, FmtArgs)     printf FmtArgs;
 #define LOG_CAT_FATAL (Cat, FmtArgs)     printf FmtArgs;
 #define LOG_CAT_ALERT (Cat, FmtArgs)     printf FmtArgs;
+
+#ifndef LOG
+#  define LOG(Level) std::cout
+#endif
 
 #else
 
@@ -149,6 +154,12 @@ typedef log_msg_info<> _lim;
     utxx::_lim(utxx::LEVEL_FATAL  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
 #define LOG_CAT_ALERT(Cat, FmtArgs)   do { \
     utxx::_lim(utxx::LEVEL_ALERT  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
+
+#ifndef LOG
+#define LOG(Level) \
+        utxx::_lim(utxx::logger::instance(), utxx::LEVEL_##Level, \
+                   __FILE__, __LINE__)
+#endif
 
 #endif
 

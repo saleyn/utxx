@@ -55,22 +55,22 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
         for (int i = 0, n = 0; i < iterations; i++) {
             char buf[128];
             getline(in, s);
-            sprintf(buf, "|ERROR  |||(%d) This is an error #%d", ++n, 123); exp = buf;
+            sprintf(buf, "|E|||(%d) This is an error #%d", ++n, 123); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|WARNING|||(%d) This is a %s", ++n, "warning"); exp = buf;
+            sprintf(buf, "|W|||(%d) This is a %s", ++n, "warning"); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|FATAL  |||(%d) This is a %s", ++n, "fatal error"); exp = buf;
+            sprintf(buf, "|F|||(%d) This is a %s", ++n, "fatal error"); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|ERROR  ||Cat1|(%d) This is an error #%d", ++n, 456); exp = buf;
+            sprintf(buf, "|E||Cat1|(%d) This is an error #%d", ++n, 456); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|WARNING||Cat2|(%d) This is a warning", ++n); exp = buf;
+            sprintf(buf, "|W||Cat2|(%d) This is a warning", ++n); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|FATAL  ||Cat3|(%d) This is a fatal error", ++n); exp = buf;
+            sprintf(buf, "|F||Cat3|(%d) This is a fatal error", ++n); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
         }
         BOOST_REQUIRE(!getline(in, s));

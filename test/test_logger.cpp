@@ -55,6 +55,8 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
         LOG_CAT_FATAL  ("Cat3", ("This is a %d %s", i, "fatal error"));
     }
 
+    LOG(ERROR) << "This is an error #" << 10 << " and bool " << true;
+    
     BOOST_REQUIRE(true); // to remove run-time warning
 }
 
