@@ -64,8 +64,6 @@ class logger_impl_async_file: public logger_impl {
     bool        m_append;
     int         m_levels;
     mode_t      m_mode;
-    bool        m_show_location;
-    bool        m_show_ident;
 
 //     struct logger_traits: public multi_file_async_logger_traits {
 //         typedef memory::cached_allocator<char> allocator;
@@ -73,7 +71,7 @@ class logger_impl_async_file: public logger_impl {
 
 //    typedef basic_multi_file_async_logger<logger_traits> async_logger_engine;
     typedef multi_file_async_logger         async_logger_engine;
-    
+
     std::unique_ptr<async_logger_engine>    m_engine_ptr;
     async_logger_engine*                    m_engine;
     struct timespec                         m_timeout;
@@ -104,8 +102,7 @@ public:
     bool init(const variant_tree& a_config)
         throw (badarg_error, io_error);
 
-    void log_msg(const log_msg_info& info, const timeval* a_tv,
-        const char* fmt, va_list args) throw (std::runtime_error);
+    void log_msg(const log_msg_info<>& info) throw (std::runtime_error);
     void log_bin(const std::string& a_category, const char* msg, size_t size)
         throw (std::runtime_error);
 };

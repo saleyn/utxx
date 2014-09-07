@@ -47,7 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-std::string logger::log_levels_to_str(int a_levels)
+std::string logger::log_levels_to_str(int a_levels) noexcept
 {
     std::stringstream s;
     bool l_empty = true;
@@ -60,7 +60,7 @@ std::string logger::log_levels_to_str(int a_levels)
     return s.str();
 }
 
-const char* logger::log_level_to_str(log_level level)
+const char* logger::log_level_to_str(log_level level) noexcept
 {
     switch (level) {
         case LEVEL_TRACE5   :
@@ -76,11 +76,31 @@ const char* logger::log_level_to_str(log_level level)
         case LEVEL_FATAL    : return "FATAL";
         case LEVEL_ALERT    : return "ALERT";
         case LEVEL_LOG      : return "LOG";
-        default             : return "UNDEFINED";
+        default             : assert(false);
     }
 }
 
-int logger::level_to_signal_slot(log_level level) throw(badarg_error)
+size_t logger::log_level_size(log_level level) noexcept
+{
+    switch (level) {
+        case LEVEL_TRACE5   :
+        case LEVEL_TRACE4   :
+        case LEVEL_TRACE3   :
+        case LEVEL_TRACE2   :
+        case LEVEL_TRACE1   :
+        case LEVEL_TRACE    :
+        case LEVEL_DEBUG    : return 5;
+        case LEVEL_INFO     : return 4;
+        case LEVEL_WARNING  : return 7;
+        case LEVEL_ERROR    :
+        case LEVEL_FATAL    :
+        case LEVEL_ALERT    : return 5;
+        case LEVEL_LOG      : return 3;
+        default             : assert(false);
+    }
+}
+
+int logger::level_to_signal_slot(log_level level) noexcept
 {
     switch (level) {
         case LEVEL_TRACE5   :
@@ -95,11 +115,11 @@ int logger::level_to_signal_slot(log_level level) throw(badarg_error)
         case LEVEL_ERROR    : return 4;
         case LEVEL_FATAL    : return 5;
         case LEVEL_ALERT    : return 6;
-        default             : throw badarg_error("Unsupported level", (int)level);
+        default             : assert(false);
     }
 }
 
-log_level logger::signal_slot_to_level(int slot) throw(badarg_error)
+log_level logger::signal_slot_to_level(int slot) noexcept
 {
     switch (slot) {
         case 0: return LEVEL_TRACE;
@@ -109,7 +129,7 @@ log_level logger::signal_slot_to_level(int slot) throw(badarg_error)
         case 4: return LEVEL_ERROR;
         case 5: return LEVEL_FATAL;
         case 6: return LEVEL_ALERT;
-        default: throw badarg_error("Unsupported slot", slot);
+        default: assert(false);
     }
 }
 

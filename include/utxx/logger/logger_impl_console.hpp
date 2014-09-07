@@ -42,8 +42,6 @@ class logger_impl_console: public logger_impl {
     std::string  m_name;
     int          m_stdout_levels;
     int          m_stderr_levels;
-    bool         m_show_location;
-    bool         m_show_ident;
 
     static const int s_def_stdout_levels = LEVEL_INFO | LEVEL_WARNING;
     static const int s_def_stderr_levels = LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT;
@@ -52,8 +50,6 @@ class logger_impl_console: public logger_impl {
         : m_name(a_name)
         , m_stdout_levels(s_def_stdout_levels)
         , m_stderr_levels(s_def_stderr_levels)
-        , m_show_location(true)
-        , m_show_ident(false)
     {}
 
 public:
@@ -71,8 +67,7 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info& info, const timeval* a_tv,
-        const char* fmt, va_list args) throw(std::runtime_error);
+    void log_msg(const log_msg_info<>& info) throw(std::runtime_error);
 };
 
 } // namespace utxx

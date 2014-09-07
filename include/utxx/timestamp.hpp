@@ -210,7 +210,7 @@ public:
     }
 
     /// Number of bytes needed to hold the string representation of \a a_tp.
-    size_t format_size(stamp_type a_tp);
+    static size_t format_size(stamp_type a_tp);
 
     /// Write a timeval structure to \a a_buf.
     inline static int format(stamp_type a_tp,

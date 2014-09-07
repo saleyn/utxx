@@ -71,15 +71,12 @@ class logger_impl_file: public logger_impl {
     int          m_levels;
     mode_t       m_mode;
     int          m_fd;
-    bool         m_show_location;
-    bool         m_show_ident;
     boost::mutex m_mutex;
 
     logger_impl_file(const char* a_name)
         : m_name(a_name), m_append(true), m_use_mutex(false)
         , m_timestamp(true), m_levels(LEVEL_NO_DEBUG)
         , m_mode(0644), m_fd(-1)
-        , m_show_location(true), m_show_ident(false)
     {}
 
     void finalize() {
@@ -102,8 +99,7 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info& info, const timeval* a_tv,
-        const char* fmt, va_list args) throw(runtime_error);
+    void log_msg(const log_msg_info<>& info) throw(io_error);
     void log_bin(const std::string& a_category, const char* msg, size_t size)
         throw(runtime_error);
 };

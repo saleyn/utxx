@@ -97,7 +97,7 @@ bool logger_impl_syslog::init(const variant_tree& a_config)
 
     m_levels = logger::parse_log_levels(
         a_config.get<std::string>("logger.syslog.levels", logger::default_log_levels))
-        & ~(LEVEL_TRACE | LEVEL_TRACE1 | LEVEL_TRACE2 |
+        & ~(LEVEL_TRACE  | LEVEL_TRACE1 | LEVEL_TRACE2 |
             LEVEL_TRACE3 | LEVEL_TRACE4 | LEVEL_TRACE5 | LEVEL_LOG);
     m_facility = 
         a_config.get<std::string>("logger.syslog.facility", "log_local6");
@@ -120,13 +120,11 @@ bool logger_impl_syslog::init(const variant_tree& a_config)
 
 int get_priority(log_level level);
 
-void logger_impl_syslog::log_msg(
-    const log_msg_info& info, const timeval*, const char* fmt, va_list args)
-    throw(io_error) 
+void logger_impl_syslog::log_msg(const log_msg_info<>& info) throw(io_error)
 {
     int priority = get_priority(info.level());
     if (priority)
-        ::vsyslog(priority, fmt, args);
+        ::syslog(priority, info.data());
 }
 
 } // namespace utxx

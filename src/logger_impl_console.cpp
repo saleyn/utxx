@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 #include <utxx/logger/logger_impl_console.hpp>
+#include <utxx/logger/logger_impl.hpp>
 #include <iostream>
 #include <stdio.h>
 
@@ -44,9 +45,7 @@ std::ostream& logger_impl_console::dump(std::ostream& out,
 {
     out << a_prefix << "logger." << name() << '\n'
         << a_prefix << "    stdout-levels  = " << logger::log_levels_to_str(m_stdout_levels) << '\n'
-        << a_prefix << "    stderr-levels  = " << logger::log_levels_to_str(m_stderr_levels) << '\n'
-        << a_prefix << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_prefix << "    show-indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+        << a_prefix << "    stderr-levels  = " << logger::log_levels_to_str(m_stderr_levels) << '\n';
     return out;
 }
 
@@ -63,36 +62,24 @@ bool logger_impl_console::init(const variant_tree& a_config)
     s = a_config.get("logger.console.stderr-levels", "");
     m_stderr_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stderr_levels;
 
-    m_show_location =
-        a_config.get<bool>("logger.console.show-location", this->m_log_mgr->show_location());
-    m_show_ident =
-        a_config.get<bool>("logger.console.show-ident", this->m_log_mgr->show_ident());
-
     int all_levels = m_stdout_levels | m_stderr_levels;
     for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
         log_level level = logger::signal_slot_to_level(lvl);
         if ((all_levels & static_cast<int>(level)) != 0)
             this->add_msg_logger(level,
-                on_msg_delegate_t::from_method<logger_impl_console, &logger_impl_console::log_msg>(this));
+                on_msg_delegate_t::from_method
+                    <logger_impl_console, &logger_impl_console::log_msg>(this));
     }
     return true;
 }
 
-void logger_impl_console::log_msg(
-    const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
+void logger_impl_console::log_msg(const log_msg_info<>& info)
     throw(std::runtime_error)
 {
-    char buf[logger::MAX_MESSAGE_SIZE];
-
-    // int len =
-    logger_impl::format_message(buf, sizeof(buf), false,
-                m_show_ident, m_show_location, a_tv,
-                info, fmt, args);
-
     if (info.level() & m_stdout_levels)
-        std::cout << buf << std::endl;
+        std::cout << info.data() << std::endl;
     else if (info.level() & m_stderr_levels)
-        std::cerr << buf << std::endl;
+        std::cerr << info.data() << std::endl;
 }
 
 } // namespace utxx

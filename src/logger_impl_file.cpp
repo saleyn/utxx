@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/types.h>
 #include <fcntl.h>
 #include <utxx/logger/logger_impl_file.hpp>
+#include <utxx/logger/logger_impl.hpp>
 #include <boost/thread.hpp>
 
 namespace utxx {
@@ -50,9 +51,7 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
         << a_prefix << "    filename       = " << m_filename << '\n'
         << a_prefix << "    append         = " << (m_append ? "true" : "false") << '\n'
         << a_prefix << "    mode           = " << m_mode << '\n'
-        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_prefix << "    show-indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n';
     return out;
 }
 
@@ -77,8 +76,6 @@ bool logger_impl_file::init(const variant_tree& a_config)
     m_mode          = a_config.get<int> ("logger.file.mode", 0644);
     m_levels        = logger::parse_log_levels(
         a_config.get<std::string>("logger.file.levels", logger::default_log_levels));
-    m_show_location = a_config.get<bool>("logger.file.show-location", this->m_log_mgr->show_location());
-    m_show_ident    = a_config.get<bool>("logger.file.show-ident",    this->m_log_mgr->show_ident());
 
     if (m_levels != NOLOGGING) {
         m_fd = open(m_filename.c_str(),
@@ -113,20 +110,15 @@ public:
     }
 };
 
-void logger_impl_file::log_msg(
-    const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
-    throw(runtime_error) 
+void logger_impl_file::log_msg(const log_msg_info<>& info) throw(io_error)
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.
     // Note that since the use of mutex is conditional, we can't use the
     // boost::lock_guard<boost::mutex> guard and roll out our own.
     guard g(m_mutex, m_use_mutex);
 
-    char buf[logger::MAX_MESSAGE_SIZE];
-    int len = logger_impl::format_message(buf, sizeof(buf), true, 
-                m_show_ident, m_show_location, a_tv, info, fmt, args);
-    if (write(m_fd, buf, len) < 0)
-        runtime_error("Error writing to file:", m_filename, ' ', info.src_location());
+    if (write(m_fd, info.data(), info.data_len()) < 0)
+        io_error(errno, "Error writing to file:", m_filename, ' ', info.src_location());
 }
 
 void logger_impl_file::log_bin(

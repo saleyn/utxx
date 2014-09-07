@@ -92,7 +92,7 @@ namespace utxx {
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
 /// the <printf> function: <(const char* fmt, ...)>
 #ifndef UTXX_SKIP_LOG_MACROS
-typedef log_msg_info _lim;
+typedef log_msg_info<> _lim;
 #define LOG_TRACE5(FmtArgs)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE5 , \
         __FILE__, __LINE__).log FmtArgs; } while(0)
@@ -159,12 +159,13 @@ typedef log_msg_info _lim;
 /// logger_impl_file, logger_impl_async_file classes.
 class logger : boost::noncopyable {
 public:
-    static const char* log_level_to_str(log_level level);
-    static std::string log_levels_to_str(int a_levels);
+    static const char* log_level_to_str(log_level level) noexcept;
+    static size_t      log_level_size  (log_level level) noexcept;
+    static std::string log_levels_to_str(int a_levels)   noexcept;
     /// Convert a <level> to the slot number in the <m_sig_msg> array
-    static int         level_to_signal_slot(log_level level) throw(badarg_error);
+    static int         level_to_signal_slot(log_level level) noexcept;
     /// Convert a <level> to the slot number in the <m_sig_msg> array
-    static log_level   signal_slot_to_level(int slot) throw(badarg_error);
+    static log_level   signal_slot_to_level(int slot) noexcept;
 
     typedef boost::shared_ptr<logger_impl>  impl;
     typedef std::vector<impl>               implementations_vector;
@@ -224,14 +225,14 @@ private:
         const char (&a_filename)[N], size_t a_line,
         const char* a_fmt, va_list args);
 
-    friend class log_msg_info;
+    void do_log(const log_msg_info<>& a_info);
+
+    template <class A> friend class log_msg_info;
 
 public:
     static logger& instance() {
         return singleton<logger>::instance();
     }
-
-    enum defaults { MAX_MESSAGE_SIZE = 512 };
 
     logger() 
         : m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
@@ -304,7 +305,7 @@ public:
     /// @param a_info is an object containing log level, and msg source location.
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    void log(const log_msg_info& a_info, const char* a_fmt, va_list args);
+    void log(const log_msg_info<>& a_info);
 
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.

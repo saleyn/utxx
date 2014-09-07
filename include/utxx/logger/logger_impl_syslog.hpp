@@ -91,8 +91,7 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info& info, const timeval* a_tv,
-        const char* fmt, va_list args) throw(io_error);
+    void log_msg(const log_msg_info<>& info) throw(io_error);
 };
 
 } // namespace utxx

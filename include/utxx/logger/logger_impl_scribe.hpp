@@ -112,8 +112,6 @@ class logger_impl_scribe
     addr_info    m_server_addr;
     int          m_server_timeout;
     int          m_levels;
-    bool         m_show_location;
-    bool         m_show_ident;
     boost::mutex m_mutex;
     int          m_reconnecting;
 
@@ -163,8 +161,7 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info& info, const timeval* a_tv,
-        const char* fmt, va_list args) throw(io_error);
+    void log_msg(const log_msg_info<>& info) throw(io_error);
     void log_bin(const std::string& a_category, const char* a_msg, size_t a_size)
         throw(io_error);
 };

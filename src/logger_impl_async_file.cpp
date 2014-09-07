@@ -46,7 +46,7 @@ static logger_impl_mgr::registrar reg("async-file", f);
 
 logger_impl_async_file::logger_impl_async_file(const char* a_name)
     : m_name(a_name), m_append(true), m_levels(LEVEL_NO_DEBUG)
-    , m_mode(0644), m_show_location(true), m_show_ident(false)
+    , m_mode(0644)
     , m_engine_ptr(new async_logger_engine())
     , m_engine(m_engine_ptr.get())
 {}
@@ -79,8 +79,6 @@ std::ostream& logger_impl_async_file::dump(
         << a_pfx << "    append         = " << (m_append ? "true" : "false") << '\n'
         << a_pfx << "    mode           = " << m_mode << '\n'
         << a_pfx << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_pfx << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_pfx << "    show-indent    = " << (m_show_ident    ? "true" : "false")
         << std::endl;
     return out;
 }
@@ -111,10 +109,6 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
                         a_config.get<std::string>("logger.async-file.levels",
                                                   logger::default_log_levels));
     m_fd            = m_engine->open_file(m_filename.c_str(), m_append, m_mode);
-    m_show_location = a_config.get<bool>("logger.async-file.show-location",
-                                         this->m_log_mgr->show_location());
-    m_show_ident    = a_config.get<bool>("logger.async-file.show-ident",
-                                         this->m_log_mgr->show_ident());
 
     if (m_fd < 0)
         throw io_error(errno, "Error opening file: ", m_filename);
@@ -138,14 +132,11 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
     return true;
 }
 
-void logger_impl_async_file::log_msg(
-    const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
+void logger_impl_async_file::log_msg(const log_msg_info<>& info)
     throw(std::runtime_error)
 {
-    char buf[logger::MAX_MESSAGE_SIZE];
-    int len = logger_impl::format_message(buf, sizeof(buf), true,
-                m_show_ident, m_show_location, a_tv, info, fmt, args);
-    send_data(info.level(), info.category(), buf, len);
+    send_data(info.level(), info.category(),
+              info.data(), info.data_len());
 }
 
 void logger_impl_async_file::log_bin(

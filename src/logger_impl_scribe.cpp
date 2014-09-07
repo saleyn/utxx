@@ -77,9 +77,7 @@ std::ostream& logger_impl_scribe::dump(std::ostream& out,
     out << a_prefix << "logger." << name() << '\n'
         << a_prefix << "    address        = " << m_server_addr.to_string() << '\n'
         << a_prefix << "    timeout        = " << m_server_timeout << '\n'
-        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
-        << a_prefix << "    show-indent    = " << (m_show_ident    ? "true" : "false") << '\n';
+        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n';
     return out;
 }
 
@@ -107,12 +105,6 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     // thread safety.
     m_levels        = logger::parse_log_levels(a_config.get<std::string>(
                         "logger.scribe.levels", logger::default_log_levels));
-    m_show_location = a_config.get<bool>(
-                        "logger.scribe.show-location",
-                        this->m_log_mgr && this->m_log_mgr->show_location());
-    m_show_ident    = a_config.get<bool>(
-                        "logger.scribe.show-ident",
-                        this->m_log_mgr && this->m_log_mgr->show_ident());
 
     if (m_levels != NOLOGGING) {
         try {
@@ -266,14 +258,9 @@ int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
     return xfer;
 }
 
-void logger_impl_scribe::log_msg(
-    const log_msg_info& info, const timeval* a_tv, const char* fmt, va_list args)
-    throw(io_error)
+void logger_impl_scribe::log_msg(const log_msg_info& info) throw(io_error)
 {
-    char buf[logger::MAX_MESSAGE_SIZE];
-    int len = logger_impl::format_message(buf, sizeof(buf), true,
-                m_show_ident, m_show_location, a_tv, info, fmt, args);
-    send_data(info.level(), info.category(), buf, len);
+    send_data(info.level(), info.category(), info.data().str(), info.data_len());
 }
 
 void logger_impl_scribe::log_bin(

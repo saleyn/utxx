@@ -206,19 +206,28 @@ namespace detail {
             m_pos += a_size;
         }
 
-        void vprintf(const char* a_fmt, va_list a_args) {
+        int vprintf(const char* a_fmt, va_list a_args) {
             int n = vsnprintf(m_begin, capacity(), a_fmt, a_args);
-            if (n > capacity()) {
+            if (n < 0)
+                return n;
+            if (size_t(n) > capacity()) {
                 reserve(n);
                 n = vsnprintf(m_begin, capacity(), a_fmt, a_args);
             }
             m_pos += n;
+            return n;
         }
 
-        void printf(const char* a_fmt, ...) {
+        int printf(const char* a_fmt, ...) {
             va_list args; va_start(args, a_fmt);
             UTXX_SCOPE_EXIT([&args]() { va_end(args); });
-            this->vprintf(a_fmt, args);
+            return this->vprintf(a_fmt, args);
+        }
+
+        template <typename T>
+        buffered_print<N>& operator<< (T&& a) {
+            print(std::forward<T>(a));
+            return *this;
         }
     };
 }

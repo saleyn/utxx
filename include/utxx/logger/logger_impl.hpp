@@ -36,7 +36,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdarg.h>
 #include <stdio.h>
 #include <boost/thread/mutex.hpp>
-#include <boost/format.hpp>
 #include <utxx/delegate.hpp>
 #include <utxx/event.hpp>
 #include <utxx/time_val.hpp>
@@ -46,50 +45,113 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/singleton.hpp>
 #include <utxx/logger.hpp>
 #include <utxx/path.hpp>
+#include <utxx/convert.hpp>
 #include <utxx/variant_tree.hpp>
+#include <utxx/print.hpp>
 #include <vector>
 
-namespace utxx { 
+namespace utxx {
 
 /// Temporarily stores msg source location information given to the logger.
+template <class Alloc = std::allocator<char>>
 class log_msg_info {
-    logger*         m_logger;
-    time_val        m_timestamp;
-    log_level       m_level;
-    std::string     m_category;
-    size_t          m_src_file_len;
-    const char*     m_src_file;
-    size_t          m_src_line;
+    enum { MAX_LOG_MESSAGE_SIZE = 512 };
+
+    using data_buffer = detail::buffered_print<MAX_LOG_MESSAGE_SIZE, Alloc>;
+
+    logger*       m_logger;
+    time_val      m_timestamp;
+    log_level     m_level;
+    std::string   m_category;
+    size_t        m_src_file_len;
+    const char*   m_src_file;
+    size_t        m_src_line;
+    data_buffer   m_data;
+
+    /// log() calls this function which performs content formatting
+    void format_header();
+    void format_footer();
 public:
 
     template <int N>
     log_msg_info(logger& a_logger, log_level lv,
-                 const char (&filename)[N], size_t ln);
+                 const char (&filename)[N], size_t ln,
+                 const Alloc& alloc = Alloc());
 
     template <int N>
     log_msg_info(log_level a_lv, const std::string& a_category,
-                 const char (&a_filename)[N], size_t a_ln);
+                 const char (&a_filename)[N], size_t a_ln,
+                 const Alloc& alloc = Alloc());
 
-    log_msg_info(log_level a_lv, const std::string& a_category);
+    log_msg_info(log_level a_lv, const std::string& a_category,
+                 const Alloc& alloc = Alloc());
 
-    logger*             get_logger()        const { return m_logger; }
-    time_val const&     msg_time()          const { return m_timestamp; }
-    log_level           level()             const { return m_level; }
+    const logger*       get_logger()        const;
+    logger*             get_logger();
+
+    time_val const&     msg_time()          const { return m_timestamp;}
+    log_level           level()             const { return m_level;    }
     const std::string&  category()          const { return m_category; }
     const char*         src_file()          const { return m_src_file; }
     size_t              src_file_len()      const { return m_src_file_len; }
     size_t              src_line()          const { return m_src_line; }
     bool                has_src_location()  const { return m_src_file; }
 
+    const char*         data()              const { return m_data.str(); }
+    size_t              data_len()          const { return m_data.size();  }
+
     void category(const std::string& a_category) { m_category = a_category; }
 
     std::string src_location() const {
-        return has_src_location()
-            ? (boost::format("[%s:%d]") % src_file() % src_line()).str() : std::string();
+        detail::buffered_print<128> buf;
+        buf << '[' << src_file() << ':' << src_line() << ']';
+        return buf.to_string();
     }
 
+    void format(const char* a_fmt, ...);
+    void format(const char* a_fmt, va_list a_args);
+
     // Helper function for LOG_* macros. See logger_impl.ipp for implementation.
-    void inline log(const char* fmt, ...);
+    void log();
+    void log(const char* a_fmt, ...);
+
+    class helper {
+        log_msg_info* m_owner;
+        mutable bool  m_last;
+    public:
+        helper(log_msg_info* a)
+            : m_owner(*a)
+            , m_last(true)
+        {}
+
+        helper(const helper& a_rhs) noexcept
+            : m_owner(a_rhs.m_owner)
+            , m_last(std::move(a_rhs.m_last))
+        {}
+
+        ~helper() {
+            if (!m_last)
+                return;
+
+            // We reached the end of the streaming sequence:
+            // log_msg_info lmi; lmi << a << b << c;
+            char& c = m_owner->m_data.last();
+            if (c != '\n') m_owner->m_data.print('\n');
+
+            m_owner->log();
+        }
+
+        template <typename T>
+        helper operator<< (T&& a) {
+            m_owner->m_data.print(std::forward(a));
+            return *this;
+        }
+    };
+
+    template <class T>
+    helper operator<< (T&& a) const {
+        return helper(this) << a;
+    }
 };
 
 // Logger back-end implementations must derive from this class.
@@ -114,31 +176,8 @@ struct logger_impl {
     /// Called by logger upon reading initialization from configuration
     void set_log_mgr(logger* a_log_mgr) { m_log_mgr = a_log_mgr; }
 
-    /// on_msg_delegate calls this function which performs content formatting
-    /// @param buf is the buffer that will contain formatted message content
-    /// @param size is the buffer size
-    /// @param add_new_line if true '\n' will be added at the end of the output.
-    /// @param a_show_ident if true <a_logger.ident()> will be included in the output.
-    /// @param a_show_location if true <info.src_location> will be included in
-    ///                        the output.
-    /// @param a_ts current timestamp value
-    /// @param a_logger the logger object calling on_message callback.
-    /// @param info msg log level and source line details
-    /// @param fmt format string
-    /// @param args formatting arguments.
-    int format_message(
-        char* buf, size_t size, bool add_new_line,
-        bool a_show_ident, bool a_show_location,
-        const timeval* a_ts, const log_msg_info& info,
-        const char* fmt, va_list args
-    ) throw (badarg_error);
-
-    typedef delegate<
-        void (const log_msg_info&,
-              const timeval*,
-              const char*, /* format */
-              va_list      /* args */) throw(std::runtime_error)
-    > on_msg_delegate_t;
+    typedef delegate<void (const log_msg_info<>&) throw(io_error)>
+        on_msg_delegate_t;
 
     typedef delegate<
         void (const std::string& /* category */,
@@ -168,6 +207,8 @@ protected:
     logger* m_log_mgr;
     int     m_msg_sink_id[NLEVELS]; // Message sink identifiers in the loggers' signal
     int     m_bin_sink_id;          // Message sink identifier in the loggers' signal
+
+    void do_log(const log_msg_info<>& a_info);
 };
 
 /// Log implementation manager. It handles registration of
