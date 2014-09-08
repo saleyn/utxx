@@ -35,17 +35,43 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string>
 #include <type_traits>
 #include <cstdarg>
+#include <iomanip>
 #include <utxx/scope_exit.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/convert.hpp>
 #include <utxx/error.hpp>
-#include </opt/pkg/boost/1.56.0/include/boost/concept_check.hpp>
 
 namespace utxx {
 
+/// Output a float to stream formatted with fixed precision
+struct fixed {
+    fixed(double a_val, int a_digits, int a_precision, char a_fill = ' ')
+        : m_value(a_val), m_digits(a_digits), m_precision(a_precision)
+        , m_fill(a_fill)
+    {}
+
+    inline friend std::ostream& operator<<(std::ostream& out, const fixed& f) {
+        return out << std::fixed << std::setfill(f.m_fill)
+                   << std::setw(f.m_digits)
+                   << std::setprecision(f.m_precision) << f.m_value;
+    }
+
+    double value()     const { return m_value;     }
+    int    digits()    const { return m_digits;    }
+    int    precision() const { return m_precision; }
+    char   fill()      const { return m_fill;      }
+
+private:
+    double m_value;
+    int    m_digits;
+    int    m_precision;
+    char   m_fill;
+};
+
+
 namespace detail {
     template <size_t N = 256, class Alloc = std::allocator<char>>
-    class buffered_print : public Alloc
+    class basic_buffered_print : public Alloc
     {
         mutable char*   m_begin; // mutable so that we can write '\0' in c_str()
         char*           m_pos;
@@ -136,14 +162,14 @@ namespace detail {
             print(s.str());
         }
     public:
-        explicit buffered_print(const Alloc& a_alloc = Alloc())
+        explicit basic_buffered_print(const Alloc& a_alloc = Alloc())
             : Alloc(a_alloc)
             , m_begin(m_data)
             , m_pos(m_begin)
             , m_end(m_begin + sizeof(m_data)-1)
         {}
 
-        ~buffered_print() {
+        ~basic_buffered_print() {
             deallocate();
         }
 
@@ -225,7 +251,7 @@ namespace detail {
         }
 
         template <typename T>
-        buffered_print<N>& operator<< (T&& a) {
+        basic_buffered_print<N>& operator<< (T&& a) {
             print(std::forward<T>(a));
             return *this;
         }
@@ -241,6 +267,10 @@ std::string print_string(const char fmt, ...) {
     std::string buf;
     buf.resize(SizeHint);
     int n = vsnprintf(const_cast<char*>(buf.c_str()), buf.capacity(), fmt, args);
+
+    if (unlikely(n < 0))
+        throw io_error(errno, "print_string(): error formatting arguments");
+
     buf.resize(n);
 
     if (unlikely(n > SizeHint)) // String didn't fit - redo
@@ -248,12 +278,16 @@ std::string print_string(const char fmt, ...) {
     return buf;
 }
 
+/// Print arguments to string.
+/// This function is a faster alternative to printf and std::stringstream.
 template <class... Args>
 std::string print(Args&&... args) {
-    detail::buffered_print<> b;
+    detail::basic_buffered_print<> b;
     b.print(std::forward<Args>(args)...);
     return b.to_string();
 }
+
+using buffered_print = detail::basic_buffered_print<>;
 
 } // namespace utxx
 

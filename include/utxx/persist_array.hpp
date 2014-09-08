@@ -139,9 +139,8 @@ namespace utxx {
         /// @return
         size_t allocate_rec() throw(std::runtime_error) {
             auto error = [this]() {
-                throw std::runtime_error(
-                    to_string("persist_array: Out of storage capacity (",
-                              this->m_file.get_name(), ")!"));
+                throw utxx::runtime_error
+                    ("persist_array: Out of storage capacity (", this->m_file.get_name(), ")!");
             };
 
             if (unlikely(count() >= capacity()))

@@ -837,9 +837,8 @@ void basic_multi_file_async_logger<traits>::
 internal_close() {
     ASYNC_TRACE(("Logger is closing\n"));
     std::unique_lock<std::mutex> lock(m_mutex);
-    for (typename stream_info_vec::iterator it=m_files.begin(), e=m_files.end();
-            it != e; ++it)
-        internal_close(*it, 0);
+    for (auto* si : m_files)
+        internal_close(si, 0);
 }
 
 template<typename traits>

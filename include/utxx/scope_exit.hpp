@@ -35,6 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #if __cplusplus >= 201103L
 
+#include <functional>
+
 namespace utxx {
 
 /// Call lambda function on exiting scope

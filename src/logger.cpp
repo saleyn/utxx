@@ -229,9 +229,8 @@ void logger::init(const config_tree& config)
 
 void logger::finalize()
 {
-    //for(implementations_vector::reverse_iterator it=m_implementations.rbegin();
-    //        it != m_implementations.rend(); ++it)
-    //    it->reset();
+    for(auto& impl : m_implementations)
+        impl.reset();
     m_implementations.clear();
 }
 

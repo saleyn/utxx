@@ -50,6 +50,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/print.hpp>
 #include <vector>
 
+struct T;
 namespace utxx {
 
 /// Temporarily stores msg source location information given to the logger.
@@ -57,7 +58,7 @@ template <class Alloc = std::allocator<char>>
 class log_msg_info {
     enum { MAX_LOG_MESSAGE_SIZE = 512 };
 
-    using data_buffer = detail::buffered_print<MAX_LOG_MESSAGE_SIZE, Alloc>;
+    using data_buffer = detail::basic_buffered_print<MAX_LOG_MESSAGE_SIZE, Alloc>;
 
     logger*       m_logger;
     time_val      m_timestamp;
@@ -103,7 +104,7 @@ public:
     void category(const std::string& a_category) { m_category = a_category; }
 
     std::string src_location() const {
-        detail::buffered_print<128> buf;
+        detail::basic_buffered_print<128> buf;
         buf << '[' << src_file() << ':' << src_line() << ']';
         return buf.to_string();
     }
@@ -115,6 +116,11 @@ public:
     void log();
     void log(const char* a_fmt, ...);
 
+    /// Helper class used to implement streaming support in the logger.
+    /// It makes it possible to write:
+    /// \code
+    /// log_msg_info(LEVEL_DEBUG, "") << 1 << "test" << std::endl;
+    /// \endcode
     class helper {
         log_msg_info* m_owner;
         mutable bool  m_last;
@@ -142,13 +148,46 @@ public:
             m_owner->m_data.print(std::forward<T>(a));
             return helper(*this);
         }
+
+        template <typename T>
+        helper operator<< (const T& a) {
+            m_owner->m_data.print(a);
+            return helper(*this);
+        }
     };
 
     template <class T>
     helper operator<< (T&& a) {
         return helper(this) << a;
     }
+
+    helper operator<<(helper& (*manip)(helper&)) {
+        manip(*this);
+        return helper(this);
+    }
+
 };
+
+/// Interface for manipulators.
+/// Manipulators such as @c std::endl and @c std::hex use these
+/// functions in constructs like "std::cout << std::endl".
+/// For more information, see the iomanip header.
+template <typename Alloc>
+inline typename log_msg_info<Alloc>::helper&
+operator<<(typename log_msg_info<Alloc>::helper& a,
+           typename log_msg_info<Alloc>::helper&
+            (*Manipulator)(typename log_msg_info<Alloc>::helper&)) {
+    return typename log_msg_info<Alloc>::helper(Manipulator(a));
+}
+/*
+    helper operator<<(std::ios_type& (*manip)(std::ios_type&)) {
+        return helper(manip(*this));
+    }
+
+    helper operator<<(std::ios_base& (*manip)(std::ios_base&)) {
+        return helper(manip(*this));
+    }
+*/
 
 // Logger back-end implementations must derive from this class.
 struct logger_impl {
@@ -248,5 +287,34 @@ private:
 };
 
 } // namespace utxx
+/*
+        /// Write a newline to the buffered_print object
+        static friend inline helper&
+        std::endl(helper& a_out)  { a_out << '\n'; return a_out; }
+
+        static friend inline helper&
+        std::ends(helper& a_out)  { a_out << '\0'; return a_out; }
+
+        static friend inline helper&
+        std::flush(helper& a_out) { return a_out; }
+*/
+namespace std {
+
+    /// Write a newline to the buffered_print object
+    template <class Alloc>
+    inline typename utxx::log_msg_info<Alloc>::helper&
+    endl(typename utxx::log_msg_info<Alloc>::helper& a_out)
+    { a_out << '\n'; return a_out; }
+
+    template <class Alloc>
+    inline typename utxx::log_msg_info<Alloc>::helper&
+    ends(typename utxx::log_msg_info<Alloc>::helper& a_out)
+    { a_out << '\0'; return a_out; }
+
+    template <class Alloc>
+    inline typename utxx::log_msg_info<Alloc>::helper&
+    flush(typename utxx::log_msg_info<Alloc>::helper& a_out)
+    { return a_out; }
+}
 
 #endif  // _UTXX_LOGGER_IMPL_HPP_

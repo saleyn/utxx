@@ -38,16 +38,16 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_error )
 {
     BOOST_REQUIRE_EQUAL("a",   utxx::runtime_error("a").str());
-    BOOST_REQUIRE_EQUAL("a b", utxx::runtime_error("a", "b").str());
+    BOOST_REQUIRE_EQUAL("ab",  utxx::runtime_error("a", "b").str());
     BOOST_REQUIRE_EQUAL("abc", utxx::runtime_error("a", "b", "c").str());
 
     { auto e = utxx::runtime_error("a");               BOOST_REQUIRE_EQUAL("a",   e.str()); }
-    { auto e = utxx::runtime_error("a") << "b";        BOOST_REQUIRE_EQUAL("a b", e.str()); }
+    { auto e = utxx::runtime_error("a") << "b";        BOOST_REQUIRE_EQUAL("ab",  e.str()); }
     { auto e = utxx::runtime_error("a") << "b" << "c"; BOOST_REQUIRE_EQUAL("abc", e.str()); }
 
     BOOST_REQUIRE_EQUAL("a: Success",   utxx::io_error(0, "a").str());
-    BOOST_REQUIRE_EQUAL("ab: Success",  utxx::io_error(0, "a", " b").str());
-    BOOST_REQUIRE_EQUAL("abc: Success", utxx::io_error(0, "a", " b", "c").str());
+    BOOST_REQUIRE_EQUAL("ab: Success",  utxx::io_error(0, "a", "b").str());
+    BOOST_REQUIRE_EQUAL("abc: Success", utxx::io_error(0, "a", "b", "c").str());
 
     { auto e = utxx::io_error(0, "a");                 BOOST_REQUIRE_EQUAL("a: Success",     e.str()); }
     { auto e = utxx::io_error(0, "a") << ". b";        BOOST_REQUIRE_EQUAL("a: Success. b",  e.str()); }

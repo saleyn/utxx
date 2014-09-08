@@ -41,25 +41,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <signal.h>
 #include <assert.h>
 #include <iostream>
-#include <utxx/string.hpp>
 #include <boost/shared_ptr.hpp>
 #include <sys/socket.h>
+#include <string.h>
 
 namespace utxx {
 
 /// Thread-safe function returning error string.
 static inline std::string errno_string(int a_errno) {
-    /*
-    char buf[256];
-    if (strerror_r(a_errno, buf, sizeof(buf)) < 0)
-        return "";
-    */
-    std::string buf(strerror(a_errno));
-    return buf;
+    return strerror(a_errno);
 }
 
 class traced_exception : public std::exception {
-    void*  m_backtrace[25];
+    static const size_t s_frames = 25;
+    void*  m_backtrace[s_frames];
     size_t m_size;
     char** m_symbols;
 public:
@@ -82,7 +77,7 @@ public:
     }
 
     traced_exception() : m_symbols(NULL) {
-        m_size    = backtrace(m_backtrace, length(m_backtrace));
+        m_size    = backtrace(m_backtrace, s_frames);
         m_symbols = backtrace_symbols(m_backtrace, m_size);
     }
 
@@ -354,6 +349,7 @@ typedef runtime_error sys_error;         ///< System error
 typedef runtime_error encode_error;      ///< Encoding error.
 typedef runtime_error decode_error;      ///< Decoding error.
 typedef runtime_error badarg_error;      ///< Bad arguments error.
+typedef runtime_error logic_error;       ///< Program logic error.
 
 } // namespace IO_UTXX_NAMESPACE
 

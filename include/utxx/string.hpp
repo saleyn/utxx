@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <algorithm>
 #include <stdexcept>
 #include <sstream>
+#include <utxx/print.hpp>
 
 //-----------------------------------------------------------------------------
 // STRING
@@ -71,31 +72,6 @@ namespace utxx {
     inline constexpr const char* to_string(bool a_value) {
         return a_value ? "true" : "false";
     }
-
-    /// Output a float to stream formatted with fixed precision
-    struct fixed {
-        fixed(double a_val, int a_digits, int a_precision, char a_fill = ' ')
-            : m_value(a_val), m_digits(a_digits), m_precision(a_precision)
-            , m_fill(a_fill)
-        {}
-
-        inline friend std::ostream& operator<<(std::ostream& out, const fixed& f) {
-            return out << std::fixed << std::setfill(f.m_fill)
-                       << std::setw(f.m_digits)
-                       << std::setprecision(f.m_precision) << f.m_value;
-        }
-
-        double value()     const { return m_value;     }
-        int    digits()    const { return m_digits;    }
-        int    precision() const { return m_precision; }
-        char   fill()      const { return m_fill;      }
-
-    private:
-        double m_value;
-        int    m_digits;
-        int    m_precision;
-        char   m_fill;
-    };
 
     /// Convert a string to an integer value
     /// \code
@@ -261,21 +237,12 @@ namespace utxx {
                               bool eol = false);
 
 #if __cplusplus >= 201103L
-    namespace {
-        inline void to_string_impl(std::stringstream& s) {}
-
-        template <class T, class... Args>
-        inline void to_string_impl(std::stringstream& s, T&& a, Args&&... args) {
-            s << std::forward<T>(a);
-            to_string_impl(s, args...);
-        }
-    }
 
     template <class... Args>
     inline std::string to_string(Args&&... args) {
-        std::stringstream s;
-        to_string_impl(s, args...);
-        return s.str();
+        buffered_print buf;
+        buf.print(std::forward<Args>(args)...);
+        return buf.to_string();
     }
 
 #else

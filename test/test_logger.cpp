@@ -56,6 +56,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     }
 
     LOG(ERROR) << "This is an error #" << 10 << " and bool " << true;
+    //LOG(INFO)  << "This is an into  #" << 9 << std::endl << " and endl";
     
     BOOST_REQUIRE(true); // to remove run-time warning
 }

@@ -75,7 +75,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger_err_handler )
 BOOST_AUTO_TEST_CASE( test_async_logger_perf )
 {
     enum { ITERATIONS = 500000 };
-    
+
     {
         unlink(s_filename);
 
