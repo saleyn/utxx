@@ -124,6 +124,8 @@ namespace utxx {
         /// Set time to relative offset from now given by \a a time.
         explicit time_val(const rel_time& a) { now(a.sec, a.usec); }
 
+        explicit time_val(boost::posix_time::ptime a) { *this = a; }
+
         #if __cplusplus >= 201103L
         time_val(time_val&& a) : m_tv(std::move(a.m_tv)) {}
 
@@ -328,6 +330,15 @@ namespace utxx {
         void operator= (const struct timeval& t) {
             m_tv.tv_sec = t.tv_sec; m_tv.tv_usec = t.tv_usec;
         }
+
+        void operator= (boost::posix_time::ptime a_rhs) {
+            using namespace boost::posix_time;
+            static const ptime epoch(boost::gregorian::date(1970,1,1));
+            time_duration diff = a_rhs - epoch;
+            m_tv.tv_sec  = diff.total_seconds();
+            m_tv.tv_usec = a_rhs.time_of_day().total_microseconds();
+        }
+
         struct timeval* operator& ()               { return &m_tv; }
         bool operator== (const time_val& tv) const {
             return sec() == tv.sec() && usec() == tv.usec();

@@ -242,6 +242,8 @@ public:
         return std::string(buf);
     }
 
+    /// Parse time_val from string in format: YYYYMMDD-hh:mm:ss[.sss[sss]]
+    time_val from_string(const char* a_datetime, size_t n, bool a_utc = true);
 };
 
 //---------------------------------------------------------------------------

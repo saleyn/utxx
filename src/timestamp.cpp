@@ -213,4 +213,49 @@ int timestamp::format(stamp_type a_tp,
     }
 }
 
+time_val timestamp::from_string(const char* a_datetime, size_t n, bool a_utc) {
+    if (unlikely(a_datetime[8] != '-' ||
+                 a_datetime[11] != ':' || a_datetime[14] != ':' ||
+                 n < 17))
+        throw badarg_error("Invalid time format: ", std::string(a_datetime, n));
+
+    const char* p = a_datetime;
+
+    auto parse = [&p](int digits) {
+        int i = 0; const char* end = p + digits;
+        for (; p != end; ++p) i = (10*i) + (*p - '0');
+        return i;
+    };
+
+    int      year = parse(4);
+    unsigned mon  = parse(2);
+    unsigned day  = parse(2); p++;
+    unsigned hour = parse(2); p++;
+    unsigned min  = parse(2); p++;
+    unsigned sec  = parse(2);
+    unsigned usec = 0;
+
+    const char* dot = p++;
+
+    if (*dot == '.' && n > 17)
+    {
+        const char* end = p + std::min<size_t>(6, n - (p - a_datetime));
+        while (*p >= '0' && *p <= '9' && p != end)
+            usec = 10*usec + (*p++ - '0');
+
+        int len = p - dot - 1;
+        switch (len)
+        {
+            case 3:  usec *= 1000; break;
+            case 6:  break;
+            default: throw badarg_error("Invalid millisecond format: ",
+                                        std::string(a_datetime, end - a_datetime));
+        }
+    }
+
+    return a_utc
+         ? time_val::universal_time(year, mon, day, hour, min, sec, usec)
+         : time_val::local_time(year, mon, day, hour, min, sec, usec);
+}
+
 } // namespace utxx
