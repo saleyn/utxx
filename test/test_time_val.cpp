@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file may be included in different open-source projects
+This file may be included  in different open-source projects
 
 Copyright (C) 2009 Serge Aleynikov <saleyn@gmail.com>
 
@@ -35,6 +35,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/time.hpp>
+#include <utxx/print.hpp>
+//#include <boost/date_time/local_time_adjustor.hpp>
+#include <boost/date_time/c_local_time_adjustor.hpp>
 #include <stdio.h>
 #include <sstream>
 #include <iostream>
@@ -106,4 +110,17 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     }
 }
 
+
+BOOST_AUTO_TEST_CASE( test_time_val_ptime )
+{
+    using namespace boost::posix_time;
+    using namespace boost::gregorian;
+
+    // Note that pt below is in local time!
+    ptime pt = to_ptime(utxx::time_val::universal_time(2000, 1, 2, 3, 4, 5, 1000));
+    BOOST_REQUIRE_EQUAL("2000-Jan-02 03:04:05.001000", to_simple_string(pt));
+    ptime tt = ptime(date(2000,1,2))
+                + hours(3) + minutes(4) + seconds(5) + microseconds(1000);
+    BOOST_REQUIRE_EQUAL(pt, tt);
+}
 

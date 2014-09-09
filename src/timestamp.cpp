@@ -146,6 +146,7 @@ void timestamp::update_slow()
 size_t timestamp::format_size(stamp_type a_tp)
 {
     switch (a_tp) {
+        case NO_TIMESTAMP:          return 0;
         case TIME:                  return 8;
         case TIME_WITH_USEC:        return 15;
         case TIME_WITH_MSEC:        return 12;

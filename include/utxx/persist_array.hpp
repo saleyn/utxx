@@ -137,7 +137,7 @@ namespace utxx {
 
         /// Allocate next record and return its ID.
         /// @return
-        size_t allocate_rec() throw(std::runtime_error) {
+        size_t allocate_rec() throw(utxx::runtime_error) {
             auto error = [this]() {
                 throw utxx::runtime_error
                     ("persist_array: Out of storage capacity (", this->m_file.get_name(), ")!");

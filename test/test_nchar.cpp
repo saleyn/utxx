@@ -155,7 +155,7 @@ BOOST_AUTO_TEST_CASE( test_nchar_to_integer )
         BOOST_REQUIRE_EQUAL(-123456789012345ll, rc2.to_integer<int64_t>());
         const char* p = "  12";
         nchar<4> rc3(p, 4);
-        BOOST_REQUIRE_EQUAL(0, rc3.to_integer<int>());
+        BOOST_REQUIRE_EQUAL(12, rc3.to_integer<int>());
         nchar<4> rc4(p, 4);
         BOOST_REQUIRE_EQUAL(12, rc4.to_integer<int>(' '));
         {
@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE( test_nchar_to_integer )
             const char* p = "-123";
             nchar<4> rc(p, 4);
             BOOST_REQUIRE_EQUAL(-123, rc.to_integer<int>(' '));
-            BOOST_REQUIRE_EQUAL(-123, rc.to_integer<int>('-'));
+            BOOST_REQUIRE_EQUAL(123,  rc.to_integer<int>('-'));
         }
     }
 }

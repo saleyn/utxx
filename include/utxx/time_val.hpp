@@ -41,6 +41,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/static_assert.hpp>
 #include <utxx/detail/gettimeofday.hpp>
 #include <utxx/compiler_hints.hpp>
+#include <utxx/time.hpp>
+#include "time.hpp"
 #include <cstddef>
 #include <stdint.h>
 #if __cplusplus >= 201103L
@@ -225,8 +227,7 @@ namespace utxx {
             static __thread time_t s_ymd;
 
             if (year != s_y || month != s_m || day != s_d) {
-                struct tm tm = {0, 0, 0, day, month-1, year-1900};
-                s_ymd = ::mktime(&tm);
+                s_ymd = mktime_utc(year, month, day);
                 s_y   = year;
                 s_m   = month;
                 s_d   = day;
@@ -241,19 +242,12 @@ namespace utxx {
         /// Construct a time_val from local "y/m/d-H:M:S"
         static time_val local_time(int year, int month, int day,
                                    int hour, int min,   int sec, int usec) {
-            static __thread int    s_y, s_m, s_d, s_tzoffset;
+            static __thread int    s_y, s_m, s_d;
             static __thread time_t s_ymd;
 
             if (year != s_y || month != s_m || day != s_d) {
-                if (unlikely(!s_tzoffset))
-                {
-                    time_t now; time(&now);
-                    struct tm ltm;
-                    localtime_r(&now, &ltm);
-                    s_tzoffset = ltm.tm_gmtoff;
-                }
-                struct tm tm = {0, 0, 0, day, month-1, year-1900};
-                s_ymd = ::mktime(&tm) + s_tzoffset;
+                struct tm tm = {0, 0, 0, day, month-1, year-1900, 0, 0, -1};
+                s_ymd = ::mktime(&tm); // Returns local time
                 s_y   = year;
                 s_m   = month;
                 s_d   = day;
@@ -370,7 +364,20 @@ namespace utxx {
     /// Same as gettimeofday() call
     inline time_val now_utc() { return time_val::universal_time(); }
 
+    /// Convert time_val to boost::posix_time::ptime
+    inline boost::posix_time::ptime to_ptime (const time_val& a_tv) {
+        return boost::posix_time::from_time_t(a_tv.sec())
+             + boost::posix_time::microsec   (a_tv.usec());
+    }
+
 #if __cplusplus >= 201103L
+    /// Convert time_val to chrono::time_point
+    inline std::chrono::time_point<std::chrono::system_clock>
+    to_time_point(const time_val& a_tv) {
+        return std::chrono::system_clock::from_time_t(a_tv.sec())
+             + std::chrono::microseconds(a_tv.usec());
+    }
+
     /// Convert std::chrono::time_point to timespec
     template <class Clock, class Duration = typename Clock::Duration>
     struct timespec to_timespec(const std::chrono::time_point<Clock, Duration>& a_tp) {

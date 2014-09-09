@@ -1,8 +1,7 @@
 //#define BOOST_TEST_MODULE logger_test
 #include <boost/test/unit_test.hpp>
-#include <boost/property_tree/ptree.hpp>
+#include <utxx/config_tree.hpp>
 
-#include <boost/property_tree/info_parser.hpp>
 #include <boost/thread.hpp>
 #include <iostream>
 #include <utxx/perf_histogram.hpp>
@@ -29,9 +28,9 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     pt.put("logger.async-file.append", variant(false));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
-        write_info(std::cout, pt);
+        BOOST_MESSAGE(pt.dump(std::cout, 2, false, true));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.async_file"));
+    BOOST_REQUIRE(pt.get_child_optional("logger.async-file"));
 
     logger& log = logger::instance();
     log.init(pt);
@@ -93,8 +92,8 @@ std::string get_data(std::ifstream& in, int& thread, int& num, struct tm& tm) {
     tm.tm_hour = strtol(end+1, &end, 10);
     tm.tm_min  = strtol(end+1, &end, 10);
     tm.tm_sec  = strtol(end+1, &end, 10);
-    end += 2; // Skip "||"
-    const char* p = end + 16;
+    end += 7 + 5; // Skip ".XXXXXX|E|||"
+    const char* p = end;
     thread = strtol(p, &end, 10);
     while(*end == ' ') end++;
     p = end;
@@ -125,9 +124,9 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
         const struct {
             const char* type;
             const char* msg;
-        } my_data[] = {{"ERROR  ", "This is an error #123"}
-                      ,{"WARNING", "This is a warning"}
-                      ,{"FATAL  ", "This is a fatal error"}};
+        } my_data[] = {{"E", "This is an error #123"}
+                      ,{"W", "This is a warning"}
+                      ,{"F", "This is a fatal error"}};
         for (int k=0; k < thr_msgs; ++k) {
             n++;
             s = get_data(in, th, j, tm);

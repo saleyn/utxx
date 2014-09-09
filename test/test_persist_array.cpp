@@ -84,7 +84,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         size_t n;
         BOOST_REQUIRE_NO_THROW(n = a.allocate_rec());
         BOOST_REQUIRE_EQUAL(0u, n);
-        BOOST_REQUIRE_THROW(a.allocate_rec(), std::runtime_error);
+        BOOST_REQUIRE_THROW(a.allocate_rec(), utxx::runtime_error);
 
         blob* b = a.get(n);
         BOOST_REQUIRE(b);
