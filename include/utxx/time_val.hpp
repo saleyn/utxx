@@ -238,6 +238,7 @@ namespace utxx {
             time_val tv;
             tv.m_tv.tv_sec  = s_ymd + hour*3600 + min*60 + sec;
             tv.m_tv.tv_usec = usec;
+            tv.normalize();
             return tv;
         };
 
@@ -258,6 +259,7 @@ namespace utxx {
             time_val tv;
             tv.m_tv.tv_sec  = s_ymd + hour*3600 + min*60 + sec;
             tv.m_tv.tv_usec = usec;
+            tv.normalize();
             return tv;
         };
 
