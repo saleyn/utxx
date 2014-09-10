@@ -109,12 +109,28 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_CHECK_EQUAL(999999, t.usec());
     }
     {
-        time_val t = time_val::universal_time(2014, 7, 10, 1,2,3, 0);
         unsigned Y,M,D, h,m,s;
+        BOOST_CHECK_EQUAL(0, to_gregorian_days(1970, 1, 1));
+        std::tie(Y,M,D) = from_gregorian_days(0);
+        BOOST_CHECK_EQUAL(1970u, Y);
+        BOOST_CHECK_EQUAL(1u,    M);
+        BOOST_CHECK_EQUAL(1u,    D);
+
+        BOOST_CHECK_EQUAL(86400, mktime_utc(1970, 1, 2));
+
+        time_val t = time_val::universal_time(2014, 7, 10, 1,2,3, 0);
         std::tie(Y,M,D) = t.to_ymd();
         BOOST_CHECK_EQUAL(2014u, Y);
         BOOST_CHECK_EQUAL(7u,    M);
         BOOST_CHECK_EQUAL(10u,   D);
+
+        t = time_val(2014, 7, 10);
+        BOOST_CHECK_EQUAL(1404950400, t.sec());
+
+        t = time_val(2014, 7, 10, 1,2,3, 0);
+        BOOST_CHECK_EQUAL(1404954123, t.sec());
+        BOOST_CHECK_EQUAL(0,          t.usec());
+
         std::tie(Y,M,D, h,m,s) = t.to_ymdhms();
         BOOST_CHECK_EQUAL(2014u, Y);
         BOOST_CHECK_EQUAL(7u,    M);

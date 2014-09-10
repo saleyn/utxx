@@ -125,6 +125,29 @@ namespace utxx {
         /// Set time to relative offset from now given by \a a time.
         explicit time_val(const rel_time& a) { now(a.sec, a.usec); }
 
+        time_val(int y, unsigned m, unsigned d, bool a_utc = true) {
+            if (a_utc)
+                m_tv.tv_sec = mktime_utc(y, m, d);
+            else {
+                struct tm tm = { 0,0,0, int(d), int(m)-1, y-1900, 0,0,-1 };
+                m_tv.tv_sec  = mktime(&tm);
+            }
+            m_tv.tv_usec = 0;
+        }
+
+        time_val(int      y,    unsigned mon, unsigned d,
+                 unsigned h,    unsigned mi,  unsigned s,
+                 unsigned usec, bool a_utc = true) {
+            if (a_utc)
+                m_tv.tv_sec = mktime_utc(y,mon,d, h,mi,s);
+            else {
+                struct tm tm = { int(s),int(mi),int(h), int(d), int(mon)-1, y-1900, 0,0,-1 };
+                m_tv.tv_sec  = mktime(&tm);
+            }
+            m_tv.tv_usec = usec;
+            normalize();
+        }
+
         explicit time_val(boost::posix_time::ptime a) { *this = a; }
 
         #if __cplusplus >= 201103L
@@ -241,7 +264,7 @@ namespace utxx {
 
         /// Construct a time_val from UTC "y/m/d-H:M:S"
         static time_val universal_time(int year, int month, int day,
-                                       int hour, int min,   int sec, int usec) {
+                                       int hour, int min,   int sec, int usec = 0) {
             static __thread int    s_y, s_m, s_d;
             static __thread time_t s_ymd;
 
@@ -261,7 +284,7 @@ namespace utxx {
 
         /// Construct a time_val from local "y/m/d-H:M:S"
         static time_val local_time(int year, int month, int day,
-                                   int hour, int min,   int sec, int usec) {
+                                   int hour, int min,   int sec, int usec = 0) {
             static __thread int    s_y, s_m, s_d;
             static __thread time_t s_ymd;
 
