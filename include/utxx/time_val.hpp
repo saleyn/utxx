@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdint.h>
 #if __cplusplus >= 201103L
 #include <chrono>
+#include <tuple>
 #endif
 #include <ctime>
 #include <sys/time.h>
@@ -141,15 +142,31 @@ namespace utxx {
             m_tv.tv_sec   = sec.count();
             m_tv.tv_usec  = usec.count();
         }
+
+        std::tuple<int, unsigned, unsigned> to_ymd(bool a_utc = true) const {
+            struct tm tm;
+            gmtime_r(&this->tv_sec(), &tm);
+            return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
+        }
+
+        std::tuple<int, unsigned, unsigned, unsigned, unsigned, unsigned>
+        to_ymdhms(bool a_utc = true) const {
+            struct tm tm;
+            gmtime_r(&this->tv_sec(), &tm);
+            return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+                                   tm.tm_hour,      tm.tm_min,   tm.tm_sec);
+        }
+
         #endif
 
         const struct timeval&   timeval()  const { return m_tv; }
         struct timeval&         timeval()        { return m_tv; }
         struct timespec         timespec() const { struct timespec ts = {sec(),nanosec()};
                                                    return ts; }
-        long                    sec()      const { return m_tv.tv_sec;  }
+        time_t                  sec()      const { return m_tv.tv_sec;  }
         long                    usec()     const { return m_tv.tv_usec; }
-        time_t&                 sec()            { return m_tv.tv_sec;  }
+        const time_t&           tv_sec()   const { return m_tv.tv_sec;  }
+        time_t&                 tv_sec()         { return m_tv.tv_sec;  }
         suseconds_t&            usec()           { return m_tv.tv_usec; }
         time_t                  msec()     const { return m_tv.tv_usec / 1000; }
         long                    nanosec()  const { return m_tv.tv_usec * 1000; }

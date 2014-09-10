@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_MESSAGE("TZ  offset: " << tm.tm_gmtoff);
         BOOST_MESSAGE("GMT   time: " << gmt.sec());
         BOOST_MESSAGE("Local time: " << loc.sec());
-        BOOST_REQUIRE_NE(gmt.sec() - loc.sec(), tm.tm_gmtoff);
+        BOOST_REQUIRE_EQUAL(gmt.sec() - loc.sec(), tm.tm_gmtoff);
     }
 
     {
@@ -107,6 +107,21 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         time_val t(0.999999);
         BOOST_CHECK_EQUAL(0,      t.sec());
         BOOST_CHECK_EQUAL(999999, t.usec());
+    }
+    {
+        time_val t = time_val::universal_time(2014, 7, 10, 1,2,3, 0);
+        unsigned Y,M,D, h,m,s;
+        std::tie(Y,M,D) = t.to_ymd();
+        BOOST_CHECK_EQUAL(2014u, Y);
+        BOOST_CHECK_EQUAL(7u,    M);
+        BOOST_CHECK_EQUAL(10u,   D);
+        std::tie(Y,M,D, h,m,s) = t.to_ymdhms();
+        BOOST_CHECK_EQUAL(2014u, Y);
+        BOOST_CHECK_EQUAL(7u,    M);
+        BOOST_CHECK_EQUAL(10u,   D);
+        BOOST_CHECK_EQUAL(1u,    h);
+        BOOST_CHECK_EQUAL(2u,    m);
+        BOOST_CHECK_EQUAL(3u,    s);
     }
 }
 
