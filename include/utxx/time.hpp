@@ -97,7 +97,7 @@ namespace utxx {
                 "This algorithm has not been ported to a 16 bit unsigned integer");
         static_assert(std::numeric_limits<Int>::digits >= 20,
                 "This algorithm has not been ported to a 16 bit signed integer");
-        if (utxx::unlikely(m < 1 || m > 12 || d < 1 || d > 31)
+        if (utxx::unlikely(m < 1 || m > 12 || d < 1 || d > 31))
             throw badarg_error("Invalid range of month/day argument (m=",m, ", d=",d,')');
 
         y -= m <= 2;

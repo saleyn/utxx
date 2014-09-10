@@ -97,8 +97,11 @@ struct test1 {
 
         {
             std::stringstream s; s.precision(6);
-            s << "Thread" << id << " timestamp: hrcalls=" << timestamp::hrcalls()
+            s << "Thread" << id << " timestamp: "
+              #ifdef DEBUG_TIMESTAMP
+              << "hrcalls=" << timestamp::hrcalls()
               << ", syscalls=" << timestamp::syscalls()
+              #endif
               << ", speed=" << std::fixed << ((double)iterations / tv.seconds())
               << ", latency=" << (1000000000.0*tv.seconds()/iterations) << " ns";
             BOOST_MESSAGE(s.str());
@@ -416,8 +419,10 @@ BOOST_AUTO_TEST_CASE( test_timestamp_cached_time )
         std::cout << "Global factor: " << high_res_timer::global_scale_factor() << std::endl;
         std::cout << "usecs between adjacent now() calls: " << (n / ITER) << std::endl;
         std::cout << "cached time calls: " << m << std::endl;
-        std::cout << "hrcalls: " << t.hrcalls() << " (" << ITER << " iter)" << std::endl;
-        std::cout << "syscalls: " << t.syscalls() << " (" << ITER << " iter)" << std::endl;
+        #ifdef DEBUG_TIMESTAMP
+        std::cout << "hrcalls: "  << timestamp::hrcalls()  << " (" << ITER << " iter)" << std::endl;
+        std::cout << "syscalls: " << timestamp::syscalls() << " (" << ITER << " iter)" << std::endl;
+        #endif
     }
     BOOST_REQUIRE(t.syscalls());
 }
