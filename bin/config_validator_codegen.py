@@ -474,6 +474,9 @@ class ConfigGenerator(object):
             elif max    : err = "'max': %s " % max
             elif maxlen : err = "'max-length': %s " % maxlen
 
+            self.debug(lambda:
+                "Option: {0} default: {1} required: {2}".format(name, default, required))
+
             if default != None: required = 'false'
 
             if err:

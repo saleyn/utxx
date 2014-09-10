@@ -430,13 +430,16 @@ void validator::check_required
                     format_name(a_root, opt, vt.first, vt.second.data()),
                     vt.second, opt.children);
         } else {
-            #ifdef TEST_CONFIG_VALIDATOR
-            if (opt.children.size())
-                std::cout << "  Checking children of " << format_name(a_root, opt) << std::endl;
-            #endif
             tree_path l_req_name;
             bool l_has_req = has_required_child_options(opt.children, l_req_name);
             bool l_found   = false;
+
+            #ifdef TEST_CONFIG_VALIDATOR
+            if (opt.children.size())
+                std::cout << "  Checking children of " << format_name(a_root, opt)
+                          << " (hasreq=" << (l_has_req ? l_req_name.dump() : "") << ")"
+                          << std::endl;
+            #endif
 
             BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
                 if (vt.first == opt.name) {
