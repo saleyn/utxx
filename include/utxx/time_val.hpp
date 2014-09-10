@@ -259,7 +259,7 @@ namespace utxx {
         void now() { ::gettimeofday(&m_tv, 0); }
 
         static time_val universal_time() {
-            time_val tv; ::gettimeofday(&tv, 0); return tv;
+            time_val tv; ::gettimeofday(&tv.timeval(), 0); return tv;
         }
 
         /// Construct a time_val from UTC "y/m/d-H:M:S"
@@ -381,7 +381,6 @@ namespace utxx {
             m_tv.tv_usec = a_rhs.time_of_day().total_microseconds();
         }
 
-        struct timeval* operator& ()               { return &m_tv; }
         bool operator== (const time_val& tv) const {
             return sec() == tv.sec() && usec() == tv.usec();
         }
