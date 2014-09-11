@@ -369,6 +369,12 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, ':');
     BOOST_REQUIRE_EQUAL("10:09:08.123", std::string(buf, p - buf));
 
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, '\0');
+    BOOST_REQUIRE_EQUAL("100908.123", std::string(buf, p - buf));
+
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, '\0', '\0');
+    BOOST_REQUIRE_EQUAL("100908123", std::string(buf, p - buf));
+
     p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, '\0');
     BOOST_REQUIRE_EQUAL("100908.123456", std::string(buf, p - buf));
 

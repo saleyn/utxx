@@ -72,7 +72,8 @@ const char* to_string(stamp_type a_type) {
 }
 
 char* timestamp::write_time(
-    char* a_buf, const time_val& a_time, stamp_type a_type, char a_delim)
+    char* a_buf,  const time_val& a_time, stamp_type a_type,
+    char  a_delim, char a_sep)
 {
     unsigned long n  = a_time.sec() / 86400;
     n = a_time.sec() - n*86400;
@@ -92,14 +93,14 @@ char* timestamp::write_time(
         case TIME:
             break;
         case TIME_WITH_MSEC: {
-            *p++ = '.';
+            if (a_sep) *p++ = a_sep;
             int msec = a_time.msec();
             (void)itoa_right<int, 3>(p, msec, '0');
             p += 3;
             break;
         }
         case TIME_WITH_USEC: {
-            *p++ = '.';
+            if (a_sep) *p++ = a_sep;
             int usec = a_time.usec();
             (void)itoa_right<int, 6>(p, usec, '0');
             p += 6;

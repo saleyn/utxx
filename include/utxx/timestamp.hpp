@@ -90,13 +90,19 @@ public:
     static void write_date(
         char* a_buf, time_t a_utc_seconds, bool a_utc=false, size_t eos_pos=8);
 
-    /// Write time as HH:MM:SS[.sss[sss]].
-    /// @param a_type determines the time formatting.
-    ///               Valid values: TIME, TIME_WITH_MSEC, TIME_WITH_USEC.
+    /// Write time as string.
+    /// Possible formats:
+    ///   HHMMSSsss, HHMMSSssssss, HHMMSS.sss, HHMMSS.ssssss, HH:MM:SS[.ssssss].
+    /// @param a_buf   the output buffer.
+    /// @param a_time  is the time to use.
+    /// @param a_type  determines the time formatting.
+    ///                Valid values: TIME, TIME_WITH_MSEC, TIME_WITH_USEC.
     /// @param a_delim controls the ':' delimiter ('\0' means no delimiter)
+    /// @param a_sep   defines the fractional second separating character ('\0' means - none)
     /// @return pointer past the last written character
     static char* write_time(
-        char* a_buf, const time_val& a_time, stamp_type a_type, char a_delim = '\0');
+        char* a_buf, const time_val& a_time, stamp_type a_type,
+        char  a_delim = '\0', char a_sep = '.');
 
     inline static void write_time(
         char* a_buf, time_t seconds, size_t eos_pos = 8)
