@@ -96,7 +96,7 @@ namespace utxx {
         }
 
         void setd(double interval) {
-            long n = long(round(interval*1e6));
+            long n = long(round(interval*N10e6));
             m_tv.tv_sec = n / N10e6; m_tv.tv_usec = n - m_tv.tv_sec*N10e6;
         }
 

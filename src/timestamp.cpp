@@ -71,6 +71,47 @@ const char* to_string(stamp_type a_type) {
     return s_values[a_type];
 }
 
+char* timestamp::write_time(
+    char* a_buf, const time_val& a_time, stamp_type a_type, char a_delim)
+{
+    unsigned long n  = a_time.sec() / 86400;
+    n = a_time.sec() - n*86400;
+    int hour = n / 3600;    n -= hour*3600;
+    int min  = n / 60;
+    int sec  = n - min*60;  n = hour / 10;
+    char*  p = a_buf;
+    *p++ = '0' + n;     hour -= n*10;
+    *p++ = '0' + hour;  n = min / 10;
+    if (a_delim) *p++ = a_delim;
+    *p++ = '0' + n;     min  -= n*10;
+    *p++ = '0' + min;   n = sec / 10;
+    if (a_delim) *p++ = a_delim;
+    *p++ = '0' + n;     sec -= n*10;
+    *p++ = '0' + sec;
+    switch (a_type) {
+        case TIME:
+            break;
+        case TIME_WITH_MSEC: {
+            *p++ = '.';
+            int msec = a_time.msec();
+            (void)itoa_right<int, 3>(p, msec, '0');
+            p += 3;
+            break;
+        }
+        case TIME_WITH_USEC: {
+            *p++ = '.';
+            int usec = a_time.usec();
+            (void)itoa_right<int, 6>(p, usec, '0');
+            p += 6;
+            break;
+        }
+        default:
+            throw logic_error("timestamp::write_time: invalid a_type value: ", a_type);
+    }
+    return p;
+}
+
+
 static int internal_write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
 {

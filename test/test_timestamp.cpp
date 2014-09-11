@@ -359,6 +359,21 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     str = timestamp::to_string(timestamp::cached_time(), DATE_TIME);
     BOOST_REQUIRE_EQUAL(expected, str);
 
+    const char* p;
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME);
+    BOOST_REQUIRE_EQUAL("100908",   std::string(buf, p - buf));
+
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME, ':');
+    BOOST_REQUIRE_EQUAL("10:09:08", std::string(buf, p - buf));
+
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, ':');
+    BOOST_REQUIRE_EQUAL("10:09:08.123", std::string(buf, p - buf));
+
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, '\0');
+    BOOST_REQUIRE_EQUAL("100908.123456", std::string(buf, p - buf));
+
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, ':');
+    BOOST_REQUIRE_EQUAL("10:09:08.123456", std::string(buf, p - buf));
 }
 
 BOOST_AUTO_TEST_CASE( test_time_latency )

@@ -509,13 +509,13 @@ inline const char* atoi_left(const Char (&bytes)[N], T& value, Char skip = '\0')
  * @endcode
  */
 template <typename T, int N, typename Char>
-static inline char* itoa_right(Char *bytes, T value, Char pad = '\0') {
+static inline Char* itoa_right(Char *bytes, T value, Char pad = '\0') {
     return detail::signness_helper<T,N,std::numeric_limits<T>::is_signed,
             RIGHT_JUSTIFIED, Char>::fast_itoa(bytes, value, pad);
 }
 
 template <typename T, int N, typename Char>
-inline char* itoa_right(Char (&bytes)[N], T value, Char pad = '\0') {
+inline Char* itoa_right(Char (&bytes)[N], T value, Char pad = '\0') {
     return itoa_right<T,N,Char>(static_cast<char*>(bytes), value, pad);
 }
 
