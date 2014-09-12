@@ -42,9 +42,11 @@ namespace utxx {
 boost::mutex            timestamp::s_mutex;
 __thread hrtime_t       timestamp::s_last_hrtime;
 __thread struct timeval timestamp::s_last_time = {0,0};
-__thread time_t         timestamp::s_midnight_seconds = 0;
+__thread time_t         timestamp::s_next_local_midnight_seconds = 0;
+__thread time_t         timestamp::s_next_utc_midnight_seconds   = 0;
 __thread time_t         timestamp::s_utc_offset = 0;
-__thread char           timestamp::s_timestamp[16];
+__thread char           timestamp::s_local_timestamp[16];
+__thread char           timestamp::s_utc_timestamp[16];
 
 #ifdef DEBUG_TIMESTAMP
 volatile long timestamp::s_hrcalls;
@@ -143,23 +145,22 @@ void timestamp::write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
 {
     // If same day - use cached string value
-    if (!a_utc && labs(a_utc_seconds - s_last_time.tv_sec) < 86400) {
-        strncpy(a_buf, s_timestamp, 9);
-        a_buf[eos_pos] = '\0';
-    } else {
+    if (a_utc_seconds >= s_next_utc_midnight_seconds)
         internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos);
+    else {
+        strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
+        if (eos_pos) a_buf[eos_pos] = '\0';
     }
 }
 
 void timestamp::update_midnight_seconds(const time_val& a_now)
 {
-    // FIXME: it doesn't seem like the mutex is needed here at all
-    // since s_timestamp lives in TLS storage
-    boost::mutex::scoped_lock guard(s_mutex);
-    s_utc_offset = internal_write_date(
-        s_timestamp, a_now.timeval().tv_sec, false, 9);
+    // the mutex is not needed here at all - s_timestamp lives in TLS storage
+    s_utc_offset = internal_write_date(s_local_timestamp, a_now.sec(), false, 9);
+    internal_write_date(s_utc_timestamp, a_now.sec(), true, 9);
 
-    s_midnight_seconds  = a_now.sec() - a_now.sec() % 86400;
+    s_next_utc_midnight_seconds   = (a_now.sec() - a_now.sec() % 86400) + 86400;
+    s_next_local_midnight_seconds = s_next_utc_midnight_seconds + s_utc_offset;
 }
 
 const time_val& timestamp::now() {
@@ -179,10 +180,8 @@ void timestamp::update_slow()
     // FIXME: the method below will produce incorrect time stamps during
     // switch to/from daylight savings time because of the unaccounted
     // utc_offset change.
-    if (unlikely(s_midnight_seconds == 0 ||
-                 last_time().sec() > s_midnight_seconds)) {
+    if (unlikely(last_time().sec() >= s_next_utc_midnight_seconds))
         update_midnight_seconds(last_time());
-    }
 }
 
 size_t timestamp::format_size(stamp_type a_tp)
@@ -210,7 +209,8 @@ int timestamp::format(stamp_type a_tp,
         return 0;
     }
 
-    if (unlikely(s_midnight_seconds == 0)) {
+    long midnight = a_utc ? s_next_utc_midnight_seconds : s_next_local_midnight_seconds;
+    if (unlikely(tv->tv_sec >= midnight)) {
         timestamp ts; ts.update();
     }
 

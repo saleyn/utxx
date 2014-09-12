@@ -67,9 +67,11 @@ protected:
     static boost::mutex             s_mutex;
     static __thread hrtime_t        s_last_hrtime;
     static __thread struct timeval  s_last_time;
-    static __thread time_t          s_midnight_seconds;
+    static __thread time_t          s_next_utc_midnight_seconds;
+    static __thread time_t          s_next_local_midnight_seconds;
     static __thread time_t          s_utc_offset;
-    static __thread char            s_timestamp[16];
+    static __thread char            s_utc_timestamp[16];
+    static __thread char            s_local_timestamp[16];
 
     #ifdef DEBUG_TIMESTAMP
     static volatile long s_hrcalls;
@@ -80,6 +82,10 @@ protected:
 
     static void update_slow();
 
+    static void check_midnight_seconds() {
+        if (likely(s_next_utc_midnight_seconds)) return;
+        timestamp ts; ts.update();
+    }
 public:
     /// Suggested buffer space type needed for format() calls.
     typedef char buf_type[32];
@@ -107,20 +113,19 @@ public:
     inline static void write_time(
         char* a_buf, time_t seconds, size_t eos_pos = 8)
     {
-        unsigned long n = seconds / 86400;
-        n = seconds - n*86400;
-        int hour = n / 3600;    n -= hour*3600;
-        int min  = n / 60;
-        int sec  = n - min*60;  n = hour / 10;
-        a_buf[0] = '0' + n;     hour -= n*10;
-        a_buf[1] = '0' + hour;
-        a_buf[2] = ':';         n = min / 10;
-        a_buf[3] = '0' + n;     min -= n*10;
-        a_buf[4] = '0' + min;
-        a_buf[5] = ':';         n = sec / 10;
-        a_buf[6] = '0' + n;     sec -= n*10;
-        a_buf[7] = '0' + sec;
-        a_buf[eos_pos] = '\0';
+        unsigned hour,min,sec;
+        std::tie(hour,min,sec) = time_val::to_hms(seconds);
+        char* p = a_buf;
+        int n = hour / 10;
+        *p++  = '0' + n;    hour -= n*10;
+        *p++  = '0' + hour;
+        *p++  = ':';        n = min / 10;
+        *p++  = '0' + n;    min -= n*10;
+        *p++  = '0' + min;
+        *p++  = ':';        n = sec / 10;
+        *p++  = '0' + n;    sec -= n*10;
+        *p++  = '0' + sec;
+        if (eos_pos) a_buf[eos_pos] = '\0';
     }
 
     /// Update internal timestamp by calling gettimeofday().
@@ -130,17 +135,12 @@ public:
     static const time_val& last_time() { return time_val_cast(s_last_time); }
 
     /// Equivalent to calling update() and last_time()
-    static const time_val& cached_time()     { update(); return last_time(); }
+    static const time_val& cached_time()   { update(); return last_time(); }
 
-    /// Return the number of seconds from epoch to midnight 
-    /// in UTC.
-    static time_t utc_midnight_seconds()    { return s_midnight_seconds; }
-
-    /// Return the number of seconds from epoch to midnight 
-    /// in local time zone.
-    static time_t local_midnight_seconds() {
-        return s_midnight_seconds - s_utc_offset;
-    }
+    /// Return the number of seconds from epoch to midnight in UTC.
+    static time_t utc_midnight_seconds()   { return s_next_utc_midnight_seconds   - 86400; }
+    /// Return the number of seconds from epoch to midnight in local time.
+    static time_t local_midnight_seconds() { return s_next_local_midnight_seconds - 86400; }
 
     /// Number of seconds since midnight in local time zone for a given UTC time.
     static time_t local_seconds_since_midnight(time_t a_utc_time) {
@@ -150,7 +150,7 @@ public:
 
     /// Return offset from UTC in seconds.
     static time_t utc_offset() {
-        if (unlikely(s_midnight_seconds == 0)) {
+        if (unlikely(!s_next_utc_midnight_seconds)) {
             timestamp ts; ts.update();
         }
         return s_utc_offset;
@@ -158,24 +158,20 @@ public:
 
     /// Convert a timestamp to the number of microseconds
     /// since midnight in local time.
-    static int64_t local_usec_since_midnight(const time_val& a_now) {
-        if (unlikely(s_midnight_seconds == 0)) {
-            timestamp ts; ts.update();
-        }
-        int64_t l_time = a_now.sec() + s_utc_offset - s_midnight_seconds;
-        while (l_time < 0) l_time += 86400;
-        return l_time * 1000000 + a_now.usec();
+    static int64_t local_usec_since_midnight(const time_val& a_now_utc) {
+        check_midnight_seconds();
+        time_t diff = a_now_utc.sec() + s_utc_offset - local_midnight_seconds();
+        if (unlikely(diff < 0)) diff = -diff % 86400;
+        return diff * 1000000 + a_now_utc.usec();
     }
 
     /// Convert a timestamp to the number of microseconds
     /// since midnight in UTC.
-    static uint64_t utc_usec_since_midnight(const time_val& a_now) {
-        if (unlikely(s_midnight_seconds == 0)) {
-            timestamp ts; ts.update();
-        }
-        int64_t l_time = a_now.sec() - s_midnight_seconds;
-        while (l_time < 0) l_time += 86400;
-        return l_time * 1000000 + a_now.usec();
+    static uint64_t utc_usec_since_midnight(const time_val& a_now_utc) {
+        check_midnight_seconds();
+        time_t diff = a_now_utc.sec() + utc_midnight_seconds();
+        if (unlikely(diff < 0)) diff = -diff % 86400;
+        return diff * 1000000 + a_now_utc.usec();
     }
 
     #ifdef DEBUG_TIMESTAMP
@@ -271,17 +267,20 @@ struct test_timestamp : public timestamp {
     void update(const time_val& a_now, hrtime_t a_hrnow) {
         s_last_time = a_now.timeval();
 
-        if (unlikely(s_midnight_seconds == 0 || a_now.sec() > s_midnight_seconds)) {
+        if (unlikely(a_now.sec() >= s_next_utc_midnight_seconds))
             update_midnight_seconds(a_now);
-        }
         s_last_hrtime = a_hrnow;
     }
 
     /// The function will reset midnight seconds
     /// offset so that update(a_now, a_hrnow) can be used to set it
     /// based on the controled timestamp.  Use this function 
-    /// for testing in combination with update(a_now, a_hrnow).  
-    static void reset() { s_midnight_seconds = 0; } 
+    /// for testing in combination with update(a_now, a_hrnow).
+    /// Note: it only resets the midnight seconds in the current thread's TLS
+    static void reset() {
+        s_next_local_midnight_seconds = 0;
+        s_next_utc_midnight_seconds   = 0;
+    }
 
     /// Use for testing only.
     void now() {}

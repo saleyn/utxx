@@ -52,5 +52,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
       BOOST_CHECK_NO_THROW(Expr);       \
     }
 
+namespace utxx {
+
+inline long env(const char* a_var, long a_default) {
+    const char* p = getenv(a_var);
+    return p ? atoi(p) : a_default;
+}
+
+} // namespace utxx::test
+
 #endif // _UTXX_TEST_HELPER_HPP_
 

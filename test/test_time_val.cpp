@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // #define BOOST_TEST_MODULE time_val_test
 
 #include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/time.hpp>
@@ -141,6 +142,73 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     }
 }
 
+
+BOOST_AUTO_TEST_CASE( test_time_val_perf )
+{
+    static const int ITERATIONS = env("ITERATIONS", 10000000);
+    double elapsed1, elapsed2;
+    time_val now = now_utc();
+    long sum = 0;
+    int y; unsigned m,d;
+
+    struct tm tm;
+    localtime_r(&now.tv_sec(), &tm);
+    int offset = tm.tm_gmtoff;
+    BOOST_MESSAGE("TZ offset = " << offset);
+    std::tie(y,m,d) = now.to_ymd(true);
+    time_t tt = mktime_utc(y,m,d);
+    BOOST_MESSAGE("mktime_utc(" << y << '-' << m << '-' << d << ") = " << tt);
+    std::tie(y,m,d) = now.to_ymd(true);
+    BOOST_MESSAGE("now.to_ymd(true)  = " << y << '-' << m << '-' << d << " | " << now.sec());
+    std::tie(y,m,d) = now.to_ymd(false);
+    BOOST_MESSAGE("now.to_ymd(false) = " << y << '-' << m << '-' << d << " | " << now.sec()+offset);
+    std::tie(y,m,d) = from_gregorian_time(now.sec() + offset);
+    BOOST_MESSAGE("from_greg_time(" << y << '-' << m << '-' << d << ") = " << now.sec()+offset);
+
+    std::tie(y,m,d) = now.to_ymd(false);
+    BOOST_MESSAGE("local to_ymd              = " << y << '-' << m << '-' << d);
+    std::tie(y,m,d) = from_gregorian_time(now.sec() + offset);
+    BOOST_MESSAGE("local from_gregorian_days = " << y << '-' << m << '-' << d);
+    std::tie(y,m,d) = now.to_ymd(true);
+    BOOST_MESSAGE("utc   to_ymd              = " << y << '-' << m << '-' << d);
+    std::tie(y,m,d) = from_gregorian_time(now.sec());
+    BOOST_MESSAGE("utc   from_gregorian_time = " << y << '-' << m << '-' << d);
+
+    BOOST_CHECK(now.to_ymd(false) == from_gregorian_time(now.sec() + offset));
+    BOOST_CHECK(now.to_ymd(true)  == from_gregorian_time(now.sec()));
+    {
+        timer t;
+        for (int i=0; i < ITERATIONS; i++, sum += y+m+d)
+            std::tie(y,m,d) = now.to_ymd(false);
+        elapsed1 = t.elapsed();
+    }
+    {
+        timer t;
+        for (int i=0; i < ITERATIONS; i++, sum += y+m+d)
+            std::tie(y,m,d) = from_gregorian_time(now.sec() + offset);
+        elapsed2 = t.elapsed();
+    }
+    BOOST_MESSAGE("local time_val::to_ymd / from_gregorian_days = "
+                  << std::setprecision(2) << std::fixed
+                  << ((100.0 * elapsed1) / elapsed2) << '%');
+    {
+        timer t;
+        for (int i=0; i < ITERATIONS; i++, sum += y+m+d)
+            std::tie(y,m,d) = now.to_ymd(true);
+        elapsed1 = t.elapsed();
+    }
+    {
+        timer t;
+        for (int i=0; i < ITERATIONS; i++, sum += y+m+d)
+            std::tie(y,m,d) = from_gregorian_time(now.sec());
+        elapsed2 = t.elapsed();
+    }
+    BOOST_MESSAGE("utc   time_val::to_ymd / from_gregorian_days = "
+                  << std::setprecision(2) << std::fixed
+                  << ((100.0 * elapsed1) / elapsed2) << '%');
+
+    BOOST_CHECK(sum); // suppress the run-time warning
+}
 
 BOOST_AUTO_TEST_CASE( test_time_val_ptime )
 {

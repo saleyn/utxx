@@ -168,14 +168,28 @@ namespace utxx {
 
         std::tuple<int, unsigned, unsigned> to_ymd(bool a_utc = true) const {
             struct tm tm;
-            gmtime_r(&this->tv_sec(), &tm);
+            if (a_utc) gmtime_r   (&this->tv_sec(), &tm);
+            else       localtime_r(&this->tv_sec(), &tm);
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
         }
+
+        /// Split time into hours/minutes/seconds
+        static std::tuple<unsigned, unsigned, unsigned> to_hms(time_t a_time) {
+            long     n = a_time /   86400;  // Avoid more expensive '%'
+            unsigned s = a_time - n*86400;
+            unsigned h = s / 3600; s -= h * 3600;
+            unsigned m = s / 60;   s -= m * 60;
+            return std::make_tuple(h, m, s);
+        }
+
+        /// Split time into hours/minutes/seconds
+        std::tuple<unsigned, unsigned, unsigned> to_hms() const { return to_hms(sec()); }
 
         std::tuple<int, unsigned, unsigned, unsigned, unsigned, unsigned>
         to_ymdhms(bool a_utc = true) const {
             struct tm tm;
-            gmtime_r(&this->tv_sec(), &tm);
+            if (a_utc) gmtime_r   (&this->tv_sec(), &tm);
+            else       localtime_r(&this->tv_sec(), &tm);
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
                                    tm.tm_hour,      tm.tm_min,   tm.tm_sec);
         }

@@ -3,7 +3,10 @@
 //----------------------------------------------------------------------------
 /// \brief Time-related functions
 /// \author:  Serge Aleynikov
+// Parts of code taken from:
+// http://home.roadrunner.com/~hinnant/date_algorithms.html
 //----------------------------------------------------------------------------
+// Copyright (c) 2013-09-07 Howard Hinnant
 // Created: 2003-07-10
 //----------------------------------------------------------------------------
 /*
@@ -90,44 +93,47 @@ namespace utxx {
     ///          numeric_limits<Int>::max()/366)
     /// @param m represents a month in the Gregorian calendar (1 to 12)
     /// @param d represents a day of month in the Gregorian calendar (1 ...)
-    template <class Int>
-    Int to_gregorian_days(Int y, unsigned m, unsigned d) noexcept
+    inline int to_gregorian_days(int y, unsigned m, unsigned d)
     {
         static_assert(std::numeric_limits<unsigned>::digits >= 18,
                 "This algorithm has not been ported to a 16 bit unsigned integer");
-        static_assert(std::numeric_limits<Int>::digits >= 20,
+        static_assert(std::numeric_limits<int>::digits >= 20,
                 "This algorithm has not been ported to a 16 bit signed integer");
         if (utxx::unlikely(m < 1 || m > 12 || d < 1 || d > 31))
             throw badarg_error("Invalid range of month/day argument (m=",m, ", d=",d,')');
 
-        y -= m <= 2;
-        const Int era = (y >= 0 ? y : y-399) / 400;
-        const unsigned yoe = static_cast<unsigned>(y - era * 400);      // [0, 399]
+        const int yr  = y - (m <= 2);
+        const int era = (yr >= 0 ? yr : yr-399) / 400;
+        const unsigned yoe = static_cast<unsigned>(yr - era * 400);     // [0, 399]
         const unsigned doy = (153*(m + (m > 2 ? -3 : 9)) + 2)/5 + d-1;  // [0, 365]
         const unsigned doe = yoe * 365 + yoe/4 - yoe/100 + doy;         // [0, 146096]
-        return era * 146097 + static_cast<Int>(doe) - 719468;
+        return era * 146097 + int(doe) - 719468;
     }
 
     /// Returns year/month/day triple in Gregorian calendar.
     /// @param a_days is number of days since 1970-01-01 and is in the range:
-    ///     (numeric_limits<Int>::min() to numeric_limits<Int>::max()-719468).
-    template <class Int>
-    std::tuple<Int, unsigned, unsigned> from_gregorian_days(Int a_days) noexcept
+    ///     (numeric_limits<int>::min() to numeric_limits<int>::max()-719468).
+    inline std::tuple<int, unsigned, unsigned> from_gregorian_days(int a_days) noexcept
     {
         static_assert(std::numeric_limits<unsigned>::digits >= 18,
                 "This algorithm has not been ported to a 16 bit unsigned integer");
-        static_assert(std::numeric_limits<Int>::digits >= 20,
+        static_assert(std::numeric_limits<int>::digits >= 20,
                 "This algorithm has not been ported to a 16 bit signed integer");
-        a_days += 719468;
-        const Int      era = (a_days >= 0 ? a_days : a_days - 146096) / 146097;
-        const unsigned doe = static_cast<unsigned>(a_days - era * 146097);    // [0, 146096]
+        const int     days = a_days + 719468;
+        const int      era = (days >= 0 ? days : days - 146096) / 146097;
+        const unsigned doe = static_cast<unsigned>(days - era * 146097);      // [0, 146096]
         const unsigned yoe = (doe - doe/1460 + doe/36524 - doe/146096) / 365; // [0, 399]
-        const Int        y = static_cast<Int>(yoe) + era * 400;
+        const int        y = static_cast<int>(yoe) + era * 400;
         const unsigned doy = doe - (365*yoe + yoe/4 - yoe/100);               // [0, 365]
         const unsigned  mp = (5*doy + 2)/153;                                 // [0, 11]
         const unsigned   d = doy - (153*mp+2)/5 + 1;                          // [1, 31]
         const unsigned   m = mp + (mp < 10 ? 3 : -9);                         // [1, 12]
-        return std::tuple<Int, unsigned, unsigned>(y + (m <= 2), m, d);
+        return std::tuple<int, unsigned, unsigned>(y + (m <= 2), m, d);
+    }
+
+    /// Split seconds since epoch to y/m/d
+    inline std::tuple<int, unsigned, unsigned> from_gregorian_time(time_t a_days) noexcept {
+        return from_gregorian_days(a_days / 86400);
     }
 
     template <class To, class Rep, class Period>
@@ -145,16 +151,13 @@ namespace utxx {
 
     /// Convert y/m/d into time since epoch 1970-1-1
     inline time_t mktime_utc(int y, unsigned m, unsigned d) {
-        time_t res = to_gregorian_days(y, m, d);
-        res *= 86400;
-        return res;
+        return to_gregorian_days(y, m, d) * 86400;
     }
 
     /// Convert date into time since epoch 1970-1-1
     inline time_t mktime_utc(int      year, unsigned month, unsigned day,
                              unsigned hour, unsigned min,   unsigned sec) {
-        time_t res = to_gregorian_days(year, month, day);
-        res *= 86400;
+        time_t res = to_gregorian_days(year, month, day) * 86400;
         res += 3600*hour + 60*min + sec;
         return res;
     }
