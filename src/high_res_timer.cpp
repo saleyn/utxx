@@ -82,7 +82,7 @@ size_t high_res_timer::calibrate(uint32_t usec, uint32_t iterations) {
         const hrtime_t start = detail::get_tick_count();
         ::usleep(sleep_time.microseconds());
         const hrtime_t stop  = detail::get_tick_count();
-        time_val actual_delta(abs_time(-t1.sec(), -t1.usec()));
+        time_val actual_delta(rel_time(-t1.sec(), -t1.usec()));
         int cpu2 = detail::apic_id();
         if (cpu1 != cpu2) {
             i--; continue;
@@ -99,8 +99,7 @@ size_t high_res_timer::calibrate(uint32_t usec, uint32_t iterations) {
     actual_sleeps /= iterations;
 
     // The addition of 5 below rounds instead of truncates.
-    s_global_scale_factor       = static_cast<int>(
-                                    (double)delta_hrtime / actual_sleeps + .5);
+    s_global_scale_factor       = double(delta_hrtime) / actual_sleeps + .5;
     s_usec_global_scale_factor  = (uint64_t)USECS_IN_SEC * s_global_scale_factor;
     s_calibrated                = true;
 

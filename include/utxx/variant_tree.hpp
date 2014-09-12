@@ -332,7 +332,12 @@ public:
         if (m_schema_validator) {
             const config::option& o = m_schema_validator->get(path, m_root_path);
             const auto& v = o.default_subst_value();
-            if (!v.is_null() && !v.is_type<T>())
+            if (v.is_null())
+                throw boost::property_tree::ptree_error(
+                    utxx::to_string("Path '", (m_root_path / path).dump(), "'"
+                        " missing required option of type: ",
+                        config::type_to_string(o.value_type)));
+            else if (!v.is_type<T>())
                 throw_bad_type<T>(path, v);
             return v.get<T>();
         }

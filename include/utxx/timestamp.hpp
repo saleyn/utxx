@@ -78,6 +78,9 @@ protected:
     static volatile long s_syscalls;
     #endif
 
+    static void internal_write_date(
+        char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos);
+
     static void update_midnight_seconds(const time_val& a_now);
 
     static void update_slow();
@@ -86,6 +89,7 @@ protected:
         if (likely(s_next_utc_midnight_seconds)) return;
         timestamp ts; ts.update();
     }
+
 public:
     /// Suggested buffer space type needed for format() calls.
     typedef char buf_type[32];
@@ -160,7 +164,7 @@ public:
     /// since midnight in local time.
     static int64_t local_usec_since_midnight(const time_val& a_now_utc) {
         check_midnight_seconds();
-        time_t diff = a_now_utc.sec() + s_utc_offset - local_midnight_seconds();
+        time_t diff = a_now_utc.sec() - local_midnight_seconds();
         if (unlikely(diff < 0)) diff = -diff % 86400;
         return diff * 1000000 + a_now_utc.usec();
     }
@@ -169,7 +173,7 @@ public:
     /// since midnight in UTC.
     static uint64_t utc_usec_since_midnight(const time_val& a_now_utc) {
         check_midnight_seconds();
-        time_t diff = a_now_utc.sec() + utc_midnight_seconds();
+        time_t diff = a_now_utc.sec() - utc_midnight_seconds();
         if (unlikely(diff < 0)) diff = -diff % 86400;
         return diff * 1000000 + a_now_utc.usec();
     }

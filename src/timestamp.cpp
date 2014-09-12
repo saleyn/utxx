@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/timestamp.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/string.hpp>
+#include <utxx/time.hpp>
 #include <utxx/error.hpp>
 #include <stdio.h>
 
@@ -115,37 +116,33 @@ char* timestamp::write_time(
 }
 
 
-static int internal_write_date(
+void timestamp::internal_write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
 {
-    struct tm tm;
-    if (a_utc)
-        gmtime_r(&a_utc_seconds, &tm);
-    else
-        localtime_r(&a_utc_seconds, &tm);
-    int y = 1900 + tm.tm_year;
-    int m = tm.tm_mon + 1;
-    int d = tm.tm_mday;
-    int n = y / 1000;
-    a_buf[0] = '0' + n; y -= n*1000; n = y/100;
-    a_buf[1] = '0' + n; y -= n*100;  n = y/10;
-    a_buf[2] = '0' + n; y -= n*10;
-    a_buf[3] = '0' + y; n  = m / 10;
-    a_buf[4] = '0' + n; m -= n*10;
-    a_buf[5] = '0' + m; n  = d / 10;
-    a_buf[6] = '0' + n; d -= n*10;
-    a_buf[7] = '0' + d;
-    a_buf[8] = '-';
-    a_buf[eos_pos] = '\0';
-
-    return tm.tm_gmtoff;
+    if (unlikely(timestamp::s_next_utc_midnight_seconds))
+        timestamp::update_midnight_seconds(now_utc());
+    if (!a_utc) a_utc_seconds += timestamp::s_utc_offset;
+    int y; unsigned m,d;
+    std::tie(y,m,d) = from_gregorian_time(a_utc_seconds);
+    int   n = y / 1000;
+    char* p = a_buf;
+    *p++ = '0' + n; y -= n*1000; n = y/100;
+    *p++ = '0' + n; y -= n*100;  n = y/10;
+    *p++ = '0' + n; y -= n*10;
+    *p++ = '0' + y; n  = m / 10;
+    *p++ = '0' + n; m -= n*10;
+    *p++ = '0' + m; n  = d / 10;
+    *p++ = '0' + n; d -= n*10;
+    *p++ = '0' + d;
+    *p++ = '-';
+    if (eos_pos) a_buf[eos_pos] = '\0';
 }
 
 void timestamp::write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
 {
     // If same day - use cached string value
-    if (a_utc_seconds >= s_next_utc_midnight_seconds)
+    if (unlikely(a_utc_seconds >= s_next_utc_midnight_seconds))
         internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos);
     else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
@@ -155,12 +152,15 @@ void timestamp::write_date(
 
 void timestamp::update_midnight_seconds(const time_val& a_now)
 {
+    struct tm tm;
+    localtime_r(&a_now.tv_sec(), &tm);
+    s_utc_offset = tm.tm_gmtoff;
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
-    s_utc_offset = internal_write_date(s_local_timestamp, a_now.sec(), false, 9);
+    internal_write_date(s_local_timestamp, a_now.sec(), false, 9);
     internal_write_date(s_utc_timestamp, a_now.sec(), true, 9);
 
     s_next_utc_midnight_seconds   = (a_now.sec() - a_now.sec() % 86400) + 86400;
-    s_next_local_midnight_seconds = s_next_utc_midnight_seconds + s_utc_offset;
+    s_next_local_midnight_seconds = s_next_utc_midnight_seconds  - s_utc_offset;
 }
 
 const time_val& timestamp::now() {

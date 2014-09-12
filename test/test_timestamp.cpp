@@ -53,6 +53,12 @@ static long iterations   = ::getenv("ITERATIONS")
 static long nthreads     = ::getenv("THREADS")
                          ? atoi(::getenv("THREADS")) : 1;
 
+struct init {
+    init() { high_res_timer::calibrate(200000, 1); }
+};
+
+static init s_init;
+
 struct test1 {
     long id;
     long iterations;
@@ -354,6 +360,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     snprintf(temp, 22, "%s.%03d", expected_utc, (int)tv.tv_usec / 1000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
+    tv = utxx::now_utc().timeval();
     std::string str = timestamp::to_string(&tv, DATE_TIME);
     BOOST_REQUIRE_EQUAL(expected, str);
     str = timestamp::to_string(timestamp::cached_time(), DATE_TIME);
