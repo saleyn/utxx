@@ -367,25 +367,25 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     BOOST_REQUIRE_EQUAL(expected, str);
 
     const char* p;
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME);
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME, true);
     BOOST_REQUIRE_EQUAL("100908",   std::string(buf, p - buf));
 
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME, ':');
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME, true, ':');
     BOOST_REQUIRE_EQUAL("10:09:08", std::string(buf, p - buf));
 
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, ':');
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, true, ':');
     BOOST_REQUIRE_EQUAL("10:09:08.123", std::string(buf, p - buf));
 
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, '\0');
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, true, '\0');
     BOOST_REQUIRE_EQUAL("100908.123", std::string(buf, p - buf));
 
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, '\0', '\0');
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_MSEC, true, '\0', '\0');
     BOOST_REQUIRE_EQUAL("100908123", std::string(buf, p - buf));
 
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, '\0');
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, true, '\0');
     BOOST_REQUIRE_EQUAL("100908.123456", std::string(buf, p - buf));
 
-    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, ':');
+    p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, true, ':');
     BOOST_REQUIRE_EQUAL("10:09:08.123456", std::string(buf, p - buf));
 }
 

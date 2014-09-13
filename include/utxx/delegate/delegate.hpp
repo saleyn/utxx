@@ -2,6 +2,9 @@
 	(c) Sergey Ryazanov (http://home.onego.ru/~ryazanov)
 
 	Fast delegate compatible with C++ Standard.
+
+    TODO: implement using this method:
+    http://codereview.stackexchange.com/questions/14730/impossibly-fast-delegate-in-c11
 */
 #ifndef _UTXX_DELEGATE_HPP__
 #define _UTXX_DELEGATE_HPP__

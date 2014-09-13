@@ -107,11 +107,12 @@ public:
     /// @param a_time  is the time to use.
     /// @param a_type  determines the time formatting.
     ///                Valid values: TIME, TIME_WITH_MSEC, TIME_WITH_USEC.
+    /// @param a_utc   If true - use UTC time.
     /// @param a_delim controls the ':' delimiter ('\0' means no delimiter)
     /// @param a_sep   defines the fractional second separating character ('\0' means - none)
     /// @return pointer past the last written character
     static char* write_time(
-        char* a_buf, const time_val& a_time, stamp_type a_type,
+        char* a_buf, const time_val& a_time, stamp_type a_type, bool a_utc=false,
         char  a_delim = '\0', char a_sep = '.');
 
     inline static void write_time(

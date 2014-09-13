@@ -75,11 +75,12 @@ const char* to_string(stamp_type a_type) {
 }
 
 char* timestamp::write_time(
-    char* a_buf,  const time_val& a_time, stamp_type a_type,
+    char* a_buf,  const time_val& a_time, stamp_type a_type, bool a_utc,
     char  a_delim, char a_sep)
 {
-    unsigned long n  = a_time.sec() / 86400;
-    n = a_time.sec() - n*86400;
+    auto tsec = a_utc ? a_time.sec() : a_time.sec() + s_utc_offset;
+    unsigned long n  = tsec/86400;
+                  n  = tsec - n*86400;
     int hour = n / 3600;    n -= hour*3600;
     int min  = n / 60;
     int sec  = n - min*60;  n = hour / 10;
