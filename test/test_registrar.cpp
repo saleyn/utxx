@@ -65,7 +65,7 @@ struct C : public Base {
 
 BOOST_AUTO_TEST_CASE( test_registrar )
 {
-    typed_registrar<Base> reg;
+    typed_registrar reg;
     int     x = 10;
     string  s = "abc";
 
@@ -76,9 +76,9 @@ BOOST_AUTO_TEST_CASE( test_registrar )
     {
         a0 = reg.get_and_register<Base>("A", "instance-of-A");
         BOOST_CHECK_EQUAL(2, a0.use_count());
-        a0.reset();
-        BOOST_CHECK_EQUAL(1, a0.use_count());
         reg.erase("A", "instance-of-A");
+        BOOST_CHECK_EQUAL(1, a0.use_count());
+        a0.reset();
     }
     BOOST_CHECK_EQUAL(0, a0.use_count());
 

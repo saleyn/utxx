@@ -79,7 +79,7 @@ struct empty {};
 
 /// Registrar capable of creating instances of classes by type name
 /// at run-time.
-template <class BaseT, class Mutex, class ReflectionInfo = empty>
+template <class Mutex, class ReflectionInfo = empty>
 struct basic_typed_registrar
 {
     template <class T>
@@ -91,9 +91,8 @@ struct basic_typed_registrar
     template <class A, class B> using is_same   = std::is_same<A,B>;
 private:
 
-    /*
     struct iwrap {
-        //virtual ~iwrap() {} // So that we can use dynamic_cast to wrap<T>
+        virtual ~iwrap() {} // So that we can use dynamic_cast to wrap<T>
     };
 
     template <class T>
@@ -104,11 +103,8 @@ private:
 
         pointer<T>&       content()       { return m_content; }
         const pointer<T>& content() const { return m_content; }
-
-        T* ptr() { return m_content.get(); }
     };
     using instance_map    = std::unordered_map<instance, pointer<iwrap>>;
-    */
 
     struct class_info {
         std::function<void* ()> m_ctor;
@@ -124,7 +120,7 @@ private:
         {}
     };
     using class_info_map  = std::unordered_map<string,   class_info>;
-    using instance_map    = std::unordered_map<instance, pointer<BaseT>>;
+    //using instance_map    = std::unordered_map<instance, pointer<BaseT>>;
 
     mutable Mutex   m_mutex;
     class_info_map  m_reflection;
@@ -155,7 +151,6 @@ private:
 
     template <class T, class Lambda>
     pointer<T> do_get(instance&& a_nm, Lambda a_ctor, bool a_use_ctor, bool a_register) {
-        static_assert(std::is_base_of<BaseT, T>::value, "Type must derive from BaseT");
         std::lock_guard<Mutex> guard(m_mutex);
         // Is the instance registered?
 
@@ -172,10 +167,10 @@ private:
             return res;
         }
 
-        unique<BaseT> p;
+        unique<T> p;
 
         if (a_use_ctor)
-            p.reset(static_cast<BaseT*>(a_ctor()));
+            p.reset(static_cast<T*>(a_ctor()));
         else {
             // See if there's a construction method registered for class T:
             auto cit = m_reflection.find(a_nm.m_class);
@@ -184,7 +179,7 @@ private:
                     ("basic_registrar: class '", a_nm.m_class, "' must be "
                      "previously registered using reg_class<T> call!");
             // Construct an instance of class T:
-            p.reset(static_cast<BaseT*>((cit->second.m_ctor)()));
+            p.reset(static_cast<T*>((cit->second.m_ctor)()));
         }
 
         assert(p);
@@ -197,8 +192,9 @@ private:
                     "with the instance type '", it->first.m_class,
                     "' registered with the registrar!");
 
-        if (a_register)
-            m_instances.insert(std::make_pair(a_nm, res));
+        if (a_register) {
+            m_instances.emplace(a_nm, static_cast<pointer<iwrap>>(pointer<wrap<T>>(new wrap<T>(res))));
+        }
 
         p.release();
 
@@ -430,10 +426,8 @@ public:
     }
 };
 
-template<class T>
-using typed_registrar            = basic_typed_registrar<T, null_lock>;
-template<class T>
-using concurrent_typed_registrar = basic_typed_registrar<T, std::mutex>;
+using typed_registrar            = basic_typed_registrar<null_lock>;
+using concurrent_typed_registrar = basic_typed_registrar<std::mutex>;
 
 } // namespace utxx
 
