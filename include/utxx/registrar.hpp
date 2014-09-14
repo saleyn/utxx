@@ -2,7 +2,7 @@
 //----------------------------------------------------------------------------
 /// \file  registrar.hpp
 //----------------------------------------------------------------------------
-/// \brief A class/instance registrar for supporting "inversion of control"
+/// \brief A class/inst_name registrar for supporting "inversion of control"
 //----------------------------------------------------------------------------
 // Copyright (c) 2014 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2014-09-10
@@ -44,13 +44,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 struct B;
 namespace utxx {
-    struct instance {
-        instance(const std::string& a_class) : m_class(a_class) {}
-        instance(const std::string& a_class, const std::string& a_instance)
+    struct inst_name {
+        inst_name(const std::string& a_class) : m_class(a_class) {}
+        inst_name(const std::string& a_class, const std::string& a_instance)
             : m_class(a_class), m_instance(a_instance)
         {}
 
-        bool operator==(const instance& a) const
+        bool operator==(const inst_name& a) const
         { return m_class == a.m_class && m_instance == a.m_instance; }
 
         std::string m_class;
@@ -59,8 +59,8 @@ namespace utxx {
 } // namespace utxx
 
 namespace std {
-    template <> struct hash<utxx::instance> {
-        size_t operator()(const utxx::instance& k) const {
+    template <> struct hash<utxx::inst_name> {
+        size_t operator()(const utxx::inst_name& k) const {
             using boost::hash_value;
             using boost::hash_combine;
 
@@ -148,15 +148,15 @@ protected:
         const pointer<T>& content() const { return m_content; }
     };
 
-    using instance_map      = std::unordered_map<instance, pointer<iwrap>>;
-    using class_info_map    = std::unordered_map<string,   class_info>;
+    using instance_map      = std::unordered_map<inst_name, pointer<iwrap>>;
+    using class_info_map    = std::unordered_map<string,    class_info>;
 
     mutable Mutex           m_mutex;
     mutable class_info_map  m_reflection; // Contains class metainformation.
     mutable instance_map    m_instances;  // Contains information on all registered
                                           // instances of classes whose information
                                           // is registered in m_reflection.
-    string descr(const instance& a_name) {
+    string descr(const inst_name& a_name) {
         return (a_name.m_instance.empty()
                 ? "singleton" : "instance '" + a_name.m_instance + "'")
              + "of class '" + a_name.m_class + "'";
@@ -180,7 +180,7 @@ protected:
     }
 
     template <class T, class Lock, class Lambda>
-    pointer<T> do_get(Lock& a_lock, instance&& a_nm, Lambda a_ctor,
+    pointer<T> do_get(Lock& a_lock, inst_name&& a_nm, Lambda a_ctor,
                       bool a_use_ctor, bool a_register)
         const // This is so that we can have get<T>() function's const signatures
     {
@@ -301,7 +301,7 @@ public:
     }
     bool is_instance_registered(const string& a_type, const string& a_inst) const {
         std::lock_guard<Mutex> guard(m_mutex);
-        instance nm(a_type, a_inst);
+        inst_name nm(a_type, a_inst);
         return m_instances.find(nm) != m_instances.end();
     }
 
@@ -312,7 +312,7 @@ public:
     template <class T>
     pointer<T> get_and_register(const string& a_inst) {
         static const auto ctor = []() -> T* { return nullptr; };
-        return do_get<T>(m_mutex, instance(type_to_string<T>(), a_inst),
+        return do_get<T>(m_mutex, inst_name(type_to_string<T>(), a_inst),
                          ctor, false, true);
     }
 
@@ -322,7 +322,7 @@ public:
     template <class T, class CtorLambda>
     typename enable_if<!is_same<CtorLambda, const char*>::value, pointer<T>>::type
     get_and_register(const string& a_inst, CtorLambda a_ctor) {
-        return do_get<T>(m_mutex, instance(type_to_string<T>(), a_inst),
+        return do_get<T>(m_mutex, inst_name(type_to_string<T>(), a_inst),
                          a_ctor, true, true);
     }
 
@@ -333,7 +333,7 @@ public:
     template <class T>
     pointer<T> get_and_register(const string& a_type, const string& a_inst) {
         static const auto ctor = []() -> T* { return nullptr; };
-        return do_get<T>(m_mutex, instance(a_type, a_inst), ctor, false, true);
+        return do_get<T>(m_mutex, inst_name(a_type, a_inst), ctor, false, true);
     }
 
     /// Register a unique instance \a a_name of class T with the registrar.
@@ -344,7 +344,7 @@ public:
     template <class T, class CtorLambda>
     pointer<T> get_and_register(const string& a_type,
                                 const string& a_inst, CtorLambda a_ctor) {
-        return do_get<T>(m_mutex, instance(a_type, a_inst), a_ctor, true, true);
+        return do_get<T>(m_mutex, inst_name(a_type, a_inst), a_ctor, true, true);
     }
 
     /// Get a registered singleton of class T or create one.
@@ -353,7 +353,7 @@ public:
     template <class T>
     pointer<T> get_singleton() {
         static const auto ctor = []() -> T* { return nullptr; };
-        return do_get<T>(m_mutex, instance(type_to_string<T>(),""), ctor, false, true);
+        return do_get<T>(m_mutex, inst_name(type_to_string<T>(),""), ctor, false, true);
     }
 
     /// Get a registered singleton of class T or create one.
@@ -364,7 +364,7 @@ public:
     template <class T, class CtorLambda>
     typename enable_if<!is_same<CtorLambda, const char*>::value, pointer<T>>::type
     get_singleton(CtorLambda a_ctor) {
-        return do_get<T>(m_mutex, instance(type_to_string<T>(), ""), a_ctor, true, true);
+        return do_get<T>(m_mutex, inst_name(type_to_string<T>(), ""), a_ctor, true, true);
     }
 
     /// Get a registered singleton of class T or create one.
@@ -378,7 +378,7 @@ public:
     template <class T>
     pointer<T> get_singleton(const string& a_type) {
         static const auto ctor = []() -> T* { return nullptr; };
-        return do_get<T>(m_mutex, instance(a_type, ""), ctor, false, true);
+        return do_get<T>(m_mutex, inst_name(a_type, ""), ctor, false, true);
     }
 
     /// Get a registered singleton of class T or create one.
@@ -393,7 +393,7 @@ public:
     template <class T, class CtorLambda>
     typename enable_if<!is_same<CtorLambda, const char*>::value, pointer<T>>::type
     get_singleton(const string& a_type, CtorLambda a_ctor) {
-        return do_get<T>(m_mutex, instance(a_type, ""), a_ctor, true, true);
+        return do_get<T>(m_mutex, inst_name(a_type, ""), a_ctor, true, true);
     }
 
     /// Get or create a named instance of type T by name.
@@ -408,7 +408,7 @@ public:
             throw utxx::badarg_error
                 ("basic_registrar: instance name cannot be empty!");
         static const auto ctor = []() -> T* { return nullptr; };
-        return do_get<T>(m_mutex, instance(type_to_string<T>(), a_inst), ctor, false, false);
+        return do_get<T>(m_mutex, inst_name(type_to_string<T>(), a_inst), ctor, false, false);
     }
 
     /// Get or create a named instance of type T by name using privided \a a_ctor.
@@ -419,7 +419,7 @@ public:
         if (a_inst.empty())
             throw utxx::badarg_error
                 ("basic_registrar: instance name cannot be empty!");
-        return do_get<T>(m_mutex, instance(type_to_string<T>(), a_inst), a_ctor, true, false);
+        return do_get<T>(m_mutex, inst_name(type_to_string<T>(), a_inst), a_ctor, true, false);
     }
 
     /// Get or create an instance of type \a a_type by name.
@@ -439,7 +439,7 @@ public:
     template <class T>
     pointer<T> get(const string& a_type, const string& a_inst) const {
         static const auto ctor = []() -> T* { return nullptr; };
-        return do_get<T>(m_mutex, instance(a_type, a_inst), ctor, false, false);
+        return do_get<T>(m_mutex, inst_name(a_type, a_inst), ctor, false, false);
     }
 
     /// Get or create a named instance of type BaseT by name using privided \a a_ctor.
@@ -459,7 +459,7 @@ public:
     /// the class type T is known at run-time.
     template <class T, class CtorLambda>
     pointer<T> get(const string& a_type, const string& a_inst, CtorLambda a_ctor) const {
-        return do_get<T>(m_mutex, instance(a_type, a_inst), a_ctor, true, false);
+        return do_get<T>(m_mutex, inst_name(a_type, a_inst), a_ctor, true, false);
     }
 
     /// Remove a registered instance of type \a a_type from the registrar
@@ -470,7 +470,7 @@ public:
 
     /// Remove a registered instance of type \a a_type from the registrar
     void erase(const string& a_type, const string& a_instance) {
-        instance nm(a_type, a_instance);
+        inst_name nm(a_type, a_instance);
 
         std::lock_guard<Mutex> guard(m_mutex);
         auto it = m_instances.find(nm);
@@ -485,7 +485,7 @@ public:
     size_t reg_instance_count() const { return m_instances.size();  }
 
     /// Visit each registered instance by calling:
-    /// \code a_visitor(instance, hash_code, class_info, a_state) \endcode
+    /// \code a_visitor(inst_name, hash_code, class_info, a_state) \endcode
     template <class Visitor, class State = empty>
     void foreach_instance(Visitor& a_visitor, State& a_state) const {
         std::lock_guard<Mutex> guard(m_mutex);
@@ -497,7 +497,7 @@ public:
     }
 
     /// Visit each registered instance by calling:
-    /// \code a_visitor(instance, hash_code, class_info, a_state) \endcode
+    /// \code a_visitor(inst_name, hash_code, class_info, a_state) \endcode
     template <class Visitor, class State = empty>
     void foreach_class(Visitor& a_visitor, State& a_state) const {
         std::lock_guard<Mutex> guard(m_mutex);
