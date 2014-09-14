@@ -36,6 +36,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 using namespace utxx;
 using namespace std;
 
+struct Other {
+    virtual ~Other() {}
+};
+
 struct Base {
     string m_name;
 
@@ -65,12 +69,12 @@ struct C : public Base {
 
 BOOST_AUTO_TEST_CASE( test_registrar )
 {
-    typed_registrar reg;
+    registrar reg;
     int     x = 10;
     string  s = "abc";
 
-    reg.reg_class<A>("a", ref(x));
-    reg.reg_class<B>("b", ref(s));
+    reg.reg_class<A, Base>("a", ref(x));
+    reg.reg_class<B, Base>("b", ref(s));
 
     shared_ptr<Base> a0;
     {
@@ -89,14 +93,20 @@ BOOST_AUTO_TEST_CASE( test_registrar )
     UTXX_CHECK_NO_THROW(reg.get<A>("instance-of-A"));
     UTXX_CHECK_NO_THROW(reg.get<B>("instance-of-B"));
     BOOST_CHECK_THROW  (reg.get<C>("instance-of-C"), utxx::badarg_error);
-    BOOST_CHECK_THROW  (reg.reg_class<A>("singleton-A", ref(x)), utxx::badarg_error);
+    BOOST_CHECK_THROW  ((reg.reg_class<A,Base>("singleton-A", ref(x))), utxx::badarg_error);
 
     auto b1 = reg.get<B>("instance-of-B");
+    BOOST_CHECK(!reg.is_instance_registered<B>("instance-of-B"));
     auto b2 = reg.get<B>("instance-of-B", [&]() { return new B("b2", s); });
+    BOOST_CHECK(!reg.is_instance_registered<B>("instance-of-B"));
 
-    BOOST_CHECK(b1 != b2);
-    BOOST_CHECK_EQUAL("b",  b1->m_name);
-    BOOST_CHECK_EQUAL("b2", b2->m_name);
+    {
+        auto sb1 = b1;
+        auto sb2 = b2;
+        BOOST_CHECK(sb1 != sb2);
+        BOOST_CHECK_EQUAL("b",  sb1->m_name);
+        BOOST_CHECK_EQUAL("b2", sb2->m_name);
+    }
 
     auto b3 = reg.get_and_register<B>("inst3-of-B");
     auto b4 = reg.get<B>("inst3-of-B");
@@ -117,10 +127,6 @@ BOOST_AUTO_TEST_CASE( test_registrar )
     BOOST_CHECK_EQUAL("xxx", a1->m_name);
 
     reg.get_singleton<C>([&]() { return new C(a1, b1, "c", 100.0); });
-
-    // This error is due to the fact that registered instance is of type A
-    // which can't be dynamicly casted to Base:
-    //BOOST_CHECK_THROW(reg.get<Base>("A", "instance-of-A"), utxx::badarg_error);
 
     auto base = reg.get<A>("instance-of-A");
     BOOST_CHECK(a0 == base);
@@ -150,4 +156,24 @@ BOOST_AUTO_TEST_CASE( test_registrar )
     BOOST_CHECK(reg.is_instance_registered<B>("inst3-of-B"));
     reg.erase<B>("inst3-of-B");
     BOOST_CHECK(!reg.is_instance_registered<B>("inst3-of-B"));
+}
+
+BOOST_AUTO_TEST_CASE( test_registrar_refcnt )
+{
+    registrar reg;
+
+    int    x = 5;
+    string s = "ok";
+
+    auto a = reg.get<A>("i-am-A", [&]() { return new A("instance1", ref(x)); });
+    BOOST_CHECK_EQUAL(1u, a.use_count());
+    BOOST_CHECK_EQUAL(0u, reg.reg_instance_count());
+
+    auto b = reg.get_and_register<B>("i-am-B", [&]() { return new B("b1", s); });
+    BOOST_CHECK_EQUAL(2u, b.use_count());
+    BOOST_CHECK_EQUAL(1u, reg.reg_instance_count());
+
+    reg.erase<B>("i-am-B");
+    BOOST_CHECK_EQUAL(1u, b.use_count());
+    BOOST_CHECK_EQUAL(0u, reg.reg_instance_count());
 }
