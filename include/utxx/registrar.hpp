@@ -181,7 +181,8 @@ protected:
             return static_cast<BaseT*>(new T(std::forward<CtorArgs>(args)...));
         };
 
-        m_reflection.emplace(type, class_info(type, ctor, typeid(T), typeid(BaseT), a_info));
+        m_reflection.emplace(type, class_info(type, ctor,
+                             typeid(T).hash_code(), typeid(BaseT).hash_code(), a_info));
     }
 
     template <class T, class Lock, class Lambda>
