@@ -44,12 +44,13 @@ TEST_UTXX_SRCS = \
 	test_path.cpp \
 	test_pcap.cpp \
 	test_pmap.cpp \
-    test_print.cpp \
+	test_print.cpp \
 	test_persist_array.cpp \
 	test_persist_blob.cpp \
 	test_pidfile.cpp \
+	test_registrar.cpp \
 	test_robust_mutex.cpp \
-    test_ring_buffer.cpp \
+	test_ring_buffer.cpp \
 	test_running_stat.cpp \
 	test_scope_exit.cpp \
 	test_shared_queue.cpp \

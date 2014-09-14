@@ -55,24 +55,28 @@ namespace utxx {
         }
     } // namespace detail
 
-    /**
-     * Return demangled name of a given C++ type.
-     */
+    /// Return demangled name of a given C++ type.
     template <typename T>
     std::string type_to_string() {
         return detail::demangle(typeid(T).name());
     }
 
     template <typename T>
-    std::string type_to_string(T) {
-        return type_to_string<T>();
+    std::string type_to_string(const T& t) {
+        return detail::demangle(typeid(t).name());
+    }
+
+    /// Return demangled name of a given C++ type.
+    template <typename T>
+    std::string type_to_string(T&& t) {
+        return detail::demangle(typeid(t).name());
     }
 
     /// This function demangles a single C++ type name contained
     /// in a given string.
     inline std::string demangle(const char* a_str) {
         char temp[256];
-        //first, try to find a dmangled demangle a c++ name
+        //first, try to find a dmangled c++ name
         if (sscanf(a_str, "%*[^(]%*[^_]%255[^)+]", temp) == 1) {
             return detail::demangle(temp);
         }

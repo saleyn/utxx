@@ -66,6 +66,15 @@ BOOST_AUTO_TEST_CASE( test_meta )
     BOOST_STATIC_ASSERT(4  == upper_power<3,  2>::value);
     BOOST_STATIC_ASSERT(16 == upper_power<15, 2>::value);
     BOOST_STATIC_ASSERT(32 == upper_power<32, 2>::value);
+
+#if __cplusplus >= 201103L
+    auto  lambda = [](int i) { return long(i*10); };
+    using traits = function_traits<decltype(lambda)>;
+
+    static_assert(std::is_same<long, traits::result_type>::value,  "err");
+    static_assert(std::is_same<int,  traits::arg<0>::type>::value, "err");
+#endif
+
 }
 
 #endif
