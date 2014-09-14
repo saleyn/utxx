@@ -98,20 +98,25 @@ struct basic_registrar
         class_info(const class_info&) = default;
         class_info(class_info&&)      = default;
 
-        class_info(const std::function<void* ()>& a_ctor,
-                   std::type_index a_cls_idx,
-                   std::type_index a_base_idx,
+        class_info(const string&      a_cls_name,
+                   const constructor& a_ctor,
+                   size_t             a_cls_hashcode,
+                   size_t             a_base_hashcode,
                    const ReflectionInfo& a_info)
-            : m_ctor(a_ctor)
-            , m_class_hashcode(a_cls_idx.hash_code())
-            , m_base_hashcode(a_base_idx.hash_code()), m_info(a_info)
+            : m_class_name(a_cls_name)
+            , m_ctor(a_ctor)
+            , m_class_hashcode(a_cls_hashcode)
+            , m_base_hashcode(a_base_hashcode)
+            , m_info(a_info)
         {}
 
+        const string&         class_name()     const { return m_class_name; }
         const constructor&    ctor()           const { return m_ctor; }
         const size_t          class_hashcode() const { return m_class_hashcode; }
         const size_t          base_hashcode()  const { return m_base_hashcode;  }
         const ReflectionInfo& info()           const { return m_info; }
     private:
+        string          m_class_name;
         constructor     m_ctor;
         size_t          m_class_hashcode;
         size_t          m_base_hashcode;
@@ -176,7 +181,7 @@ protected:
             return static_cast<BaseT*>(new T(std::forward<CtorArgs>(args)...));
         };
 
-        m_reflection.emplace(type, class_info(ctor, typeid(T), typeid(BaseT), a_info));
+        m_reflection.emplace(type, class_info(type, ctor, typeid(T), typeid(BaseT), a_info));
     }
 
     template <class T, class Lock, class Lambda>
