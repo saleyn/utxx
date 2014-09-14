@@ -1,4 +1,4 @@
-// vim:ts=2:et:sw=2
+// vim:ts=4:et:sw=4
 //----------------------------------------------------------------------------
 /// \file  registrar.hpp
 //----------------------------------------------------------------------------
@@ -247,6 +247,12 @@ protected:
     }
 
 public:
+    /// Singleton of the global object/class registrar
+    static basic_registrar& instance() {
+        static basic_registrar s_instance;
+        return s_instance;
+    }
+    
     /// Register a class T with the registrar.
     /// The registrar will be able to create instances of T dynamically
     /// using a constructor in the form:
