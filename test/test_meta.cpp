@@ -40,7 +40,15 @@ using namespace utxx;
 
 int& test_it (int& i) { return i; }
 
-#if __cplusplus >= 201103L
+struct eval_tester {
+    int a = 10;
+    int operator()()     {return a;}
+    int operator()(int n){return a+n;}
+    int triple()         {return a*3;}
+};
+
+int add_one(int n) { return n+1; }
+
 
 BOOST_AUTO_TEST_CASE( test_meta )
 {
@@ -68,13 +76,35 @@ BOOST_AUTO_TEST_CASE( test_meta )
     BOOST_STATIC_ASSERT(32 == upper_power<32, 2>::value);
 
 #if __cplusplus >= 201103L
-    auto  lambda = [](int i) { return long(i*10); };
-    using traits = function_traits<decltype(lambda)>;
+    {
+        auto  lambda = [](int i, int j) { return long(i*10 + j); };
+        using traits = function_traits<decltype(lambda)>;
 
-    static_assert(std::is_same<long, traits::result_type>::value,  "err");
-    static_assert(std::is_same<int,  traits::arg<0>::type>::value, "err");
+        static_assert(std::is_same<long, traits::result_type>::value,  "err");
+        static_assert(std::is_same<int,  traits::arg<0>::type>::value, "err");
+    }
+
+    {
+        eval_tester ttt;
+
+        // free function
+        BOOST_CHECK_EQUAL(1, eval(add_one,0));
+
+        // lambda function
+        BOOST_CHECK_EQUAL(2, eval([](int n){return n+1;},1));
+
+        // functor
+        BOOST_CHECK_EQUAL(10, eval(ttt));
+        BOOST_CHECK_EQUAL(14, eval(ttt,4));
+
+        // member function
+        BOOST_CHECK_EQUAL(30, eval(&eval_tester::triple,ttt));
+
+        // member object
+        //eval(&eval_tester::a, &ttt)++; // increment a by reference
+        BOOST_CHECK_EQUAL(10, eval(&eval_tester::a, ttt));
+    }
 #endif
 
 }
 
-#endif

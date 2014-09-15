@@ -34,9 +34,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_META_HPP_
 
 #include <cstddef>
+
 #if __cplusplus >= 201103L
-#include <type_traits>
-#include <tuple>
+#  include <type_traits>
+#  include <tuple>
+#  include <utility>
 #endif
 
 namespace utxx {
@@ -124,8 +126,7 @@ struct to_int {
 
 // For generic types, directly use the result of the signature of its 'operator()'
 template <typename T>
-struct function_traits
-    : public function_traits<decltype(&T::operator())>
+struct function_traits : public function_traits<decltype(&T::operator())>
 {};
 
 // Specialization for pointers to member function
@@ -135,7 +136,8 @@ struct function_traits<ReturnType(ClassType::*)(Args...) const>
     /// Arity is the number of arguments
     enum { arity = sizeof...(Args) };
 
-    typedef ReturnType result_type;
+    typedef ReturnType          result_type;
+    typedef std::tuple<Args...> args_tuple;
 
     template <size_t i>
     struct arg
@@ -145,6 +147,53 @@ struct function_traits<ReturnType(ClassType::*)(Args...) const>
         typedef typename std::tuple_element<i, std::tuple<Args...>>::type type;
     };
 };
+
+//-----------------------------------------------------------------------------
+// Evaluation of anything
+//-----------------------------------------------------------------------------
+// functions, functors, lambdas, etc.
+template<
+    class F, class... Args,
+    class = typename std::enable_if<!std::is_member_function_pointer<F>::value>::type,
+    class = typename std::enable_if<!std::is_member_object_pointer<F>::value>::type
+    >
+auto eval(F&& f, Args&&... args) -> decltype(f(std::forward<Args>(args)...))
+{
+    return f(std::forward<Args>(args)...);
+}
+
+// const member function
+template<class R, class C, class... Args>
+auto eval(R(C::*f)() const, const C& c, Args&&... args) -> R
+{
+    return (c.*f)(std::forward<Args>(args)...);
+}
+
+template<class R, class C, class... Args>
+auto eval(R(C::*f)() const, C& c, Args&&... args) -> R
+{
+    return (c.*f)(std::forward<Args>(args)...);
+}
+
+// non-const member function
+template<class R, class C, class... Args>
+auto eval(R(C::*f)(), C& c, Args&&... args) -> R
+{
+    return (c.*f)(std::forward<Args>(args)...);
+}
+
+// member object
+template<class R, class C>
+auto eval(R(C::*m), const C& c) -> const R&
+{
+    return c.*m;
+}
+
+template<class R, class C>
+auto eval(R(C::*m), C& c) -> R&
+{
+    return c.*m;
+}
 
 #endif
 

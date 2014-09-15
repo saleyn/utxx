@@ -44,6 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/shared_ptr.hpp>
 #include <sys/socket.h>
 #include <string.h>
+#include <utxx/typeinfo.hpp>
 
 namespace utxx {
 
@@ -72,7 +73,7 @@ public:
 
     std::ostream& print_backtrace(std::ostream& out, const char* a_prefix = "") const {
         for(size_t i = 0; i < m_size; i++)
-            out << a_prefix << m_symbols[i] << std::endl;
+            out << a_prefix << detail::demangle(m_symbols[i]) << std::endl;
         return out;
     }
 
