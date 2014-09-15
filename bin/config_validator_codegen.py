@@ -485,15 +485,17 @@ class ConfigGenerator(object):
 
             for n in node.xpath("./name"):
                 self.check_valid_attribs(n.attrib.keys(), ['val','desc'], n.tag, n)
-                f.write('%sl_names.insert("%s", %s);\n' % \
-                        (ws1, self.value_to_string(n.attrib.get('val'), tp),
-                         n.attrib.get('desc', default="")))
+                val  = n.attrib.get('val')
+                desc = n.attrib.get('desc')
+                f.write('%sl_names.insert(VAL_%s());%s\n' % \
+                        (ws1, format_name(val), "// " + desc if desc else ""))
 
             for n in node.xpath("./value"):
                 self.check_valid_attribs(n.attrib.keys(), ['val','desc'], n.tag, n)
-                f.write('%sl_values.insert(variant(%s), "%s");\n' % \
-                        (ws1, self.value_to_string(n.attrib.get('val'), valtype),
-                         n.attrib.get('desc', default="")))
+                val  = n.attrib.get('val')
+                desc = n.attrib.get('desc')
+                f.write('%sl_values.insert(variant(%s));%s\n' % \
+                        (ws1, self.value_to_string(val), "// " + desc if desc else ""))
 
             if tp:
                 str_tp = self.string_to_type(tp)

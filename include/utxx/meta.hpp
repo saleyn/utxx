@@ -33,8 +33,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_META_HPP_
 #define _UTXX_META_HPP_
 
-#include <type_traits>
 #include <cstddef>
+#if __cplusplus >= 201103L
+#include <type_traits>
+#include <tuple>
+#endif
 
 namespace utxx {
 
