@@ -485,7 +485,7 @@ class ConfigGenerator(object):
 
             for n in node.xpath("./name"):
                 self.check_valid_attribs(n.attrib.keys(), ['val','desc'], n.tag, n)
-                f.write('%sl_names.insert("%s", "%s");\n' % \
+                f.write('%sl_names.insert("%s", %s);\n' % \
                         (ws1, self.value_to_string(n.attrib.get('val'), tp),
                          n.attrib.get('desc', default="")))
 
