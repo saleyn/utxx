@@ -495,7 +495,7 @@ class ConfigGenerator(object):
                 val  = n.attrib.get('val')
                 desc = n.attrib.get('desc')
                 f.write('%sl_values.insert(variant(%s));%s\n' % \
-                        (ws1, self.value_to_string(val), "// " + desc if desc else ""))
+                        (ws1, self.value_to_string(val, tp), "// " + desc if desc else ""))
 
             if tp:
                 str_tp = self.string_to_type(tp)
