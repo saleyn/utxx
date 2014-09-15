@@ -81,6 +81,9 @@ BOOST_AUTO_TEST_CASE( test_scope_exit )
         BOOST_REQUIRE_EQUAL(4, i);
     }
     BOOST_REQUIRE_EQUAL(5, i);
+
+    UTXX_SCOPE_EXIT([]() { return 0; });
+    UTXX_SCOPE_EXIT([]() { return 1; });
 }
 
 #endif

@@ -419,7 +419,7 @@ class ConfigGenerator(object):
         ws1 = '  ' + ws
         ws2 = '  ' + ws1
 
-        for node in root.xpath("./option"):
+        for node in sorted(set(root.xpath("./option"))):
             f.write(ws  + "{\n")
             f.write(ws1 + "ovec l_children%d; sset l_names; vset l_values;\n" % (level))
             self.process_options(f, node, level+1, 'l_children'+str(level))

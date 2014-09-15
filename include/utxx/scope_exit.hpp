@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #if __cplusplus >= 201103L
 
 #include <functional>
+#include <utxx/compiler_hints.hpp>
 
 namespace utxx {
 
@@ -75,10 +76,12 @@ public:
     using base::base;
 };
 
+#define UTXX_GLUE2(A,B,C) A##B##C
+#define UTXX_GLUE(A,B,C) UTXX_GLUE2(A,B,C)
 #define UTXX_SCOPE_EXIT(Fun) \
-    auto __on_exit##__LINE__##_fun = Fun; \
-    utxx::on_scope_exit<decltype(__on_exit##__LINE__##_fun)> \
-        __on_exit##__LINE__(__on_exit##__LINE__##_fun)
+    auto UTXX_GLUE(__on_exit, __LINE__, _fun) = Fun; \
+    utxx::on_scope_exit<decltype(UTXX_GLUE(__on_exit, __LINE__, _fun))> \
+        UTXX_GLUE(__on_exit, __LINE__, _var) (UTXX_GLUE(__on_exit, __LINE__, _fun))
 
 } // namespace utxx
 

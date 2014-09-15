@@ -40,6 +40,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // Branch prediction optimization (see http://lwn.net/Articles/255364/)
 namespace utxx {
 
+#define UTXX_STRINGIFY(x) #x
+#define UTXX_TOSTRING(x)                    UTXX_STRINGIFY(x)
+#define UTXX_FILE_SRC_LOCATION __FILE__ ":" UTXX_TOSTRING(__LINE__)
+
 #ifndef NO_HINT_BRANCH_PREDICTION
     inline bool likely(bool expr)   { return boost::lockfree::detail::likely  (expr); }
     inline bool unlikely(bool expr) { return boost::lockfree::detail::unlikely(expr); }
