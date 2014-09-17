@@ -126,7 +126,7 @@ protected:
 
     /// Deallocate any heap space occupied by the buffer.
     void deallocate() {
-        if (m_begin != m_data && N) {
+        if (!N || (m_begin != m_data)) {
             alloc_t::deallocate(m_begin, max_size());
             m_begin = m_data;
             m_end   = m_begin + N;
