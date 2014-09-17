@@ -75,7 +75,27 @@ protected:
     size_t  m_wr_lwm;
     char    m_data[N];
 
- public:
+    // Doesn't free the buffer pointed by m_begin!
+    // Only use in move operations!
+    void repoint(basic_io_buffer&& a_rhs) {
+        deallocate();
+        a_rhs.crunch();
+        m_begin  = (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_begin);
+        m_end    = m_begin + (a_rhs.m_end    - a_rhs.m_begin);
+        m_rd_ptr = m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin);
+        m_wr_ptr = m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin);
+        m_wr_lwm = a_rhs.m_wr_lwm;
+
+        if (a_rhs.m_begin == a_rhs.m_data && a_rhs.size()) {
+            assert(N && N >= a_rhs.size());
+            memcpy(m_begin, a_rhs.m_rd_ptr, a_rhs.size());
+        }
+
+        a_rhs.m_begin = a_rhs.m_data;
+        a_rhs.m_end   = a_rhs.m_begin + N;
+        a_rhs.reset();
+    }
+public:
     /// Construct the I/O buffer.
     /// @param a_lwm is the low-memory watermark that should be set to 
     ///         exceed the maximum expected message size to be stored
@@ -100,22 +120,14 @@ protected:
 
     #if __cplusplus >= 201103L
     basic_io_buffer(basic_io_buffer&& a_rhs)
-        : alloc_t(a_rhs)
+        : alloc_t (std::move(static_cast<alloc_t&&>(a_rhs)))
     {
-        *this = std::move(a_rhs);
+        repoint(std::forward<basic_io_buffer&&>(a_rhs));
     }
 
     void operator=(basic_io_buffer&& a_rhs) {
-        *(alloc_t*)this = (alloc_t&&)a_rhs;
-        m_begin  = (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_data);
-        m_end    = m_begin + (a_rhs.m_end - a_rhs.m_begin);
-        m_rd_ptr = m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin);
-        m_wr_ptr = m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin);
-        m_wr_lwm = a_rhs.m_wr_lwm;
-
-        if (a_rhs.size() && a_rhs.m_begin != a_rhs.m_data)
-            memcpy(m_rd_ptr, a_rhs.m_rd_ptr, a_rhs.size());
-        a_rhs.reset();
+        static_cast<alloc_t*>(this)->operator=(std::move(static_cast<alloc_t&&>(a_rhs)));
+        repoint(std::forward<basic_io_buffer&&>(a_rhs));
     }
     #endif
 
@@ -126,8 +138,9 @@ protected:
 
     /// Deallocate any heap space occupied by the buffer.
     void deallocate() {
-        if (!N || (m_begin != m_data)) {
-            alloc_t::deallocate(m_begin, max_size());
+        if (m_begin != m_data) {
+            if (m_end > m_begin)
+                alloc_t::deallocate(m_begin, max_size());
             m_begin = m_data;
             m_end   = m_begin + N;
         }
