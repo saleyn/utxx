@@ -111,6 +111,7 @@ namespace detail {
         operator const  char*() const  { return m_data; }
         operator        char*()        { return m_data; }
 
+        /// Return a string with trailing characters matching \a rtrim removed.
         std::string to_string(char rtrim = '\0') const {
             const char* end = m_data+N;
             if (rtrim)
@@ -182,17 +183,30 @@ namespace detail {
         /// with optional padding on the right.
         /// @param n is the number to convert
         /// @param a_precision number of digits abter decimal point
-        /// @param a_pad optional padding character.
+        /// @param a_trail optional trailing character.
         /// @param a_compact strip extra '0' at the end
-        int from_double(double n, int a_precision=6, char a_pad='\0', bool a_compact = true) {
-            int k = ftoa_fast(n, m_data, N, a_precision, a_compact);
-            if (a_pad && k < N)
+        /// @returns number of characters written, or -1 on error
+        int from_double(double n, int a_precision, bool a_compact, char a_trail='\0') {
+            int k = ftoa_left(n, m_data, N, a_precision, a_compact);
+            if (a_trail && k < N)
                 for (char* p = m_data+k, *end = m_data+N; p != end; ++p)
-                    *p = a_pad;
+                    *p = a_trail;
             return k;
         }
 
-        /// Store the variable of type T as binary integer using big 
+        /// Convert the double to a string representation aligned to right
+        /// with optional padding on the right.
+        /// @param n is the number to convert
+        /// @param a_precision number of digits abter decimal point
+        /// @param a_lef_pad   left-padding character
+        /// @returns number of characters written, or -1 on error
+        int from_double(double n, int a_precision, char a_left_pad) {
+            try { ftoa_right(n, m_data, N, a_precision, a_left_pad); }
+            catch (std::invalid_argument& e) { return -1; }
+            return N;
+        }
+
+        /// Store the variable of type T as binary integer using big
         /// endian encoding.
         template <typename T>
         void from_binary(T a) {

@@ -99,7 +99,7 @@ namespace detail {
         }
         void do_print(double a)
         {
-            int n = ftoa_fast(a, m_pos, capacity(), 6, true);
+            int n = ftoa_left(a, m_pos, capacity(), 6, true);
             if (unlikely(n < 0)) {
                 n = snprintf(m_pos, capacity(), "%.6f", a);
                 if (unlikely(m_pos + n > m_end)) {
@@ -110,16 +110,9 @@ namespace detail {
             m_pos += n;
         }
         void do_print(fixed&& a) {
-            char buf[128];
-            int n = ftoa_fast(a.value(), buf, sizeof(buf), a.precision(), false);
-            if (unlikely(n < 0))
-                return print(a.value());
             reserve(a.digits());
-            int pad = a.digits() - n;
-            if (pad > 0)
-                while (pad--) *m_pos++ = a.fill();
-            memcpy(m_pos, buf, n);
-            m_pos += n;
+            ftoa_right(a.value(), m_pos, a.digits(), a.precision(), a.fill());
+            m_pos += a.digits();
         }
         void do_print(const char* a) {
             const char* p = strchr(a, '\0');

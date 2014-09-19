@@ -570,60 +570,77 @@ BOOST_AUTO_TEST_CASE( test_convert_skip_left )
     BOOST_REQUIRE_EQUAL(12345, m);
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_ftoa_right )
+BOOST_AUTO_TEST_CASE( test_convert_ftoa )
 {
     char buf[32];
-    int n = ftoa_fast(0.6, buf, sizeof(buf), 3, false);
+    int n = ftoa_left(0.6, buf, sizeof(buf), 3, false);
     BOOST_REQUIRE_EQUAL("0.600", buf);
     BOOST_REQUIRE_EQUAL(5, n);
 
-    n = ftoa_fast(123.19, buf, sizeof(buf), 3, true);
+    n = ftoa_left(123.19, buf, sizeof(buf), 3, true);
     BOOST_REQUIRE_EQUAL("123.19", buf);
     BOOST_REQUIRE_EQUAL(6, n);
 
-    n = ftoa_fast(0.999, buf, sizeof(buf), 2, false);
+    n = ftoa_left(0.999, buf, sizeof(buf), 2, false);
     BOOST_REQUIRE_EQUAL("1.00", buf);
     BOOST_REQUIRE_EQUAL(4, n);
 
-    n = ftoa_fast(1.005, buf, sizeof(buf), 2, false);
+    n = ftoa_left(1.005, buf, sizeof(buf), 2, false);
     BOOST_REQUIRE_EQUAL("1.01", buf);
     BOOST_REQUIRE_EQUAL(4, n);
 
-    n = ftoa_fast(1.005, buf, sizeof(buf), 2, true);
+    n = ftoa_left(1.005, buf, sizeof(buf), 2, true);
     BOOST_REQUIRE_EQUAL("1.01", buf);
     BOOST_REQUIRE_EQUAL(4, n);
 
-    n = ftoa_fast(-1.0, buf, sizeof(buf), 20, false);
+    n = ftoa_left(-1.0, buf, sizeof(buf), 20, false);
     BOOST_REQUIRE_EQUAL("-1.00000000000000000000", buf);
     BOOST_REQUIRE_EQUAL(23, n);
 
     union {double d; int64_t i;} f;
     f.i = 0x7ff0000000000000ll;
-    n = ftoa_fast(f.d, buf, sizeof(buf), 29, true);
+    n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
     BOOST_REQUIRE_EQUAL("inf", buf);
     BOOST_REQUIRE_EQUAL(3, n);
 
     f.i = 0xfff0000000000000ll;
-    n = ftoa_fast(f.d, buf, sizeof(buf), 29, true);
+    n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
     BOOST_REQUIRE_EQUAL("-inf", buf);
     BOOST_REQUIRE_EQUAL(4, n);
 
     f.i = 0x7ff0000000000001ll;
-    n = ftoa_fast(f.d, buf, sizeof(buf), 29, true);
+    n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
     BOOST_REQUIRE_EQUAL("nan", buf);
     BOOST_REQUIRE_EQUAL(3, n);
 
     f.i = 0xfff0000000000001ll; /* The left-most sign bif doesn't matter for nan */
-    n = ftoa_fast(f.d, buf, sizeof(buf), 29, true);
+    n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
     BOOST_REQUIRE_EQUAL("nan", buf);
     BOOST_REQUIRE_EQUAL(3, n);
 
-    n = ftoa_fast(1.0, buf, sizeof(buf), 29, true);
+    n = ftoa_left(1.0, buf, sizeof(buf), 29, true);
     BOOST_REQUIRE_EQUAL("1.0", buf);
     BOOST_REQUIRE_EQUAL(3, n);
 
-    n = ftoa_fast(1.0, buf, sizeof(buf), 30, true);
+    n = ftoa_left(1.0, buf, sizeof(buf), 30, true);
     BOOST_REQUIRE_EQUAL(-1, n);
+
+    BOOST_CHECK_THROW(ftoa_right(1.0, buf, -4, 2), std::invalid_argument);
+    BOOST_CHECK_THROW(ftoa_right(1.0, buf,  4, 4), std::invalid_argument);
+
+    ftoa_right(1.0, buf, 5, 2);
+    BOOST_CHECK_EQUAL(" 1.00", std::string(buf, 5));
+    ftoa_right(-1.0, buf, 5, 2);
+    BOOST_CHECK_EQUAL("-1.00", std::string(buf, 5));
+    BOOST_CHECK_THROW(ftoa_right(-1.0, buf, 4, 2), std::invalid_argument);
+
+    ftoa_right(189.23, buf, 9, 2, '0');
+    BOOST_CHECK_EQUAL("000189.23", std::string(buf, 9));
+
+    ftoa_right(189.23, buf, 11, 4, '0');
+    BOOST_CHECK_EQUAL("000189.2300", std::string(buf, 11));
+
+
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )

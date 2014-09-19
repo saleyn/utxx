@@ -697,10 +697,27 @@ bool fast_atoi(const std::string& a_value, T* a_result,
 }
 
 //--------------------------------------------------------------------------------
-/// Convert a floating point number to string
-/// @return
+// Floating point formatting
 //--------------------------------------------------------------------------------
-int ftoa_fast(double f, char *outbuf, int maxlen, int precision, bool compact = true);
+
+/// Convert a floating point number to a left-justified zero-terminated string
+/// @param f is the number to convert
+/// @param outbuf is the output buffer
+/// @param maxlen is the size of the output buffer
+/// @param precision is the number of digits past the decimal point
+/// @param compact when true extra trailing 0's will be truncated
+/// @return number of digits written or -1 on error
+int  ftoa_left(double f, char* outbuf, int maxlen, int precision, bool compact = true);
+
+/// Convert a floating point number to a right-justified non-zero-terminated string
+/// @param f is the number to convert
+/// @param outbuf is the output buffer
+/// @param width is the width of the width of formatted output (buffer space
+///              must be sufficient!)
+/// @param precision is the number of digits past the decimal point
+/// @param lpad      is the left-padding character
+void ftoa_right(double f, char* outbuf, int width, int precision, char lpad = ' ')
+    throw (std::invalid_argument);
 
 //--------------------------------------------------------------------------------
 /// Parses floating point numbers with fixed number of decimal digits from string.
