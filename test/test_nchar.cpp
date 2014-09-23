@@ -94,6 +94,19 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         BOOST_CHECK_EQUAL(3u, rc.len('\n'));
         BOOST_CHECK_EQUAL(6u, rc.len('\0'));
         BOOST_CHECK_EQUAL(6u, rc.len('X'));
+
+        char buf1[20];
+        char* p = rc.copy_to(buf1, sizeof(buf1), '\n');
+        BOOST_CHECK_EQUAL("abc",  buf1);
+        BOOST_CHECK_EQUAL(buf1+3, p);
+
+        p = rc.copy_to(buf1, sizeof(buf1), ' ');
+        BOOST_CHECK_EQUAL("abc\n",  buf1);
+        BOOST_CHECK_EQUAL(buf1+4, p);
+
+        p = rc.copy_to(buf1, sizeof(buf1), '\0');
+        BOOST_CHECK_EQUAL("abc\n  ", buf1);
+        BOOST_CHECK_EQUAL(buf1+6, p);
     }
 }
 
