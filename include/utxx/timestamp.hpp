@@ -118,22 +118,27 @@ public:
         char* a_buf, const time_val& a_time, stamp_type a_type, bool a_utc=false,
         char  a_delim = '\0', char a_sep = '.');
 
-    inline static void write_time(
-        char* a_buf, time_t seconds, size_t eos_pos = 8)
+    inline static char* write_time(
+        char* a_buf, time_t seconds, size_t eos_pos = 8, char a_delim = ':')
     {
         unsigned hour,min,sec;
         std::tie(hour,min,sec) = time_val::to_hms(seconds);
         char* p = a_buf;
         int n = hour / 10;
         *p++  = '0' + n;    hour -= n*10;
-        *p++  = '0' + hour;
-        *p++  = ':';        n = min / 10;
+        *p++  = '0' + hour; n = min / 10;
+        if (a_delim) *p++  = a_delim;
         *p++  = '0' + n;    min -= n*10;
-        *p++  = '0' + min;
-        *p++  = ':';        n = sec / 10;
+        *p++  = '0' + min;  n = sec / 10;
+        if (a_delim) *p++  = a_delim;
         *p++  = '0' + n;    sec -= n*10;
         *p++  = '0' + sec;
-        if (eos_pos) a_buf[eos_pos] = '\0';
+        if (eos_pos) {
+            a_buf[eos_pos] = '\0';
+            char* end = a_buf + eos_pos;
+            return end < p ? end : p;
+        }
+        return p;
     }
 
     /// Update internal timestamp by calling gettimeofday().
