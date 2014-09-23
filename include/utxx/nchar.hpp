@@ -100,6 +100,11 @@ namespace detail {
             return copy(dest, n, m_data, N, delim);        // from utxx/string.hpp
         }
 
+        template <int M>
+        char* copy_to(char (&dest)[M], char delim = '\0') const {
+            return copy(dest, M, m_data, N, delim);        // from utxx/string.hpp
+        }
+
         void fill(char a_ch, int a_offset = 0) {
             const int n = N - a_offset;
             if (n > 0)
