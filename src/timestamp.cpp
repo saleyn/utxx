@@ -145,9 +145,10 @@ void timestamp::write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
     // If same day - use cached string value
-    if (unlikely(a_utc_seconds >= s_next_utc_midnight_seconds))
+    if (unlikely(a_utc_seconds >= s_next_utc_midnight_seconds)) {
+        update_midnight_seconds(now_utc());
         internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
-    else {
+    } else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
         if (eos_pos) a_buf[eos_pos] = '\0';
     }
