@@ -91,6 +91,14 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     }
 
     {
+        time_val ts(10);
+        BOOST_CHECK_EQUAL(10,     ts.sec());
+        BOOST_CHECK_EQUAL(0,      ts.usec());
+
+        ts.set(15);
+        BOOST_CHECK_EQUAL(15,     ts.sec());
+        BOOST_CHECK_EQUAL(0,      ts.usec());
+
         time_val t(10.123);
         BOOST_CHECK_EQUAL(10,     t.sec());
         BOOST_CHECK_EQUAL(123000, t.usec());
