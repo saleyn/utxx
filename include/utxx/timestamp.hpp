@@ -78,7 +78,7 @@ protected:
     static volatile long s_syscalls;
     #endif
 
-    static void internal_write_date(
+    static char* internal_write_date(
         char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep);
 
     static void update_midnight_seconds(const time_val& a_now);
@@ -98,7 +98,8 @@ public:
     /// the function appends '-' at the end of the YYYYMMDD string.
     /// The function sets a_buf[eos_pos] = '\0'.
     /// @param a_sep if not '\0' will insert date delimiting character.
-    static void write_date(
+    /// @return pointer past the last written character
+    static char* write_date(
         char* a_buf, time_t a_utc_seconds, bool a_utc=false,
         size_t eos_pos=8, char a_sep = '\0');
 

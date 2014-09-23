@@ -96,13 +96,8 @@ namespace detail {
         /// The buffer is copied until the \a delim character is found or \a n
         /// is reached.
         /// @return pointer to the last byte copied
-        char* copy_to(char* dest, size_t n, char delim = '\0') {
-            const char* s = m_data;
-            const char* b = dest;
-            const char* e = s + std::min<size_t>(N, n-1);
-            for(; *s != delim && s != e; *dest++ = *s++);
-            *dest = '\0';
-            return dest;
+        char* copy_to(char* dest, size_t n, char delim = '\0') const {
+            return copy(dest, n, m_data, N, delim);        // from utxx/string.hpp
         }
 
         void fill(char a_ch, int a_offset = 0) {

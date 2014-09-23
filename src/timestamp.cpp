@@ -117,7 +117,7 @@ char* timestamp::write_time(
 }
 
 
-void timestamp::internal_write_date(
+char* timestamp::internal_write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
     assert(s_next_utc_midnight_seconds);
@@ -138,19 +138,27 @@ void timestamp::internal_write_date(
     *p++ = '0' + n; d -= n*10;
     *p++ = '0' + d;
     *p++ = '-';
-    if (eos_pos) a_buf[eos_pos] = '\0';
+    if (eos_pos) {
+        a_buf[eos_pos] = '\0';
+        char*  end = a_buf + eos_pos;
+        return end < p ? end : p;
+    }
+    return p;
 }
 
-void timestamp::write_date(
+char* timestamp::write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
     // If same day - use cached string value
-    if (unlikely(a_utc_seconds >= s_next_utc_midnight_seconds)) {
+    if (unlikely(a_utc_seconds >= s_next_utc_midnight_seconds))
         update_midnight_seconds(now_utc());
-        internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
-    } else {
+
+    if (a_sep)
+        return internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
+    else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
         if (eos_pos) a_buf[eos_pos] = '\0';
+        return a_buf + std::min<size_t>(9, eos_pos);
     }
 }
 

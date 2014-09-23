@@ -73,6 +73,36 @@ namespace utxx {
         return a_value ? "true" : "false";
     }
 
+    /// Copy up to \a n bytes of \a a_src to \a a_dest.
+    /// The buffer is copied until \a a_delim character is found or
+    /// min of \a a_dsize and \a a_slen is reached. The resulting string
+    /// is NULL-terminated
+    /// @return pointer to the last byte copied
+    inline char* copy(char* a_dest, size_t a_dsize, const char* a_src, size_t a_slen, char a_delim='\0') {
+        const char* s  = a_src;
+        const char* de = a_dest + a_dsize;
+        const char* e  = s + std::min<size_t>(a_dsize, a_slen);
+        for(; *s != a_delim && s != e; *a_dest++ = *s++);
+        if (a_dest == de)
+            a_dest--;
+        *a_dest = '\0';
+        return a_dest;
+    }
+
+    template <int N>
+    inline char* copy(char (&a_dest)[N], const char* a_src, size_t a_slen, char a_delim='\0') {
+        return copy(a_dest, N, a_src, a_slen, a_delim);
+    }
+
+    template <int N>
+    inline char* copy(char (&a_dest)[N], const std::string& a_src, char a_delim='\0') {
+        return copy(a_dest, N, a_src.c_str(), a_src.size(), a_delim);
+    }
+
+    inline char* copy(char* a_dest, size_t a_dsize, const std::string& a_src, char a_delim='\0') {
+        return copy(a_dest, a_dsize, a_src.c_str(), a_src.size(), a_delim);
+    }
+
     /// Convert a string to an integer value
     /// \code
     /// std::cout << to_int64("\1\2") << std::endl;
