@@ -259,10 +259,13 @@ namespace utxx {
             return (int64_t)tv.sec() * 1000 + tv.usec() / 1000;
         }
 
-        void add(long _sec, long _us) {
+        time_val& add(long _sec, long _us) {
             m_tv.tv_sec += _sec; m_tv.tv_usec += _us;
             if (_sec || _us) normalize();
+            return *this;
         }
+
+        time_val add(long _sec, long _us) const { return time_val(*this, _sec, _us); }
 
         void add(double interval) {
             long n = long(round(interval*1e6));

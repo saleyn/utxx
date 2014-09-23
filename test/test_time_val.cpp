@@ -152,6 +152,15 @@ BOOST_AUTO_TEST_CASE( test_time_val )
 
         BOOST_CHECK_EQUAL(time_val(0,1005).add_sec(30), tv);
         BOOST_CHECK_EQUAL(time_val(30,5).add_msec(1),   tv);
+
+        bool ok = tv.add_sec(10) == time_val(40, 1005);
+        BOOST_CHECK(ok);
+        BOOST_CHECK_EQUAL(tv.sec(), 40);
+
+        const time_val& now = tv;
+        BOOST_CHECK_EQUAL(time_val(45, 1005), now.add_sec(5));
+        BOOST_CHECK_EQUAL(tv.sec(), 40);
+        BOOST_CHECK_EQUAL(time_val(45, 3005), now.add(5, 2000));
     }
 }
 
