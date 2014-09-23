@@ -158,12 +158,12 @@ void timestamp::update_midnight_seconds(const time_val& a_now)
     struct tm tm;
     localtime_r(&a_now.tv_sec(), &tm);
     s_utc_offset = tm.tm_gmtoff;
+    s_next_utc_midnight_seconds   = (a_now.sec() - a_now.sec() % 86400) + 86400;
+    s_next_local_midnight_seconds = s_next_utc_midnight_seconds  - s_utc_offset;
+
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
     internal_write_date(s_local_timestamp, a_now.sec(), false, 9, '\0');
     internal_write_date(s_utc_timestamp, a_now.sec(), true, 9, '\0');
-
-    s_next_utc_midnight_seconds   = (a_now.sec() - a_now.sec() % 86400) + 86400;
-    s_next_local_midnight_seconds = s_next_utc_midnight_seconds  - s_utc_offset;
 }
 
 const time_val& timestamp::now() {
