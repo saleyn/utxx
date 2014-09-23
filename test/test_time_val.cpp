@@ -140,6 +140,19 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_CHECK_EQUAL(2u,    m);
         BOOST_CHECK_EQUAL(3u,    s);
     }
+    {
+        time_val tv(10, 5);
+        tv.add_sec(50);
+        BOOST_CHECK_EQUAL(time_val(60,5), tv);
+        tv.add_sec(-30);
+        BOOST_CHECK_EQUAL(time_val(30,5), tv);
+
+        tv.add_msec(1);
+        BOOST_CHECK_EQUAL(time_val(30,1005), tv);
+
+        BOOST_CHECK_EQUAL(time_val(0,1005).add_sec(30), tv);
+        BOOST_CHECK_EQUAL(time_val(30,5).add_msec(1),   tv);
+    }
 }
 
 

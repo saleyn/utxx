@@ -270,6 +270,14 @@ namespace utxx {
             add(s, u);
         }
 
+        time_val& add_sec (long seconds)       { m_tv.tv_sec += seconds; return *this; }
+        time_val  add_sec (long seconds) const { time_val tv(*this); return tv.add_sec(seconds); }
+        time_val  add_msec(long ms)      const { time_val tv(*this); return tv.add_msec(ms); }
+        time_val& add_msec(long ms) {
+            long n = ms/1000, m = ms - n*1000; add(n, m*1000);
+            return *this;
+        }
+
         void now() { ::gettimeofday(&m_tv, 0); }
 
         static time_val universal_time() {
