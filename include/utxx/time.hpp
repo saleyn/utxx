@@ -48,8 +48,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
     /// Returns true if y is a leap year
-    inline constexpr bool is_leap(unsigned y) noexcept {
-       return y%400 ? (y%100 ? (y >> 2) : false) : true;
+    inline bool is_leap(unsigned y) noexcept {
+        unsigned  n =  y / 100, rem100 = y - n*100;
+        bool rem400 = (n & 0x3) || rem100; // Is not divisible by 400
+        return !rem400             // 1. The year divisible by 400 is always leap
+            || (rem100 &&          // 2. The year divisible by 100 is not leap
+               !(rem100 & 0x3));   // 3. The year divisible by 4   is leap
     }
 
     /// Returns number of days in a month (no range checking!)
@@ -66,9 +70,13 @@ namespace utxx {
 
     /// Returns number of days singe the beginning of year \a y.
     inline int days_since_beg_of_year(int y, int m, int d) noexcept {
-       int n = 0, leap = is_leap(y);
-       for (int i=1; i < m; n += days_in_a_month(i++, leap));
-       return n;
+        assert(m >= 1 && d <= 12);
+        static const unsigned s_ndays[2][12] = {
+            {0, 31, 31+28, 59+31, 90+30, 120+31, 151+30, 181+31, 212+31, 243+30, 273+31, 304+30},
+            {0, 31, 31+29, 60+31, 91+30, 121+31, 152+30, 182+31, 213+31, 244+30, 274+31, 305+30}
+        };
+        int leap = is_leap(y);
+        return s_ndays[leap][m-1] + d;
     }
 
     /// Return number of days between two y/m/d pairs.
@@ -149,12 +157,12 @@ namespace utxx {
         return a_days >= -4 ? (a_days+4) % 7 : (a_days+5) % 7 + 6;
     }
 
-    /// Convert y/m/d into time since epoch 1970-1-1
+    /// Convert y/m/d into seconds since epoch 1970-1-1
     inline time_t mktime_utc(int y, unsigned m, unsigned d) {
         return to_gregorian_days(y, m, d) * 86400;
     }
 
-    /// Convert date into time since epoch 1970-1-1
+    /// Convert date into seconds since epoch 1970-1-1
     inline time_t mktime_utc(int      year, unsigned month, unsigned day,
                              unsigned hour, unsigned min,   unsigned sec) {
         time_t res = to_gregorian_days(year, month, day) * 86400;

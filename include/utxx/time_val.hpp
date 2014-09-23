@@ -107,7 +107,7 @@ namespace utxx {
         time_val(const time_val& tv, double interval)     { set(tv, interval); }
         time_val(const time_val& a) : m_tv(a.m_tv) {}
 
-        explicit time_val(double interval)  { setd(interval); normalize(); }
+        explicit time_val(double interval)  { setd(interval); }
 
         explicit time_val(const struct timeval& a) {
             m_tv.tv_sec=a.tv_sec; m_tv.tv_usec=a.tv_usec; normalize();

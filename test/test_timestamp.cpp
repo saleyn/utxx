@@ -387,6 +387,22 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 
     p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, true, ':');
     BOOST_REQUIRE_EQUAL("10:09:08.123456", std::string(buf, p - buf));
+
+    BOOST_CHECK(is_leap(0));
+    BOOST_CHECK(is_leap(4));
+    BOOST_CHECK(is_leap(2004));
+    BOOST_CHECK(is_leap(2008));
+    BOOST_CHECK(is_leap(2016));
+    BOOST_CHECK(is_leap(1600));
+    BOOST_CHECK(is_leap(2000));
+    BOOST_CHECK(is_leap(2400));
+    BOOST_CHECK(!is_leap(2001));
+    BOOST_CHECK(!is_leap(2002));
+    BOOST_CHECK(!is_leap(2003));
+    BOOST_CHECK(!is_leap(1700));
+    BOOST_CHECK(!is_leap(1800));
+    BOOST_CHECK(!is_leap(2100));
+    BOOST_CHECK(!is_leap(2200));
 }
 
 BOOST_AUTO_TEST_CASE( test_time_latency )
