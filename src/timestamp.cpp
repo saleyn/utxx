@@ -118,10 +118,10 @@ char* timestamp::write_time(
 
 
 void timestamp::internal_write_date(
-    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
+    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
-    if (unlikely(timestamp::s_next_utc_midnight_seconds))
-        timestamp::update_midnight_seconds(now_utc());
+    assert(s_next_utc_midnight_seconds);
+
     if (!a_utc) a_utc_seconds += timestamp::s_utc_offset;
     int y; unsigned m,d;
     std::tie(y,m,d) = from_gregorian_time(a_utc_seconds);
@@ -131,8 +131,10 @@ void timestamp::internal_write_date(
     *p++ = '0' + n; y -= n*100;  n = y/10;
     *p++ = '0' + n; y -= n*10;
     *p++ = '0' + y; n  = m / 10;
+    if (a_sep) *p++ = a_sep;
     *p++ = '0' + n; m -= n*10;
     *p++ = '0' + m; n  = d / 10;
+    if (a_sep) *p++ = a_sep;
     *p++ = '0' + n; d -= n*10;
     *p++ = '0' + d;
     *p++ = '-';
@@ -140,11 +142,11 @@ void timestamp::internal_write_date(
 }
 
 void timestamp::write_date(
-    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos)
+    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
     // If same day - use cached string value
     if (unlikely(a_utc_seconds >= s_next_utc_midnight_seconds))
-        internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos);
+        internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
     else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
         if (eos_pos) a_buf[eos_pos] = '\0';
@@ -157,8 +159,8 @@ void timestamp::update_midnight_seconds(const time_val& a_now)
     localtime_r(&a_now.tv_sec(), &tm);
     s_utc_offset = tm.tm_gmtoff;
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
-    internal_write_date(s_local_timestamp, a_now.sec(), false, 9);
-    internal_write_date(s_utc_timestamp, a_now.sec(), true, 9);
+    internal_write_date(s_local_timestamp, a_now.sec(), false, 9, '\0');
+    internal_write_date(s_utc_timestamp, a_now.sec(), true, 9, '\0');
 
     s_next_utc_midnight_seconds   = (a_now.sec() - a_now.sec() % 86400) + 86400;
     s_next_local_midnight_seconds = s_next_utc_midnight_seconds  - s_utc_offset;

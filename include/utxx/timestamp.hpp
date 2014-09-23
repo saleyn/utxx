@@ -79,7 +79,7 @@ protected:
     #endif
 
     static void internal_write_date(
-        char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos);
+        char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep);
 
     static void update_midnight_seconds(const time_val& a_now);
 
@@ -94,11 +94,13 @@ public:
     /// Suggested buffer space type needed for format() calls.
     typedef char buf_type[32];
 
-    /// Write local date in format: YYYYMMDD. If \a eos_pos > 8
+    /// Write local date in format: YYYYMMDD, YYYY-MM-DD. If \a eos_pos > 8
     /// the function appends '-' at the end of the YYYYMMDD string.
     /// The function sets a_buf[eos_pos] = '\0'.
+    /// @param a_sep if not '\0' will insert date delimiting character.
     static void write_date(
-        char* a_buf, time_t a_utc_seconds, bool a_utc=false, size_t eos_pos=8);
+        char* a_buf, time_t a_utc_seconds, bool a_utc=false,
+        size_t eos_pos=8, char a_sep = '\0');
 
     /// Write time as string.
     /// Possible formats:
