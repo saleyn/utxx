@@ -176,7 +176,10 @@ void log_msg_info<Alloc>::format_footer()
     if (has_src_location() && lg->show_location()) {
         static const char s_sep =
             boost::filesystem::path("/").native().c_str()[0];
-        m_data.print('|');
+        if (m_data.last() == '\n')
+            m_data.last() = '|';
+        else
+            m_data.print('|');
         const char* q = strrchr(m_src_file, s_sep);
         q = q ? q+1 : m_src_file;
         auto len = m_src_file + m_src_file_len - q;
