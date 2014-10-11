@@ -159,12 +159,10 @@ struct test2 {
         if (barrier != NULL)
             barrier->wait();
 
-        timestamp::now();
+        timer tmr;
         const time_val& last = timestamp::last_time();
         for (int i=0; i < iterations; i++) {
-            hr.start_incr();
             timestamp::now();
-            hr.stop_incr();
             if (last > timestamp::last_time()) {
                 std::cerr << "Backward time jump detected in test2: "
                     << timestamp::to_string(last) << ' '
@@ -173,24 +171,27 @@ struct test2 {
                 break;
             }
         }
-
-        const time_val& tv = hr.elapsed_time();
+        const time_val& tv = tmr.elapsed_time();
         timestamp::buf_type buf;
         timestamp::format(TIME_WITH_USEC, tv, buf, sizeof(buf));
 
         std::stringstream s; s.precision(1);
         s << "Thread" << id << " timestamp::now() " << buf
-          << ", speed=" << std::fixed << ((double)iterations / tv.seconds())
-          << " calls/s,";
+          << ", speed=" << std::fixed << tmr.speed(iterations) << " calls/s,";
         s.precision(3);
-        s << " latency=" << (1000000.0*tv.seconds()/iterations) << " us"
-          << std::endl;
+        s << " latency=" << tmr.latency_usec(iterations) << " us" << std::endl;
         BOOST_MESSAGE(s.str());
 
         // Testing gettimeofday speed
         {
+            caller test(id, "utxx::now_utc()", iterations);
+            test([]{ return now_utc(); });
+        }
+
+        // Testing gettimeofday speed
+        {
             caller test(id, "gettimeofday()", iterations);
-            test([]{ return time_val::universal_time(); });
+            test([]{ time_val tv; gettimeofday(&tv.timeval(), NULL); return tv; });
         }
 
         // Testing boost::universal_time speed

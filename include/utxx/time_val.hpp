@@ -284,6 +284,8 @@ namespace utxx {
             long n = ms/1000, m = ms - n*1000; add(n, m*1000);
             return *this;
         }
+        time_val& add_usec(long us)            { m_tv.tv_usec += us; normalize(); return *this; }
+        time_val  add_usec(long us)      const { time_val tv(*this, 0, us); return tv; }
 
         void now() { ::gettimeofday(&m_tv, 0); }
 
@@ -380,13 +382,6 @@ namespace utxx {
             m_tv.tv_sec += tv.sec(); m_tv.tv_usec += tv.usec(); normalize();
         }
         void operator+= (double  _interval) { add(_interval); }
-        void operator+= (int32_t _sec)      { m_tv.tv_sec += _sec; }
-        void operator+= (int64_t _microsec) {
-            int64_t n = _microsec / N10e6;
-            m_tv.tv_sec  += n;
-            m_tv.tv_usec += (_microsec - (n * N10e6));
-            normalize();
-        }
 
         #if __cplusplus >= 201103L
         time_val& operator=(time_val&& a_rhs) {
@@ -489,23 +484,38 @@ namespace utxx {
     ///     double elapsed = time.seconds();
     /// \endcode
     class timer {
-        time_val* m_result;
         time_val  m_started;
+        time_val  m_elapsed;
+        time_val* m_result;
+
+        void check_stop() { if (m_elapsed.empty()) stop(); }
     public:
-        timer() : m_result(NULL), m_started(time_val::universal_time()) {}
-        timer(time_val& tv) : m_result(tv.ptr()), m_started(time_val::universal_time()) {}
+        timer() : m_started(time_val::universal_time()), m_result(NULL) {}
 
-        ~timer() { if (m_result) *m_result = time_val::universal_time() - m_started; }
+        explicit timer(time_val& tv)
+            : m_started(time_val::universal_time()), m_result(tv.ptr())
+        {}
 
-        void   reset() { m_started = time_val::universal_time(); }
+        ~timer() {
+            if (m_result) { check_stop(); *m_result = m_elapsed; }
+        }
 
-        double elapsed()      const { return time_val::now_diff(m_started); }
-        double elapsed_msec() const { return elapsed() * 1000; }
-        double elapsed_usec() const { return elapsed() * 1000000; }
+        void   stop()  { m_elapsed = time_val::universal_time() - m_started;         }
+        void   reset() { m_elapsed.clear(); m_started = time_val::universal_time();  }
 
-        double latency_usec(size_t a_count) const { return elapsed_usec() / a_count; }
-        double latency_msec(size_t a_count) const { return elapsed()*1000 / a_count; }
-        double latency_sec (size_t a_count) const { return elapsed()      / a_count; }
+        const time_val& elapsed_time()      { check_stop(); return m_elapsed;  }
+        /// Returns elapsed seconds (with fractional usec)
+        double elapsed()                    { check_stop();
+                                              return m_elapsed.seconds();      }
+        double elapsed_msec()               { return elapsed() * 1000;         }
+        double elapsed_usec()               { return elapsed() * 1000000;      }
+
+        double latency_usec(size_t a_count) { return elapsed_usec() / a_count; }
+        double latency_msec(size_t a_count) { return elapsed()*1000 / a_count; }
+        double latency_sec (size_t a_count) { return elapsed()      / a_count; }
+
+        /// Given number of iterations \a a_count returns iterations per second
+        double speed(size_t a_count)        { return double(a_count)/elapsed();}
     };
 
 } // namespace utxx
