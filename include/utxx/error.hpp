@@ -53,6 +53,14 @@ static inline std::string errno_string(int a_errno) {
     return strerror(a_errno);
 }
 
+class not_implemented : public std::exception {
+public:
+    not_implemented() {}
+    virtual ~not_implemented() {}
+
+    virtual const char* what() const throw() { return "Not implemented!"; }
+};
+
 class traced_exception : public std::exception {
     static const size_t s_frames = 25;
     void*  m_backtrace[s_frames];

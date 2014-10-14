@@ -663,5 +663,5 @@ BOOST_AUTO_TEST_CASE( test_convert_itoa_hex )
     BOOST_CHECK(itoa_hex(0, p, sizeof(buf)-1));
 
     p = buf;
-    BOOST_CHECK(!itoa_hex(0x12345678, p, sizeof(buf)-1));
+    BOOST_CHECK(itoa_hex(0x12345678, p, sizeof(buf)-1) > sizeof(buf)-1);
 }

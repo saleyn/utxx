@@ -109,26 +109,28 @@ namespace utxx {
         const boost::function<bool (std::basic_string<Ch>& a_filename)>
                                      a_resolver = inc_file_resolver<Ch>(),
         int                          a_flags = 0,
-        const std::locale &          a_loc       = std::locale()
+        const std::locale &          a_loc   = std::locale(),
+        config_format                a_fmt   = FORMAT_UNDEFINED
     ) {
         std::basic_string<Ch> ext = boost::filesystem::extension(a_filename);
-        config_format fmt;
 
-        if (ext == ".config" || ext == ".conf" || ext == ".cfg" || ext == ".scon")
-            fmt = FORMAT_SCON;
-        else if (ext == ".ini")
-            fmt = FORMAT_INI;
-        else if (ext == ".xml")
-            fmt = FORMAT_XML;
-        else
-            throw std::runtime_error("Configuration file extension not supported!");
+        if (a_fmt == FORMAT_UNDEFINED) {
+            if (ext == ".config" || ext == ".conf" || ext == ".cfg" || ext == ".scon")
+                a_fmt = FORMAT_SCON;
+            else if (ext == ".ini")
+                a_fmt = FORMAT_INI;
+            else if (ext == ".xml")
+                a_fmt = FORMAT_XML;
+            else
+                throw std::runtime_error("Configuration file extension not supported!");
+        }
 
         std::basic_ifstream<Ch> stream(a_filename.c_str());
         if (!stream)
             throw variant_tree_parser_error(
                 "cannot open file for reading", a_filename, 0);
         stream.imbue(a_loc);
-        read_config(stream, a_tree, fmt, a_filename, a_resolver, a_flags);
+        read_config(stream, a_tree, a_fmt, a_filename, a_resolver, a_flags);
     }
 
     template<class Ch>
@@ -139,10 +141,11 @@ namespace utxx {
         const boost::function<bool (std::basic_string<Ch>& a_filename)>
                                 a_resolver = inc_file_resolver<Ch>(),
         int                     a_flags = 0,
-        const std::locale &     a_loc       = std::locale()
+        const std::locale &     a_loc   = std::locale(),
+        config_format           a_fmt   = FORMAT_UNDEFINED
     ) {
         read_config(std::basic_string<Ch>(a_filename),
-                    a_tree, a_resolver, a_flags, a_loc);
+                    a_tree, a_resolver, a_flags, a_loc, a_fmt);
     }
 
 
@@ -209,6 +212,27 @@ namespace utxx {
     ) {
         write_config(std::basic_string<Ch>(a_filename),
                      a_tree, a_format, a_settings, a_loc);
+    }
+
+    template <class Stream, class Ch>
+    void write_scon
+    (
+        Stream&                         a_stream,
+        const basic_variant_tree<Ch>&   a_tree,
+        const scon_writer_settings<Ch>& a_settings = scon_writer_settings<Ch>()
+    ) {
+        detail::write_scon(a_stream, a_tree, a_settings);
+    }
+
+    template <class Stream, class Ch>
+    void write_scon
+    (
+        const std::basic_string<Ch>&    a_filename,
+        const basic_variant_tree<Ch>&   a_tree,
+        const scon_writer_settings<Ch>& a_settings = scon_writer_settings<Ch>(),
+        const std::locale &             a_loc      = std::locale()
+    ) {
+        detail::write_scon(a_filename, a_tree, a_settings, a_loc);
     }
 
 } // namespace utxx

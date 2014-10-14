@@ -107,12 +107,12 @@ BOOST_AUTO_TEST_CASE( cpu_calibration )
                 unsigned int iterations = 10;
 
                 for (int i = 0; i < (int)iterations; ++i) {
-                    time_val t1, t2;
-                    ::gettimeofday(&t1.timeval(), NULL);
+                    timeval t1;
+                    ::gettimeofday(&t1, NULL);
                     const hrtime_t start = detail::get_tick_count();
                     ::usleep(sleep_time.microseconds());
                     const hrtime_t stop  = detail::get_tick_count();
-                    time_val actual_delta(abs_time(-t1.sec(), -t1.usec()));
+                    time_val actual_delta(abs_time(-t1.tv_sec, -t1.tv_usec));
 
                     unsigned long long delta   = actual_delta.microseconds();
                     unsigned long long hrdelta =

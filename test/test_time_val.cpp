@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/test_helper.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/timestamp.hpp>
 #include <utxx/time.hpp>
 #include <utxx/print.hpp>
 //#include <boost/date_time/local_time_adjustor.hpp>
@@ -65,10 +66,11 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     BOOST_REQUIRE_EQUAL(2,          rel.sec());
     BOOST_REQUIRE_EQUAL(4003,       rel.usec());
     BOOST_REQUIRE_EQUAL(4,          rel.msec());
-    BOOST_REQUIRE_EQUAL(4003000,    rel.nanosec());
+    BOOST_REQUIRE_EQUAL(4003000,    rel.nsec());
     BOOST_REQUIRE_EQUAL(2004,       rel.milliseconds());
     BOOST_REQUIRE_EQUAL(2004003u,   rel.microseconds());
     BOOST_REQUIRE_EQUAL(2.004003,   rel.seconds());
+    BOOST_REQUIRE_EQUAL(2004003000L,rel.nanoseconds());
 
     struct timespec ts = rel.timespec();
     BOOST_REQUIRE_EQUAL(2,          ts.tv_sec);
@@ -91,7 +93,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     }
 
     {
-        time_val ts(10);
+        time_val ts(secs(10));
         BOOST_CHECK_EQUAL(10,     ts.sec());
         BOOST_CHECK_EQUAL(0,      ts.usec());
 
@@ -99,7 +101,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_CHECK_EQUAL(15,     ts.sec());
         BOOST_CHECK_EQUAL(0,      ts.usec());
 
-        time_val t(10.123);
+        time_val t(secs(10.123));
         BOOST_CHECK_EQUAL(10,     t.sec());
         BOOST_CHECK_EQUAL(123000, t.usec());
 
@@ -113,7 +115,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_CHECK_EQUAL(123000, t.usec());
     }
     {
-        time_val t(0.999999);
+        time_val t(secs(0.999999));
         BOOST_CHECK_EQUAL(0,      t.sec());
         BOOST_CHECK_EQUAL(999999, t.usec());
     }
@@ -182,7 +184,8 @@ BOOST_AUTO_TEST_CASE( test_time_val_perf )
     int y; unsigned m,d;
 
     struct tm tm;
-    localtime_r(&now.tv_sec(), &tm);
+    time_t now_sec = now.sec();
+    localtime_r(&now_sec, &tm);
     int offset = tm.tm_gmtoff;
     BOOST_MESSAGE("TZ offset = " << offset);
     std::tie(y,m,d) = now.to_ymd(true);
@@ -249,7 +252,7 @@ BOOST_AUTO_TEST_CASE( test_time_val_ptime )
     ptime pt = to_ptime(utxx::time_val::universal_time(2000, 1, 2, 3, 4, 5, 1000));
     BOOST_REQUIRE_EQUAL("2000-Jan-02 03:04:05.001000", to_simple_string(pt));
     ptime tt = ptime(date(2000,1,2))
-                + hours(3) + minutes(4) + seconds(5) + microseconds(1000);
+             + hours(3) + minutes(4) + seconds(5) + microseconds(1000);
     BOOST_REQUIRE_EQUAL(pt, tt);
 }
 

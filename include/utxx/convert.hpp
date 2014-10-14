@@ -798,7 +798,7 @@ namespace detail {
             static const char s_lookup[] = "0123456789ABCDEF";
             char* p = s + len;
             char* b = s-1;
-            for (*p-- = '\0'; p != b; a >>=4, *p-- = s_lookup[a & 0xF]);
+            for (*p-- = '\0'; p != b; *p-- = s_lookup[a & 0xF], a >>=4);
             s += len;
         }
         return len;

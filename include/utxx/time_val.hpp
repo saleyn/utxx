@@ -58,13 +58,26 @@ namespace utxx {
 
     /// Indication of use of absolute time
     struct abs_time {
-        long sec, usec;
-        abs_time(long s=0, long us=0) : sec(s), usec(us) {}
+        long usec;
+        abs_time(long s=0, long us=0) : usec(s*1000000 + us) {}
     };
     /// Indication of use of relative time
     struct rel_time {
-        long sec, usec;
-        rel_time(long s=0, long us=0) : sec(s), usec(us) {}
+        long usec;
+        rel_time(long s=0, long us=0) : usec(s*1000000 + us) {}
+    };
+
+    struct usecs {
+        long usec;
+        explicit usecs(long us) : usec(us) {}
+        explicit usecs(int  us) : usec(us) {}
+    };
+
+    struct secs {
+        long usec;
+        explicit secs(long   s) : usec(s * 1000000) {}
+        explicit secs(int    s) : usec(s * 1000000) {}
+        explicit secs(double s) : usec(long(round(s*1e6))) {}
     };
 
     /// A helper class for dealing with 'struct timeval' structure. This class adds ability
@@ -73,87 +86,51 @@ namespace utxx {
     {
         static const long   N10e6 = 1000000;
         static const size_t N10e9 = 1000000000u;
-        struct timeval m_tv;
-
-        void normalize() {
-            if (m_tv.tv_usec >= N10e6)
-                do { ++m_tv.tv_sec; m_tv.tv_usec -= N10e6; }
-                while (m_tv.tv_usec >= N10e6);
-            else if (m_tv.tv_usec <= -N10e6)
-                do { --m_tv.tv_sec; m_tv.tv_usec += N10e6; }
-                while (m_tv.tv_usec <= -N10e6);
-
-            if (m_tv.tv_sec >= 1 && m_tv.tv_usec < 0)
-                { --m_tv.tv_sec; m_tv.tv_usec += N10e6; }
-            else if (m_tv.tv_sec <  0 && m_tv.tv_usec > 0)
-                { ++m_tv.tv_sec; m_tv.tv_usec -= N10e6; }
-        }
-
-        void setd(int64_t val, int64_t divisor) {
-            int64_t n = val / divisor;
-            m_tv.tv_sec  = n;
-            m_tv.tv_usec = val - n*divisor;
-        }
-
-        void setd(double interval) {
-            long n = long(round(interval*N10e6));
-            m_tv.tv_sec = n / N10e6; m_tv.tv_usec = n - m_tv.tv_sec*N10e6;
-        }
+        long m_tv;
 
     public:
-        time_val()                   { m_tv.tv_sec=0; m_tv.tv_usec=0; }
-        time_val(long _s, long _us)  { m_tv.tv_sec=_s; m_tv.tv_usec=_us; normalize(); }
-        time_val(const time_val& tv, long _s, long _us=0) { set(tv, _s,  _us); }
-        time_val(const time_val& tv, double interval)     { set(tv, interval); }
-        time_val(const time_val& a) : m_tv(a.m_tv) {}
+        time_val() : m_tv(0) {}
+        time_val(secs   s)          : m_tv(s.usec)           {}
+        time_val(usecs us)          : m_tv(us.usec)          {}
+        time_val(long _s, long _us) : m_tv(_s * N10e6 + _us) {}
+        time_val(const time_val& a) : m_tv(a.m_tv)           {}
+        time_val(time_val tv, long _s)           : m_tv(tv.m_tv + _s*N10e6)       {}
+        time_val(time_val tv, long _s, long _us) : m_tv(tv.m_tv + _s*N10e6 + _us) {}
+        time_val(time_val tv, double interval) { set(tv, interval); }
 
-        explicit time_val(int       a_sec) : m_tv{a_sec, 0} {}
-        explicit time_val(long      a_sec) : m_tv{a_sec, 0} {}
-        explicit time_val(double interval)  { setd(interval); }
-
-        explicit time_val(const struct timeval& a) {
-            m_tv.tv_sec=a.tv_sec; m_tv.tv_usec=a.tv_usec; normalize();
-        }
-
-        explicit time_val(struct tm& a_tm) {
-            m_tv.tv_sec = mktime(&a_tm); m_tv.tv_usec = 0;
-        }
+        explicit time_val(const struct timeval& a) : m_tv(long(a.tv_sec)*N10e6 + a.tv_usec){}
+        explicit time_val(struct tm& a_tm)         : m_tv(long(mktime(&a_tm))*N10e6)       {}
 
         /// Set time to abosolute time given by \a a
-        explicit time_val(const abs_time& a) {
-            m_tv.tv_sec=a.sec; m_tv.tv_usec=a.usec; normalize();
-        }
+        explicit time_val(abs_time a)      : m_tv(a.usec) {}
 
         /// Set time to relative offset from now given by \a a time.
-        explicit time_val(const rel_time& a) { now(a.sec, a.usec); }
+        explicit time_val(rel_time a)      : m_tv(now(0, a.usec).m_tv) {}
 
         time_val(int y, unsigned m, unsigned d, bool a_utc = true) {
             if (a_utc)
-                m_tv.tv_sec = mktime_utc(y, m, d);
+                m_tv = long(mktime_utc(y, m, d)) * N10e6;
             else {
                 struct tm tm = { 0,0,0, int(d), int(m)-1, y-1900, 0,0,-1 };
-                m_tv.tv_sec  = mktime(&tm);
+                m_tv = long(mktime(&tm)) * N10e6;
             }
-            m_tv.tv_usec = 0;
         }
 
         time_val(int      y,    unsigned mon, unsigned d,
                  unsigned h,    unsigned mi,  unsigned s,
                  unsigned usec, bool a_utc = true) {
             if (a_utc)
-                m_tv.tv_sec = mktime_utc(y,mon,d, h,mi,s);
+                m_tv = long(mktime_utc(y,mon,d, h,mi,s)) * N10e6 + usec;
             else {
                 struct tm tm = { int(s),int(mi),int(h), int(d), int(mon)-1, y-1900, 0,0,-1 };
-                m_tv.tv_sec  = mktime(&tm);
+                m_tv = long(mktime(&tm)) * N10e6 + usec;
             }
-            m_tv.tv_usec = usec;
-            normalize();
         }
 
         explicit time_val(boost::posix_time::ptime a) { *this = a; }
 
         #if __cplusplus >= 201103L
-        time_val(time_val&& a) : m_tv(std::move(a.m_tv)) {}
+        time_val(time_val&& a) : m_tv(a.m_tv) {}
 
         template <class Clock, class Duration = typename Clock::Duration>
         time_val(const std::chrono::time_point<Clock, Duration>& a_tp) {
@@ -164,14 +141,14 @@ namespace utxx {
             auto duration = a_tp.time_since_epoch();
             auto sec      = duration_cast<seconds>(duration);
             auto usec     = duration_cast<microseconds>(duration - sec);
-            m_tv.tv_sec   = sec.count();
-            m_tv.tv_usec  = usec.count();
+            m_tv          = long(sec.count()) * N10e6 + usec.count();
         }
 
         std::tuple<int, unsigned, unsigned> to_ymd(bool a_utc = true) const {
             struct tm tm;
-            if (a_utc) gmtime_r   (&this->tv_sec(), &tm);
-            else       localtime_r(&this->tv_sec(), &tm);
+            time_t s = sec();
+            if (a_utc) gmtime_r   (&s, &tm);
+            else       localtime_r(&s, &tm);
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
         }
 
@@ -190,107 +167,90 @@ namespace utxx {
         std::tuple<int, unsigned, unsigned, unsigned, unsigned, unsigned>
         to_ymdhms(bool a_utc = true) const {
             struct tm tm;
-            if (a_utc) gmtime_r   (&this->tv_sec(), &tm);
-            else       localtime_r(&this->tv_sec(), &tm);
+            time_t s = sec();
+            if (a_utc) gmtime_r   (&s, &tm);
+            else       localtime_r(&s, &tm);
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
                                    tm.tm_hour,      tm.tm_min,   tm.tm_sec);
         }
 
         #endif
 
-        const struct timeval&   timeval()  const { return m_tv; }
-        struct timeval&         timeval()        { return m_tv; }
-        struct timespec         timespec() const { struct timespec ts = {sec(),nanosec()};
-                                                   return ts; }
-        time_t                  sec()      const { return m_tv.tv_sec;  }
-        long                    usec()     const { return m_tv.tv_usec; }
-        const time_t&           tv_sec()   const { return m_tv.tv_sec;  }
-        time_t&                 tv_sec()         { return m_tv.tv_sec;  }
-        suseconds_t&            usec()           { return m_tv.tv_usec; }
-        time_t                  msec()     const { return m_tv.tv_usec / 1000; }
-        long                    nanosec()  const { return m_tv.tv_usec * 1000; }
-
-        uint64_t microseconds() const {
-            return (uint64_t)m_tv.tv_sec*N10e6 + (uint64_t)m_tv.tv_usec;
+        struct timeval          timeval()  const {
+            struct timeval tv; copy_to(tv); return tv;
         }
-
-        double seconds()          const { return  (double)m_tv.tv_sec
-                                                + (double)m_tv.tv_usec/N10e6; }
-
-        long milliseconds()       const { return m_tv.tv_sec*1000u + m_tv.tv_usec/1000; }
-        void sec (size_t s)             { m_tv.tv_sec  = s;  }
-        void usec(size_t us)            { m_tv.tv_usec = us; normalize(); }
-        void microseconds(uint64_t ms)  { setd(ms, N10e6); }
-        void milliseconds(size_t   ms)  { setd(ms, 1000);  }
-        void nanosec (uint64_t ms)      { setd(ms, N10e9); }
-        bool empty()              const { return sec() == 0 && usec() == 0; }
-
-        void clear()                    { m_tv.tv_sec = 0; m_tv.tv_usec = 0; }
-
-        void set(time_t a_sec) { m_tv.tv_sec = a_sec; m_tv.tv_usec = 0; }
-
-        void set(const time_val& tv, long _s=0, long _us=0) {
-            m_tv.tv_sec = tv.sec() + _s; m_tv.tv_usec = tv.usec() + _us; normalize();
+        struct timespec         timespec() const {
+            auto pair = split();
+            return (struct timespec){pair.first, pair.second*1000};
         }
+        time_t   sec()                     const { return m_tv / N10e6;  }
+        long     usec()                    const { return m_tv - (m_tv / N10e6) * N10e6; }
+        time_t   msec()                    const { long x=m_tv/1000; return x - (x/1000)*1000;}
+        long     nsec()                    const { return usec() * 1000; }
+
+        long     value()                   const { return m_tv; }
+        long     microseconds()            const { return m_tv; }
+        double   seconds()                 const { return double(m_tv) / N10e6; }
+        long     milliseconds()            const { return m_tv / 1000; }
+        long     nanoseconds()             const { return m_tv * 1000; }
+
+        void microseconds(uint64_t us)  { m_tv = us; }
+        void milliseconds(size_t   ms)  { m_tv = ms * 1000; }
+        void nanosec     (uint64_t ns)  { m_tv = ns / 1000; }
+        bool empty()              const { return m_tv == 0; }
+
+        void clear()                    { m_tv = 0; }
+
+        void set(time_t a_sec)          { m_tv = a_sec * N10e6; }
+
+        void set(time_val tv, long _s=0, long _us=0) { m_tv = tv.add(_s, _us).m_tv; }
 
         void set(const struct timeval& tv, long _s=0, long _us=0) {
-            m_tv.tv_sec = tv.tv_sec + _s; m_tv.tv_usec = tv.tv_usec + _us; normalize();
+            m_tv = long(tv.tv_sec + _s)*N10e6 + tv.tv_usec + _us;
         }
-        void set(const time_val& tv, double interval) {
-            setd(interval); m_tv.tv_sec += tv.sec(); m_tv.tv_usec += tv.usec();
-            normalize();
-        }
+        void set(time_val tv, double interval) { m_tv = tv.m_tv + interval * N10e6; }
 
+        std::pair<long, long> split() const {
+            long s  = m_tv / N10e6;
+            long us = m_tv - s * N10e6;
+            return std::make_pair(s, us);
+        }
         void copy_to(struct timeval& tv) const {
-            tv.tv_sec = m_tv.tv_sec; tv.tv_usec = m_tv.tv_usec;
+            auto pair = split();
+            tv.tv_sec = pair.first; tv.tv_usec = pair.second;
         }
 
-        double diff(const time_val& t) const {
-            time_val tv(this->timeval());
-            tv -= t;
-            return (double)tv.sec() + (double)tv.usec() / N10e6;
+        double  diff(time_val t)      const { return double(m_tv - t.m_tv) / N10e6; }
+        int64_t diff_usec(time_val t) const { return m_tv - t.m_tv; }
+        int64_t diff_msec(time_val t) const { return (m_tv - t.m_tv) / 1000; }
+
+        time_val& add(long _s, long _us)    { m_tv += _s*N10e6 + _us; return *this; }
+        time_val  add(long _s, long _us) const { return time_val(*this, _s, _us);   }
+
+        void add(double interval)           { m_tv += long(round(interval * 1e6));  }
+
+        time_val& add_sec (long s)          { m_tv += s * N10e6; return *this; }
+        time_val  add_sec (long s)    const { return time_val(*this, s);       }
+        time_val  add_msec(long ms)   const { return time_val(0, ms*1000);     }
+        time_val& add_msec(long ms)         { m_tv += ms*1000;   return *this; }
+
+        time_val& add_usec(long us)         { m_tv += us;        return *this; }
+        time_val  add_usec(long us)   const { return   time_val(*this, 0, us); }
+
+        void now()                          { m_tv = universal_time().m_tv; }
+
+        time_val now(long add_s)      const {
+            struct timeval tv; ::gettimeofday(&tv, 0);
+            return time_val(tv.tv_sec + add_s, tv.tv_usec);
         }
 
-        int64_t diff_usec(const time_val& t) const {
-            time_val tv(this->timeval());
-            tv -= t;
-            return (int64_t)tv.sec() * N10e6 + tv.usec();
+        time_val now(long add_s, long add_us) const {
+            struct timeval tv; ::gettimeofday(&tv, 0);
+            return time_val(tv.tv_sec + add_s, tv.tv_usec + add_us);
         }
-
-        int64_t diff_msec(const time_val& t) const {
-            time_val tv(this->timeval());
-            tv -= t;
-            return (int64_t)tv.sec() * 1000 + tv.usec() / 1000;
-        }
-
-        time_val& add(long _sec, long _us) {
-            m_tv.tv_sec += _sec; m_tv.tv_usec += _us;
-            if (_sec || _us) normalize();
-            return *this;
-        }
-
-        time_val add(long _sec, long _us) const { return time_val(*this, _sec, _us); }
-
-        void add(double interval) {
-            long n = long(round(interval*1e6));
-            long s = n / N10e6, u = n - s*N10e6;
-            add(s, u);
-        }
-
-        time_val& add_sec (long seconds)       { m_tv.tv_sec += seconds; return *this; }
-        time_val  add_sec (long seconds) const { time_val tv(*this); return tv.add_sec(seconds); }
-        time_val  add_msec(long ms)      const { time_val tv(*this); return tv.add_msec(ms); }
-        time_val& add_msec(long ms) {
-            long n = ms/1000, m = ms - n*1000; add(n, m*1000);
-            return *this;
-        }
-        time_val& add_usec(long us)            { m_tv.tv_usec += us; normalize(); return *this; }
-        time_val  add_usec(long us)      const { time_val tv(*this, 0, us); return tv; }
-
-        void now() { ::gettimeofday(&m_tv, 0); }
 
         static time_val universal_time() {
-            time_val tv; ::gettimeofday(&tv.timeval(), 0); return tv;
+            struct timeval tv; ::gettimeofday(&tv, 0); return time_val(tv);
         }
 
         /// Construct a time_val from UTC "y/m/d-H:M:S"
@@ -306,12 +266,8 @@ namespace utxx {
                 s_d   = day;
             }
 
-            time_val tv;
-            tv.m_tv.tv_sec  = s_ymd + hour*3600 + min*60 + sec;
-            tv.m_tv.tv_usec = usec;
-            tv.normalize();
-            return tv;
-        };
+            return time_val((s_ymd + hour*3600 + min*60 + sec), usec);
+        }
 
         /// Construct a time_val from local "y/m/d-H:M:S"
         static time_val local_time(int year, int month, int day,
@@ -327,113 +283,56 @@ namespace utxx {
                 s_d   = day;
             }
 
-            time_val tv;
-            tv.m_tv.tv_sec  = s_ymd + hour*3600 + min*60 + sec;
-            tv.m_tv.tv_usec = usec;
-            tv.normalize();
-            return tv;
-        };
-
-        time_val& now(long addS, long addUS=0) {
-            ::gettimeofday(&m_tv, 0); add(addS, addUS);
-            return *this;
+            return time_val((s_ymd + hour*3600 + min*60 + sec), usec);
         }
 
-        const time_val* ptr() const { return reinterpret_cast<const time_val*>(&m_tv); }
-        time_val*       ptr()       { return reinterpret_cast<time_val*>(&m_tv); }
+        static double now_diff(time_val start) {
+            return double((universal_time() - start).m_tv) / 1e6;
+        }
+        static long now_diff_usec(time_val start)  { return universal_time().m_tv - start.m_tv;}
+        static long now_diff_msec(time_val start)  { return now_diff_usec(start) / 1000; }
 
-        static double now_diff(const time_val& start) {
-            time_val tv; tv.now(); tv -= start;
-            return (double)tv.sec() + (double)tv.usec() / N10e6;
-        }
-        static int64_t now_diff_usec(const time_val& start) {
-            time_val tv; tv.now(); tv -= start;
-            return (int64_t)tv.sec() * N10e6 + tv.usec();
-        }
-        static int64_t now_diff_msec(const time_val& start) {
-            time_val tv; tv.now(); tv -= start;
-            return (int64_t)tv.sec() * 1000 + tv.usec() / 1000;
-        }
+        time_val operator- (time_val tv)     const { return usecs(m_tv - tv.m_tv);    }
+        time_val operator+ (time_val tv)     const { return usecs(m_tv + tv.m_tv);    }
 
-        time_val operator- (const time_val& tv) const {
-            return time_val(m_tv.tv_sec - tv.sec(), m_tv.tv_usec - tv.usec());
-        }
-        time_val operator+ (const time_val& tv) const {
-            return time_val(m_tv.tv_sec + tv.sec(), m_tv.tv_usec + tv.usec());
-        }
+        time_val operator- (double interval) const { return operator-(secs(interval));  }
+        time_val operator+ (double interval) const { return operator+(secs(interval));  }
 
-        time_val operator- (double interval) const { return operator-(time_val(interval)); }
-        time_val operator+ (double interval) const { return operator+(time_val(interval)); }
+        time_val operator- (const struct timeval& tv) const { return operator-(time_val(tv)); }
+        time_val operator+ (const struct timeval& tv) const { return operator+(time_val(tv)); }
 
-        time_val operator- (const struct timeval& tv) const {
-            return time_val(m_tv.tv_sec - tv.tv_sec, m_tv.tv_usec - tv.tv_usec);
-        }
-        time_val operator+ (const struct timeval& tv) const {
-            return time_val(m_tv.tv_sec + tv.tv_sec, m_tv.tv_usec + tv.tv_usec);
-        }
+        void     operator-= (const struct timeval& tv)      { m_tv -= time_val(tv).m_tv;}
+        void     operator-= (time_val tv)                   { m_tv -= tv.value(); }
+        void     operator+= (time_val tv)                   { m_tv += tv.value(); }
+        void     operator+= (double interval)               { add(interval);      }
 
-        void operator-= (const struct timeval& tv) {
-            m_tv.tv_sec -= tv.tv_sec; m_tv.tv_usec -= tv.tv_usec; normalize();
-        }
-        void operator-= (const time_val& tv) {
-            m_tv.tv_sec -= tv.sec(); m_tv.tv_usec -= tv.usec(); normalize();
-        }
-        void operator+= (const time_val& tv) {
-            m_tv.tv_sec += tv.sec(); m_tv.tv_usec += tv.usec(); normalize();
-        }
-        void operator+= (double  _interval) { add(_interval); }
-
-        #if __cplusplus >= 201103L
-        time_val& operator=(time_val&& a_rhs) {
-            m_tv = a_rhs.m_tv;
-            return *this;
-        }
-        #endif
-
-        void operator= (const time_val& t) {
-            m_tv.tv_sec = t.sec(); m_tv.tv_usec = t.usec();
-        }
-        void operator= (const struct timeval& t) {
-            m_tv.tv_sec = t.tv_sec; m_tv.tv_usec = t.tv_usec;
-        }
+        time_val& operator= (time_val t)                    { m_tv = t.value(); return *this;}
+        time_val& operator= (const struct timeval& t)       { m_tv = time_val(t).m_tv; return *this; }
 
         void operator= (boost::posix_time::ptime a_rhs) {
             using namespace boost::posix_time;
             static const ptime epoch(boost::gregorian::date(1970,1,1));
             time_duration diff = a_rhs - epoch;
-            m_tv.tv_sec  = diff.total_seconds();
-            m_tv.tv_usec = a_rhs.time_of_day().total_microseconds();
+            m_tv = diff.total_seconds() * N10e6 + a_rhs.time_of_day().total_microseconds();
         }
 
-        bool operator== (const time_val& tv) const {
-            return sec() == tv.sec() && usec() == tv.usec();
-        }
-        bool operator!= (const time_val& tv) const { return !operator== (tv); }
-        bool operator>  (const time_val& tv) const {
-            return sec() > tv.sec() || (sec() == tv.sec() && usec() > tv.usec());
-        }
-        bool operator>= (const time_val& tv) const {
-            return sec() > tv.sec() || (sec() == tv.sec() && usec() >= tv.usec());
-        }
-        bool operator<  (const time_val& tv) const {
-            return sec() < tv.sec() || (sec() == tv.sec() && usec() < tv.usec());
-        }
-        bool operator<= (const time_val& tv) const {
-            return sec() < tv.sec() || (sec() == tv.sec() && usec() <= tv.usec());
-        }
-
-        operator bool() const { return sec() == 0 && usec() == 0; }
+        bool operator== (time_val tv) const { return m_tv == tv.value(); }
+        bool operator!= (time_val tv) const { return m_tv != tv.value(); }
+        bool operator>  (time_val tv) const { return m_tv >  tv.value(); }
+        bool operator>= (time_val tv) const { return m_tv >= tv.value(); }
+        bool operator<  (time_val tv) const { return m_tv <  tv.value(); }
+        bool operator<= (time_val tv) const { return m_tv <= tv.value(); }
     };
 
     template <typename T>
     time_val& time_val_cast(T& tv) {
-        BOOST_STATIC_ASSERT(sizeof(T) == sizeof(struct timeval));
+        BOOST_STATIC_ASSERT(sizeof(T) == sizeof(time_val));
         return reinterpret_cast<time_val&>(tv);
     }
 
     template <typename T>
     const time_val& time_val_cast(const T& tv) {
-        BOOST_STATIC_ASSERT(sizeof(T) == sizeof(struct timeval));
+        BOOST_STATIC_ASSERT(sizeof(T) == sizeof(time_val));
         return reinterpret_cast<const time_val&>(tv);
     }
 
@@ -441,17 +340,20 @@ namespace utxx {
     inline time_val now_utc() { return time_val::universal_time(); }
 
     /// Convert time_val to boost::posix_time::ptime
-    inline boost::posix_time::ptime to_ptime (const time_val& a_tv) {
-        return boost::posix_time::from_time_t(a_tv.sec())
-             + boost::posix_time::microsec   (a_tv.usec());
+    inline boost::posix_time::ptime
+    to_ptime (time_val a_tv) {
+        auto pair = a_tv.split();
+        return boost::posix_time::from_time_t(pair.first)
+             + boost::posix_time::microsec   (pair.second);
     }
 
 #if __cplusplus >= 201103L
     /// Convert time_val to chrono::time_point
     inline std::chrono::time_point<std::chrono::system_clock>
-    to_time_point(const time_val& a_tv) {
-        return std::chrono::system_clock::from_time_t(a_tv.sec())
-             + std::chrono::microseconds(a_tv.usec());
+    to_time_point(time_val a_tv) {
+        auto pair = a_tv.split();
+        return std::chrono::system_clock::from_time_t(pair.first)
+             + std::chrono::microseconds(pair.second);
     }
 
     /// Convert std::chrono::time_point to timespec
@@ -493,7 +395,7 @@ namespace utxx {
         timer() : m_started(time_val::universal_time()), m_result(NULL) {}
 
         explicit timer(time_val& tv)
-            : m_started(time_val::universal_time()), m_result(tv.ptr())
+            : m_started(time_val::universal_time()), m_result(&tv)
         {}
 
         ~timer() {

@@ -494,7 +494,7 @@ public:
         int     a_indent      = 0
     ) const {
         if (!m_root_path.empty())
-            out << std::string(a_indent*a_tab_width, a_indent_char)
+            out << std::basic_string<Ch>(a_indent*a_tab_width, a_indent_char)
                 << "[Path: " << m_root_path.dump() << ']' << std::endl;
         return dump(out, to_base(), a_tab_width, a_show_types,
                     a_show_braces, a_indent_char, a_indent);

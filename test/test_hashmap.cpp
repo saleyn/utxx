@@ -71,10 +71,10 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
         BOOST_REQUIRE_EQUAL(-759293558, n);
     }
 
-    const int COUNT      = 1 << 20;
     const int ITERATIONS = getenv("ITERATIONS")
                          ? atoi(getenv("ITERATIONS"))
                          : 10;
+    const int COUNT      = ITERATIONS > 10 ? 1024 : 1 << 20;
 
     std::vector<std::string> data(COUNT);
 

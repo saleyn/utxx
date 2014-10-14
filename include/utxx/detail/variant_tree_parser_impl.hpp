@@ -215,7 +215,7 @@ namespace detail {
                     "cannot open file for writing", a_filename, 0);
         }
         stream.imbue(a_loc);
-        write_scon(stream, a_tree, a_settings);
+        detail::write_scon(stream, a_tree, a_settings);
         if (!stream.good())
             throw boost::property_tree::file_parser_error(
                     "write error", a_filename, 0);
