@@ -38,45 +38,45 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_basic_rate_throttler )
 {
     basic_rate_throttler<16> l_throttler;
-    struct timeval tv = {0,0};
+    time_val tv;
 
     l_throttler.init(3);
     int i;
-    for (i=0, tv.tv_usec=500000; i < 8; i++, tv.tv_usec += 500000) {
-        if (tv.tv_usec > 500000) {
-            tv.tv_usec = tv.tv_usec % 500000;
-            tv.tv_sec++;
+    for (i=0, tv.usec(500000); i < 8; i++, tv.add_usec(500000)) {
+        if (tv.usec() > 500000) {
+            tv.usec(tv.usec() % 500000);
+            tv.add_sec(1);
         }
         l_throttler.add(tv, i+1);
     }
 
     BOOST_REQUIRE_EQUAL(33, l_throttler.running_sum());
 
-    tv.tv_sec += 2;
+    tv.add_sec(2);
     l_throttler.add(tv, ++i); // i=9
     BOOST_REQUIRE_EQUAL(17, l_throttler.running_sum());
 
-    tv.tv_sec += 3;
+    tv.add_sec(3);
     l_throttler.add(tv, ++i); // i=10
     BOOST_REQUIRE_EQUAL(10, l_throttler.running_sum());
 
-    tv.tv_sec += 9;
+    tv.add_sec(9);
     l_throttler.add(tv, ++i); // i=11
     BOOST_REQUIRE_EQUAL(11, l_throttler.running_sum());
 
-    tv.tv_sec += 2;
+    tv.add_sec(2);
     l_throttler.add(tv, ++i); // i=12
     BOOST_REQUIRE_EQUAL(23, l_throttler.running_sum());
 
-    tv.tv_sec += 2;
+    tv.add_sec(2);
     l_throttler.add(tv, ++i); // i=13
     BOOST_REQUIRE_EQUAL(25, l_throttler.running_sum());
 
-    tv.tv_sec += 1;
+    tv.add_sec(1);
     l_throttler.add(tv, ++i); // i=14
     BOOST_REQUIRE_EQUAL(27, l_throttler.running_sum());
 
-    tv.tv_sec += 2;
+    tv.add_sec(2);
     l_throttler.add(tv, ++i); // i=15
     BOOST_REQUIRE_EQUAL(29, l_throttler.running_sum());
 

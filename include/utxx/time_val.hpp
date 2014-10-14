@@ -194,6 +194,8 @@ namespace utxx {
         long     milliseconds()            const { return m_tv / 1000; }
         long     nanoseconds()             const { return m_tv * 1000; }
 
+        void sec (long s)               { m_tv = s * N10e6  + usec(); }
+        void usec(long us)              { m_tv = sec() + us;          }
         void microseconds(uint64_t us)  { m_tv = us; }
         void milliseconds(size_t   ms)  { m_tv = ms * 1000; }
         void nanosec     (uint64_t ns)  { m_tv = ns / 1000; }

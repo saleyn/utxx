@@ -48,6 +48,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <utxx/meta.hpp>
 #include <utxx/compiler_hints.hpp>
+#include <utxx/time_val.hpp>
 #include <time.h>
 
 namespace utxx {
@@ -121,13 +122,13 @@ public:
     /// @param a_time is monotonically increasing time value.
     /// @param a_count is the count to add to the bucket associated with \a a_time.
     /// @return current running sum.
-    long   add(const timeval& a_time, int a_count = 1);
+    long   add(time_val a_time, int a_count = 1);
 
     /// Update current timestamp.
-    long   refresh(const timeval& a_time) { return add(a_time, 0); }
+    long   refresh(time_val a_time) { return add(a_time, 0); }
 
     /// Dump the internal state to stream
-    void dump(std::ostream& out, const timeval& a_time);
+    void dump(std::ostream& out, time_val a_time);
 private:
     size_t  m_buckets[s_bucket_count];
     time_t  m_last_time;
@@ -143,11 +144,9 @@ private:
 //------------------------------------------------------------------------------
 template<size_t MaxSeconds, size_t BucketsPerSec>
 long basic_rate_throttler<MaxSeconds, BucketsPerSec>::
-add(const timeval& a_time, int a_count)
+add(time_val a_time, int a_count)
 {
-    time_t l_now = (time_t)( ((double)a_time.tv_sec +
-                              (double)a_time.tv_usec / 1000000)
-                            * s_buckets_per_sec);
+    time_t l_now = (time_t)(a_time.seconds() * s_buckets_per_sec);
     if (unlikely(!m_last_time))
        m_last_time = l_now;
     int  l_bucket    = l_now & s_bucket_mask;
@@ -220,11 +219,9 @@ add(const timeval& a_time, int a_count)
 
 template<size_t MaxSeconds, size_t BucketsPerSec>
 void basic_rate_throttler<MaxSeconds, BucketsPerSec>::
-dump(std::ostream& out, const timeval& a_time)
+dump(std::ostream& out, time_val a_time)
 {
-    time_t l_now = (time_t)( ((double)a_time.tv_sec +
-                              (double)a_time.tv_usec / 1000000)
-                            * s_buckets_per_sec);
+    time_t l_now = (time_t)(a_time.seconds() * s_buckets_per_sec);
     size_t l_bucket = l_now & s_bucket_mask;
 
     char buf[256];
