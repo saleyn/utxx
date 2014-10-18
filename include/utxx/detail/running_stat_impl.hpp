@@ -63,6 +63,7 @@ namespace detail {
         #ifdef UTXX_RUNNING_MINMAX_DEBUG
         size_t capacity()         const { return derived_this()->capacity();  }
         #endif
+
     public:
         minmax_impl()
             : m_min_idx(0)

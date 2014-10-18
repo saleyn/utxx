@@ -96,7 +96,7 @@ struct basic_multi_file_async_logger {
 
     /// Stream information associated with a file descriptor
     /// used internally by the async logger
-    struct  stream_info;
+    class   stream_info;
 
     /// Internal stream identifier
     class   file_id;
@@ -519,7 +519,7 @@ stream_info {
     msg_writer                              on_write;      // Message writer functor
     stream_reconnecter                      on_reconnect;  // Stream reconnecter
 
-    template <typename T> friend class basic_multi_file_async_logger;
+    template <typename T> friend struct basic_multi_file_async_logger;
 
 public:
     std::string          name;

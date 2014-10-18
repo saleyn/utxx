@@ -152,6 +152,8 @@ struct basic_moving_average
         detail::minmax_impl<basic_moving_average<T,N,FastMinMax>, T, FastMinMax>
         base;
 
+    friend base;
+
     explicit basic_moving_average(size_t a_capacity = 0)
         : MASK(N ? N-1 : a_capacity-1)
         , m_data(m_samples)
@@ -269,7 +271,8 @@ struct basic_moving_average
     T max() const { return base::max(); }
 
 protected:
-    template <class D, class U, class F> friend class detail::minmax_impl;
+    template <typename D, typename U, bool F> friend struct detail::minmax_impl;
+
     size_t  begin_idx()        const { return m_end - size(); }
     size_t  end_idx()          const { return m_end;          }
     T       data(size_t a_idx) const { return m_data[a_idx & MASK]; }

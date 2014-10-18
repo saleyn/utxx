@@ -161,7 +161,7 @@ namespace config {
         , BRANCH    // May not have value, but may have children
     };
 
-    struct option;
+    class option;
 
     template <typename T>
     class typed_val {

@@ -52,6 +52,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/config_tree.hpp>
 #include <boost/thread/mutex.hpp>
 
+#include <utxx/logger/logger_enums.hpp>
 #include <utxx/logger/logger_impl.hpp>
 #ifndef _MSC_VER
 #   include <utxx/synch.hpp>
@@ -204,7 +205,7 @@ private:
 
     void set_timestamp(char* buf, time_t seconds) const;
 
-    friend class logger_impl;
+    friend struct logger_impl;
 
     /// To be called by <logger_impl> child to register a delegate to be
     /// invoked on a call to LOG_*() macros.

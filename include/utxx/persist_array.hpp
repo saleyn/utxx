@@ -329,7 +329,9 @@ namespace utxx {
 
             //Get the address of the mapped region
             void*  addr  = region.get_address();
+            #ifndef NDEBUG
             size_t size  = region.get_size();
+            #endif
 
             m_file.swap(shmf);
             m_region.swap(region);

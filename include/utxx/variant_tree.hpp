@@ -349,7 +349,7 @@ public:
         path_type p(path);
         const base* t = navigate(this, p, (const int*)NULL, false);
         if (t)
-            try { return  t->get_value<T>(detail::variant_translator<T>()); }
+            try { return  t->template get_value<T>(detail::variant_translator<T>()); }
             catch (...) { throw_bad_type<T>(path, t->data()); }
         return default_value;
     }
@@ -367,7 +367,7 @@ public:
 //             if (!t->data().is_type<T>())
 //                 throw_bad_type<T>(path, t->data());
 //             return boost::optional<T>(t->get<T>());
-            try { return t->get_value<T>(detail::variant_translator<T>()); }
+            try { return t->template get_value<T>(detail::variant_translator<T>()); }
             catch (...) { throw_bad_type<T>(path, t->data()); }
         }
         return boost::optional<T>();
@@ -563,7 +563,7 @@ public:
     static void translate_data(base& a_tree, const T& a_tr) {
         for (iterator it = a_tree.begin(), e = a_tree.end(); it != e; ++it)
             translate_data(it->second, a_tr);
-        a_tree.data() = *a_tr.put_value(a_tree.get_value<std::string>());
+        a_tree.data() = *a_tr.put_value(a_tree.template get_value<std::string>());
     }
 
 private:
@@ -579,7 +579,7 @@ private:
             translate_data(it.begin(), it.end(), a_tr);
         // Get the value as string and attempt to convert it to variant
         this->put_child(a_node->first,
-                        *a_tr.put_value(a_node->second.get_value<std::string>()));
+                        *a_tr.put_value(a_node->second.template get_value<std::string>()));
     }
 
     template <class Stream>

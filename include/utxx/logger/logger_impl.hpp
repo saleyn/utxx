@@ -43,13 +43,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/meta.hpp>
 #include <utxx/error.hpp>
 #include <utxx/singleton.hpp>
+#include <utxx/logger/logger_enums.hpp>
 #include <utxx/logger.hpp>
 #include <utxx/path.hpp>
 #include <utxx/convert.hpp>
 #include <utxx/variant_tree.hpp>
 #include <utxx/print.hpp>
 #include <vector>
-
 struct T;
 namespace utxx {
 
