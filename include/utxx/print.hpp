@@ -253,7 +253,7 @@ namespace detail {
 
 /// Analogous to sprintf, but returns an std::string instead
 template <int SizeHint = 256>
-std::string print_string(const char fmt, ...) {
+std::string print_string(const char* fmt, ...) {
     va_list args; va_start(args, fmt);
     UTXX_SCOPE_EXIT([&args]() { va_end(args); });
 
