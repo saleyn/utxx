@@ -110,7 +110,8 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
 
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
     {
-        int mean = 8;
+        int mean  = 2*4096;
+        int sigma = 30;
         double elapsed1, elapsed2;
 
         {
@@ -118,11 +119,11 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
 
             #if __cplusplus >= 201103L
             std::default_random_engine generator;
-            std::normal_distribution<double> distribution(mean, 3);
+            std::normal_distribution<double> distribution(mean, sigma);
             #else
             time_t seed = time(0);
             boost::mt19937 generator(static_cast<unsigned>(seed));
-            boost::normal_distribution<double> normal_distribution(mean, 3);
+            boost::normal_distribution<double> normal_distribution(mean, sigma);
             boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> >
                 gaussian_rnd(generator, normal_distribution);
             #endif
@@ -142,8 +143,9 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
 
             elapsed1 = t.elapsed();
             char buf[80];
-            sprintf(buf, "clustered_map speed=%.0f ins/s, latency=%.3fus",
-                   (double)ITERATIONS/elapsed1, elapsed1 * 1000000 / ITERATIONS);
+            sprintf(buf, "clustered_map speed=%.0f ins/s, latency=%.3fus, size=%lu",
+                   (double)ITERATIONS/elapsed1, elapsed1 * 1000000 / ITERATIONS,
+                   m.group_count());
             BOOST_MESSAGE(buf);
         }
 
@@ -152,11 +154,11 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
 
             #if __cplusplus >= 201103L
             std::default_random_engine generator;
-            std::normal_distribution<double> distribution(mean, 3);
+            std::normal_distribution<double> distribution(mean, sigma);
             #else
             time_t seed = time(0);
             boost::mt19937 generator(static_cast<unsigned>(seed));
-            boost::normal_distribution<double> normal_distribution(mean, 3);
+            boost::normal_distribution<double> normal_distribution(mean, sigma);
             boost::variate_generator<boost::mt19937&, boost::normal_distribution<double> >
                 gaussian_rnd(generator, normal_distribution);
             #endif
@@ -170,13 +172,14 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
                 int number = (int)gaussian_rnd();
                 #endif
                 if ((number < 0) || (number > 2*mean)) goto recalc2;
-                m[(int)number]++;
+                int& n = m[(int)number];
+                n++;
             }
 
             elapsed2 = t.elapsed();
             char buf[80];
-            sprintf(buf, "std::map      speed=%.0f ins/s, latency=%.3fus",
-                   (double)ITERATIONS/elapsed2, elapsed2 * 1000000 / ITERATIONS);
+            sprintf(buf, "std::map      speed=%.0f ins/s, latency=%.3fus, l1size=%lu",
+                   (double)ITERATIONS/elapsed2, elapsed2 * 1000000 / ITERATIONS, m.size());
             BOOST_MESSAGE(buf);
         }
 

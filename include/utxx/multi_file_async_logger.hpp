@@ -1152,8 +1152,8 @@ do_writev_and_free(stream_info* a_si, command_t* a_end,
         if (m_err_handler)
             m_err_handler(*a_si, a_si->error, a_si->error_msg);
         else
-            LOG_ERROR(("Error writing %u messages to stream '%s': %s\n",
-                       a_sz, a_si->name.c_str(), a_si->error_msg.c_str()));
+            LOG_ERROR("Error writing %lu messages to stream '%s': %s\n",
+                       a_sz, a_si->name.c_str(), a_si->error_msg.c_str());
     }
     return n;
 }

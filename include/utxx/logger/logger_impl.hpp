@@ -64,9 +64,8 @@ class log_msg_info {
     time_val      m_timestamp;
     log_level     m_level;
     std::string   m_category;
-    size_t        m_src_file_len;
-    const char*   m_src_file;
-    size_t        m_src_line;
+    size_t        m_src_loc_len;
+    const char*   m_src_location;
     data_buffer   m_data;
 
     /// log() calls this function which performs content formatting
@@ -76,12 +75,12 @@ public:
 
     template <int N>
     log_msg_info(logger& a_logger, log_level lv,
-                 const char (&filename)[N], size_t ln,
+                 const char (&a_src_location)[N],
                  const Alloc& alloc = Alloc());
 
     template <int N>
     log_msg_info(log_level a_lv, const std::string& a_category,
-                 const char (&a_filename)[N], size_t a_ln,
+                 const char (&a_src_location)[N],
                  const Alloc& alloc = Alloc());
 
     log_msg_info(log_level a_lv, const std::string& a_category,
@@ -93,10 +92,9 @@ public:
     time_val const&     msg_time()          const { return m_timestamp;}
     log_level           level()             const { return m_level;    }
     const std::string&  category()          const { return m_category; }
-    const char*         src_file()          const { return m_src_file; }
-    size_t              src_file_len()      const { return m_src_file_len; }
-    size_t              src_line()          const { return m_src_line; }
-    bool                has_src_location()  const { return m_src_file; }
+    const char*         src_loc()           const { return m_src_location; }
+    size_t              src_loc_len()       const { return m_src_loc_len;  }
+    bool                has_src_location()  const { return m_src_location; }
 
     const char*         data()              const { return m_data.str(); }
     size_t              data_len()          const { return m_data.size();  }
@@ -105,16 +103,26 @@ public:
 
     std::string src_location() const {
         detail::basic_buffered_print<128> buf;
-        buf << '[' << src_file() << ':' << src_line() << ']';
+        buf << '[' << src_loc() << ']';
         return buf.to_string();
     }
 
-    void format(const char* a_fmt, ...);
+    void format(const char* a_fmt, ...)
+#ifdef __GNUC__
+        // Since this is a member function, first argument is 'this', hence '2,3':
+        __attribute__((format(printf,2,3)))
+#endif
+    ;
     void format(const char* a_fmt, va_list a_args);
 
     // Helper function for LOG_* macros. See logger_impl.ipp for implementation.
     void log();
-    void log(const char* a_fmt, ...);
+    void log(const char* a_fmt, ...)
+#ifdef __GNUC__
+        // Since this is a member function, first argument is 'this', hence '2,3':
+        __attribute__((format(printf,2,3)))
+#endif
+    ;
 
     /// Helper class used to implement streaming support in the logger.
     /// It makes it possible to write:

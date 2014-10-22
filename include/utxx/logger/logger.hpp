@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdarg.h>
 #include <stdio.h>
 #include <boost/function.hpp>
+#include <utxx/compiler_hints.hpp>
 #include <utxx/config_tree.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -65,29 +66,29 @@ namespace utxx {
 
 #ifdef _MSC_VER
 
-#define LOG_TRACE5(FmtArgs)
-#define LOG_TRACE4(FmtArgs)
-#define LOG_TRACE3(FmtArgs)
-#define LOG_TRACE2(FmtArgs)
-#define LOG_TRACE1(FmtArgs)
-#define LOG_DEBUG(FmtArgs)      printf FmtArgs;
-#define LOG_INFO(FmtArgs)       printf FmtArgs;
-#define LOG_WARNING(FmtArgs)    printf FmtArgs;
-#define LOG_ERROR(FmtArgs)      printf FmtArgs;
-#define LOG_FATAL(FmtArgs)      printf FmtArgs;
-#define LOG_ALERT(FmtArgs)      printf FmtArgs;
+#define LOG_TRACE5(Fmt, ...)
+#define LOG_TRACE4(Fmt, ...)
+#define LOG_TRACE3(Fmt, ...)
+#define LOG_TRACE2(Fmt, ...)
+#define LOG_TRACE1(Fmt, ...)
+#define LOG_DEBUG(Fmt, ...)      printf(Fmt, ##__VA_ARGS__);
+#define LOG_INFO(Fmt, ...)       printf(Fmt, ##__VA_ARGS__);
+#define LOG_WARNING(Fmt, ...)    printf(Fmt, ##__VA_ARGS__);
+#define LOG_ERROR(Fmt, ...)      printf(Fmt, ##__VA_ARGS__);
+#define LOG_FATAL(Fmt, ...)      printf(Fmt, ##__VA_ARGS__);
+#define LOG_ALERT(Fmt, ...)      printf(Fmt, ##__VA_ARGS__);
 
-#define LOG_CAT_TRACE5(Cat, FmtArgs)
-#define LOG_CAT_TRACE4(Cat, FmtArgs)
-#define LOG_CAT_TRACE3(Cat, FmtArgs)
-#define LOG_CAT_TRACE2(Cat, FmtArgs)
-#define LOG_CAT_TRACE1(Cat, FmtArgs)
-#define LOG_CAT_DEBUG (Cat, FmtArgs)     printf FmtArgs;
-#define LOG_CAT_INFO  (Cat, FmtArgs)     printf FmtArgs;
-#define LOG_CAT_WARNING(Cat, FmtArgs)    printf FmtArgs;
-#define LOG_CAT_ERROR (Cat, FmtArgs)     printf FmtArgs;
-#define LOG_CAT_FATAL (Cat, FmtArgs)     printf FmtArgs;
-#define LOG_CAT_ALERT (Cat, FmtArgs)     printf FmtArgs;
+#define LOG_CAT_TRACE5(Cat, Fmt, ...)
+#define LOG_CAT_TRACE4(Cat, Fmt, ...)
+#define LOG_CAT_TRACE3(Cat, Fmt, ...)
+#define LOG_CAT_TRACE2(Cat, Fmt, ...)
+#define LOG_CAT_TRACE1(Cat, Fmt, ...)
+#define LOG_CAT_DEBUG (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
+#define LOG_CAT_INFO  (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
+#define LOG_CAT_WARNING(Cat, Fmt, ...)    printf(Fmt, ##__VA_ARGS__);
+#define LOG_CAT_ERROR (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
+#define LOG_CAT_FATAL (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
+#define LOG_CAT_ALERT (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
 
 #ifndef LOG
 #  define LOG(Level) std::cout
@@ -99,67 +100,67 @@ namespace utxx {
 /// the <printf> function: <(const char* fmt, ...)>
 #ifndef UTXX_SKIP_LOG_MACROS
 typedef log_msg_info<> _lim;
-#define LOG_TRACE5(FmtArgs)  do { \
+#define LOG_TRACE5(Fmt, ...)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE5 , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_TRACE4(FmtArgs)  do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_TRACE4(Fmt, ...)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE4 , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_TRACE3(FmtArgs)  do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_TRACE3(Fmt, ...)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE3 , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_TRACE2(FmtArgs)  do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_TRACE2(Fmt, ...)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE2 , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_TRACE1(FmtArgs)  do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_TRACE1(Fmt, ...)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE1 , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_DEBUG(FmtArgs)   do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_DEBUG(Fmt, ...)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_DEBUG  , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_INFO(FmtArgs)    do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_INFO(Fmt, ...)    do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_INFO   , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_WARNING(FmtArgs) do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_WARNING(Fmt, ...) do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_WARNING, \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_ERROR(FmtArgs)   do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_ERROR(Fmt, ...)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_ERROR  , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_FATAL(FmtArgs)   do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_FATAL(Fmt, ...)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_FATAL  , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_ALERT(FmtArgs)   do { \
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_ALERT(Fmt, ...)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_ALERT  , \
-        __FILE__, __LINE__).log FmtArgs; } while(0)
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
 
-#define LOG_CAT_TRACE5(Cat, FmtArgs)  do { \
-    utxx::_lim(utxx::LEVEL_TRACE5 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_TRACE4(Cat, FmtArgs)  do { \
-    utxx::_lim(utxx::LEVEL_TRACE4 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_TRACE3(Cat, FmtArgs)  do { \
-    utxx::_lim(utxx::LEVEL_TRACE3 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_TRACE2(Cat, FmtArgs)  do { \
-    utxx::_lim(utxx::LEVEL_TRACE2 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_TRACE1(Cat, FmtArgs)  do { \
-    utxx::_lim(utxx::LEVEL_TRACE1 , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_DEBUG(Cat, FmtArgs)   do { \
-    utxx::_lim(utxx::LEVEL_DEBUG  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_INFO(Cat, FmtArgs)    do { \
-    utxx::_lim(utxx::LEVEL_INFO   , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_WARNING(Cat, FmtArgs) do { \
-    utxx::_lim(utxx::LEVEL_WARNING, Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_ERROR(Cat, FmtArgs)   do { \
-    utxx::_lim(utxx::LEVEL_ERROR  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_FATAL(Cat, FmtArgs)   do { \
-    utxx::_lim(utxx::LEVEL_FATAL  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
-#define LOG_CAT_ALERT(Cat, FmtArgs)   do { \
-    utxx::_lim(utxx::LEVEL_ALERT  , Cat, __FILE__, __LINE__).log FmtArgs; } while(0)
+#define LOG_CAT_TRACE5(Cat, Fmt, ...)  do { \
+    utxx::_lim(utxx::LEVEL_TRACE5 , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_TRACE4(Cat, Fmt, ...)  do { \
+    utxx::_lim(utxx::LEVEL_TRACE4 , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_TRACE3(Cat, Fmt, ...)  do { \
+    utxx::_lim(utxx::LEVEL_TRACE3 , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_TRACE2(Cat, Fmt, ...)  do { \
+    utxx::_lim(utxx::LEVEL_TRACE2 , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_TRACE1(Cat, Fmt, ...)  do { \
+    utxx::_lim(utxx::LEVEL_TRACE1 , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_DEBUG(Cat, Fmt, ...)   do { \
+    utxx::_lim(utxx::LEVEL_DEBUG  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_INFO(Cat, Fmt, ...)    do { \
+    utxx::_lim(utxx::LEVEL_INFO   , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_WARNING(Cat, Fmt, ...) do { \
+    utxx::_lim(utxx::LEVEL_WARNING, Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_ERROR(Cat, Fmt, ...)   do { \
+    utxx::_lim(utxx::LEVEL_ERROR  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_FATAL(Cat, Fmt, ...)   do { \
+    utxx::_lim(utxx::LEVEL_FATAL  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+#define LOG_CAT_ALERT(Cat, Fmt, ...)   do { \
+    utxx::_lim(utxx::LEVEL_ALERT  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
 
 #ifndef LOG
 #define LOG(Level) \
         utxx::_lim(utxx::logger::instance(), utxx::LEVEL_##Level, \
-                   __FILE__, __LINE__)
+                   UTXX_FILE_SRC_LOCATION)
 #endif
 
 #endif
@@ -234,7 +235,7 @@ private:
     /// @param args is the list of optional arguments passed to <args>
     template <int N>
     static void log(logger& a_logger, log_level a_level, const std::string& a_category,
-        const char (&a_filename)[N], size_t a_line,
+        const char (&a_src_location)[N],
         const char* a_fmt, va_list args);
 
     void do_log(const log_msg_info<>& a_info);

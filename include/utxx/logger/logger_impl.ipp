@@ -51,24 +51,15 @@ inline logger* log_msg_info<Alloc>::get_logger() {
 template <class Alloc>
 template <int N>
 inline log_msg_info<Alloc>::log_msg_info(
-    logger& a_logger, log_level a_lv, const char (&a_filename)[N], size_t a_ln,
+    logger& a_logger, log_level a_lv, const char (&a_src_location)[N],
     const Alloc& a_alloc
 )
     : m_logger(&a_logger)
     , m_timestamp(now_utc())
     , m_level(a_lv)
-    , m_src_file_len(N-1)
-    , m_src_file(a_filename)
-    , m_src_line(a_ln)
+    , m_src_loc_len(N-1)
+    , m_src_location(a_src_location)
     , m_data(a_alloc)
-    /*
-    , m_src_location_len(
-            m_logger.show_location()
-            ? snprintf(m_src_location, sizeof(m_src_location), " [%s:%zd]",
-                path::basename(filename, filename+N), ln)
-            : 0
-      )
-    */
 {
     format_header();
 }
@@ -77,16 +68,15 @@ template <class Alloc>
 template <int N>
 inline log_msg_info<Alloc>::log_msg_info(
     log_level a_lv, const std::string& a_category,
-    const char (&a_filename)[N], size_t a_ln,
+    const char (&a_src_location)[N],
     const Alloc& a_alloc
 )
     : m_logger(&logger::instance())
     , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_category(a_category)
-    , m_src_file_len(N-1)
-    , m_src_file(a_filename)
-    , m_src_line(a_ln)
+    , m_src_loc_len(N-1)
+    , m_src_location(a_src_location)
     , m_data(a_alloc)
 {
     format_header();
@@ -100,9 +90,8 @@ inline log_msg_info<Alloc>::log_msg_info(
     , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_category(a_category)
-    , m_src_file_len(0)
-    , m_src_file("")
-    , m_src_line(0)
+    , m_src_loc_len(0)
+    , m_src_location("")
     , m_data(a_alloc)
 {
     format_header();
@@ -180,13 +169,11 @@ void log_msg_info<Alloc>::format_footer()
             m_data.last() = '|';
         else
             m_data.print('|');
-        const char* q = strrchr(m_src_file, s_sep);
-        q = q ? q+1 : m_src_file;
-        auto len = m_src_file + m_src_file_len - q;
-        m_data.reserve(len+12);
+        const char* q = strrchr(m_src_location, s_sep);
+        q = q ? q+1 : m_src_location;
+        auto len = m_src_location + m_src_loc_len - q;
+        m_data.reserve(len+1); // extra byte for possible '\n'
         m_data.sprint(q, len);
-        m_data.print(':');
-        m_data.print(m_src_line);
     }
     // We reached the end of the streaming sequence:
     // log_msg_info lmi; lmi << a << b << c;
@@ -215,10 +202,10 @@ inline void logger::do_log(const log_msg_info<>& a_info) {
 template <int N>
 inline void logger::log(logger& a_logger, log_level a_level,
     const std::string& a_category,
-    const char (&a_filename)[N], size_t a_line,
+    const char (&a_src_location)[N],
     const char* a_fmt, va_list args)
 {
-    log_msg_info<> info(a_logger, a_level, a_category, a_filename, a_line);
+    log_msg_info<> info(a_logger, a_level, a_category, a_src_location);
     info.format(a_fmt, args);
     a_logger.log(info);
 }
