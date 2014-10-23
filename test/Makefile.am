@@ -29,6 +29,7 @@ TEST_UTXX_SRCS = \
 	test_error.cpp \
 	test_file_reader.cpp \
 	test_futex.cpp \
+	test_function.cpp \
 	test_hashmap.cpp \
 	test_high_res_timer.cpp \
 	test_iovec.cpp \
