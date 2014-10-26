@@ -67,11 +67,11 @@ struct concurrent_mpsc_queue {
         template<typename... Args>
         node(Args&&... args) : m_next(nullptr), m_data(std::forward<Args>(args)...) {}
 
-        const T&            data() const { return m_data; }
-        T&                  data()       { return m_data; }
-        constexpr unsigned  size() const { return sizeof(T); }
-        node*               next()       { return m_next; }
-        void  next(node* a_node)         { m_next = a_node; }
+        const T&            data() const { return m_data;   }
+        T&                  data()       { return m_data;   }
+        constexpr unsigned  size() const { return sizeof(T);}
+        node*               next()       { return m_next;   }
+        void    next(node* a_node)       { m_next = a_node; }
     };
 
     typedef typename Allocator::template rebind<node>::other Alloc;
@@ -81,12 +81,15 @@ struct concurrent_mpsc_queue {
         , m_allocator(a_alloc)
     {}
 
+    /// Returns true if the queue is empty
     bool empty() const {
         return m_head.load(std::memory_order_relaxed) == nullptr;
     }
 
+    /// Allocate a node containing instance of type T constructed with \a args.
+    /// @return constructed node or null if there is no memory.
     template <typename... Args>
-    node* allocate(Args&&... args) {
+    node* allocate(Args&&... args) noexcept {
         try {
             node*  n = m_allocator.allocate(1);
             new   (n)  node(std::forward<Args>(args)...);
@@ -97,7 +100,7 @@ struct concurrent_mpsc_queue {
     }
 
     /// Insert an element's copy into the queue. 
-    bool push(const T& data) {
+    bool push(const T& data) noexcept {
         try {
             node* n = m_allocator.allocate(1);
             new  (n)  node(data);
@@ -110,7 +113,7 @@ struct concurrent_mpsc_queue {
 
     /// Insert an element into the queue. 
     /// The element must have been previously allocated using allocate() function.
-    void push(node* a_node) {
+    void push(node* a_node) noexcept {
         node*   h;
         do    { h = m_head.load(std::memory_order_relaxed); a_node->next(h); }
         while (!m_head.compare_exchange_weak(h, a_node, std::memory_order_release));
@@ -118,10 +121,11 @@ struct concurrent_mpsc_queue {
 
     /// Emplace an element into the queue by constructing the data with given arguments. 
     template <typename... Args>
-    bool emplace(Args&&... args) {
+    bool emplace(Args&&... args) noexcept {
         try {
             node* n = allocate(std::forward<Args>(args)...);
             push(n);
+            return true;
         } catch (std::bad_alloc const&) {
             return false;
         }
@@ -130,7 +134,7 @@ struct concurrent_mpsc_queue {
     /// Pop all queued elements in the order of insertion
     ///
     /// Use concurrent_mpsc_queue::free() to deallocate each node
-    node* pop_all() {
+    node* pop_all() noexcept {
         node* first = nullptr;
         for (node* tmp, *last = pop_all_reverse(); last; first = tmp) {
             tmp     = last;
@@ -143,7 +147,7 @@ struct concurrent_mpsc_queue {
     /// Pop all queued elements in the reverse order
     ///
     /// Use concurrent_mpsc_queue::free() to deallocate each node
-    node* pop_all_reverse() {
+    node* pop_all_reverse() noexcept {
         return m_head.exchange(nullptr, std::memory_order_acquire);
     }
 

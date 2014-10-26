@@ -3,25 +3,24 @@ utxx_LTLIBRARIES = libutxx.la
 bin_PROGRAMS = mreceive tailagg
 
 UTXX64_SRCS = \
-	name.cpp
+    name.cpp
 
 UTXX_SRCS = \
-	config_validator.cpp \
-	convert.cpp \
+    config_validator.cpp \
+    convert.cpp \
     futex.cpp \
-	high_res_timer.cpp \
-	logger.cpp \
-	logger_impl.cpp \
-	logger_impl_async_file.cpp \
-	logger_impl_console.cpp \
-	logger_impl_file.cpp \
-	logger_impl_scribe.cpp \
-	logger_impl_syslog.cpp \
-	path.cpp \
-	stream64.cpp \
-	string.cpp \
-	timestamp.cpp \
-	url.cpp \
+    high_res_timer.cpp \
+    logger.cpp \
+    logger_impl.cpp \
+    logger_impl_console.cpp \
+    logger_impl_file.cpp \
+    logger_impl_scribe.cpp \
+    logger_impl_syslog.cpp \
+    path.cpp \
+    stream64.cpp \
+    string.cpp \
+    timestamp.cpp \
+    url.cpp \
     verbosity.cpp
 
 THRIFT 				= 

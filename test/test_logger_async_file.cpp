@@ -17,15 +17,15 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_async_logger )
 {
     variant_tree pt;
-    const char* filename = "/tmp/logger.async.file.log";
+    const char* filename = "/tmp/logger.file.log";
     const int iterations = 1000;
 
     pt.put("logger.timestamp",           variant("none"));
     pt.put("logger.show-ident",          variant(false));
     pt.put("logger.show-location",       variant(false));
-    pt.put("logger.async-file.levels",   variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.async-file.filename", variant(filename));
-    pt.put("logger.async-file.append",   variant(false));
+    pt.put("logger.file.levels",   variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename", variant(filename));
+    pt.put("logger.file.append",   variant(false));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         BOOST_MESSAGE(pt.dump(std::cout, 2, false, true));
@@ -36,12 +36,12 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     log.init(pt);
 
     for (int i = 0, n = 0; i < iterations; i++) {
-        LOG_ERROR      ("(%d) This is an error #%d", ++n, 123);
-        LOG_WARNING    ("(%d) This is a %s", ++n, "warning");
-        LOG_FATAL      ("(%d) This is a %s", ++n, "fatal error");
-        LOG_CAT_ERROR  ("Cat1", "(%d) This is an error #%d", ++n, 456);
-        LOG_CAT_WARNING("Cat2", "(%d) This is a %s", ++n, "warning");
-        LOG_CAT_FATAL  ("Cat3", "(%d) This is a %s", ++n, "fatal error");
+        LOG_ERROR      ("(%d) This is an error #%d", n, 123);               n++;
+        LOG_WARNING    ("(%d) This is a %s", n, "warning");                 n++;
+        LOG_FATAL      ("(%d) This is a %s", n, "fatal error");             n++;
+        LOG_CAT_ERROR  ("Cat1", "(%d) This is an error #%d", n, 456);       n++;
+        LOG_CAT_WARNING("Cat2", "(%d) This is a %s", n, "warning");         n++;
+        LOG_CAT_FATAL  ("Cat3", "(%d) This is a %s", n, "fatal error");     n++;
     }
 
 
@@ -175,9 +175,9 @@ struct worker {
         barrier.wait();
         for (int i=0, n=-1; i < iterations; i++) {
             count.fetch_add(1, std::memory_order_relaxed);
-            LOG_ERROR  ("%d %9d This is an error #%d", id, ++n, 123);
-            LOG_WARNING("%d %9d This is a %s", id, ++n, "warning");
-            LOG_FATAL  ("%d %9d This is a %s", id, ++n, "fatal error");
+            LOG_ERROR  ("%d %9d This is an error #%d", id, n, 123);     n++;
+            LOG_WARNING("%d %9d This is a %s", id, n, "warning");       n++;
+            LOG_FATAL  ("%d %9d This is a %s", id, n, "fatal error");   n++;
         }
         if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Worker %d finished (count=%ld)\n",
@@ -195,11 +195,11 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     pt.put("logger.timestamp",    variant("date-time-usec"));
     pt.put("logger.show-ident",   variant(false));
     pt.put("logger.show-location",variant(false));
-    pt.put("logger.async-file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.async-file.filename",  variant(filename));
-    pt.put("logger.async-file.append", variant(false));
+    pt.put("logger.file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename",  variant(filename));
+    pt.put("logger.file.append", variant(false));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.async-file"));
+    BOOST_REQUIRE(pt.get_child_optional("logger.file"));
 
     logger& log = logger::instance();
     log.init(pt);

@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_LOGGER_CONSOLE_HPP_
 
 #include <utxx/logger.hpp>
+#include <utxx/time_val.hpp>
 
 namespace utxx { 
 
@@ -43,7 +44,7 @@ class logger_impl_console: public logger_impl {
     int          m_stdout_levels;
     int          m_stderr_levels;
 
-    static const int s_def_stdout_levels = LEVEL_INFO | LEVEL_WARNING;
+    static const int s_def_stdout_levels = LEVEL_INFO  | LEVEL_WARNING;
     static const int s_def_stderr_levels = LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT;
 
     logger_impl_console(const char* a_name)
@@ -67,7 +68,8 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info<>& info) throw(std::runtime_error);
+    void log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
+         throw  (io_error);
 };
 
 } // namespace utxx

@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 /// \file  logger_impl.cpp
 //----------------------------------------------------------------------------
-/// \brief Implementation of logger back-end implementation registrar.
+/// \brief Implementation of logger.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2010-10-04
@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the utxx open-source project.
+This file is part of the utxx project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -29,29 +29,46 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <utxx/logger/logger_impl.hpp>
+#include <utxx/logger/logger.hpp>
+#include <utxx/time_val.hpp>
+#include <utxx/convert.hpp>
+#include <boost/filesystem/path.hpp>
+#include <algorithm>
 
 namespace utxx {
 
-void logger_impl_mgr::register_impl(
-    const char* config_name, std::function<logger_impl*(const char*)>& factory)
+logger_impl::logger_impl()
+    : m_log_mgr(NULL), m_bin_sink_id(-1)
 {
-    std::lock_guard<std::mutex> guard(m_mutex);
-    m_implementations[config_name] = factory;
+    for (int i=0; i < NLEVELS; ++i)
+        m_msg_sink_id[i] = -1;
 }
 
-void logger_impl_mgr::unregister_impl(const char* config_name)
+logger_impl::~logger_impl()
 {
-    BOOST_ASSERT(config_name);
-    std::lock_guard<std::mutex> guard(m_mutex);
-    m_implementations.erase(config_name);
+    if (m_log_mgr) {
+        for (int i=0; i < NLEVELS; ++i)
+            if (m_msg_sink_id[i] != -1) {
+                log_level level = logger::signal_slot_to_level(i);
+                m_log_mgr->remove_msg_logger(level, m_msg_sink_id[i]);
+                m_msg_sink_id[i] = -1;
+            }
+        if (m_bin_sink_id != -1) {
+            m_log_mgr->remove_bin_logger(m_bin_sink_id);
+            m_bin_sink_id = -1;
+        }
+    }
 }
 
-logger_impl_mgr::impl_callback_t*
-logger_impl_mgr::get_impl(const char* config_name) {
-    std::lock_guard<std::mutex> guard(m_mutex);
-    impl_map_t::iterator it = m_implementations.find(config_name);
-    return (it != m_implementations.end()) ? &it->second : NULL;
+void logger_impl::add_msg_logger(log_level level, on_msg_delegate_t subscriber)
+{
+    m_msg_sink_id[logger::level_to_signal_slot(level)] =
+        m_log_mgr->add_msg_logger(level, subscriber);
+}
+
+void logger_impl::add_bin_logger(on_bin_delegate_t subscriber)
+{
+    m_bin_sink_id = m_log_mgr->add_bin_logger(subscriber);
 }
 
 } // namespace utxx

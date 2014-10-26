@@ -63,24 +63,23 @@ bool logger_impl_console::init(const variant_tree& a_config)
     m_stderr_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stderr_levels;
 
     int all_levels = m_stdout_levels | m_stderr_levels;
-    for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
+    for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {
         log_level level = logger::signal_slot_to_level(lvl);
         if ((all_levels & static_cast<int>(level)) != 0)
-            this->add_msg_logger(level,
-                on_msg_delegate_t::from_method
+            this->add(level, logger::on_msg_delegate_t::from_method
                     <logger_impl_console, &logger_impl_console::log_msg>(this));
     }
     return true;
 }
 
-void logger_impl_console::log_msg(const log_msg_info<>& info)
-    throw(std::runtime_error)
+void logger_impl_console::log_msg(
+    const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
 {
-    if (info.level() & m_stdout_levels) {
-        std::cout << info.data();
+    if (a_msg.level() & m_stdout_levels) {
+        std::cout << a_buf;
         std::flush(std::cout);
-    } else if (info.level() & m_stderr_levels) {
-        std::cerr << info.data();
+    } else if (a_msg.level() & m_stderr_levels) {
+        std::cerr << a_buf;
     }
 }
 
