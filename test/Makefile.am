@@ -101,7 +101,7 @@ endif
 
 test_utxx_CXXFLAGS 	= -I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(THRIFT_CPPFLAGS)
 test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS) \
-                      -L$(srcdir)/../src/.libs \
+                      -L$(srcdir)/../src/.libs -lrt \
                       -rpath $(abspath $(srcdir)/../src/.libs) \
                       -rpath $(abspath $(prefix)/gcc/lib) \
                       $(if $(THRIFT_LIBDIR),-rpath $(THRIFT_LIBDIR))

@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/lock.hpp>
 
 #include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 
 using namespace boost::unit_test;
 using namespace utxx;
@@ -64,26 +65,32 @@ struct blob {
     }
 };
 
-typedef persist_array<blob, 4>            persist_type;
-typedef persist_array<blob, 4, null_lock> persist_nolock_type;
+typedef persist_array<blob, 1>            persist_type;
+typedef persist_array<blob, 1, null_lock> persist_nolock_type;
 
-//-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
+static_assert(sizeof(persist_type) == sizeof(persist_nolock_type), "size mismatch");
+
+template <typename Deleter, typename Init1, typename Init2>
+void run_test(const char* a_test_name, Init1 a_init_fun1, Init2 a_init_fun2,
+              size_t a_capacity)
 {
-    ::unlink(s_filename);
+    Deleter deleter;
+
     {
         persist_type a;
         blob orig(1, 2);
 
         bool l_created;
-        BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
+        BOOST_REQUIRE_NO_THROW(l_created = a_init_fun1(a));
         BOOST_REQUIRE(l_created);
-        BOOST_REQUIRE_EQUAL(0u, a.count());
-        BOOST_REQUIRE_EQUAL(1u, a.capacity());
-        
+        BOOST_REQUIRE_EQUAL(0u,         a.count());
+        BOOST_REQUIRE_EQUAL(a_capacity, a.capacity());
+
         size_t n;
         BOOST_REQUIRE_NO_THROW(n = a.allocate_rec());
         BOOST_REQUIRE_EQUAL(0u, n);
+        for (size_t i=1; i < a_capacity; i++)
+            a.allocate_rec();
         BOOST_REQUIRE_THROW(a.allocate_rec(), utxx::runtime_error);
 
         blob* b = a.get(n);
@@ -103,11 +110,11 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         blob orig(1, 2);
 
         bool l_created;
-        BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
+        BOOST_REQUIRE_NO_THROW(l_created = a_init_fun1(a));
         BOOST_REQUIRE(!l_created);
-        BOOST_REQUIRE_EQUAL(1u, a.count());
-        BOOST_REQUIRE_EQUAL(1u, a.capacity());
-        
+        BOOST_REQUIRE_EQUAL(a_capacity, a.count());
+        BOOST_REQUIRE_EQUAL(a_capacity, a.capacity());
+
         blob* b = a.get(0);
         BOOST_REQUIRE(b);
 
@@ -119,22 +126,53 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
         persist_nolock_type a;
         blob orig(1, 2);
 
-        bool l_created;
-        BOOST_REQUIRE_NO_THROW(l_created = a.init(s_filename, 1, false));
-        BOOST_REQUIRE(!l_created);
-        BOOST_REQUIRE_EQUAL(1u, a.count());
-        BOOST_REQUIRE_EQUAL(1u, a.capacity());
-        
-        blob* b = a.get(0);
-        BOOST_REQUIRE(b);
-
-        BOOST_REQUIRE_EQUAL(10, a[0].i1);
-        BOOST_REQUIRE_EQUAL(20, a[0].i2);
+        // persist_nolock_type has a different offset to records than persist_type
+        BOOST_REQUIRE_THROW(a_init_fun2(a), utxx::runtime_error);
     }
-
-    unlink(s_filename);
 }
 
+
+//-----------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
+{
+    struct file_deleter {
+        file_deleter()  { ::unlink(s_filename); }
+        ~file_deleter() { ::unlink(s_filename); }
+    };
+
+    size_t cap = 1;
+    auto init1 = [=](persist_type& a)        { return a.init(s_filename, cap, false); };
+    auto init2 = [=](persist_nolock_type& a) { return a.init(s_filename, cap, false); };
+    run_test<file_deleter, decltype(init1), decltype(init2)>
+        ("test_persist_array_get_set", init1, init2, cap);
+}
+
+//-----------------------------------------------------------------------------
+BOOST_AUTO_TEST_CASE( test_persist_array_shared_mem )
+{
+    static const char s_shm_name[] = "utxx-test-persist-array";
+
+    //Remove shared memory on construction and destruction
+    struct shm_remove
+    {
+        shm_remove() { bip::shared_memory_object::remove(s_shm_name); }
+        ~shm_remove(){ bip::shared_memory_object::remove(s_shm_name); }
+    };
+
+    bip::fixed_managed_shared_memory mem
+        (bip::open_or_create, s_shm_name,
+            persist_type::total_size(10) + 4096);
+
+    size_t cap = 10;
+    auto init1 = [&](persist_type& a)
+                 { return a.init(mem, "test", persist_attach_type::READ_WRITE, cap); };
+    auto init2 = [&](persist_nolock_type& a)
+                 { return a.init(mem, "test", persist_attach_type::READ_WRITE, cap); };
+    run_test<shm_remove, decltype(init1), decltype(init2)>
+        ("test_persist_array_shared_mem", init1, init2, cap);
+}
+
+//-----------------------------------------------------------------------------
 namespace {
     class producer {
         int  m_instance;
@@ -174,7 +212,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
     {
         persist_type l_storage;
         bool l_created;
-        
+
         BOOST_REQUIRE_NO_THROW(l_created = l_storage.init(s_filename, ITERATIONS, false));
         BOOST_REQUIRE(l_created);
 

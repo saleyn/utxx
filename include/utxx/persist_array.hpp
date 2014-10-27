@@ -43,14 +43,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/interprocess/sync/scoped_lock.hpp>
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
-#include <boost/static_assert.hpp>
-#include <boost/scope_exit.hpp>
-#include <boost/thread.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/filesystem.hpp>
 #include <utxx/compiler_hints.hpp>
+#include <utxx/scope_exit.hpp>
 #include <utxx/error.hpp>
 #include <stdexcept>
 #include <fstream>
+#include <thread>
+#include <mutex>
 #include <string>
 #include <vector>
 #include <cstring>
@@ -61,23 +62,25 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-    namespace { namespace bip = boost::interprocess; }
+    namespace        { namespace bip = boost::interprocess; }
     namespace detail { struct empty_data {}; }
 
+    enum class persist_attach_type { READ_WRITE, RECREATE, READ_ONLY };
+
     template <
-        typename T,
-        size_t NLocks = 32,
-        typename Lock = boost::mutex,
-        typename ExtraHeaderData = detail::empty_data>
+        typename    T,
+        std::size_t NLocks          = 32,
+        typename    Lock            = std::mutex,
+        typename    ExtraHeaderData = detail::empty_data>
     struct persist_array {
-        struct header {
+        struct header : public ExtraHeaderData {
             static const uint32_t s_version = 0xa0b1c2d3;
             uint32_t            version;
             std::atomic<long>   rec_count;
             size_t              max_recs;
             size_t              rec_size;
+            size_t              recs_offset;
             Lock                locks[NLocks];
-            ExtraHeaderData     extra_header_data;
             T                   records[0];
         };
 
@@ -85,13 +88,13 @@ namespace utxx {
     protected:
         typedef persist_array<T, NLocks, Lock, ExtraHeaderData> self_type;
 
-        BOOST_STATIC_ASSERT(!(NLocks & (NLocks - 1))); // must be power of 2
+        static_assert((NLocks & (NLocks-1)) == 0, "Must be power of 2");
 
         static const size_t s_lock_mask = NLocks-1;
         // Shared memory file mapping
-        bip::file_mapping  m_file;
+        bip::file_mapping   m_file;
         // Shared memory mapped region
-        bip::mapped_region m_region;
+        bip::mapped_region  m_region;
 
         // Locks that guard access to internal record structures.
         header* m_header;
@@ -106,11 +109,8 @@ namespace utxx {
         }
 
     public:
-        typedef Lock                        lock_type;
-        typedef typename Lock::scoped_lock  scoped_lock;
-        typedef typename Lock::scoped_try_lock  scoped_try_lock;
-
-        BOOST_STATIC_ASSERT((NLocks & (NLocks-1)) == 0); // Must be power of 2.
+        using lock_type   = Lock;
+        using scoped_lock = std::lock_guard<std::mutex>;
 
         persist_array()
             : m_header(NULL), m_begin(NULL), m_end(NULL)
@@ -119,21 +119,37 @@ namespace utxx {
         /// Default permission mask used for opening a file
         static int default_file_mode() { return S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP; }
 
+        /// Get total memory size needed to allocate \a a_max_recs
+        static size_t total_size(size_t a_max_recs) {
+            static const std::size_t s_pack_size = getpagesize();
+
+            auto sz = sizeof(header) + (a_max_recs * sizeof(T));
+            sz += (s_pack_size - sz % s_pack_size);
+            return sz;
+        }
+
         /// Initialize the storage
         /// @return true if the storage file didn't exist and was created
         bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
-            int a_mode = default_file_mode()) throw (io_error);
+            int a_mode = default_file_mode()) throw (io_error, utxx::runtime_error);
+
+        /// Initialize the storage in shared memory.
+        /// @param a_segment  the shared memory segment
+        /// @param a_name     the name of object in managed shared memory
+        /// @param a_flag     if RECREATE - the existing object will be recreated;
+        ///                   if READ_ONLY - will try to attach in read-only mode
+        /// @param a_max_recs
+        /// @return true if the shared memory object didn't exist and was created
+        bool init(bip::fixed_managed_shared_memory& a_segment,
+                  const char* a_name, persist_attach_type a_flag, size_t a_max_recs)
+                  throw (utxx::runtime_error);
 
         size_t count()    const { return m_header->rec_count.load(std::memory_order_relaxed); }
         size_t capacity() const { return m_header->max_recs; }
 
         /// Return internal storage header.
         /// Use only for debugging
-        const header&           header_data() const { BOOST_ASSERT(m_header); return *m_header; }
-
-        /// Return user-defined custom header data.
-        const ExtraHeaderData&  extra_header_data() const { return m_header->extra_header_data; }
-        ExtraHeaderData&        extra_header_data() { return m_header->extra_header_data; }
+        const header& header_data() const { assert(m_header); return *m_header; }
 
         /// Allocate next record and return its ID.
         /// @return
@@ -248,12 +264,9 @@ namespace utxx {
     template <typename T, size_t NLocks, typename Lock, typename Ext>
     bool persist_array<T,NLocks,Lock,Ext>::
     init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode)
-        throw (io_error)
+        throw (io_error, utxx::runtime_error)
     {
-        static const size_t s_pack_size = getpagesize();
-
-        size_t sz = sizeof(header) + (a_max_recs * sizeof(T));
-        sz += (s_pack_size - sz % s_pack_size);
+        auto sz = total_size(a_max_recs);
 
         bool l_exists;
         try {
@@ -278,13 +291,19 @@ namespace utxx {
                     header h;
                     f.sgetn(reinterpret_cast<char*>(&h), sizeof(header));
 
-                    if (h.version != header::s_version) {
-                        throw runtime_error("Invalid file format ", a_filename);
-                    }
-                    if (h.rec_size != sizeof(T)) {
-                        throw runtime_error("Invalid item size in file ", a_filename,
-                            " (expected ", sizeof(T), " got ", h.rec_size, ')');
-                    }
+                    if (h.version != header::s_version)
+                        throw utxx::runtime_error
+                            ("Invalid file format ", a_filename);
+                    if (h.rec_size != sizeof(T))
+                        throw utxx::runtime_error
+                            ("Invalid item size in file ", a_filename,
+                             " (expected ", sizeof(T), " got ", h.rec_size, ')');
+                    if (h.recs_offset != offsetof(header, records))
+                        throw utxx::runtime_error
+                            ("Mismatch in the records offset in ",
+                             a_filename, " (expected=",
+                             offsetof(header, records), ", got=",
+                             h.recs_offset, ')');
                     // Increase the file size if instructed to do so.
                     if (h.max_recs < a_max_recs) {
                         h.max_recs = a_max_recs;
@@ -301,18 +320,17 @@ namespace utxx {
                 if (l_fd < 0)
                     throw io_error(errno, "Error creating file ", a_filename);
 
-                BOOST_SCOPE_EXIT_TPL( (&l_fd) ) {
-                    ::close(l_fd);
-                } BOOST_SCOPE_EXIT_END;
+                UTXX_SCOPE_EXIT([=]{ ::close(l_fd); });
 
                 bip::file_lock flock(a_filename);
                 bip::scoped_lock<bip::file_lock> g_lock(flock);
 
                 header h;
-                h.version   = header::s_version;
+                h.version     = header::s_version;
                 h.rec_count.store(0, std::memory_order_release);
-                h.max_recs  = a_max_recs;
-                h.rec_size  = sizeof(T);
+                h.max_recs    = a_max_recs;
+                h.rec_size    = sizeof(T);
+                h.recs_offset = offsetof(header, records);
 
                 if (::write(l_fd, &h, sizeof(h)) < 0)
                     throw io_error(errno, "Error writing to file ", a_filename);
@@ -324,8 +342,9 @@ namespace utxx {
                 ::fsync(l_fd);
             }
 
-            bip::file_mapping shmf(a_filename, a_read_only ? bip::read_only : bip::read_write);
-            bip::mapped_region region(shmf, a_read_only ? bip::read_only : bip::read_write);
+            auto mode = a_read_only ? bip::read_only : bip::read_write;
+            bip::file_mapping  shmf  (a_filename, mode);
+            bip::mapped_region region(shmf,       mode);
 
             //Get the address of the mapped region
             void*  addr  = region.get_address();
@@ -333,14 +352,14 @@ namespace utxx {
             size_t size  = region.get_size();
             #endif
 
-            m_file.swap(shmf);
+            m_file  .swap(shmf);
             m_region.swap(region);
 
             //if (!exists && !a_read_only)
             //    memset(static_cast<char*>(addr) + sizeof(header), 0, size - sizeof(header));
             m_header = static_cast<header*>(addr);
             m_begin  = m_header->records;
-            m_end    = m_begin + a_max_recs;
+            m_end    = m_begin + m_header->max_recs;
             BOOST_ASSERT(reinterpret_cast<char*>(m_end) <= static_cast<char*>(addr)+size);
 
             //if (!l_exists && !a_read_only) {
@@ -363,6 +382,86 @@ namespace utxx {
         return !l_exists;
     }
 
+    template <typename T, size_t NLocks, typename Lock, typename Ext>
+    bool persist_array<T,NLocks,Lock,Ext>::
+    init(bip::fixed_managed_shared_memory& a_segment,
+         const char* a_name, persist_attach_type a_flag, size_t a_max_recs)
+        throw(utxx::runtime_error)
+    {
+        std::pair<char*, size_t> fres = a_segment.find<char>(a_name);
+
+        // If the segment was found, initialize the pointers and use it
+        if (fres.first != nullptr) {
+            if (a_flag == persist_attach_type::RECREATE) // Recreate existing object
+                (void)a_segment.destroy<char>(a_name);
+            else {
+                //assert(fres.second == 1);
+                m_header = reinterpret_cast<header*>(fres.first);
+                m_begin  = m_header->records;
+                m_end    = m_begin + m_header->max_recs;
+                if (m_header->recs_offset != offsetof(header, records))
+                    throw runtime_error("Mismatch in the records offset in '",
+                                        a_name, "' (expected=",
+                                        offsetof(header, records), ", got=",
+                                        m_header->recs_offset, ')');
+                BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
+                             reinterpret_cast<char*>(m_header)+fres.second);
+                return false;
+            }
+        } else if (a_flag == persist_attach_type::READ_ONLY)
+            throw utxx::runtime_error
+                ("Cannot read non-existing shared memory array '", a_name, "'");
+
+        // Calculate the full object size:
+        auto size = total_size(a_max_recs);
+
+        // Otherwise: create a new object:
+        try
+        {
+            // Allocate it as a named array of bytes, zeroing them out with
+            // 16-byte alignment:
+            static_assert(sizeof(long double) == 16, "sizeof(long double)!=16 ?");
+            int    sz16 = (size % 16 == 0) ? (size / 16) : (size / 16 + 1);
+
+            auto*  mem  = a_segment.construct<long double>(a_name)[sz16](0.0L);
+            assert(mem != NULL);
+
+            //if (!exists && !a_read_only)
+            //    memset(static_cast<char*>(addr) + sizeof(header), 0, size - sizeof(header));
+            m_header = reinterpret_cast<header*>(mem);
+            m_header->version     = header::s_version;
+            m_header->rec_count.store(0, std::memory_order_release);
+            m_header->max_recs    = a_max_recs;
+            m_header->rec_size    = sizeof(T);
+            m_header->recs_offset = offsetof(header, records);
+
+            m_begin  = m_header->records;
+            m_end    = m_begin + a_max_recs;
+
+            BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
+                         reinterpret_cast<char*>(mem)+size);
+
+            //if (!l_exists && !a_read_only) {
+            if (a_flag != persist_attach_type::READ_ONLY) {
+                // FIXME: need locking here
+
+                // If the file is open for writing, initialize the locks
+                // since previous program crash might have left locks in inconsistent state
+                for (Lock* l = m_header->locks, *e = l + NLocks; l != e; ++l)
+                    new (l) Lock();
+            }
+
+            return true;
+        }
+        catch (std::exception const& e)
+        {
+            // Delete the object if it has already been constructed:
+            if (a_flag != persist_attach_type::READ_ONLY)
+                (void)a_segment.destroy<char>(a_name);
+            throw utxx::runtime_error
+                ("Cannot create a shared memory array '", a_name, "': ", e.what());
+        }
+    }
 } // namespace utxx
 
 #endif // _UTXX_PERSISTENT_ARRAY_HPP_
