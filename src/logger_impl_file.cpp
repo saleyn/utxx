@@ -63,6 +63,8 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
     try {
         m_filename = a_config.get<std::string>("logger.file.filename");
+        if (m_log_mgr)
+            m_filename = m_log_mgr->replace_macros(m_filename);
     } catch (boost::property_tree::ptree_bad_data&) {
         throw badarg_error("logger.file.filename not specified");
     }

@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger/logger.hpp>
 #include <utxx/variant_tree_parser.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/xpressive/xpressive.hpp>
 #include <boost/thread/locks.hpp>
 #include <stdio.h>
 
@@ -154,6 +155,24 @@ logger_impl_mgr::get_impl(const char* config_name) {
     boost::lock_guard<boost::mutex> guard(m_mutex);
     impl_map_t::iterator it = m_implementations.find(config_name);
     return (it != m_implementations.end()) ? &it->second : NULL;
+}
+
+void logger::add_macro(const std::string& a_macro, const std::string& a_value)
+{
+    m_macro_var_map[a_macro] = a_value;
+}
+
+std::string logger::replace_macros(const std::string& a_value) const
+{
+    using namespace boost::posix_time;
+    using namespace boost::xpressive;
+    sregex re = "$(" >> (s1 = +_w) >> ')';
+    auto replace = [this](const smatch& what) {
+        auto it = this->m_macro_var_map.find(what[1].str());
+        return it == this->m_macro_var_map.end()
+                ? what[1].str() : it->second;
+    };
+    return regex_replace(a_value, re, replace);
 }
 
 void logger::init(const char* filename)

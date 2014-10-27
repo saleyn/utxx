@@ -186,6 +186,9 @@ public:
     typedef logger_impl::on_msg_delegate_t  on_msg_delegate_t;
     typedef logger_impl::on_bin_delegate_t  on_bin_delegate_t;
 
+    // Maps macros to values that can be used in configuration
+    typedef std::map<std::string, std::string> macro_var_map;
+
 private:
     signal<on_msg_delegate_t>       m_sig_msg[logger_impl::NLEVELS];
     signal<on_bin_delegate_t>       m_sig_bin;
@@ -196,6 +199,8 @@ private:
     bool                            m_show_location;
     bool                            m_show_ident;
     std::string                     m_ident;
+    macro_var_map                   m_macro_var_map;
+
 
     boost::function<void (const char* reason)> m_error;
 
@@ -287,6 +292,16 @@ public:
     /// instead of throwing run-time exceptions.  Note that the handler
     /// may be called from different threads so it has to be thread-safe.
     void set_error_handler(boost::function<void (const char*)>& eh) { m_error = eh; }
+
+    // FIXME: macros are temporary experimental feature that will be
+    // replaces in a future release
+
+    /// Macro name->value mapping that can be used in configuration
+    const macro_var_map& macros() const { return m_macro_var_map; }
+    /// Add a macro value
+    void  add_macro(const std::string& a_macro, const std::string& a_value);
+    /// Replace all macros in a string that are found in macros() dictionary.
+    std::string replace_macros(const std::string& a_value) const;
 
     /// Set the timestamp type to use in log files.
     /// @param ts the timestamp type.
