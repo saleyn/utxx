@@ -53,11 +53,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 #include <utxx/config_tree.hpp>
 #include <utxx/concurrent_mpsc_queue.hpp>
+#include <utxx/logger/logger_enums.hpp>
 #include <utxx/synch.hpp>
 #include <thread>
 #include <mutex>
 
-#include <utxx/logger/logger_enums.hpp>
 #ifndef _MSC_VER
 #   include <utxx/synch.hpp>
 #   include <utxx/high_res_timer.hpp>
@@ -112,7 +112,7 @@ namespace utxx {
     } while(0)
 
 #ifndef LOG
-#define LOG(Level) utxx::logger::helper(utxx::logger::instance(), Level)
+#define LOG(Level) utxx::logger::msg_streamer(LEVEL_##Level, "", UTXX_FILE_SRC_LOCATION)
 #endif
 
 #endif
@@ -164,30 +164,35 @@ struct logger : boost::noncopyable {
         } m_fun;
 
         friend class logger;
-    public:
 
-        template <int N>
-        msg(log_level a_ll, const std::string& a_category,
-            const char_function& a_fun, const char (&a_src_loc)[N])
+        template <typename Fun>
+        msg(log_level a_ll, const std::string& a_category, payload_t a_type,
+            const Fun& a_fun, const char* a_src_loc, std::size_t a_sloc_len)
             : m_timestamp   (now_utc())
             , m_level       (a_ll)
             , m_category    (a_category)
-            , m_src_loc_len (N-1)
+            , m_src_loc_len (a_sloc_len)
             , m_src_location(a_src_loc)
-            , m_type        (payload_t::CHAR_FUN)
+            , m_type        (a_type)
             , m_fun         (a_fun)
+        {}
+
+    public:
+
+        msg(log_level a_ll, const std::string& a_category,
+            const char_function& a_fun, const char* a_src_loc, std::size_t a_sloc_len)
+            : msg(a_ll, a_category, payload_t::CHAR_FUN, a_fun, a_src_loc, a_sloc_len)
+        {}
+
+        msg(log_level a_ll, const std::string& a_category,
+            const str_function& a_fun, const char* a_src_loc, std::size_t a_sloc_len)
+            : msg(a_ll, a_category, payload_t::STR_FUN, a_fun, a_src_loc, a_sloc_len)
         {}
 
         template <int N>
         msg(log_level a_ll, const std::string& a_category,
             const str_function& a_fun, const char (&a_src_loc)[N])
-            : m_timestamp   (now_utc())
-            , m_level       (a_ll)
-            , m_category    (a_category)
-            , m_src_loc_len (N-1)
-            , m_src_location(a_src_loc)
-            , m_type        (payload_t::STR_FUN)
-            , m_fun         (a_fun)
+            : msg(a_ll, a_category, payload_t::STR_FUN, a_fun, a_src_loc, N)
         {}
 
         ~msg() {
@@ -209,9 +214,12 @@ struct logger : boost::noncopyable {
         detail::basic_buffered_print<512> data;
         log_level                         level;
         std::string                       category;
+        const char*                       src_loc;
+        size_t                            src_loc_len;
 
-        msg_streamer(log_level a_level, const std::string& a_category)
-            : level(a_level), category(a_category)
+        template <int N>
+        msg_streamer(log_level a_ll, const std::string& a_cat, const char (&a_src_loc)[N])
+            : level(a_ll), category(a_cat), src_loc(a_src_loc), src_loc_len(N-1)
         {}
 
         /// Helper class used to implement streaming support in the logger.
@@ -223,37 +231,49 @@ struct logger : boost::noncopyable {
             msg_streamer* m_ms;
             mutable bool  m_last;
         public:
-            helper(msg_streamer& a)
-                : m_ms  (&a)
+            helper(msg_streamer* a)
+                : m_ms  (a)
                 , m_last(true)
             {}
 
-            helper(const helper& a_rhs) noexcept
-                : m_ms  (a_rhs.m_ms)
-                , m_last(a_rhs.m_last)
+            helper(const helper* a_rhs) noexcept
+                : m_ms  (a_rhs->m_ms)
+                , m_last(a_rhs->m_last)
             {
-                a_rhs.m_last = false;
+                a_rhs->m_last = false;
             }
 
             ~helper() {
                 if (!m_last)
                     return;
-                logger::instance()->log(m_msg);
+                logger::instance().logc
+                    (m_ms->level,       m_ms->category,
+                     m_ms->data.c_str(),m_ms->data.size(),
+                     m_ms->src_loc,     m_ms->src_loc_len);
             }
 
             template <typename T>
             helper operator<< (T&& a) {
-                m_ms->m_data.print(std::forward<T>(a));
-                return helper(*this);
+                m_ms->data.print(std::forward<T>(a));
+                return helper(this);
             }
 
             template <typename T>
             helper operator<< (const T& a) {
-                m_ms->m_data.print(a);
-                return helper(*this);
+                m_ms->data.print(a);
+                return helper(this);
+            }
+
+            helper operator<<(helper& (*Manipulator)(helper&)) {
+                Manipulator(*this);
+                return helper(this);
             }
         };
 
+        template <class T>
+        helper operator<< (T&& a) {
+            return helper(this) << a;
+        }
     };
 
     typedef delegate
@@ -312,6 +332,14 @@ private:
     void do_log(const msg& a_msg);
 
     void run();
+
+    template<typename Fun>
+    bool logf(log_level a_level, const std::string& a_cat, const Fun& a_fun,
+              const char* a_src_loc, std::size_t a_src_loc_len);
+
+    bool logc(log_level   a_ll,  const std::string& a_cat,
+              const char* a_buf,     std::size_t    a_size,
+              const char* a_src_loc, std::size_t    a_src_loc_len);
 
     template <class A> friend class log_msg_info;
 
@@ -386,6 +414,8 @@ public:
 
     /// Get program identifier to be used in the log output.
     const std::string&  ident()  const { return m_ident; }
+    /// Set program identifier to be used in the log output.
+    void  ident(const std::string& a_ident) { m_ident = a_ident; }
 
     /// Converts a string (e.g. "DEBUG | INFO | WARNING") sizeof(m_timestamp)-1to a bitmask of
     /// corresponding levels.  This method is used for configuration parsing
@@ -482,16 +512,22 @@ protected:
     //void do_log(const log_msg_info<>& a_info);
 };
 
-template <class T>
-detail::log_helper operator<< (T&& a) {
-    return log_helper(this) << a;
-}
-
-detail::log_helper operator<<(helper& (*manip)(helper&)) {
-    manip(*this);
-    return log_helper(this);
-}
-
 } // namespace utxx
+
+namespace std {
+
+    /// Write a newline to the buffered_print object
+    inline utxx::logger::msg_streamer::helper&
+    endl(utxx::logger::msg_streamer::helper& a_out)
+    { a_out << '\n'; return a_out; }
+
+    inline utxx::logger::msg_streamer::helper&
+    ends(utxx::logger::msg_streamer::helper& a_out)
+    { a_out << '\0'; return a_out; }
+
+    inline utxx::logger::msg_streamer::helper&
+    flush(utxx::logger::msg_streamer::helper& a_out)
+    { return a_out; }
+}
 
 #include <utxx/logger/logger.ipp> // Logger implementation

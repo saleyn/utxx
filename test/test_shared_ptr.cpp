@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <utxx/shared_ptr.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/string.hpp>
+#include <random>
 #include <iostream>
 
 BOOST_AUTO_TEST_CASE( test_shared_ptr )
@@ -39,7 +41,7 @@ BOOST_AUTO_TEST_CASE( test_shared_ptr )
     auto ptr1 = utxx::make_shared<int>(10);
     auto ptr2 = utxx::make_shared<int>(20);
 
-    BOOST_CHECK_NE(ptr1 != ptr2);
+    BOOST_CHECK(ptr1 != ptr2);
     BOOST_CHECK(ptr1 <  ptr2);
     BOOST_CHECK(ptr1 <= ptr2);
     BOOST_CHECK(ptr2 >  ptr1);
@@ -47,10 +49,10 @@ BOOST_AUTO_TEST_CASE( test_shared_ptr )
 
     {
         auto p = ptr1;
-        BOOST_CHECK_EQUAL(p, ptr1);
+        BOOST_CHECK(p == ptr1);
     }
 
-    BOOST_CHECK(ptr1);
+    BOOST_CHECK(bool(ptr1));
     ptr1.reset();
     BOOST_CHECK(!ptr1);
 }
@@ -59,37 +61,67 @@ BOOST_AUTO_TEST_CASE( test_shared_ptr_perf )
 {
     static const int ITERATIONS = getenv("ITERATIONS")
                                 ? atoi(getenv("ITERATIONS")) : 1000000;
+
+    time_t seed = time(NULL);
+
     double elapsed1, elapsed2;
     double latency1, latency2;
+    long   count1,   count2;
+    long   sum1=0,   sum2=0;
+
     {
         std::vector<utxx::shared_ptr<long>> vector(ITERATIONS);
-        *(vector[0]) = 10;
+        vector[0] = utxx::make_shared<long>(10);
         utxx::timer tm;
         for (int i=1; i < ITERATIONS; i++)
             vector[i] = vector[i-1];
+
+        std::mt19937 mt(seed);
+        std::uniform_int_distribution<int> dist(0, ITERATIONS-1);
+
+        for (int i=0; i < ITERATIONS; i++) {
+            auto p = vector[dist(mt)];
+            sum1 += *p;
+        }
+
         elapsed1 = tm.elapsed();
         latency1 = tm.latency_usec(ITERATIONS);
+        count1   = vector[0].use_count();
+
+        BOOST_CHECK_EQUAL(count1, ITERATIONS);
     }
 
     {
         std::vector<std::shared_ptr<long>> vector(ITERATIONS);
-        *(vector[0]) = 10;
+        vector[0] = std::make_shared<long>(10);
         utxx::timer tm;
         for (int i=1; i < ITERATIONS; i++)
             vector[i] = vector[i-1];
+
+        std::mt19937 mt(seed);
+        std::uniform_int_distribution<int> dist(0, ITERATIONS-1);
+
+        for (int i=0; i < ITERATIONS; i++) {
+            auto p = vector[dist(mt)];
+            sum2 += *p;
+        }
+
         elapsed2 = tm.elapsed();
         latency2 = tm.latency_usec(ITERATIONS);
+        count2   = vector[0].use_count();
+
+        BOOST_CHECK_EQUAL(count2, ITERATIONS);
     }
 
     BOOST_MESSAGE(" utxx::shared_ptr speed: "
-                    << fixed(double(ITERATIONS)/elapsed1, 10, 0)
+                    << utxx::fixed(double(ITERATIONS)/elapsed1, 10, 0)
                     << " calls/s, latency: "
-                    << fixed(double(ITERATIONS)/latency1, 3, 0) << "us");
+                    << utxx::fixed(latency1, 5, 3) << "us, use_count=" << count1
+                    << ", sum=" << sum1);
     BOOST_MESSAGE("  std::shared_ptr speed: "
-                    << fixed(double(ITERATIONS)/elapsed2, 10, 0)
+                    << utxx::fixed(double(ITERATIONS)/elapsed2, 10, 0)
                     << " calls/s, latency: "
-                    << fixed(double(ITERATIONS)/latency2, 3, 0) << "us");
-    BOOST_MESSAGE("    utxx / std: " << fixed(elapsed1/elapsed2, 6, 4) << " times");
-
+                    << utxx::fixed(latency2, 5, 3) << "us, use_count=" << count2
+                    << ", sum=" << sum2);
+    BOOST_MESSAGE("    utxx / std: " << utxx::fixed(elapsed1/elapsed2, 6, 4) << " times");
 }
-

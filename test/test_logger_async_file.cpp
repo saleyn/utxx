@@ -20,9 +20,9 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     const char* filename = "/tmp/logger.file.log";
     const int iterations = 1000;
 
-    pt.put("logger.timestamp",           variant("none"));
-    pt.put("logger.show-ident",          variant(false));
-    pt.put("logger.show-location",       variant(false));
+    pt.put("logger.timestamp",     variant("none"));
+    pt.put("logger.show-ident",    variant(false));
+    pt.put("logger.show-location", variant(false));
     pt.put("logger.file.levels",   variant("debug|info|warning|error|fatal|alert"));
     pt.put("logger.file.filename", variant(filename));
     pt.put("logger.file.append",   variant(false));

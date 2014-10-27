@@ -41,6 +41,7 @@ namespace utxx {
 
 class logger_impl_console: public logger_impl {
     std::string  m_name;
+    bool         m_color;
     int          m_stdout_levels;
     int          m_stderr_levels;
 
@@ -49,10 +50,12 @@ class logger_impl_console: public logger_impl {
 
     logger_impl_console(const char* a_name)
         : m_name(a_name)
+        , m_color(true)
         , m_stdout_levels(s_def_stdout_levels)
         , m_stderr_levels(s_def_stderr_levels)
     {}
 
+    void colorize(log_level a_ll, std::ostream& out, const std::string& a_str);
 public:
     static logger_impl_console* create(const char* a_name) {
         return new logger_impl_console(a_name);

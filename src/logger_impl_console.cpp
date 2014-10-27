@@ -44,6 +44,7 @@ std::ostream& logger_impl_console::dump(std::ostream& out,
     const std::string& a_prefix) const
 {
     out << a_prefix << "logger." << name() << '\n'
+        << a_prefix << "    color          = " << to_string(m_color) << '\n'
         << a_prefix << "    stdout-levels  = " << logger::log_levels_to_str(m_stdout_levels) << '\n'
         << a_prefix << "    stderr-levels  = " << logger::log_levels_to_str(m_stderr_levels) << '\n';
     return out;
@@ -56,7 +57,8 @@ bool logger_impl_console::init(const variant_tree& a_config)
     BOOST_ASSERT(this->m_log_mgr);
 
     ptree::const_assoc_iterator it;
-    std::string s = a_config.get("logger.console.stdout-levels", "");
+    m_color         = a_config.get("logger.console.color", true);
+    std::string s   = a_config.get("logger.console.stdout-levels", "");
     m_stdout_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stdout_levels;
 
     s = a_config.get("logger.console.stderr-levels", "");
@@ -76,11 +78,26 @@ void logger_impl_console::log_msg(
     const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
 {
     if (a_msg.level() & m_stdout_levels) {
-        std::cout << a_buf;
+        colorize(a_msg.level(), std::cout, a_buf);
         std::flush(std::cout);
     } else if (a_msg.level() & m_stderr_levels) {
-        std::cerr << a_buf;
+        colorize(a_msg.level(), std::cerr, a_buf);
     }
 }
+
+void logger_impl_console::colorize
+    (log_level a_ll, std::ostream& out, const std::string& a_str)
+{
+    static const char YELLOW[] = "\E[1;33;40m";
+    static const char RED[]    = "\E[1;31;40m";
+    static const char MAGENTA[]= "\E[1;35;40m";
+    static const char NORMAL[] = "\E[0m";
+
+    if (!m_color || a_ll <  LEVEL_WARNING) out << a_str;
+    else if        (a_ll <= LEVEL_WARNING) out << YELLOW  << a_str << NORMAL;
+    else if        (a_ll >= LEVEL_FATAL)   out << MAGENTA << a_str << NORMAL;
+    else if        (a_ll >= LEVEL_ERROR)   out << RED     << a_str << NORMAL;
+}
+
 
 } // namespace utxx

@@ -39,17 +39,49 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+template <typename Fun>
+inline bool logger::logf(
+    log_level           a_level,
+    const std::string&  a_category,
+    const Fun&          a_fun,
+    const char*         a_src_loc,
+    std::size_t         a_src_loc_len)
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    return m_queue.emplace(a_level, a_category, a_fun, a_src_loc, a_src_loc_len);
+}
+
 template <typename Fun, int N>
 inline bool logger::logf(
     log_level           a_level,
     const std::string&  a_category,
     const Fun&          a_fun,
-    const char         (&a_src_loc)[N])
+    const char        (&a_src_loc)[N])
+{ return logf(a_level, a_category, a_fun, a_src_loc, N); }
+
+inline bool logger::logc(
+    log_level           a_level,
+    const std::string&  a_category,
+    const char*         a_buf,
+    std::size_t         a_size,
+    const char*         a_src_loc,
+    std::size_t         a_src_loc_len)
 {
     if (!is_enabled(a_level))
         return false;
 
-    return m_queue.emplace(a_level, a_category, a_fun, a_src_loc);
+    std::string sbuf(a_buf, a_size);
+
+    auto fun = [=](const char* pfx, size_t psz, const char* sfx, size_t ssz) {
+        detail::basic_buffered_print<1024> buf;
+        buf.print(pfx, psz);
+        buf.print(sbuf);
+        buf.print(sfx, ssz);
+        return buf.to_string();
+    };
+    return m_queue.emplace(a_level, a_category, fun, a_src_loc, a_src_loc_len);
 }
 
 template <typename... Args>
@@ -68,7 +100,7 @@ inline bool logger::logs(
         buf.print(sfx, ssz);
         return buf.to_string();
     };
-    return m_queue.emplace(a_level, a_category, fun, "");
+    return m_queue.emplace(a_level, a_category, fun, "", 0);
 }
 
 template <int N, typename... Args>
@@ -85,7 +117,7 @@ inline bool logger::log(
     auto fun = [=](char* a_buf, size_t a_size) {
         return snprintf(a_buf, a_size, a_fmt, a_args...);
     };
-    return m_queue.emplace(a_level, a_category, fun, a_src_loc);
+    return m_queue.emplace(a_level, a_category, fun, a_src_loc, N-1);
 }
 
 inline bool logger::log(
@@ -102,7 +134,7 @@ inline bool logger::log(
         buf.print(sfx, ssz);
         return buf.to_string();
     };
-    return m_queue.emplace(a_level, a_category, fun, "");
+    return m_queue.emplace(a_level, a_category, fun, "", 0);
 }
 
 } // namespace utxx

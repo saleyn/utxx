@@ -82,7 +82,8 @@ std::ostream& logger_impl_scribe::dump(std::ostream& out,
 }
 
 static void thrift_output(const char* a_msg) {
-    LOG_ERROR((a_msg));
+    std::string s(a_msg);   // logger will send this string to another thread
+    LOG_ERROR(s.c_str());
 }
 
 bool logger_impl_scribe::init(const variant_tree& a_config)
@@ -95,6 +96,10 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     std::stringstream str;
     str << "tcp://localhost:" << DEFAULT_PORT;
     std::string url = a_config.get<std::string>("logger.scribe.address", str.str());
+
+    if (m_log_mgr && (url.find("uds://") == 0 || url.find("file://") == 0))
+        url = m_log_mgr->replace_macros(url);
+
     if (!m_server_addr.parse(url))
         throw std::runtime_error(
             std::string("Invalid scribe server address [logger.scribe.address]: ") + url);
@@ -258,15 +263,10 @@ int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
     return xfer;
 }
 
-void logger_impl_scribe::log_msg(const log_msg_info& info) throw(io_error)
+void logger_impl_scribe::log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
+    throw(io_error)
 {
-    send_data(info.level(), info.category(), info.data().str(), info.data_len());
-}
-
-void logger_impl_scribe::log_bin(
-    const std::string& a_category, const char* a_msg, size_t a_size) throw(io_error)
-{
-    send_data(LEVEL_LOG, a_category, a_msg, a_size);
+    send_data(a_msg.level(), a_msg.category(), a_buf, a_size);
 }
 
 void logger_impl_scribe::send_data(
@@ -382,9 +382,8 @@ uint32_t logger_impl_scribe::read_scribe_result(scribe_result_code& a_rc, bool& 
     while (true)
     {
         xfer += m_protocol->readFieldBegin(fname, ftype, fid);
-        if (ftype == atp::T_STOP) {
+        if (ftype == atp::T_STOP)
             break;
-        }
         switch (fid) {
         case 0:
             if (ftype == atp::T_I32) {

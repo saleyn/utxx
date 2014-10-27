@@ -362,6 +362,7 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
         auto len = std::min<size_t>
             (a_end - a_buf, a_msg.src_location() + a_msg.src_loc_len() - q + 1);
         p = stpncpy(p, a_msg.src_location(), len);
+        *p++ = '\n';
     } else
         // We reached the end of the streaming sequence:
         // log_msg_info lmi; lmi << a << b << c;
