@@ -29,6 +29,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
+
+#if (__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+
 #include <boost/test/unit_test.hpp>
 #include <utxx/test_helper.hpp>
 #include <utxx/registrar.hpp>
@@ -177,3 +180,5 @@ BOOST_AUTO_TEST_CASE( test_registrar_refcnt )
     BOOST_CHECK_EQUAL(1u, b.use_count());
     BOOST_CHECK_EQUAL(0u, reg.reg_instance_count());
 }
+
+#endif // if GCC version < 4.9

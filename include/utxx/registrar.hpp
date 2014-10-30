@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_REGISTRAR_HPP_
 #define _UTXX_REGISTRAR_HPP_
 
+#if (__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+
 #include <mutex>
 #include <string>
 #include <type_traits>
@@ -42,7 +44,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/lock.hpp>
 #include <boost/functional/hash.hpp>
 
-struct B;
 namespace utxx {
     struct inst_name {
         inst_name(const std::string& a_class) : m_class(a_class) {}
@@ -56,6 +57,35 @@ namespace utxx {
         std::string m_class;
         std::string m_instance;
     };
+
+    #if 0 //(__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+    namespace {
+        template<int ...>
+        struct seq {};
+
+        template<int N, int... S>
+        struct gens: gens<N-1, N-1, S...> {};
+
+        template<int... S>
+        struct gens<0, S...> { typedef seq<S...> type; };
+
+        template <class BaseT, class T, typename ...Args>
+        class delayed_creator {
+            std::tuple<Args&&...> params;
+
+            template<int... S>
+            BaseT* do_create() {
+                return static_cast<BaseT*>(new T(std::move(std::get<S>(params)...)));
+            }
+
+        public:
+            delayed_creator(std::tuple<Args&&...> args) : params(args) {}
+
+            BaseT* create() { return do_create(typename gens<sizeof...(Args)>::type()); }
+        };
+    }
+    #endif
+
 } // namespace utxx
 
 namespace std {
@@ -177,9 +207,17 @@ protected:
             throw utxx::badarg_error
                 ("basic_registrar: class '" + type + "' is alredy registered!");
 
-        auto ctor = [&args...]() -> BaseT* {
+        #if 0 //(__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+        std::tuple<CtorArgs&&...> tup(std::forward<CtorArgs>(args)...);
+        auto ctor = [&]() {
+            return delayed_creator<CtorArgs...>(tup).create();
+        };
+        #else
+        auto ctor = [&]() {
             return static_cast<BaseT*>(new T(std::forward<CtorArgs>(args)...));
         };
+        #endif
+
 
         m_reflection.emplace(type, class_info(type, ctor,
                              typeid(T).hash_code(), typeid(BaseT).hash_code(), a_info));
@@ -517,5 +555,7 @@ using registrar            = basic_registrar<null_lock>;
 using concurrent_registrar = basic_registrar<std::mutex>;
 
 } // namespace utxx
+
+#endif // #if GCC version < 4.9
 
 #endif // _UTXX_REGISTRAR_HPP_
