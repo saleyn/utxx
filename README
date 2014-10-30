@@ -37,8 +37,7 @@ Building
 
     Run:
     $ ./bootstrap
-    $ cd obj
-    $ ../configure --with-boost="/path/to/boost" \
+    $ ./configure --with-boost="/path/to/boost" \
         [--prefix="/target/install/path"]
     $ make
     $ make install      # Default install path is ./install
