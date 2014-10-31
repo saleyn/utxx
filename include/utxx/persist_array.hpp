@@ -194,6 +194,16 @@ namespace utxx {
             return n;
         }
 
+        /// Add a record to the storage, initialize it using given lambda.
+        /// @return ID of the new record
+        template <typename InitFun>
+        size_t add(const InitFun& a_rec_init) {
+            size_t n = allocate_rec();
+            scoped_lock guard(get_lock(n));
+            a_rec_init(*(m_begin+n));
+            return n;
+        }
+
         /// @return id of the given object in the storage
         size_t id_of(const T* a_rec) const { return a_rec - m_begin; }
 
