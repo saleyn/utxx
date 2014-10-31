@@ -110,7 +110,7 @@ namespace utxx {
 
     public:
         using lock_type   = Lock;
-        using scoped_lock = std::lock_guard<std::mutex>;
+        using scoped_lock = std::lock_guard<Lock>;
 
         persist_array()
             : m_header(NULL), m_begin(NULL), m_end(NULL)
