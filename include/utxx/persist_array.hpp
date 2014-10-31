@@ -95,6 +95,8 @@ namespace utxx {
         bip::file_mapping   m_file;
         // Shared memory mapped region
         bip::mapped_region  m_region;
+        // Name of the memory-mapped file or shm segment
+        std::string         m_storage_name;
 
         // Locks that guard access to internal record structures.
         header* m_header;
@@ -156,7 +158,7 @@ namespace utxx {
         size_t allocate_rec() throw(utxx::runtime_error) {
             auto error = [this]() {
                 throw utxx::runtime_error
-                    ("persist_array: Out of storage capacity (", this->m_file.get_name(), ")!");
+                    ("persist_array: Out of storage capacity (", this->m_storage_name, ")!");
             };
 
             if (unlikely(count() >= capacity()))
@@ -239,6 +241,9 @@ namespace utxx {
         const T*    end()   const { return m_end; }
         T*          begin()       { return m_begin; }
         T*          end()         { return m_end; }
+
+        /// Name of the unlerlying storage (either mmap file or shm)
+        std::string const& storage_name() const { return m_storage_name; }
 
         /// Call \a a_visitor for every record.
         /// @param a_visitor functor accepting two arguments:
@@ -364,6 +369,7 @@ namespace utxx {
 
             m_file  .swap(shmf);
             m_region.swap(region);
+            m_storage_name = a_filename;
 
             //if (!exists && !a_read_only)
             //    memset(static_cast<char*>(addr) + sizeof(header), 0, size - sizeof(header));
@@ -447,6 +453,8 @@ namespace utxx {
 
             m_begin  = m_header->records;
             m_end    = m_begin + a_max_recs;
+
+            m_storage_name = a_name;
 
             BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
                          reinterpret_cast<char*>(mem)+size);
