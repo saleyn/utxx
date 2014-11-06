@@ -203,7 +203,7 @@ namespace utxx {
             size_t n = allocate_rec();
             scoped_lock guard(get_lock(n));
             T* rec = m_begin+n;
-            a_rec_init(*rec);
+            a_rec_init(n, rec);
             return std::make_pair(rec, n);
         }
 
