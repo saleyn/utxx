@@ -46,6 +46,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/filesystem.hpp>
 #include <utxx/compiler_hints.hpp>
+#include <utxx/meta.hpp>
 #include <utxx/scope_exit.hpp>
 #include <utxx/error.hpp>
 #include <stdexcept>
@@ -65,7 +66,14 @@ namespace utxx {
     namespace        { namespace bip = boost::interprocess; }
     namespace detail { struct empty_data {}; }
 
-    enum class persist_attach_type { READ_WRITE, RECREATE, READ_ONLY };
+    enum class persist_attach_type {
+        OPEN_READ_ONLY,     // Open-only
+        OPEN_READ_WRITE,    // Open-only
+        CREATE_READ_ONLY,   // Create-only
+        CREATE_READ_WRITE,  // Create-only
+        RECREATE,           // Recreate and open
+        READ_WRITE          // Create or open
+    };
 
     template <
         typename    T,
@@ -407,27 +415,48 @@ namespace utxx {
     {
         std::pair<char*, size_t> fres = a_segment.find<char>(a_name);
 
+        bool found = fres.first != nullptr;
+
         // If the segment was found, initialize the pointers and use it
-        if (fres.first != nullptr) {
-            if (a_flag == persist_attach_type::RECREATE) // Recreate existing object
-                (void)a_segment.destroy<char>(a_name);
-            else {
-                //assert(fres.second == 1);
-                m_header = reinterpret_cast<header*>(fres.first);
-                m_begin  = m_header->records;
-                m_end    = m_begin + m_header->max_recs;
-                if (m_header->recs_offset != offsetof(header, records))
-                    throw runtime_error("Mismatch in the records offset in '",
-                                        a_name, "' (expected=",
-                                        offsetof(header, records), ", got=",
-                                        m_header->recs_offset, ')');
-                BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
-                             reinterpret_cast<char*>(m_header)+fres.second);
-                return false;
+        if (found) {
+            switch (a_flag) {
+                case persist_attach_type::RECREATE: // Recreate existing object
+                    (void)a_segment.destroy<char>(a_name);
+                    break;
+                case persist_attach_type::READ_WRITE:
+                case persist_attach_type::OPEN_READ_ONLY:
+                case persist_attach_type::OPEN_READ_WRITE: {
+                    //assert(fres.second == 1);
+                    m_header = reinterpret_cast<header*>(fres.first);
+                    m_begin  = m_header->records;
+                    m_end    = m_begin + m_header->max_recs;
+                    if (m_header->recs_offset != offsetof(header, records))
+                        throw runtime_error("Mismatch in the records offset in '",
+                                            a_name, "' (expected=",
+                                            offsetof(header, records), ", got=",
+                                            m_header->recs_offset, ')');
+                    BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
+                                 reinterpret_cast<char*>(m_header)+fres.second);
+                    return false;
+                }
+                default:
+                    throw utxx::runtime_error
+                        ("persist_array: unsupported opening mode for existing "
+                         "shm storage: ", to_underlying(a_flag));
             }
-        } else if (a_flag == persist_attach_type::READ_ONLY)
+        } else if (a_flag == persist_attach_type::OPEN_READ_ONLY ||
+                   a_flag == persist_attach_type::OPEN_READ_WRITE)
             throw utxx::runtime_error
-                ("Cannot read non-existing shared memory array '", a_name, "'");
+                ("persist_array: cannot open non-existing shared memory array '",
+                 a_name, "'");
+
+        assert(a_flag == persist_attach_type::CREATE_READ_ONLY   ||
+               a_flag == persist_attach_type::CREATE_READ_WRITE  ||
+               a_flag == persist_attach_type::READ_WRITE         ||
+               a_flag == persist_attach_type::RECREATE);
+
+        if (a_max_recs == 0)
+            throw utxx::badarg_error("persist_array: invalid max number of records!");
 
         // Calculate the full object size:
         auto size = total_size(a_max_recs);
@@ -461,7 +490,7 @@ namespace utxx {
                          reinterpret_cast<char*>(mem)+size);
 
             //if (!l_exists && !a_read_only) {
-            if (a_flag != persist_attach_type::READ_ONLY) {
+            if (!found) {
                 // FIXME: need locking here
 
                 // If the file is open for writing, initialize the locks
@@ -475,8 +504,7 @@ namespace utxx {
         catch (std::exception const& e)
         {
             // Delete the object if it has already been constructed:
-            if (a_flag != persist_attach_type::READ_ONLY)
-                (void)a_segment.destroy<char>(a_name);
+            (void)a_segment.destroy<char>(a_name);
             throw utxx::runtime_error
                 ("Cannot create a shared memory array '", a_name, "': ", e.what());
         }
