@@ -112,14 +112,17 @@ void run_test(const char* a_test_name, Init1 a_init_fun1, Init2 a_init_fun2,
         bool l_created;
         BOOST_REQUIRE_NO_THROW(l_created = a_init_fun1(a));
         BOOST_REQUIRE(!l_created);
-        BOOST_REQUIRE_EQUAL(a_capacity, a.count());
-        BOOST_REQUIRE_EQUAL(a_capacity, a.capacity());
 
-        blob* b = a.get(0);
+        persist_type a2(std::move(a));
+
+        BOOST_REQUIRE_EQUAL(a_capacity, a2.count());
+        BOOST_REQUIRE_EQUAL(a_capacity, a2.capacity());
+
+        blob* b = a2.get(0);
         BOOST_REQUIRE(b);
 
-        BOOST_REQUIRE_EQUAL(10, a[0].i1);
-        BOOST_REQUIRE_EQUAL(20, a[0].i2);
+        BOOST_REQUIRE_EQUAL(10, a2[0].i1);
+        BOOST_REQUIRE_EQUAL(20, a2[0].i2);
     }
 
     {

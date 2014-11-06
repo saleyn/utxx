@@ -126,6 +126,20 @@ namespace utxx {
             : m_header(NULL), m_begin(NULL), m_end(NULL)
         {}
 
+#if __cplusplus >= 201103L
+        persist_array(persist_array&& a_rhs)
+            : m_storage_name(a_rhs.m_storage_name)
+            , m_header      (a_rhs.m_header)
+            , m_begin       (a_rhs.m_begin)
+            , m_end         (a_rhs.m_end)
+        {
+            m_file  .swap(a_rhs.m_file);
+            m_region.swap(a_rhs.m_region);
+            a_rhs.m_header = nullptr;
+            a_rhs.m_begin  = nullptr;
+            a_rhs.m_end    = nullptr;
+        }
+#endif
         /// Default permission mask used for opening a file
         static int default_file_mode() { return S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP; }
 
