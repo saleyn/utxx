@@ -39,12 +39,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/synch.hpp>
 #include <utxx/bits.hpp>
 #include <utxx/logger/logger.hpp>
+#include <utxx/logger/logger_crash_handler.hpp>
 #include <utxx/variant_tree_parser.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/xpressive/xpressive.hpp>
 #include <boost/thread/locks.hpp>
 #include <stdio.h>
-
 
 namespace utxx {
 
@@ -182,21 +182,28 @@ void logger::init(const char* filename)
     init(pt);
 }
 
-void logger::init(const config_tree& config)
+void logger::init(const config_tree& a_cfg)
 {
     finalize();
 
     try {
-        m_show_location = config.get<bool>       ("logger.show-location", m_show_location);
-        m_show_ident    = config.get<bool>       ("logger.show-ident",    m_show_ident);
-        m_ident         = config.get<std::string>("logger.ident",         m_ident);
-        std::string ts  = config.get<std::string>("logger.timestamp",     "time-usec");
-        m_timestamp_type= parse_stamp_type(ts);
-        std::string ls  = config.get<std::string>("logger.min-level-filter", "info");
+        m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
+        m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
+        m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
+        std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "date-time-usec");
+        m_timestamp_type = parse_stamp_type(ts);
+        std::string ls   = a_cfg.get<std::string>("logger.min-level-filter", "info");
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
+
+        // Install crash signal handlers
+        // (SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM)
+        if (a_cfg.get("logger.handle-crash-signals", true)) {
+            static std::once_flag s_initialize_handler;
+            std::call_once(s_initialize_handler, []() { install_sighandler(); });
+        }
 
         //logger_impl::msg_info info(NULL, 0);
         //query_timestamp(info);
@@ -212,7 +219,7 @@ void logger::init(const config_tree& config)
             ++it)
         {
             std::string path = std::string("logger.") + it->first;
-            if (config.get_child_optional(path)) {
+            if (a_cfg.get_child_optional(path)) {
                 // Determine if implementation of this type is already
                 // registered with the logger
                 bool found = false;
@@ -234,7 +241,7 @@ void logger::init(const config_tree& config)
                 logger_impl_mgr::impl_callback_t& f = it->second;
                 impl impl( f(it->first.c_str()) );
                 impl->set_log_mgr(this);
-                impl->init(config);
+                impl->init(a_cfg);
                 m_implementations.push_back(impl);
             }
         }

@@ -38,10 +38,10 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     for (int i = 0, n = 0; i < iterations; i++) {
         LOG_ERROR      ("(%d) This is an error #%d", ++n, 123);
         LOG_WARNING    ("(%d) This is a %s", ++n, "warning");
-        LOG_FATAL      ("(%d) This is a %s", ++n, "fatal error");
+        LOG_ALERT      ("(%d) This is a %s", ++n, "alert error");
         LOG_CAT_ERROR  ("Cat1", "(%d) This is an error #%d", ++n, 456);
         LOG_CAT_WARNING("Cat2", "(%d) This is a %s", ++n, "warning");
-        LOG_CAT_FATAL  ("Cat3", "(%d) This is a %s", ++n, "fatal error");
+        LOG_CAT_ALERT  ("Cat3", "(%d) This is a %s", ++n, "alert error");
     }
 
 
@@ -177,7 +177,7 @@ struct worker {
             count.fetch_add(1, std::memory_order_relaxed);
             LOG_ERROR  ("%d %9d This is an error #%d", id, ++n, 123);
             LOG_WARNING("%d %9d This is a %s", id, ++n, "warning");
-            LOG_FATAL  ("%d %9d This is a %s", id, ++n, "fatal error");
+            LOG_ALERT  ("%d %9d This is a %s", id, ++n, "alert error");
         }
         if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
             fprintf(stderr, "Worker %d finished (count=%ld)\n",

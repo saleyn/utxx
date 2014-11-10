@@ -11,6 +11,7 @@ UTXX_SRCS = \
     futex.cpp \
 	high_res_timer.cpp \
 	logger.cpp \
+	logger_crash_handler.cpp \
 	logger_impl.cpp \
 	logger_impl_async_file.cpp \
 	logger_impl_console.cpp \

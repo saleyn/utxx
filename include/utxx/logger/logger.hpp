@@ -129,7 +129,8 @@ typedef log_msg_info _lim;
         UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
 #define LOG_FATAL(Fmt, ...)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_FATAL  , \
-        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+        UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); \
+    utxx::logger::instance().finalize(); exit(1); } while(0)
 #define LOG_ALERT(Fmt, ...)   do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_ALERT  , \
         UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
@@ -153,7 +154,8 @@ typedef log_msg_info _lim;
 #define LOG_CAT_ERROR(Cat, Fmt, ...)   do { \
     utxx::_lim(utxx::LEVEL_ERROR  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
 #define LOG_CAT_FATAL(Cat, Fmt, ...)   do { \
-    utxx::_lim(utxx::LEVEL_FATAL  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
+    utxx::_lim(utxx::LEVEL_FATAL  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); \
+    utxx::logger::instance().finalize(); exit(1); } while(0)
 #define LOG_CAT_ALERT(Cat, Fmt, ...)   do { \
     utxx::_lim(utxx::LEVEL_ALERT  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
 
@@ -267,7 +269,7 @@ public:
     void init(const char* filename);
 
     /// Call to initialize the logger from a configuration container.
-    void init(const config_tree& config);
+    void init(const config_tree& a_cfg);
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();

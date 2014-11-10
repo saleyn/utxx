@@ -22,7 +22,7 @@ BOOST_AUTO_TEST_CASE( test_logger_syslog )
     for (int i = 0; i < 3; i++) {
         LOG_ERROR  ("This is an error #%d", 123);
         LOG_WARNING("This is a %s", "warning");
-        LOG_FATAL  ("This is a %s", "fatal error");
+        LOG_ALERT  ("This is a %s", "alert error");
     }
 }
 
