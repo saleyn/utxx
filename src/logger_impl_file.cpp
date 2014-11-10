@@ -112,7 +112,7 @@ public:
     }
 };
 
-void logger_impl_file::log_msg(const log_msg_info<>& info) throw(io_error)
+void logger_impl_file::log_msg(const log_msg_info& info) throw(io_error)
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.
     // Note that since the use of mutex is conditional, we can't use the

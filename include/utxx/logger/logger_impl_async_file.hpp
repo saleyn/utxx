@@ -102,7 +102,7 @@ public:
     bool init(const variant_tree& a_config)
         throw (badarg_error, io_error);
 
-    void log_msg(const log_msg_info<>& info) throw (std::runtime_error);
+    void log_msg(const log_msg_info& info) throw (std::runtime_error);
     void log_bin(const std::string& a_category, const char* msg, size_t size)
         throw (std::runtime_error);
 };

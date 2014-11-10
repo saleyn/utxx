@@ -73,7 +73,7 @@ bool logger_impl_console::init(const variant_tree& a_config)
     return true;
 }
 
-void logger_impl_console::log_msg(const log_msg_info<>& info)
+void logger_impl_console::log_msg(const log_msg_info& info)
     throw(std::runtime_error)
 {
     if (info.level() & m_stdout_levels) {

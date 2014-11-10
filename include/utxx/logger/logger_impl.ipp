@@ -38,38 +38,31 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-template <class Alloc>
-inline const logger* log_msg_info<Alloc>::get_logger() const {
+inline const logger* log_msg_info::get_logger() const {
     return m_logger ? m_logger : &logger::instance();
 }
 
-template <class Alloc>
-inline logger* log_msg_info<Alloc>::get_logger() {
+inline logger* log_msg_info::get_logger() {
     return m_logger ? m_logger : &logger::instance();
 }
 
-template <class Alloc>
 template <int N>
-inline log_msg_info<Alloc>::log_msg_info(
-    logger& a_logger, log_level a_lv, const char (&a_src_location)[N],
-    const Alloc& a_alloc
+inline log_msg_info::log_msg_info(
+    logger& a_logger, log_level a_lv, const char (&a_src_location)[N]
 )
     : m_logger(&a_logger)
     , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_src_loc_len(N-1)
     , m_src_location(a_src_location)
-    , m_data(a_alloc)
 {
     format_header();
 }
 
-template <class Alloc>
 template <int N>
-inline log_msg_info<Alloc>::log_msg_info(
+inline log_msg_info::log_msg_info(
     log_level a_lv, const std::string& a_category,
-    const char (&a_src_location)[N],
-    const Alloc& a_alloc
+    const char (&a_src_location)[N]
 )
     : m_logger(&logger::instance())
     , m_timestamp(now_utc())
@@ -77,57 +70,47 @@ inline log_msg_info<Alloc>::log_msg_info(
     , m_category(a_category)
     , m_src_loc_len(N-1)
     , m_src_location(a_src_location)
-    , m_data(a_alloc)
 {
     format_header();
 }
 
-template <class Alloc>
-inline log_msg_info<Alloc>::log_msg_info(
-    log_level a_lv, const std::string& a_category, const Alloc& a_alloc
-)
+inline log_msg_info::log_msg_info(log_level a_lv, const std::string& a_category)
     : m_logger(NULL)
     , m_timestamp(now_utc())
     , m_level(a_lv)
     , m_category(a_category)
     , m_src_loc_len(0)
     , m_src_location("")
-    , m_data(a_alloc)
 {
     format_header();
 }
 
-template <class Alloc>
-inline void log_msg_info<Alloc>::log(const char* a_fmt, ...) {
+inline void log_msg_info::log(const char* a_fmt, ...) {
     va_list args; va_start(args, a_fmt);
     UTXX_SCOPE_EXIT([&args]() { va_end(args); });
     format(a_fmt, args);
     get_logger()->log(*this);
 }
 
-template <class Alloc>
-inline void log_msg_info<Alloc>::format(const char* a_fmt, va_list a_args)
+inline void log_msg_info::format(const char* a_fmt, va_list a_args)
 {
     m_data.vprintf(a_fmt, a_args);
     format_footer();
 }
 
-template <class Alloc>
-inline void log_msg_info<Alloc>::format(const char* a_fmt, ...)
+inline void log_msg_info::format(const char* a_fmt, ...)
 {
     va_list args; va_start(args, a_fmt);
     UTXX_SCOPE_EXIT([&args]() { va_end(args); });
     format(a_fmt, args);
 }
 
-template <class Alloc>
-inline void log_msg_info<Alloc>::log() {
+inline void log_msg_info::log() {
     format_footer();
     get_logger()->log(*this);
 }
 
-template <class Alloc>
-void log_msg_info<Alloc>::format_header() {
+inline void log_msg_info::format_header() {
     // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line
     // Write everything up to Message to the m_data:
     logger* lg = get_logger();
@@ -156,8 +139,7 @@ void log_msg_info<Alloc>::format_header() {
     m_data.print('|');
 }
 
-template <class Alloc>
-void log_msg_info<Alloc>::format_footer()
+inline void log_msg_info::format_footer()
 {
     // Format the message in the form:
     // Timestamp|Level|Ident|Category|Message|File:Line\n
@@ -187,7 +169,7 @@ void log_msg_info<Alloc>::format_footer()
 // logger
 //-----------------------------------------------------------------------------
 
-inline void logger::do_log(const log_msg_info<>& a_info) {
+inline void logger::do_log(const log_msg_info& a_info) {
     try {
         m_sig_msg[level_to_signal_slot(a_info.level())](
             on_msg_delegate_t::invoker_type(a_info));
@@ -205,12 +187,12 @@ inline void logger::log(logger& a_logger, log_level a_level,
     const char (&a_src_location)[N],
     const char* a_fmt, va_list args)
 {
-    log_msg_info<> info(a_logger, a_level, a_category, a_src_location);
+    log_msg_info info(a_logger, a_level, a_category, a_src_location);
     info.format(a_fmt, args);
     a_logger.log(info);
 }
 
-inline void logger::log(const log_msg_info<>& a_info) {
+inline void logger::log(const log_msg_info& a_info) {
     if (is_enabled(a_info.level()))
         do_log(a_info);
 }
@@ -219,7 +201,7 @@ inline void logger::log(
     log_level a_level, const std::string& a_category, const char* a_fmt, va_list args)
 {
     if (is_enabled(a_level)) {
-        log_msg_info<> info(a_level, a_category);
+        log_msg_info info(a_level, a_category);
         info.format(a_fmt, args);
         do_log(info);
     }

@@ -99,7 +99,7 @@ namespace utxx {
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
 /// the <printf> function: <(const char* fmt, ...)>
 #ifndef UTXX_SKIP_LOG_MACROS
-typedef log_msg_info<> _lim;
+typedef log_msg_info _lim;
 #define LOG_TRACE5(Fmt, ...)  do { \
     utxx::_lim(utxx::logger::instance(), utxx::LEVEL_TRACE5 , \
         UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
@@ -243,9 +243,9 @@ private:
         const char (&a_src_location)[N],
         const char* a_fmt, va_list args);
 
-    void do_log(const log_msg_info<>& a_info);
+    void do_log(const log_msg_info& a_info);
 
-    template <class A> friend class log_msg_info;
+    friend class log_msg_info;
 
 public:
     static logger& instance() {
@@ -333,7 +333,7 @@ public:
     /// @param a_info is an object containing log level, and msg source location.
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    void log(const log_msg_info<>& a_info);
+    void log(const log_msg_info& a_info);
 
     /// Signal info/warning/error/fatal/alert level message to registered
     /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.

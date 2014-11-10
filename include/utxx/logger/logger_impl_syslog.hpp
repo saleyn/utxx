@@ -91,7 +91,7 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info<>& info) throw(io_error);
+    void log_msg(const log_msg_info& info) throw(io_error);
 };
 
 } // namespace utxx

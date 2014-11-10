@@ -134,7 +134,7 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
     return true;
 }
 
-void logger_impl_async_file::log_msg(const log_msg_info<>& info)
+void logger_impl_async_file::log_msg(const log_msg_info& info)
     throw(std::runtime_error)
 {
     send_data(info.level(), info.category(),
