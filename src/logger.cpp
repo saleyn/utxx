@@ -200,10 +200,8 @@ void logger::init(const config_tree& a_cfg)
 
         // Install crash signal handlers
         // (SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM)
-        if (a_cfg.get("logger.handle-crash-signals", true)) {
-            static std::once_flag s_initialize_handler;
-            std::call_once(s_initialize_handler, []() { install_sighandler(); });
-        }
+        if (a_cfg.get("logger.handle-crash-signals", true))
+            install_sighandler(true);
 
         //logger_impl::msg_info info(NULL, 0);
         //query_timestamp(info);

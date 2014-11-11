@@ -177,7 +177,7 @@ namespace detail {
         template <typename T>
         int from_integer(T n, char pad = '\0', bool a_align_left = true) {
             char* p = a_align_left ? itoa_left(m_data, n, pad)
-                                   : itoa_right(m_data, n, pad);
+                                   : itoa_right(m_data, N, n, pad);
             return p - m_data;
         }
 

@@ -127,12 +127,15 @@ namespace utxx {
         {}
 
 #if __cplusplus >= 201103L
-        persist_array(persist_array&& a_rhs)
-            : m_storage_name(a_rhs.m_storage_name)
-            , m_header      (a_rhs.m_header)
-            , m_begin       (a_rhs.m_begin)
-            , m_end         (a_rhs.m_end)
-        {
+        persist_array(persist_array&& a_rhs) {
+            *this = std::move(a_rhs);
+        }
+
+        void operator=(persist_array&& a_rhs) {
+            m_storage_name = std::move(a_rhs.m_storage_name);
+            m_header       = a_rhs.m_header;
+            m_begin        = a_rhs.m_begin;
+            m_end          = a_rhs.m_end;
             m_file  .swap(a_rhs.m_file);
             m_region.swap(a_rhs.m_region);
             a_rhs.m_header = nullptr;
@@ -276,16 +279,26 @@ namespace utxx {
         /// @return number of records processed.
         template <class Visitor>
         size_t for_each(const Visitor& a_visitor, size_t a_min_rec = 0, size_t a_count = 0) const {
-            const T* l_begin = begin() + a_min_rec;
-            const T* p = l_begin;
-            const T* l_end = begin() + count();
-            const T* e = p + (a_count ? a_count : count());
-            if (e > l_end) e = l_end;
+            const T* b = begin() + a_min_rec;
+            const T* p = b;
+            const T* e = std::min<const T*>(b + (a_count ? a_count : count()), begin() + count());
             if (p >= e)
                 return 0;
             for (int i = 0; p != e; ++p, ++i)
                 a_visitor(a_min_rec + i, p);
-            return e - l_begin;
+            return e - b;
+        }
+
+        template <class Visitor>
+        size_t for_each(const Visitor& a_visitor, size_t a_min_rec = 0, size_t a_count = 0) {
+            T*       b = begin() + a_min_rec;
+            T*       p = b;
+            const T* e = std::min<const T*>(p + (a_count ? a_count : count()), begin() + count());
+            if (p >= e)
+                return 0;
+            for (int i = 0; p != e; ++p, ++i)
+                a_visitor(a_min_rec + i, p);
+            return e - b;
         }
 
         std::ostream& dump(std::ostream& out, const std::string& a_prefix="") const {

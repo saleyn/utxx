@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-/** ==========================================================================
+/* ===========================================================================
 * 2011 by KjellKod.cc. This is PUBLIC DOMAIN to use at your own risk and comes
 * with no warranties. This code is yours to share, use and modify with no
 * strings attached and no restrictions or obligations.
@@ -185,6 +185,7 @@ namespace detail {
     #else
         std::cerr << "Exiting - FATAL SIGNAL: " << a_signo << "   " << std::flush;
         struct sigaction action;
+        memset(&action, 0, sizeof(action));
         sigemptyset(&action.sa_mask);
         action.sa_handler = SIG_DFL; // take default action for the signal
         sigaction(a_signo, &action, NULL);
@@ -196,14 +197,20 @@ namespace detail {
 } // namespace detail
 
 
-void install_sighandler()
+void install_sighandler(bool a_install)
 {
+    static std::atomic<bool> s_installed;
+
+    // Don't install anything if the handlers are already installed
+    if (!a_install || s_installed.exchange(true))
+        return;
+
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
-    if(SIG_ERR == signal(SIGABRT, crase_handler)) perror("signal - SIGABRT");
-    if(SIG_ERR == signal(SIGFPE,  crase_handler)) perror("signal - SIGFPE");
-    if(SIG_ERR == signal(SIGSEGV, crase_handler)) perror("signal - SIGSEGV");
-    if(SIG_ERR == signal(SIGILL,  crase_handler)) perror("signal - SIGILL");
-    if(SIG_ERR == signal(SIGTERM, crase_handler)) perror("signal - SIGTERM");
+    if (SIG_ERR == signal(SIGABRT, crase_handler)) perror("signal - SIGABRT");
+    if (SIG_ERR == signal(SIGFPE,  crase_handler)) perror("signal - SIGFPE");
+    if (SIG_ERR == signal(SIGSEGV, crase_handler)) perror("signal - SIGSEGV");
+    if (SIG_ERR == signal(SIGILL,  crase_handler)) perror("signal - SIGILL");
+    if (SIG_ERR == signal(SIGTERM, crase_handler)) perror("signal - SIGTERM");
 #else
     struct sigaction action;
     memset(&action, 0, sizeof(action));
@@ -214,11 +221,11 @@ void install_sighandler()
     action.sa_flags = SA_SIGINFO;
 
     // do it verbose style - install all signal actions
-    if(sigaction(SIGABRT, &action, NULL) < 0)  perror("sigaction - SIGABRT");
-    if(sigaction(SIGFPE,  &action, NULL) < 0)  perror("sigaction - SIGFPE");
-    if(sigaction(SIGILL,  &action, NULL) < 0)  perror("sigaction - SIGILL");
-    if(sigaction(SIGSEGV, &action, NULL) < 0)  perror("sigaction - SIGSEGV");
-    if(sigaction(SIGTERM, &action, NULL) < 0)  perror("sigaction - SIGTERM");
+    if (sigaction(SIGABRT, &action, NULL) < 0)  perror("sigaction - SIGABRT");
+    if (sigaction(SIGFPE,  &action, NULL) < 0)  perror("sigaction - SIGFPE");
+    if (sigaction(SIGILL,  &action, NULL) < 0)  perror("sigaction - SIGILL");
+    if (sigaction(SIGSEGV, &action, NULL) < 0)  perror("sigaction - SIGSEGV");
+    if (sigaction(SIGTERM, &action, NULL) < 0)  perror("sigaction - SIGTERM");
 #endif
 }
 
