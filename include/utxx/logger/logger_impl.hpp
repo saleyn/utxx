@@ -135,11 +135,11 @@ public:
             , m_last(true)
         {}
 
-        helper(const helper* a_rhs) noexcept
-            : m_owner(a_rhs->m_owner)
-            , m_last(a_rhs->m_last)
+        helper(const helper& a_rhs) noexcept
+            : m_owner(a_rhs.m_owner)
+            , m_last(a_rhs.m_last)
         {
-            a_rhs->m_last = false;
+            a_rhs.m_last = false;
         }
 
         ~helper() {
@@ -162,7 +162,7 @@ public:
 
         helper operator<<(helper& (*Manipulator)(helper&)) {
             Manipulator(*this);
-            return helper(this);
+            return helper(*this);
         }
     };
 
