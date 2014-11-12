@@ -1,23 +1,20 @@
-// If using VC, disable some warnings that trip in boost::serialization bowels
-#if defined(__windows__) || defined(_WIN32) || defined(_WIN64)
-#pragma warning(disable:4267)   // Narrowing conversion
-#pragma warning(disable:4996)   // Deprecated functions
+#ifndef UTXX_STANDALONE
+#include <boost/test/unit_test.hpp>
 #endif
 
-//#define BOOST_TEST_NO_AUTO_LINK
-
-//#define BOOST_TEST_MODULE logger_test
-#include <boost/test/unit_test.hpp>
 #include <iostream>
 #include <utxx/logger.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/variant_tree.hpp>
+#include <signal.h>
+#include <string.h>
 
 //#define BOOST_TEST_MAIN
 
 using namespace boost::property_tree;
 using namespace utxx;
 
+#ifndef UTXX_STANDALONE
 BOOST_AUTO_TEST_CASE( test_logger1 )
 {
     variant_tree pt;
@@ -55,10 +52,91 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
         LOG_CAT_ALERT  ("Cat3", "This is a %d %s", i, "alert error");
     }
 
-    LOG(ERROR) << "This is an error #" << 10 << " and bool " << true;
-    LOG(INFO)  << "This is an into  #" << 9 << std::endl << " and endl";
-    
+    UTXX_LOG(ERROR) << "This is an error #" << 10 << " and bool " << true;
+    UTXX_LOG(INFO)  << "This is an into  #" << 9 << std::endl << " and endl";
+
     BOOST_REQUIRE(true); // to remove run-time warning
 }
+#endif
 
-//BOOST_AUTO_TEST_SUITE_END()
+#ifdef UTXX_STANDALONE
+
+    void hdl (int sig, siginfo_t *siginfo, void *context)
+    {
+        printf ("Sending PID: %ld, UID: %ld signal %d\n",
+                (long)siginfo->si_pid, (long)siginfo->si_uid, sig);
+        if (sig == SIGSEGV) {
+            struct sigaction action;
+            memset(&action, 0, sizeof(action));
+            sigemptyset(&action.sa_mask);
+            action.sa_handler = SIG_DFL; // take default action for the signal
+            sigaction(sig, &action, NULL);
+
+            std::cout << "Restoring old signal handler" << std::endl;
+
+            kill(getpid(), sig);
+            abort(); // should never reach this
+        }
+    }
+
+    void enable_sig_handler(const std::vector<std::pair<int,std::string>>& sigs) {
+        struct sigaction act;
+
+        memset (&act, '\0', sizeof(act));
+        sigemptyset(&act.sa_mask);
+
+        /* The SA_SIGINFO flag tells sigaction() to use the sa_sigaction field, not sa_handler. */
+        act.sa_flags |= SA_SIGINFO;
+        /* Use the sa_sigaction field because the handles has two additional parameters */
+        act.sa_sigaction = &hdl;
+
+        for (auto& p : sigs)
+            printf("Set %s handler -> %d\n", p.second, sigaction(p.first, &act, NULL));
+    }
+
+int main(int argc, char* argv[])
+#else
+BOOST_AUTO_TEST_CASE( test_logger_crash )
+#endif
+{
+    variant_tree pt;
+
+    pt.put("logger.timestamp",  variant("time-usec"));
+    pt.put("logger.console.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.show-ident", false);
+    pt.put("logger.handle-crash-signals", true); // This is default behavior
+
+    logger& log = logger::instance();
+    //log.init(pt);
+
+    std::vector<std::pair<int,std::string>> sigs
+        {{SIGTERM, "SIGTERM"},
+         {SIGABRT, "SIGABRT"},
+         {SIGSEGV, "SIGSEGV"},
+         {SIGINT,  "SIGINT"}};
+
+#ifdef UTXX_STANDALONE
+    enable_sig_handler(sigs);
+#endif
+
+    sigset_t mask;
+    if (sigprocmask(0, NULL, &mask) < 0)
+        perror("sigprocmask");
+
+    for (auto& p : sigs)
+        printf("Process has %s handler -> %d\n", p.second.c_str(), sigismember(&mask, p.first));
+
+    fflush(stdout);
+
+    bool crash = getenv("UTXX_LOGGER_CRASH");
+
+    if (crash) {
+        double* p = nullptr;
+        kill(getpid(), SIGABRT);
+        *p = 10.0;
+    }
+
+    #ifndef UTXX_STANDALONE
+    BOOST_REQUIRE(true); // Keep the warning off
+    #endif
+}

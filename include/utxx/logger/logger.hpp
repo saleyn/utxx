@@ -90,9 +90,7 @@ namespace utxx {
 #define LOG_CAT_FATAL (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
 #define LOG_CAT_ALERT (Cat, Fmt, ...)     printf(Fmt, ##__VA_ARGS__);
 
-#ifndef LOG
-#  define LOG(Level) std::cout
-#endif
+#define UTXX_LOG(Level) std::cout
 
 #else
 
@@ -159,12 +157,9 @@ typedef log_msg_info _lim;
 #define LOG_CAT_ALERT(Cat, Fmt, ...)   do { \
     utxx::_lim(utxx::LEVEL_ALERT  , Cat, UTXX_FILE_SRC_LOCATION).log(Fmt, ##__VA_ARGS__); } while(0)
 
-#ifndef LOG
-#define LOG(Level) \
+#define UTXX_LOG(Level) \
         utxx::_lim(utxx::logger::instance(), utxx::LEVEL_##Level, \
                    UTXX_FILE_SRC_LOCATION)
-#endif
-
 #endif
 
 #endif
