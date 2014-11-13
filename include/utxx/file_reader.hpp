@@ -30,6 +30,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #include <fstream>
 #include <boost/noncopyable.hpp>
 #include <utxx/buffer.hpp>
+#include <utxx/path.hpp>
 
 namespace utxx {
 
@@ -268,6 +269,25 @@ public:
     iterator end() { return iterator(*this, true); }
     const_iterator end() const { return iterator(*this, true); }
 };
+
+/// Read and return the content of the file \a a_filename
+std::string read_file(const std::string& a_filename)
+{
+    if (!path::file_exists(a_filename.c_str()))
+        throw runtime_error("Cannot open file ", a_filename,
+                            "for reading: not found!");
+
+    std::ifstream t(a_filename, std::ios_base::in);
+    if (t.fail())
+        throw runtime_error("Cannot open file ", a_filename,
+                            " for reading: ", strerror(errno));
+    t.seekg(0, std::ios::end);
+    size_t size = t.tellg();
+    std::string res(size, ' ');
+    t.seekg(0);
+    t.read(&res[0], size);
+    return res;
+}
 
 } // namespace utxx
 
