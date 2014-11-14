@@ -86,8 +86,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                             \
         etype  m_val;                                                       \
                                                                             \
-        explicit ENUM(size_t v) : m_val(etype(v)) { assert(v < s_size); }   \
     public:                                                                 \
+        explicit ENUM(size_t v) : m_val(etype(v)) { assert(v < s_size); }   \
         ENUM()                  : m_val(UNDEFINED) {}                       \
         constexpr ENUM(etype v) : m_val(v) {}                               \
                                                                             \
@@ -107,9 +107,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                   \
                                                                             \
         static constexpr size_t size()  { return s_size-1; }                \
-        static constexpr ENUM   first() { return etype(1); }                \
-        static constexpr ENUM   last()  { return etype(size()); }           \
+        static constexpr ENUM   begin() { return etype(1); }                \
         static constexpr ENUM   end()   { return _END_; }                   \
+        static constexpr ENUM   last()  { return etype(size()); }           \
                                                                             \
         template <typename Visitor>                                         \
         static void for_each(const Visitor& a_fun) {                        \
