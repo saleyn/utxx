@@ -134,6 +134,20 @@ namespace detail {
             memcpy(m_pos, a.c_str(), n);
             m_pos += n;
         }
+        template <int M>
+        void do_print(const char (&a)[M]) {
+            size_t n = strnlen(a, M);
+            reserve(n);
+            memcpy(m_pos, a, n);
+            m_pos += n;
+        }
+        template <int M>
+        void do_print(const std::array<char, M>& a) {
+            size_t n = strnlen(a.data(), M);
+            reserve(n);
+            memcpy(m_pos, a, n);
+            m_pos += n;
+        }
         template <typename T>
         void do_print(typename std::enable_if<std::is_pointer<T>::value, T&&>::type a) {
             auto  x = reinterpret_cast<uint64_t>(a);

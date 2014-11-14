@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <algorithm>
 #include <stdexcept>
 #include <sstream>
+#include <array>
 #include <utxx/print.hpp>
 
 //-----------------------------------------------------------------------------
@@ -101,6 +102,21 @@ namespace utxx {
 
     inline char* copy(char* a_dest, size_t a_dsize, const std::string& a_src, char a_delim='\0') {
         return copy(a_dest, a_dsize, a_src.c_str(), a_src.size(), a_delim);
+    }
+
+    template <int N>
+    inline char* copy(std::array<char, N>& a_dest, const std::string& a_src, char a_delim='\0') {
+        return copy(a_dest.data(), N, a_src.c_str(), a_src.size(), a_delim);
+    }
+
+    template <int N, int M>
+    inline char* copy(std::array<char, N>& a_dest, const std::array<char, M>& a_src, char a_delim='\0') {
+        return copy(a_dest.data(), N, a_src.data(), M, a_delim);
+    }
+
+    template <int N, int M>
+    inline char* copy(char (&a_dest)[N], const std::array<char, M>& a_src, char a_delim='\0') {
+        return copy(a_dest, N, a_src.data(), M, a_delim);
     }
 
     /// Convert a string to an integer value

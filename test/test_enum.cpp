@@ -34,52 +34,52 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum.hpp>
 #include <iostream>
 
-UTXX_DEFINE_ENUM_REFLECTION
-
 // Define an enum with values A, B, C that can be converted to string
 // and fron string using reflection class:
 UTXX_DEFINE_ENUM(my_enum,
     A,  // Comment A
     B,
     C   // Comment C
-)
+);
 
-
-UTXX_DEFINE_CUSTOM_ENUM_REFLECTION(oh_my);
-
-UTXX_DEFINE_CUSTOM_ENUM(oh_my, my_enum2, X, Y);
+// Define an enum my_enum2 inside a struct:
+struct oh_my {
+    UTXX_DEFINE_ENUM(my_enum2, X, Y);
+};
 
 BOOST_AUTO_TEST_CASE( test_enum )
 {
-    static_assert(3 == reflection<my_enum>::size(), "Invalid size");
-    static_assert(my_enum::UNDEFINED == reflection<my_enum>::end(), "Invalid end");
-    static_assert(my_enum::UNDEFINED == reflection<my_enum>::end(), "Invalid end");
-    BOOST_CHECK_EQUAL("A", enum_to_string(my_enum::A));
-    BOOST_CHECK_EQUAL("B", enum_to_string(my_enum::B));
-    BOOST_CHECK_EQUAL("C", enum_to_string(my_enum::C));
+    static_assert(3 == my_enum::size(), "Invalid size");
+    static_assert(my_enum::UNDEFINED == my_enum::end(), "Invalid end");
+    BOOST_CHECK_EQUAL("A", my_enum::to_string(my_enum::A));
+    BOOST_CHECK_EQUAL("B", my_enum::to_string(my_enum::B));
+    BOOST_CHECK_EQUAL("C", my_enum::to_string(my_enum::C));
+    BOOST_CHECK_EQUAL("A", my_enum::from_string("A").to_string());
 
     {
-        my_enum val = reflection<my_enum>::from_string("B");
-        std::stringstream s; s << enum_to_string(val);
+        my_enum val = my_enum::from_string("B");
+        BOOST_CHECK_EQUAL("B", val.to_string());
+        std::stringstream s; s << my_enum::to_string(val);
         BOOST_CHECK_EQUAL("B", s.str());
     }
 
     {
+        // Iterate over all enum values defined in my_enum type:
         std::stringstream s;
-        reflection<my_enum>::for_each([&s](my_enum e) { s << e; return true; });
+        my_enum::for_each([&s](my_enum e) { s << e; return true; });
         BOOST_CHECK_EQUAL("ABC", s.str());
     }
 
-    BOOST_CHECK(my_enum::A == reflection<my_enum>::from_string("A"));
-    BOOST_CHECK(my_enum::B == reflection<my_enum>::from_string("B"));
-    BOOST_CHECK(my_enum::C == reflection<my_enum>::from_string("C"));
-    BOOST_CHECK(my_enum::UNDEFINED == reflection<my_enum>::from_string("D"));
+    BOOST_CHECK(my_enum::A == my_enum::from_string("A"));
+    BOOST_CHECK(my_enum::B == my_enum::from_string("B"));
+    BOOST_CHECK(my_enum::C == my_enum::from_string("C"));
+    BOOST_CHECK(my_enum::UNDEFINED == my_enum::from_string("D"));
 
-    static_assert(2 == oh_my<my_enum2>::size(), "Invalid size");
-    BOOST_CHECK_EQUAL("X", enum_to_string(my_enum2::X));
-    BOOST_CHECK_EQUAL("Y", enum_to_string(my_enum2::Y));
+    static_assert(2 == oh_my::my_enum2::size(), "Invalid size");
+    BOOST_CHECK_EQUAL("X", oh_my::my_enum2::to_string(oh_my::my_enum2::X));
+    BOOST_CHECK_EQUAL("Y", oh_my::my_enum2::to_string(oh_my::my_enum2::Y));
 
-    BOOST_CHECK(my_enum2::X == oh_my<my_enum2>::from_string("X"));
-    BOOST_CHECK(my_enum2::Y == oh_my<my_enum2>::from_string("Y"));
-    BOOST_CHECK(my_enum2::UNDEFINED == oh_my<my_enum2>::from_string("D"));
+    BOOST_CHECK(oh_my::my_enum2::X == oh_my::my_enum2::from_string("X"));
+    BOOST_CHECK(oh_my::my_enum2::Y == oh_my::my_enum2::from_string("Y"));
+    BOOST_CHECK(oh_my::my_enum2::UNDEFINED == oh_my::my_enum2::from_string("D"));
 }
