@@ -94,7 +94,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         operator           etype() const { return m_val; }                  \
         bool               empty() const { return m_val == UNDEFINED; }     \
                                                                             \
-        const  char*       to_string()   { return name(size_t(m_val)); }    \
+        const  char*       to_string() const  { return name(size_t(m_val));}\
         static const char* to_string(etype a) { return ENUM(a).to_string();}\
                                                                             \
         static ENUM from_string(const std::string& a, bool a_nocase=false){ \
