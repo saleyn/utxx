@@ -50,7 +50,15 @@ struct oh_my {
 BOOST_AUTO_TEST_CASE( test_enum )
 {
     static_assert(3 == my_enum::size(), "Invalid size");
-    static_assert(my_enum::UNDEFINED == my_enum::end(), "Invalid end");
+
+    my_enum v;
+
+    BOOST_CHECK(v.empty());
+
+    BOOST_CHECK_EQUAL(0,               (int)my_enum::UNDEFINED);
+    BOOST_CHECK_EQUAL(my_enum::A,           my_enum::first());
+    BOOST_CHECK_EQUAL(my_enum::C,           my_enum::last());
+    BOOST_CHECK_EQUAL(1+int(my_enum::C),    my_enum::end());
     BOOST_CHECK_EQUAL("A", my_enum::to_string(my_enum::A));
     BOOST_CHECK_EQUAL("B", my_enum::to_string(my_enum::B));
     BOOST_CHECK_EQUAL("C", my_enum::to_string(my_enum::C));

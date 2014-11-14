@@ -60,14 +60,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define UTXX_DEFINE_ENUM(ENUM, ...)                                         \
     struct ENUM {                                                           \
         enum etype {                                                        \
+            UNDEFINED,                                                      \
             __VA_ARGS__,                                                    \
-            UNDEFINED                                                       \
+            _END_                                                           \
         };                                                                  \
                                                                             \
     private:                                                                \
-        static const size_t s_size = BOOST_PP_VARIADIC_SIZE(__VA_ARGS__);   \
+        static const size_t s_size = 1+BOOST_PP_VARIADIC_SIZE(__VA_ARGS__); \
         static const char** names() {                                       \
             static const char* s_names[] = {                                \
+                "UNDEFINED",                                                \
                 BOOST_PP_SEQ_ENUM(                                          \
                     BOOST_PP_SEQ_TRANSFORM(                                 \
                         UTXX_INTERNAL_ENUM_STRINGIFY, ,                     \
@@ -84,11 +86,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                             \
         etype  m_val;                                                       \
                                                                             \
+        explicit ENUM(size_t v) : m_val(etype(v)) { assert(v < s_size); }   \
     public:                                                                 \
-        explicit ENUM(size_t v) : m_val(etype(v)) { assert(v<s_size); }     \
-        ENUM(etype v)           : m_val(v) {}                               \
+        ENUM()                  : m_val(UNDEFINED) {}                       \
+        constexpr ENUM(etype v) : m_val(v) {}                               \
                                                                             \
         operator           etype() const { return m_val; }                  \
+        bool               empty() const { return m_val == UNDEFINED; }     \
                                                                             \
         const  char*       to_string()   { return name(size_t(m_val)); }    \
         static const char* to_string(etype a) { return ENUM(a).to_string();}\
@@ -102,12 +106,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return out << ENUM::to_string(a);                               \
         }                                                                   \
                                                                             \
-        static constexpr size_t size() { return s_size;    }                \
-        static constexpr etype  end()  { return UNDEFINED; }                \
+        static constexpr size_t size()  { return s_size-1; }                \
+        static constexpr ENUM   first() { return etype(1); }                \
+        static constexpr ENUM   last()  { return etype(size()); }           \
+        static constexpr ENUM   end()   { return _END_; }                   \
                                                                             \
         template <typename Visitor>                                         \
         static void for_each(const Visitor& a_fun) {                        \
-            for (size_t i=0; i < size(); i++)                               \
+            for (size_t i=1; i < s_size; i++)                               \
                 if (!a_fun(etype(i)))                                       \
                     break;                                                  \
         }                                                                   \
