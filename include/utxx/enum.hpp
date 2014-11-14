@@ -32,21 +32,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/preprocessor/variadic/size.hpp>
+#include <boost/preprocessor/seq/enum.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
+#include <boost/preprocessor/seq/transform.hpp>
 #include <boost/preprocessor/seq/size.hpp>
+#include <boost/preprocessor/stringize.hpp>
 #include <utxx/string.hpp>
 #include <cassert>
 
-#define UTXX_DEFINE_CUSTOM_ENUM_INFO(name) template<typename> class name
-#define UTXX_DEFINE_ENUM_INFO UTXX_DEFINE_CUSTOM_ENUM_INFO(reflection)
+#define UTXX_DEFINE_CUSTOM_ENUM_REFLECTION(name) template<typename> class name;
+#define UTXX_DEFINE_ENUM_REFLECTION UTXX_DEFINE_CUSTOM_ENUM_REFLECTION(reflection)
 
 // Enum declaration:
 //  #include <utxx/enum.hpp>
 //
-//  UTXX_DEFINE_ENUM_INFO(MyEnumT)
+//  UTXX_DEFINE_ENUM_REFLECTION(MyEnumT)
 //  UTXX_DEFINE_ENUM(MyEnumT,
 //                      Apple,
 //                      Pear,
@@ -55,14 +57,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 // Sample usage:
 //  MyEnumT val = reflection<MyEnumT>::from_string("Pear");
-//  std::cout << "Value: " << to_string(val) << std::endl;
-//  std::cout << "Value: " << val            << std::endl;
+//  std::cout << "Value: " << enum_to_string(val) << std::endl;
+//  std::cout << "Value: " << val                 << std::endl;
 //
 #define UTXX_DEFINE_ENUM(enum_name, ...)                                    \
     UTXX_DEFINE_CUSTOM_ENUM(reflection, enum_name, __VA_ARGS__)
 
 #define UTXX_DEFINE_CUSTOM_ENUM(einfo, enum_name, ...)                      \
-    enum class enum_name {                                                  \
+    enum class enum_name : int {                                            \
         __VA_ARGS__,                                                        \
         UNDEFINED                                                           \
     };                                                                      \
@@ -76,12 +78,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     const char* einfo<enum_name>::s_values[] = {                            \
         BOOST_PP_SEQ_ENUM(                                                  \
             BOOST_PP_SEQ_TRANSFORM(                                         \
-                UTXX_INTERNAL_ENUM_STRINGIFY,,                              \
+                UTXX_INTERNAL_ENUM_STRINGIFY, ,                             \
                 BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)                       \
         ))                                                                  \
     };                                                                      \
                                                                             \
-    inline const char* to_string(enum_name a) {                             \
+    inline const char* enum_to_string(enum_name a) {                        \
         return einfo<enum_name>::to_string(a);                              \
     }                                                                       \
                                                                             \
@@ -90,7 +92,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     }
 
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_INTERNAL_ENUM_STRINGIFY(x, data, item) BOOST_PP_STRINGIZE(item)
+#define UTXX_INTERNAL_ENUM_STRINGIFY(x, _, item) BOOST_PP_STRINGIZE(item)
 
 namespace utxx {
 
@@ -99,16 +101,23 @@ namespace utxx {
     template <template<typename> class Derived, typename Enum>
     struct enum_info<Derived<Enum>> {
         using type = Enum;
-        static constexpr size_t size()  { return Derived<Enum>::s_size;  }
-        static constexpr Enum   begin() { return (Enum)0;                }
-        static constexpr Enum   end()   { return Enum::UNDEFINED;        }
+        static constexpr size_t size()       { return Derived<Enum>::s_size; }
+        static constexpr Enum   begin()      { return (Enum)0;               }
+        static constexpr Enum   end()        { return Enum::UNDEFINED;       }
+
+        template <typename Visitor>
+        static void for_each(const Visitor& a_fun) {
+            for (size_t i=0; i < size(); i++)
+                if (!a_fun(Enum(i)))
+                    break;
+        }
 
         static const char* to_string(Enum a) {
             assert((size_t)a < utxx::length(Derived<Enum>::s_values));
             return Derived<Enum>::s_values[utxx::to_underlying(a)];
         }
 
-        static Enum from_string(const std::string& a_val, bool a_nocase=false) {
+        static Enum from_string(const std::string& a_val, bool a_nocase=false){
             return utxx::find_index<Enum>
                 (Derived<Enum>::s_values, a_val, Enum::UNDEFINED, a_nocase);
         }

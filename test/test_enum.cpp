@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum.hpp>
 #include <iostream>
 
-UTXX_DEFINE_ENUM_INFO;
+UTXX_DEFINE_ENUM_REFLECTION
 
 // Define an enum with values A, B, C that can be converted to string
 // and fron string using reflection class:
@@ -45,23 +45,30 @@ UTXX_DEFINE_ENUM(my_enum,
 )
 
 
-UTXX_DEFINE_CUSTOM_ENUM_INFO(oh_my);
+UTXX_DEFINE_CUSTOM_ENUM_REFLECTION(oh_my);
 
 UTXX_DEFINE_CUSTOM_ENUM(oh_my, my_enum2, X, Y);
-
 
 BOOST_AUTO_TEST_CASE( test_enum )
 {
     static_assert(3 == reflection<my_enum>::size(), "Invalid size");
     static_assert(my_enum::UNDEFINED == reflection<my_enum>::end(), "Invalid end");
     static_assert(my_enum::UNDEFINED == reflection<my_enum>::end(), "Invalid end");
-    BOOST_CHECK_EQUAL("A", to_string(my_enum::A));
-    BOOST_CHECK_EQUAL("B", to_string(my_enum::B));
-    BOOST_CHECK_EQUAL("C", to_string(my_enum::C));
+    BOOST_CHECK_EQUAL("A", enum_to_string(my_enum::A));
+    BOOST_CHECK_EQUAL("B", enum_to_string(my_enum::B));
+    BOOST_CHECK_EQUAL("C", enum_to_string(my_enum::C));
 
-    my_enum val = reflection<my_enum>::from_string("B");
-    std::stringstream s; s << to_string(val);
-    BOOST_CHECK_EQUAL("B", s.str());
+    {
+        my_enum val = reflection<my_enum>::from_string("B");
+        std::stringstream s; s << enum_to_string(val);
+        BOOST_CHECK_EQUAL("B", s.str());
+    }
+
+    {
+        std::stringstream s;
+        reflection<my_enum>::for_each([&s](my_enum e) { s << e; return true; });
+        BOOST_CHECK_EQUAL("ABC", s.str());
+    }
 
     BOOST_CHECK(my_enum::A == reflection<my_enum>::from_string("A"));
     BOOST_CHECK(my_enum::B == reflection<my_enum>::from_string("B"));
@@ -69,8 +76,8 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK(my_enum::UNDEFINED == reflection<my_enum>::from_string("D"));
 
     static_assert(2 == oh_my<my_enum2>::size(), "Invalid size");
-    BOOST_CHECK_EQUAL("X", to_string(my_enum2::X));
-    BOOST_CHECK_EQUAL("Y", to_string(my_enum2::Y));
+    BOOST_CHECK_EQUAL("X", enum_to_string(my_enum2::X));
+    BOOST_CHECK_EQUAL("Y", enum_to_string(my_enum2::Y));
 
     BOOST_CHECK(my_enum2::X == oh_my<my_enum2>::from_string("X"));
     BOOST_CHECK(my_enum2::Y == oh_my<my_enum2>::from_string("Y"));
