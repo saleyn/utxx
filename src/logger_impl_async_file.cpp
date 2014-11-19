@@ -48,27 +48,25 @@ logger_impl_async_file::logger_impl_async_file(const char* a_name)
     : m_name(a_name), m_append(true), m_levels(LEVEL_NO_DEBUG)
     , m_mode(0644)
     , m_engine_ptr(new async_logger_engine())
-    , m_engine(m_engine_ptr.get())
+    , m_engine    (m_engine_ptr.get())
 {}
 
 void logger_impl_async_file::finalize()
 {
-    if (m_engine_ptr.get()) {
-        if (m_engine == m_engine_ptr.get() && m_engine->running())
-            m_engine->stop();
-        m_engine_ptr.reset();
-    }
-    m_engine = nullptr;
+    m_engine->close_file(m_fd);
+
+    if (m_engine->running() && m_engine == m_engine_ptr.get())
+        m_engine->stop();
 }
 
 void logger_impl_async_file::set_engine(multi_file_async_logger& a_engine)
 {
-    m_engine = &a_engine;
-
-    if (m_engine_ptr.get()) {
+    if (m_engine_ptr && m_engine == m_engine_ptr.get()) {
         m_engine_ptr->stop();
         m_engine_ptr.reset();
     }
+
+    m_engine = &a_engine;
 }
 
 std::ostream& logger_impl_async_file::dump(
@@ -88,14 +86,7 @@ bool logger_impl_async_file::init(const variant_tree& a_config)
 {
     BOOST_ASSERT(this->m_log_mgr);
 
-    if (m_engine->running() && m_engine == m_engine_ptr.get())
-        finalize();
-
-    if (!m_engine) {
-        if (!m_engine_ptr.get())
-            m_engine_ptr.reset(new async_logger_engine());
-        m_engine = m_engine_ptr.get();
-    }
+    finalize();
 
     try {
         m_filename = a_config.get<std::string>("logger.async-file.filename");

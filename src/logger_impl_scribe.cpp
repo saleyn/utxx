@@ -50,7 +50,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-static logger_impl_mgr::impl_callback_t f = &logger_impl_scribe::create;
+static logger_impl_mgr::impl_callback_t f = &logger_scribe::create;
 static logger_impl_mgr::registrar reg("scribe", f);
 
 logger_impl_scribe::logger_impl_scribe(const char* a_name)
@@ -60,15 +60,28 @@ logger_impl_scribe::logger_impl_scribe(const char* a_name)
     , m_show_location(true)
     , m_show_ident(false)
     , m_reconnecting(0)
+    , m_engine_ptr(new async_logger_engine())
+    , m_engine    (m_engine_ptr.get())
 {}
 
 void logger_impl_scribe::finalize()
 {
-    if (!m_engine.running()) {
-        m_engine.close_file(m_fd);
-        m_engine.stop();
-    }
+    m_engine->close_file(m_fd);
+
     disconnect();
+
+    if (m_engine->running() && m_engine == m_engine_ptr.get())
+        m_engine->stop();
+}
+
+void logger_impl_scribe::set_engine(multi_file_async_logger& a_engine)
+{
+    if (m_engine_ptr && m_engine == m_engine_ptr.get()) {
+        m_engine_ptr->stop();
+        m_engine_ptr.reset();
+    }
+
+    m_engine = &a_engine;
 }
 
 std::ostream& logger_impl_scribe::dump(std::ostream& out,
@@ -133,19 +146,19 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
         }
     }
 
-    m_fd = m_engine.open_stream(m_name.c_str(),
-                                boost::bind(&logger_impl_scribe::writev,
-                                            this->shared_from_this(), _1, _2, _3, _4),
-                                NULL,
-                                m_socket->getSocketFD()
-                               );
+    m_fd = m_engine->open_stream
+        (m_name.c_str(), boost::bind(&logger_impl_scribe::writev,
+                                     this->shared_from_this(), _1, _2, _3, _4),
+         NULL, m_socket->getSocketFD());
+
     if (!m_fd)
         throw std::runtime_error("Error opening scribe logging stream!");
 
-    m_engine.set_reconnect(m_fd,
-                           boost::bind(&logger_impl_scribe::on_reconnect,
-                                       this->shared_from_this(), _1));
-    m_engine.start();
+    m_engine->set_reconnect(m_fd,
+                            boost::bind(&logger_impl_scribe::on_reconnect,
+                                        this->shared_from_this(), _1));
+    if (!m_engine->running())
+        m_engine->start();
 
     return true;
 }
@@ -271,22 +284,19 @@ void logger_impl_scribe::log_bin(
 
 void logger_impl_scribe::send_data(
     log_level level, const std::string& a_category, const char* a_msg, size_t a_size)
-    throw(io_error)
+    throw(runtime_error)
 {
-    if (!m_engine.running())
-        throw io_error("Logger terminated!");
+    if (!m_engine->running())
+        throw runtime_error("logger_impl_scribe::send_data: logging engine terminated!");
 
     char* p = m_engine.allocate(a_size);
 
-    if (!p) {
-        std::stringstream s("Out of memory allocating ");
-        s << a_size << " bytes!";
-        throw io_error(s.str());
-    }
-
+    if (!p)
+        throw runtime_error("logger_impl_scribe::send_data: Out of memory allocating ",
+                            a_size, " bytes!");
     memcpy(p, a_msg, a_size);
 
-    m_engine.write(m_fd, a_category, p, a_size);
+    m_engine->write(m_fd, a_category, p, a_size);
 }
 
 int logger_impl_scribe::write_string(const char* a_str, int a_size)

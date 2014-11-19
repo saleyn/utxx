@@ -108,15 +108,16 @@ class logger_impl_scribe
         TRY_LATER = 1
     };
 
-    std::string  m_name;
-    addr_info    m_server_addr;
-    int          m_server_timeout;
-    int          m_levels;
-    boost::mutex m_mutex;
-    int          m_reconnecting;
+    std::string                              m_name;
+    addr_info                                m_server_addr;
+    int                                      m_server_timeout;
+    int                                      m_levels;
+    boost::mutex                             m_mutex;
+    int                                      m_reconnecting;
 
-    async_logger_engine                     m_engine;
-    typename async_logger_engine::file_id   m_fd;
+    std::unique_ptr<async_logger_engine>     m_engine_ptr;
+    async_logger_engine*                     m_engine;
+    typename async_logger_engine::file_id    m_fd;
 
     boost::shared_ptr<apache::thrift::transport::TSocket>           m_socket;
     boost::shared_ptr<apache::thrift::transport::TFramedTransport>  m_transport;
@@ -125,10 +126,9 @@ class logger_impl_scribe
     logger_impl_scribe(const char* a_name);
 
     void send_data(log_level level, const std::string& a_category,
-                   const char* a_msg, size_t a_size) throw(io_error);
+                   const char* a_msg, size_t a_size) throw(runtime_error);
 
     void finalize();
-
 
     bool connected() const { return m_transport && m_transport->isOpen(); }
     int  connect();
@@ -149,9 +149,11 @@ public:
         return new logger_impl_scribe(a_name);
     }
 
-    virtual ~logger_impl_scribe() {
-        finalize();
-    }
+    virtual ~logger_impl_scribe() { finalize(); }
+
+    // This method allows the logging implementation to use
+    // an external logging engine
+    void set_engine(multi_file_async_logger& a_engine);
 
     const std::string& name() const { return m_name; }
 

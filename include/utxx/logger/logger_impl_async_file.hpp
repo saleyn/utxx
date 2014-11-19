@@ -84,6 +84,7 @@ class logger_impl_async_file: public logger_impl {
 
     void finalize();
 public:
+    /// Instance factory method
     static logger_impl_async_file* create(const char* a_name) {
         return new logger_impl_async_file(a_name);
     }
