@@ -33,14 +33,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/logger/logger_impl_scribe.hpp>
 
-#ifdef HAVE_THRIFT_H
+#ifdef UTXX_HAVE_THRIFT_H
 
 #include <stdio.h>
 #include <time.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <boost/format.hpp>
 #include <utxx/url.hpp>
 
 #include <thrift/Thrift.h>
@@ -50,15 +49,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-static logger_impl_mgr::impl_callback_t f = &logger_scribe::create;
+static logger_impl_mgr::impl_callback_t f = &logger_impl_scribe::create;
 static logger_impl_mgr::registrar reg("scribe", f);
 
 logger_impl_scribe::logger_impl_scribe(const char* a_name)
     : m_name(a_name)
     , m_server_addr("uds:///var/run/scribed")
     , m_levels(LEVEL_NO_DEBUG)
-    , m_show_location(true)
-    , m_show_ident(false)
     , m_reconnecting(0)
     , m_engine_ptr(new async_logger_engine())
     , m_engine    (m_engine_ptr.get())
@@ -95,11 +92,11 @@ std::ostream& logger_impl_scribe::dump(std::ostream& out,
 }
 
 static void thrift_output(const char* a_msg) {
-    LOG_ERROR((a_msg));
+    LOG_ERROR(a_msg);
 }
 
 bool logger_impl_scribe::init(const variant_tree& a_config)
-    throw(badarg_error)
+    throw(badarg_error, io_error)
 {
     ::apache::thrift::GlobalOutput.setOutputFunction(&thrift_output);
 
@@ -123,9 +120,8 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
         try {
             connect();
         } catch (const std::exception& e) {
-            throw std::runtime_error(
-                (boost::format("Failed to open connection to scribe server %s: %s")
-                    % m_server_addr % e.what()).str().c_str());
+            throw io_error(errno, "Failed to open connection to scribe server ",
+                           m_server_addr, ": ", e.what());
         }
 
         // If this implementation started as part of the logging framework,
@@ -146,17 +142,23 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
         }
     }
 
+    auto shared_this = this->shared_from_this();
+    auto write_fun   =
+        [=](typename async_logger_engine::stream_info& a_si,
+            const char* a_categories[],
+            const iovec* a_data, size_t a_size)
+        { return shared_this->writev(a_si, a_categories, a_data, a_size); };
+
     m_fd = m_engine->open_stream
-        (m_name.c_str(), boost::bind(&logger_impl_scribe::writev,
-                                     this->shared_from_this(), _1, _2, _3, _4),
-         NULL, m_socket->getSocketFD());
+        (m_name.c_str(), write_fun, nullptr, m_socket->getSocketFD());
 
     if (!m_fd)
         throw std::runtime_error("Error opening scribe logging stream!");
 
-    m_engine->set_reconnect(m_fd,
-                            boost::bind(&logger_impl_scribe::on_reconnect,
-                                        this->shared_from_this(), _1));
+    m_engine->set_reconnect
+        (m_fd, [=](typename async_logger_engine::stream_info& a_si) -> int
+                  { return shared_this->on_reconnect(a_si); });
+
     if (!m_engine->running())
         m_engine->start();
 
@@ -219,14 +221,14 @@ int logger_impl_scribe::on_reconnect(typename async_logger_engine::stream_info& 
         int attempts = connect();
 
         if (m_reconnecting > 0)
-            LOG_INFO(("Successfully reconnected to scribe server at %s (attempts=%d)",
-                      m_server_addr.to_string().c_str(), attempts));
+            LOG_INFO("Successfully reconnected to scribe server at %s (attempts=%d)",
+                      m_server_addr.to_string().c_str(), attempts);
 
         res = m_socket->getSocketFD();
     } catch(std::exception& e) {
         if (!m_reconnecting++) {
-            LOG_ERROR(("Failed to reconnect to scribe server at %s: %s",
-                       m_server_addr.to_string().c_str(), e.what()));
+            LOG_ERROR("Failed to reconnect to scribe server at %s: %s",
+                       m_server_addr.to_string().c_str(), e.what());
         }
     }
 
@@ -263,7 +265,7 @@ int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
         // Wait for ack
         recv_log_reply();
     } catch (std::exception& e) {
-        LOG_ERROR(("Error writing data to scribe: %s", e.what()));
+        LOG_ERROR("Error writing data to scribe: %s", e.what());
         m_transport.reset();
         xfer = -1;
     }
@@ -273,7 +275,7 @@ int logger_impl_scribe::writev(typename async_logger_engine::stream_info& a_si,
 
 void logger_impl_scribe::log_msg(const log_msg_info& info) throw(io_error)
 {
-    send_data(info.level(), info.category(), info.data().str(), info.data_len());
+    send_data(info.level(), info.category(), info.data(), info.data_len());
 }
 
 void logger_impl_scribe::log_bin(
@@ -289,7 +291,7 @@ void logger_impl_scribe::send_data(
     if (!m_engine->running())
         throw runtime_error("logger_impl_scribe::send_data: logging engine terminated!");
 
-    char* p = m_engine.allocate(a_size);
+    char* p = m_engine->allocate(a_size);
 
     if (!p)
         throw runtime_error("logger_impl_scribe::send_data: Out of memory allocating ",
