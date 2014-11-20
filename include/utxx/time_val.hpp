@@ -315,7 +315,7 @@ namespace utxx {
             using namespace boost::posix_time;
             static const ptime epoch(boost::gregorian::date(1970,1,1));
             time_duration diff = a_rhs - epoch;
-            m_tv = diff.total_seconds() * N10e6 + a_rhs.time_of_day().total_microseconds();
+            m_tv = diff.total_microseconds();
         }
 
         bool operator== (time_val tv) const { return m_tv == tv.value(); }
