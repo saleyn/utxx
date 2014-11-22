@@ -67,8 +67,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                             \
     private:                                                                \
         static const size_t s_size = 1+BOOST_PP_VARIADIC_SIZE(__VA_ARGS__); \
-        static const char** names() {                                       \
-            static const char* s_names[] = {                                \
+        static const std::string* names() {                                 \
+            static const std::string s_names[] = {                          \
                 "UNDEFINED",                                                \
                 BOOST_PP_SEQ_ENUM(                                          \
                     BOOST_PP_SEQ_TRANSFORM(                                 \
@@ -79,7 +79,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return s_names;                                                 \
         };                                                                  \
                                                                             \
-        static const char* name(size_t n) {                                 \
+        static const std::string& name(size_t n) {                          \
             assert(n < s_size);                                             \
             return names()[n];                                              \
         };                                                                  \
@@ -91,15 +91,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         ENUM()                  : m_val(UNDEFINED) {}                       \
         constexpr ENUM(etype v) : m_val(v) {}                               \
                                                                             \
-        operator           etype() const { return m_val; }                  \
-        bool               empty() const { return m_val == UNDEFINED; }     \
+        operator           etype()     const { return m_val; }              \
+        bool               empty()     const { return m_val == UNDEFINED; } \
                                                                             \
-        const  char*       to_string() const  { return name(size_t(m_val));}\
-        static const char* to_string(etype a) { return ENUM(a).to_string();}\
+        const std::string& to_string() const { return name(size_t(m_val));} \
+        static const std::string&                                           \
+                           to_string(etype a){ return ENUM(a).to_string();} \
+        const char*        c_str()     const { return to_string().c_str(); }\
+        static const char* c_str(etype a)    { return to_string(a).c_str();}\
                                                                             \
         static ENUM from_string(const std::string& a, bool a_nocase=false){ \
-            return utxx::find_index<etype>                                  \
-                (names(), s_size, a, etype::UNDEFINED, a_nocase);           \
+            auto f = a_nocase ? &strcasecmp : &strcmp;                      \
+            for (size_t i=1; i != s_size; i++)                              \
+                if (f((names()[i]).c_str(), a.c_str()) == 0) return ENUM(i);\
+            return UNDEFINED;                                               \
         }                                                                   \
                                                                             \
         inline friend std::ostream& operator<< (std::ostream& out, ENUM a) {\

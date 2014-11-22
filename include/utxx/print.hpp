@@ -191,12 +191,11 @@ namespace detail {
         char*       str()             { return m_begin; }
         const char* c_str()     const { *m_pos = '\0'; return m_begin; }
         size_t      size()      const { return m_pos - m_begin;  }
+        const char* pos()       const { return m_pos;            }
+        char*&      pos()             { return m_pos;            }
+        void        pos(const char* p){ assert(p <= m_end); m_pos = p; }
         size_t      max_size()  const { return m_end - m_begin;  }
         size_t      capacity()  const { return m_end - m_pos;    }
-        char&       last()      const { return m_pos == m_begin
-                                             ? *m_begin : *(m_pos - 1); }
-        char&       last()            { return m_pos == m_begin
-                                             ? *m_begin : *(m_pos - 1); }
 
         /// Reserve space in the buffer to hold additional \a a_sz bytes
         void reserve(size_t a_sz) {

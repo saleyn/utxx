@@ -147,8 +147,10 @@ inline void log_msg_info::format_footer()
     if (has_src_location() && lg->show_location()) {
         static const char s_sep =
             boost::filesystem::path("/").native().c_str()[0];
-        if (m_data.last() == '\n')
-            m_data.last() = '|';
+        char* p = m_data.str();
+        char* c = p-1;
+        if (*c == '\n')
+            *c =   '|';
         else
             m_data.print('|');
         const char* q = strrchr(m_src_location, s_sep);
@@ -159,8 +161,8 @@ inline void log_msg_info::format_footer()
     }
     // We reached the end of the streaming sequence:
     // log_msg_info lmi; lmi << a << b << c;
-    char& c = m_data.last();
-    if (c != '\n') m_data.print('\n');
+    char* c = m_data.str()-1;
+    if (*c != '\n') m_data.print('\n');
 
     m_data.c_str(); // Writes terminating '\0'
 }
