@@ -147,7 +147,7 @@ inline void log_msg_info::format_footer()
     if (has_src_location() && lg->show_location()) {
         static const char s_sep =
             boost::filesystem::path("/").native().c_str()[0];
-        char* p = m_data.str();
+        char* p = m_data.pos();
         char* c = p-1;
         if (*c == '\n')
             *c =   '|';
