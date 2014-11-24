@@ -193,7 +193,7 @@ namespace detail {
         size_t      size()      const { return m_pos - m_begin;  }
         const char* pos()       const { return m_pos;            }
         char*&      pos()             { return m_pos;            }
-        void        pos(const char* p){ assert(p <= m_end); m_pos = p; }
+        void        pos(const char* p){ assert(p <= m_end); m_pos = const_cast<char*>(p); }
         size_t      max_size()  const { return m_end - m_begin;  }
         size_t      capacity()  const { return m_end - m_pos;    }
 
