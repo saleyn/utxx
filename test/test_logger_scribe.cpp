@@ -21,7 +21,7 @@ using namespace utxx;
 #ifdef UTXX_STANDALONE
 int main(int argc, char* argv[])
 {
-    #ifdef HAVE_THRIFT_H
+    #ifdef UTXX_HAVE_THRIFT_H
     boost::shared_ptr<logger_impl_scribe> log( logger_impl_scribe::create("test") );
 
     if (argc > 1 && (!strcmp("-h", argv[1]) || !strcmp("--help", argv[1]))) {
@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
 {
     variant_tree pt;
 
-    #ifdef HAVE_THRIFT_H
+    #ifdef UTXX_HAVE_THRIFT_H
     pt.put("logger.console.stderr-levels",  std::string("info|warning|error|fatal|alert"));
     pt.put("logger.scribe.address",         std::string("uds:///var/run/scribed"));
     pt.put("logger.scribe.levels",          std::string("debug|info|warning|error|fatal|alert"));
