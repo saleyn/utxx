@@ -163,9 +163,9 @@ namespace utxx {
         /// Initialize the storage in shared memory.
         /// @param a_segment  the shared memory segment
         /// @param a_name     the name of object in managed shared memory
-        /// @param a_flag     if RECREATE - the existing object will be recreated;
+        /// @param a_flag     if RECREATE  - the existing object will be recreated;
         ///                   if READ_ONLY - will try to attach in read-only mode
-        /// @param a_max_recs
+        /// @param a_max_recs max capacity of the storage in the number of records
         /// @return true if the shared memory object didn't exist and was created
         bool init(bip::fixed_managed_shared_memory& a_segment,
                   const char* a_name, persist_attach_type a_flag, size_t a_max_recs)
@@ -442,7 +442,10 @@ namespace utxx {
     {
         std::pair<char*, size_t> fres = a_segment.find<char>(a_name);
 
-        bool found = fres.first != nullptr;
+        bool found   = fres.first != nullptr;
+        bool created = false;
+        // Calculate the full object size:
+        size_t size  = total_size(a_max_recs);
 
         // If the segment was found, initialize the pointers and use it
         if (found) {
@@ -464,7 +467,8 @@ namespace utxx {
                                             m_header->recs_offset, ')');
                     BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
                                  reinterpret_cast<char*>(m_header)+fres.second);
-                    return false;
+                    created = false;
+                    goto INIT_LOCKS;
                 }
                 default:
                     throw utxx::runtime_error
@@ -484,9 +488,6 @@ namespace utxx {
 
         if (a_max_recs == 0)
             throw utxx::badarg_error("persist_array: invalid max number of records!");
-
-        // Calculate the full object size:
-        auto size = total_size(a_max_recs);
 
         // Otherwise: create a new object:
         try
@@ -515,18 +516,7 @@ namespace utxx {
 
             BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
                          reinterpret_cast<char*>(mem)+size);
-
-            //if (!l_exists && !a_read_only) {
-            if (!found) {
-                // FIXME: need locking here
-
-                // If the file is open for writing, initialize the locks
-                // since previous program crash might have left locks in inconsistent state
-                for (Lock* l = m_header->locks, *e = l + NLocks; l != e; ++l)
-                    new (l) Lock();
-            }
-
-            return true;
+            created = true;
         }
         catch (std::exception const& e)
         {
@@ -535,6 +525,15 @@ namespace utxx {
             throw utxx::runtime_error
                 ("Cannot create a shared memory array '", a_name, "': ", e.what());
         }
+
+    INIT_LOCKS:
+        if (a_flag != persist_attach_type::OPEN_READ_ONLY) {
+            // If the file is open for writing, initialize the locks
+            // since previous program crash might have left locks in inconsistent state
+            for (Lock* l = m_header->locks, *e = l + NLocks; l != e; ++l)
+                new (l) Lock();
+        }
+        return created;
     }
 } // namespace utxx
 
