@@ -120,6 +120,7 @@ int         next_legend_count         = 1;
 int         next_sock_report_lines    = 5;
 int         max_channel_report_lines  = 10;
 int         display_packets           = 0;
+int         display_packets_hex       = 0;
 const char* output_file               = NULL;
 const char* write_file                = NULL;
 
@@ -148,9 +149,10 @@ void usage(const char* program) {
          "      -L Lines    - Max number of channel-level report lines (default: 10)\n"
          "      -d Sec      - Execution time in sec (default: infinity)\n"
          "      -l Label    - Title to include in the output report\n"
-         "      -v          - Verbose (use -vv for more detailed output\n"
+         "      -v          - Verbose (use -vv for more detailed output)\n"
          "      -n MaxCount - Terminate after receiving this number of packets\n"
-         "      -r [Size]   - Print packet up to Size bytes\n"
+         "      -P [Size]   - Print packet up to Size bytes in ASCII format\n"
+         "      -X [Size]   - Print packet up to Size bytes in HEX format\n"
          "      -q          - Quiet (no output)\n"
          "      -o Filename - Output log file\n"
          "      -w Filename - Write packets to file\n\n"
@@ -442,9 +444,12 @@ void main(int argc, char *argv[])
         i++;
         use_epoll = 0;
       }
-    } else if (!strncmp(argv[i], "-r", 2))
+    } else if (!strncmp(argv[i], "-P", 2))
       display_packets = (i < argc-1) ? atoi(argv[++i]) : 512;
-    else if (!strncmp(argv[i], "-q", 2))
+    else if (!strncmp(argv[i], "-X", 2)) {
+      display_packets = (i < argc-1) ? atoi(argv[++i]) : 512;
+      display_packets_hex = 1;
+    } else if (!strncmp(argv[i], "-q", 2))
       quiet = 1;
     else if (!strcmp(argv[i], "-l") && i < argc-1)
       label = argv[++i];
@@ -1072,10 +1077,18 @@ void process_packet(struct address* addr, const char* buf, int n) {
   if (display_packets) {
     fprintf(stderr, "  %02d (fmt=%c) seqno=%ld (pkt size=%d):\n   {",
       addr->id, addr->data_format, seqno, n);
-    int i, e = n > display_packets ? display_packets : n;
-    for (i=0; i < e; i++) {
-      fprintf(stderr, "%s0x%02x", i ? "," : "", (uint8_t)buf[i]);
-      if (((i+1) % 16) == 0) fprintf(stderr, "\n   ");
+    int i = 0, e = n > display_packets ? display_packets : n;
+    if (display_packets_hex)
+      for (; i < e; i++) {
+        fprintf(stderr, "%s0x%02x", i ? "," : "", (uint8_t)buf[i]);
+        if (((i+1) % 16) == 0) fprintf(stderr, "\n   ");
+      }
+    else {
+      const char* p = buf, *end = p + e;
+      for (; p != end; p++, i++) {
+        fprintf(stderr, "%c", *p > ' ' && *p < 255 ? *p : '.');
+        if (((i+1) % 80) == 0) fprintf(stderr, "\n   ");
+      }
     }
     fprintf(stderr, "};\n");
   }
