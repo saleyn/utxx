@@ -48,6 +48,7 @@ BOOST_AUTO_TEST_CASE( test_print )
     { std::string s = print("abc"); BOOST_CHECK_EQUAL("abc",   s); }
     { std::string s = print(str);   BOOST_CHECK_EQUAL("xxx",   s); }
     { std::string s = print(fixed(2.123, 6, 3, ' ')); BOOST_CHECK_EQUAL(" 2.123", s); }
+    { std::string s = print(fixed(2.123, 2)); BOOST_CHECK_EQUAL("2.12", s); }
 }
 
 

@@ -636,6 +636,8 @@ void main(int argc, char *argv[])
       memset((char *) &local_s, 0, sizeof(local_s));
       local_s.sin_family        = AF_INET;
       local_s.sin_port          = htons(addrs[i].port);
+      // Note that mcast listening sockets must bind to the INADDR_ANY address
+      // or else no packets will be directed to this socket (kernel bug/feature?):
       local_s.sin_addr.s_addr   = INADDR_ANY;
 
       if (bind(addrs[i].fd, (struct sockaddr*)&local_s, sizeof(local_s))) {

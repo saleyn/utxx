@@ -50,10 +50,16 @@ struct fixed {
         , m_fill(a_fill)
     {}
 
+    fixed(double a_val, int a_precision)
+        : m_value(a_val), m_digits(-1), m_precision(a_precision)
+        , m_fill(' ')
+    {}
+
     inline friend std::ostream& operator<<(std::ostream& out, const fixed& f) {
-        return out << std::fixed << std::setfill(f.m_fill)
-                   << std::setw(f.m_digits)
-                   << std::setprecision(f.m_precision) << f.m_value;
+        out << std::fixed;
+        if (f.m_digits > -1)
+            out << std::setfill(f.m_fill) << std::setw(f.m_digits);
+        return out << std::setprecision(f.m_precision) << f.m_value;
     }
 
     double value()     const { return m_value;     }
@@ -110,9 +116,15 @@ namespace detail {
             m_pos += n;
         }
         void do_print(fixed&& a) {
-            reserve(a.digits());
-            ftoa_right(a.value(), m_pos, a.digits(), a.precision(), a.fill());
-            m_pos += a.digits();
+            if (a.digits() > -1) {
+                reserve(a.digits());
+                ftoa_right(a.value(), m_pos, a.digits(), a.precision(), a.fill());
+                m_pos += a.digits();
+            } else {
+                int n = ftoa_left(a.value(), m_pos, capacity(), a.precision(), true);
+                if (likely(n >= 0))
+                    m_pos += n;
+            }
         }
         void do_print(const char* a) {
             const char* p = strchr(a, '\0');
