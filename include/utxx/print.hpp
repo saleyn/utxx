@@ -74,6 +74,76 @@ private:
     char   m_fill;
 };
 
+/// Alignment enumerator
+template <int Width, alignment Align, class T>
+struct width {
+    // For integers and bool types
+    width(T a_val, char a_pad = ' ') : m_value(a_val), m_pad(a_pad), m_precision(0)
+    {
+        static_assert(std::is_integral<T>::value, "Mast be bool or integer type");
+    }
+
+    // For floating point types
+    width(T a_val, int a_precision, char a_pad = ' ')
+        : m_value(a_val), m_pad(a_pad), m_precision(a_precision)
+    {
+        static_assert(std::is_floating_point<T>::value, "Must be floating point");
+    }
+
+    width(width&& a)      : m_value(a.value()), m_pad(a.pad()), m_precision(a.precision()) {}
+    width(const width& a) : m_value(a.value()), m_pad(a.pad()), m_precision(a.precision()) {}
+
+    inline friend std::ostream& operator<<(std::ostream& out, const width& a) {
+        char buf[Width];
+        a.write(buf);
+        out.write(buf, Width);
+        return out;
+    }
+
+    /// Write Width characters to \a a_buf.
+    /// The argument buffer must have at least Width bytes.
+    void write(char* a_buf) {
+        if (Align == LEFT) {
+            if (std::is_integral<T>::value && !std::is_same<T, bool>::value)
+                itoa_left<T,  Width>(a_buf, m_value, m_pad);
+            else if (std::is_floating_point<T>::value) {
+                int   n = ftoa_left(m_value, a_buf, Width, m_precision);
+                padit(a_buf + std::max<int>(n, 0), a_buf + Width);
+            } else if (std::is_same<T, bool>::value) {
+                char* p = stpncpy(a_buf, m_value ? "true" : "false", Width);
+                padit(p, a_buf + Width);
+            } else
+                assert(false);
+        } else { // Align == RIGHT
+            if (std::is_integral<T>::value && !std::is_same<T, bool>::value)
+                itoa_right<T, Width>(a_buf, m_value, m_pad);
+            else if (std::is_floating_point<T>::value)
+                ftoa_right(m_value, a_buf, Width, m_precision, m_pad);
+            else if (std::is_same<T, bool>::value) {
+                int len; const char* v;
+                if (m_value) { len = std::min<int>(4, Width); v = "true";  }
+                else         { len = std::min<int>(5, Width); v = "false"; }
+                int n = Width-len;
+                padit(a_buf, a_buf + n);
+                memcpy(a_buf+n, v, len);
+            } else
+                assert(false);
+        }
+    }
+
+    static constexpr const alignment s_align = Align;
+    static constexpr const int       s_width = Width;
+
+    T    value()        const { return m_value;     }
+    char pad()          const { return m_pad;       }
+    int  precision()    const { return m_precision; }
+private:
+    T    m_value;
+    char m_pad;
+    int  m_precision;
+
+    void padit(char* p, const char* end) { while (p < end) *p++ = m_pad; }
+};
 
 namespace detail {
     template <size_t N = 256, class Alloc = std::allocator<char>>
@@ -125,6 +195,12 @@ namespace detail {
                 if (likely(n >= 0))
                     m_pos += n;
             }
+        }
+        template <int Width, alignment Align, class T>
+        void do_print(width<Width, Align, T>&& a) {
+            reserve(Width);
+            a.write(m_pos);
+            m_pos += Width;
         }
         void do_print(const char* a) {
             const char* p = strchr(a, '\0');

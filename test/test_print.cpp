@@ -40,15 +40,27 @@ BOOST_AUTO_TEST_CASE( test_print )
 {
     std::string str("xxx");
 
-    { std::string s = print(1);     BOOST_CHECK_EQUAL("1",     s); }
-    { std::string s = print(1.0);   BOOST_CHECK_EQUAL("1.0",   s); }
-    { std::string s = print(true);  BOOST_CHECK_EQUAL("true",  s); }
-    { std::string s = print('c');   BOOST_CHECK_EQUAL("c",     s); }
-    { std::string s = print(false); BOOST_CHECK_EQUAL("false", s); }
-    { std::string s = print("abc"); BOOST_CHECK_EQUAL("abc",   s); }
-    { std::string s = print(str);   BOOST_CHECK_EQUAL("xxx",   s); }
+    { std::string s = print(1);      BOOST_CHECK_EQUAL("1",     s); }
+    { std::string s = print(1.0);    BOOST_CHECK_EQUAL("1.0",   s); }
+    { std::string s = print(true);   BOOST_CHECK_EQUAL("true",  s); }
+    { std::string s = print('c');    BOOST_CHECK_EQUAL("c",     s); }
+    { std::string s = print(false);  BOOST_CHECK_EQUAL("false", s); }
+    { std::string s = print("abc");  BOOST_CHECK_EQUAL("abc",   s); }
+    { std::string s = print(str);    BOOST_CHECK_EQUAL("xxx",   s); }
     { std::string s = print(fixed(2.123, 6, 3, ' ')); BOOST_CHECK_EQUAL(" 2.123", s); }
-    { std::string s = print(fixed(2.123, 2)); BOOST_CHECK_EQUAL("2.12", s); }
+    { std::string s = print(fixed(2.123, 2));         BOOST_CHECK_EQUAL("2.12", s);   }
+    { std::string s = print(width<7, LEFT, double>(2.123, 2     )); BOOST_CHECK_EQUAL("2.12   ", s); }
+    { std::string s = print(width<7, RIGHT,double>(2.123, 2     )); BOOST_CHECK_EQUAL("   2.12", s); }
+    { std::string s = print(width<7, LEFT, double>(2.123, 2, '0')); BOOST_CHECK_EQUAL("2.12000", s); }
+    { std::string s = print(width<7, RIGHT,double>(2.123, 2, '0')); BOOST_CHECK_EQUAL("0002.12", s); }
+    { std::string s = print(width<7, LEFT, int>   (123     ));      BOOST_CHECK_EQUAL("123    ", s); }
+    { std::string s = print(width<7, RIGHT,int>   (123     ));      BOOST_CHECK_EQUAL("    123", s); }
+    { std::string s = print(width<7, LEFT, int>   (123, '_'));      BOOST_CHECK_EQUAL("123____", s); }
+    { std::string s = print(width<7, RIGHT,int>   (123, '0'));      BOOST_CHECK_EQUAL("0000123", s); }
+    { std::string s = print(width<7, LEFT, bool>  (true     ));     BOOST_CHECK_EQUAL("true   ", s); }
+    { std::string s = print(width<7, RIGHT,bool>  (true     ));     BOOST_CHECK_EQUAL("   true", s); }
+    { std::string s = print(width<7, LEFT, bool>  (false    ));     BOOST_CHECK_EQUAL("false  ", s); }
+    { std::string s = print(width<7, RIGHT,bool>  (false    ));     BOOST_CHECK_EQUAL("  false", s); }
 }
 
 
