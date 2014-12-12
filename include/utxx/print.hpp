@@ -102,7 +102,7 @@ struct width {
 
     /// Write Width characters to \a a_buf.
     /// The argument buffer must have at least Width bytes.
-    void write(char* a_buf) {
+    void write(char* a_buf) const {
         if (Align == LEFT) {
             if (std::is_integral<T>::value && !std::is_same<T, bool>::value)
                 itoa_left<T,  Width>(a_buf, m_value, m_pad);
@@ -142,7 +142,7 @@ private:
     char m_pad;
     int  m_precision;
 
-    void padit(char* p, const char* end) { while (p < end) *p++ = m_pad; }
+    void padit(char* p, const char* end) const { while (p < end) *p++ = m_pad; }
 };
 
 namespace detail {
