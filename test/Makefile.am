@@ -5,7 +5,8 @@ test_utxxdir        = ${exec_prefix}/test
 bin_PROGRAMS       	= test_utxx \
 					  example_delegate \
 			  		  example_repeating_timer \
-					  example_scribe
+					  example_scribe \
+                      example_fast_read
 
 TEST_UTXX64_SRCS = \
 	test_atomic.cpp \
@@ -69,8 +70,9 @@ TEST_UTXX_SRCS = \
 	test_variant_tree_scon_parser.cpp \
 	test_verbosity.cpp
 
-example_repeating_timer_SOURCES = \
-	example_repeating_timer.cpp
+example_repeating_timer_SOURCES = example_repeating_timer.cpp
+example_fast_read_SOURCES       = example_fast_read.cpp
+
 
 generated/test_config_validator.generated.hpp: \
 	   	test_config_validator.xml $(top_srcdir)/bin/config_validator_codegen.py \

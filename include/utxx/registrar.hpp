@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_REGISTRAR_HPP_
 #define _UTXX_REGISTRAR_HPP_
 
-#if (__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+#if (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
 
 #include <mutex>
 #include <string>
@@ -58,7 +58,7 @@ namespace utxx {
         std::string m_instance;
     };
 
-    #if 0 //(__GNUC__ == 4 && __GNUC_MINOR__ < 9)
+    #if 0 //(__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
     namespace {
         template<int ...>
         struct seq {};
@@ -556,6 +556,6 @@ using concurrent_registrar = basic_registrar<std::mutex>;
 
 } // namespace utxx
 
-#endif // #if GCC version < 4.9
+#endif // #if GCC version >= 4.9
 
 #endif // _UTXX_REGISTRAR_HPP_
