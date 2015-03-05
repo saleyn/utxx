@@ -49,7 +49,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-enum alignment { LEFT_JUSTIFIED, RIGHT_JUSTIFIED };
+enum alignment { LEFT, RIGHT };
 
 namespace detail {
     static inline const char int_to_char(int n) {
@@ -69,8 +69,8 @@ namespace detail {
 
     //-------N=k, right justified--------------------------------------------
     template <typename Char, int N>
-    struct unrolled_byte_loops<Char, N, RIGHT_JUSTIFIED> {
-        typedef unrolled_byte_loops<Char, N-1, RIGHT_JUSTIFIED> next;
+    struct unrolled_byte_loops<Char, N, RIGHT> {
+        typedef unrolled_byte_loops<Char, N-1, RIGHT> next;
 
         inline static uint64_t atoi_skip_right(const Char*& bytes, Char skip) {
             if (skip && *bytes == skip)
@@ -102,8 +102,8 @@ namespace detail {
 
     //-------N=k, left justified--------------------------------------------
     template <typename Char, int N>
-    struct unrolled_byte_loops<Char, N, LEFT_JUSTIFIED> {
-        typedef unrolled_byte_loops<Char, N-1, LEFT_JUSTIFIED> next;
+    struct unrolled_byte_loops<Char, N, LEFT> {
+        typedef unrolled_byte_loops<Char, N-1, LEFT> next;
 
         inline static uint64_t atoi_skip_left(const Char*& bytes, Char skip) {
             if (skip && *bytes == skip)
@@ -143,7 +143,7 @@ namespace detail {
 
     //-------N=1, right justified--------------------------------------------
     template <typename Char>
-    struct unrolled_byte_loops<Char, 1, RIGHT_JUSTIFIED> {
+    struct unrolled_byte_loops<Char, 1, RIGHT> {
         inline static uint64_t atoi_skip_right(const Char*& bytes, Char skip) {
             if (skip && *bytes == skip) { --bytes; return 0; }
             return load_atoi(bytes, 0);
@@ -166,7 +166,7 @@ namespace detail {
 
     //-------N=1, left justified---------------------------------------------
     template <typename Char>
-    struct unrolled_byte_loops<Char, 1, LEFT_JUSTIFIED> {
+    struct unrolled_byte_loops<Char, 1, LEFT> {
         inline static uint64_t atoi_skip_left(const Char*& bytes, Char skip) {
             if (skip && *bytes == skip) { ++bytes; return 0; }
             return load_atoi(bytes, 0);
@@ -190,7 +190,7 @@ namespace detail {
 
     //-------N=0, right justified--------------------------------------------
     template <typename Char>
-    struct unrolled_byte_loops<Char, 0, RIGHT_JUSTIFIED> {
+    struct unrolled_byte_loops<Char, 0, RIGHT> {
         static uint64_t atoi_skip_right(const Char*& bytes, Char skip) { return 0; }
         static void     pad_left(Char* bytes, Char ch) {}
         static void     save_itoa(Char*& bytes, long n, Char a_pad) {}
@@ -198,7 +198,7 @@ namespace detail {
     };
     //-------N=0, left justified---------------------------------------------
     template <typename Char>
-    struct unrolled_byte_loops<Char, 0, LEFT_JUSTIFIED> {
+    struct unrolled_byte_loops<Char, 0, LEFT> {
         static uint64_t atoi_skip_left(const Char*& bytes, Char skip) { return 0; }
         static void     pad_right(Char* bytes, Char ch) {}
         static void     reverse(Char* p, Char* q) {}
@@ -214,7 +214,7 @@ namespace detail {
 
     //-------Signed, right justified-----------------------------------------
     template <typename T, int N, typename Char>
-    struct signness_helper<T, N, true, RIGHT_JUSTIFIED, Char> {
+    struct signness_helper<T, N, true, RIGHT, Char> {
         /**
          * A replacement to itoa() library function that does the job
          * 4-5 times faster. Additionally it allows skipping leading
@@ -223,13 +223,13 @@ namespace detail {
         static char* fast_itoa(Char* bytes, T i, Char pad = '\0') {
             char* p;
             if (i < 0) {
-                p = signness_helper<T, N, false, RIGHT_JUSTIFIED, Char>::
+                p = signness_helper<T, N, false, RIGHT, Char>::
                     fast_itoa(bytes, -i, pad);
                 if (p >= bytes)
                     *p--= '-';
                 return pad ? bytes-1 : p;
             }
-            p = signness_helper<T, N, false, RIGHT_JUSTIFIED, Char>::
+            p = signness_helper<T, N, false, RIGHT, Char>::
                 fast_itoa(bytes, i, pad);
             return pad ? bytes-1 : p;
         }
@@ -242,7 +242,7 @@ namespace detail {
         static T fast_atoi(const Char*& bytes, Char skip = '\0') {
             const char* p = bytes;
             bytes += N - 1;
-            uint64_t n = unrolled_byte_loops<Char,N,RIGHT_JUSTIFIED>::
+            uint64_t n = unrolled_byte_loops<Char,N,RIGHT>::
                 atoi_skip_right(bytes, skip);
             if (bytes < p || *bytes != '-')
                 return static_cast<T>(n);
@@ -253,15 +253,15 @@ namespace detail {
 
     //-------Signed, left justified------------------------------------------
     template <typename T, int N, typename Char>
-    struct signness_helper<T, N, true, LEFT_JUSTIFIED, Char> {
+    struct signness_helper<T, N, true, LEFT, Char> {
         static char* fast_itoa(Char* bytes, T i, Char pad = '\0') {
             char* p = bytes;
             if (i < 0) {
                 *p++ = '-';
-                return signness_helper<T, N-1, false, LEFT_JUSTIFIED, Char>::
+                return signness_helper<T, N-1, false, LEFT, Char>::
                     fast_itoa(p, i, pad);
             }
-            return signness_helper<T, N, false, LEFT_JUSTIFIED, Char>::
+            return signness_helper<T, N, false, LEFT, Char>::
                 fast_itoa(p, i, pad);
         }
 
@@ -270,27 +270,27 @@ namespace detail {
             if (skip && *p == skip)
                 return fast_atoi(++bytes, skip);
             if (*p == '-') {
-                long n = unrolled_byte_loops<Char, N-1, LEFT_JUSTIFIED>::
+                long n = unrolled_byte_loops<Char, N-1, LEFT>::
                     atoi_skip_left(++bytes, skip);
                 return static_cast<T>(-n);
             }
-            return unrolled_byte_loops<Char, N, LEFT_JUSTIFIED>::
+            return unrolled_byte_loops<Char, N, LEFT>::
                 atoi_skip_left(bytes, skip);
         }
     };
 
     //-------Unsigned, right justified---------------------------------------
     template <typename T, int N, typename Char>
-    struct signness_helper<T, N, false, RIGHT_JUSTIFIED, Char> {
+    struct signness_helper<T, N, false, RIGHT, Char> {
         static char* fast_itoa(Char* bytes, T i, Char pad = '\0') {
             char* p = bytes + N - 1;
-            unrolled_byte_loops<Char, N, RIGHT_JUSTIFIED>::save_itoa(p, i, pad);
+            unrolled_byte_loops<Char, N, RIGHT>::save_itoa(p, i, pad);
             return p;
         }
         static T fast_atoi(const Char*& bytes, Char skip = '\0') {
             const Char* p = bytes;
             bytes += N - 1;
-            uint64_t n = unrolled_byte_loops<Char, N, RIGHT_JUSTIFIED>::
+            uint64_t n = unrolled_byte_loops<Char, N, RIGHT>::
                 atoi_skip_right(bytes, skip);
             if (p > bytes || *bytes != '-')
                 return static_cast<T>(n);
@@ -301,11 +301,11 @@ namespace detail {
 
     //-------Unsigned, left justified----------------------------------------
     template <typename T, int N, typename Char>
-    struct signness_helper<T, N, false, LEFT_JUSTIFIED, Char> {
+    struct signness_helper<T, N, false, LEFT, Char> {
         static char* fast_itoa(Char* bytes, T i, Char pad = '\0') {
             char* p = bytes;
-            unrolled_byte_loops<Char, N, LEFT_JUSTIFIED>::save_itoa(p, i, pad);
-            unrolled_byte_loops<Char, N, LEFT_JUSTIFIED>::reverse(bytes, p-1);
+            unrolled_byte_loops<Char, N, LEFT>::save_itoa(p, i, pad);
+            unrolled_byte_loops<Char, N, LEFT>::reverse(bytes, p-1);
             if (pad) return bytes+N;
             if (p < bytes+N) *p = '\0'; // Since we have space we take advantage of it.
             return p;
@@ -315,11 +315,11 @@ namespace detail {
             const char* p = bytes;
             if (*p == '-') {
                 return static_cast<T>(-static_cast<T>(
-                    unrolled_byte_loops<Char,N-1,LEFT_JUSTIFIED>::
+                    unrolled_byte_loops<Char,N-1,LEFT>::
                     atoi_skip_left(++bytes, skip)));
             } else {
                 return static_cast<T>(
-                    unrolled_byte_loops<Char,N,LEFT_JUSTIFIED>::
+                    unrolled_byte_loops<Char,N,LEFT>::
                     atoi_skip_left(bytes, skip));
             }
         }
@@ -454,7 +454,7 @@ inline const char* unsafe_fixed_atol(const char* p, int64_t& value) {
 template <typename T, int N, typename Char>
 static inline char* itoa_left(Char *bytes, T value, Char pad = '\0') {
     return detail::signness_helper<
-        T,N,std::numeric_limits<T>::is_signed, LEFT_JUSTIFIED, Char>::
+        T,N,std::numeric_limits<T>::is_signed, LEFT, Char>::
         fast_itoa(bytes, value, pad);
 }
 
@@ -485,7 +485,7 @@ template <typename T, int N, typename Char>
 inline const char* atoi_left(const Char* bytes, T& value, Char skip = '\0') {
     const char* p = bytes;
     value = detail::signness_helper<
-        T,N,std::numeric_limits<T>::is_signed, LEFT_JUSTIFIED, Char>::
+        T,N,std::numeric_limits<T>::is_signed, LEFT, Char>::
         fast_atoi(p, skip);
     return p;
 }
@@ -511,7 +511,7 @@ inline const char* atoi_left(const Char (&bytes)[N], T& value, Char skip = '\0')
 template <typename T, int N, typename Char>
 static inline Char* itoa_right(Char *bytes, T value, Char pad = '\0') {
     return detail::signness_helper<T,N,std::numeric_limits<T>::is_signed,
-            RIGHT_JUSTIFIED, Char>::fast_itoa(bytes, value, pad);
+            RIGHT, Char>::fast_itoa(bytes, value, pad);
 }
 
 template <typename T, int N, typename Char>
@@ -539,7 +539,7 @@ template <typename T, int N, typename Char>
 inline const char* atoi_right(const Char* bytes, T& value, Char skip = '\0') {
     const char* p = bytes;
     value = detail::signness_helper<T,N,std::numeric_limits<T>::is_signed,
-          RIGHT_JUSTIFIED, Char>::fast_atoi(p, skip);
+          RIGHT, Char>::fast_atoi(p, skip);
     return p;
 }
 
