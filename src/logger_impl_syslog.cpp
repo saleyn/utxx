@@ -32,12 +32,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <stdarg.h>
 #include <syslog.h>
-#include <boost/thread.hpp>
+#include <thread>
 #include <boost/algorithm/string.hpp>
 #ifndef UTXX_SKIP_LOG_MACROS
 #   define __UTXX_TEMP_SET_UTXX_SKIP_LOG_MACROS__
 #   define UTXX_SKIP_LOG_MACROS
 #endif
+#include <utxx/logger/logger_impl.hpp>
 #include <utxx/logger/logger_impl_syslog.hpp>
 #ifdef __UTXX_TEMP_SET_UTXX_SKIP_LOG_MACROS__
 #   undef UTXX_SKIP_LOG_MACROS
@@ -73,7 +74,7 @@ static int get_priority(log_level level) {
         case LEVEL_ERROR:   return LOG_ERR;
         case LEVEL_FATAL:   return LOG_CRIT;
         case LEVEL_ALERT:   return LOG_ALERT;
-        default:        return 0;
+        default:            return 0;
     }
 }
 
@@ -108,23 +109,22 @@ bool logger_impl_syslog::init(const variant_tree& a_config)
         openlog(this->m_log_mgr->ident().c_str(), (m_show_pid ? LOG_PID : 0), facility);
 
         // Install log_msg callbacks from appropriate levels
-        for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
+        for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {
             log_level level = logger::signal_slot_to_level(lvl);
             if ((m_levels & static_cast<int>(level)) != 0)
-                this->add_msg_logger(level,
-                    on_msg_delegate_t::from_method<logger_impl_syslog, &logger_impl_syslog::log_msg>(this));
+                this->add(level, logger::on_msg_delegate_t::from_method
+                     <logger_impl_syslog, &logger_impl_syslog::log_msg>(this));
         }
     }
     return true;
 }
 
-int get_priority(log_level level);
-
-void logger_impl_syslog::log_msg(const log_msg_info& info) throw(io_error)
+void logger_impl_syslog::log_msg
+    (const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
 {
-    int priority = get_priority(info.level());
+    int priority = get_priority(a_msg.level());
     if (priority)
-        ::syslog(priority, info.data());
+        ::syslog(priority, a_buf);
 }
 
 } // namespace utxx

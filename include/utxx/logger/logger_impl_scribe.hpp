@@ -52,8 +52,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_LOGGER_SCRIBE_HPP_
-#define _UTXX_LOGGER_SCRIBE_HPP_
+#pragma once
 
 #include <utxx/config.h>
 
@@ -64,7 +63,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/multi_file_async_logger.hpp>
 #include <utxx/url.hpp>
 #include <sys/types.h>
-#include <boost/enable_shared_from_this.hpp>
 
 #undef PACKAGE
 #undef PACKAGE_BUGREPORT
@@ -78,11 +76,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 
+#if __cplusplus >= 201103L
+#  include <memory>
+#else
+#  include <boost/enable_shared_from_this.hpp>
+#endif
+
 namespace utxx {
 
 class logger_impl_scribe
     : public logger_impl
+#if __cplusplus >= 201103L
+    , public std::enable_shared_from_this<logger_impl_scribe>
+#else
     , public boost::enable_shared_from_this<logger_impl_scribe>
+#endif
 {
 //     struct logger_traits: public multi_file_async_logger_traits {
 //         typedef memory::cached_allocator<char> allocator;
@@ -163,15 +171,10 @@ public:
     bool init(const variant_tree& a_config)
         throw(badarg_error, io_error);
 
-    void log_msg(const log_msg_info& info) throw(io_error);
-    void log_bin(const std::string& a_category, const char* a_msg, size_t a_size)
+    void log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
         throw(io_error);
 };
 
 } // namespace utxx
 
 #endif // HAVE_THRIFT_H
-
-#endif // _UTXX_LOGGER_SCRIBE_HPP_
-
-

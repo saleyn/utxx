@@ -284,6 +284,11 @@ namespace detail {
         void        pos(const char* p){ assert(p <= m_end); m_pos = const_cast<char*>(p); }
         size_t      max_size()  const { return m_end - m_begin;  }
         size_t      capacity()  const { return m_end - m_pos;    }
+        char&       last()      const { return m_pos == m_begin
+                                             ? *m_begin : *(m_pos - 1); }
+        char&       last()            { return m_pos == m_begin
+                                             ? *m_begin : *(m_pos - 1); }
+        const char* end()       const { return m_end;   }
 
         /// Reserve space in the buffer to hold additional \a a_sz bytes
         void reserve(size_t a_sz) {
@@ -297,6 +302,7 @@ namespace detail {
             m_begin = p;
         }
 
+        /// Advance the pointer at the end of the buffer to \a n bytes.
         /// Call this function if the content of this buffer needs to be
         /// written to by external snprintf:
         /// \code
@@ -310,6 +316,15 @@ namespace detail {
         /// buf.advance(n);
         /// \endcode
         void advance(size_t n) { m_pos += n; }
+
+        /// Remove the trailing character equal to \a ch.
+        /// If the buffer doesn't end with \a ch, nothing is removed.
+        void chop(char ch = '\n')
+        { if (m_begin < m_pos && *(m_pos-1) == ch) --m_pos; }
+
+        /// Remove the trailing character.
+        /// If the buffer is empty, nothing is removed.
+        void chop() { if (m_begin < m_pos) --m_pos; }
 
         // Terminal case of template recursion:
         void print() {}

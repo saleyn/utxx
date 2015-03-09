@@ -41,19 +41,26 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
         log.dump(std::cout);
 
     for (int i = 0; i < 2; i++) {
-        LOG_ERROR  ("This is an error %d #%d", i, 123);
-        LOG_WARNING("This is a %d %s", i, "warning\n");
-        LOG_ALERT  ("This is a %d %s", i, "alert error");
+        LOG_ERROR  ("This is a %d %s #%d", i, "error", 123);
+        LOG_WARNING("This is a %d %s", i, "warning");
+        LOG_FATAL  ("This is a %d %s", i, "fatal error");
+        LOG_INFO   ("This is a %d %s", i, "info");
     }
 
     for (int i = 0; i < 2; i++) {
-        LOG_CAT_ERROR  ("Cat1", "This is an error %d #%d", i, 456);
-        LOG_CAT_WARNING("Cat2", "This is a %d %s", i, "warning");
-        LOG_CAT_ALERT  ("Cat3", "This is a %d %s", i, "alert error");
+        CLOG_ERROR  ("Cat1", "This is an error %d #%d", i, 456);
+        CLOG_WARNING("Cat2", "This is a %d %s", i, "warning");
+        CLOG_FATAL  ("Cat3", "This is a %d %s", i, "fatal error");
+        CLOG_INFO   ("Cat4", "This is a %d %s", i, "info");
     }
 
-    UTXX_LOG(ERROR) << "This is an error #" << 10 << " and bool " << true;
-    UTXX_LOG(INFO)  << "This is an into  #" << 9 << std::endl << " and endl";
+    UTXX_LOG(INFO, "A") << "This is an error #" << 10 << " and bool "
+                        << true << ' ' << std::endl;
+
+    UTXX_LOG(ERROR)     << "This is an error #" << 10 << " and bool "
+                        << true << ' ' << std::endl;
+
+    log.finalize();
 
     BOOST_REQUIRE(true); // to remove run-time warning
 }

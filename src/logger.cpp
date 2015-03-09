@@ -32,19 +32,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <mutex>
 #include <utxx/error.hpp>
 #include <utxx/meta.hpp>
 #include <utxx/string.hpp>
 #include <utxx/timestamp.hpp>
+#include <utxx/compiler_hints.hpp>
 #include <utxx/synch.hpp>
 #include <utxx/bits.hpp>
 #include <utxx/logger/logger.hpp>
 #include <utxx/logger/logger_crash_handler.hpp>
+#include <utxx/logger/logger_impl.hpp>
 #include <utxx/variant_tree_parser.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/xpressive/xpressive.hpp>
 #include <boost/thread/locks.hpp>
 #include <stdio.h>
+
+#if DEBUG_ASYNC_LOGGER == 2
+#   define ASYNC_DEBUG_TRACE(x) do { printf x; fflush(stdout); } while(0)
+#   define ASYNC_TRACE(x)
+#elif defined(DEBUG_ASYNC_LOGGER)
+#   define ASYNC_TRACE(x) do { printf x; fflush(stdout); } while(0)
+#   define ASYNC_DEBUG_TRACE(x) ASYNC_TRACE(x)
+#else
+#   define ASYNC_TRACE(x)
+#   define ASYNC_DEBUG_TRACE(x)
+#endif
 
 namespace utxx {
 
@@ -136,27 +150,6 @@ log_level logger::signal_slot_to_level(int slot) noexcept
 
 const char* logger::default_log_levels = "INFO|WARNING|ERROR|ALERT|FATAL";
 
-void logger_impl_mgr::register_impl(
-    const char* config_name, boost::function<logger_impl*(const char*)>& factory)
-{
-    boost::lock_guard<boost::mutex> guard(m_mutex);
-    m_implementations[config_name] = factory;
-}
-
-void logger_impl_mgr::unregister_impl(const char* config_name)
-{
-    BOOST_ASSERT(config_name);
-    boost::lock_guard<boost::mutex> guard(m_mutex);
-    m_implementations.erase(config_name);
-}
-
-logger_impl_mgr::impl_callback_t*
-logger_impl_mgr::get_impl(const char* config_name) {
-    boost::lock_guard<boost::mutex> guard(m_mutex);
-    impl_map_t::iterator it = m_implementations.find(config_name);
-    return (it != m_implementations.end()) ? &it->second : NULL;
-}
-
 void logger::add_macro(const std::string& a_macro, const std::string& a_value)
 {
     m_macro_var_map[a_macro] = a_value;
@@ -184,16 +177,23 @@ void logger::init(const char* filename)
 
 void logger::init(const config_tree& a_cfg)
 {
-    finalize();
+    if (m_initialized)
+        throw std::runtime_error("Logger already initialized!");
+
+    std::lock_guard<std::mutex> guard(m_mutex);
+    do_finalize();
 
     try {
         m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
-        std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "date-time-usec");
+        std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
         m_timestamp_type = parse_stamp_type(ts);
         std::string ls   = a_cfg.get<std::string>("logger.min-level-filter", "info");
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
+        long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 2000);
+        m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
+        m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000000L};
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
@@ -208,7 +208,7 @@ void logger::init(const config_tree& a_cfg)
 
         logger_impl_mgr& lim = logger_impl_mgr::instance();
 
-        boost::lock_guard<boost::mutex> guard(lim.mutex());
+        std::lock_guard<std::mutex> guard(lim.mutex());
 
         // Check the list of registered implementations. If corresponding
         // configuration section is found, initialize the implementation.
@@ -237,10 +237,191 @@ void logger::init(const config_tree& a_cfg)
                 // We need to call implementation's init function that may throw,
                 // so use RAII to guarantee proper cleanup.
                 logger_impl_mgr::impl_callback_t& f = it->second;
-                impl impl( f(it->first.c_str()) );
-                impl->set_log_mgr(this);
-                impl->init(a_cfg);
-                m_implementations.push_back(impl);
+                m_implementations.emplace_back( f(it->first.c_str()) );
+                auto& i = m_implementations.back();
+                i->set_log_mgr(this);
+                i->init(a_cfg);
+            }
+        }
+
+        m_initialized = true;
+        m_abort       = false;
+
+        m_thread.reset(new std::thread([this]() { this->run(); }));
+
+    } catch (std::runtime_error& e) {
+        if (m_error)
+            m_error(e.what());
+        else
+            throw;
+    }
+}
+
+void logger::run()
+{
+    int event_val = 1;
+    while (!m_abort)
+    {
+        event_val        = m_event.value();
+        //wakeup_result rc = wakeup_result::TIMEDOUT;
+
+        while (!m_abort && m_queue.empty()) {
+            m_event.wait(&m_wait_timeout, &event_val);
+
+            ASYNC_DEBUG_TRACE(
+                ("  %s LOGGER awakened (res=%s, val=%d, futex=%d), abort=%d, head=%s\n",
+                 timestamp::to_string().c_str(), to_string(rc).c_str(),
+                 event_val, m_event.value(), m_abort,
+                 m_queue.empty() ? "empty" : "data")
+            );
+        }
+
+        // CPU-friendly spin for 250us
+        if (m_queue.empty()) {
+            time_val deadline(rel_time(0, 250));
+            while (m_queue.empty()) {
+                if (m_abort)
+                    goto DONE;
+                if (now_utc() > deadline)
+                    break;
+                sched_yield();
+            }
+        }
+
+        // Get all pending items from the queue
+        for (auto* item = m_queue.pop_all(), *next=item; item; item = next) {
+            next = item->next();
+            dolog_msg(item->data());
+
+            m_queue.free(item);
+            item = next;
+        }
+    }
+
+DONE:
+    if (!m_silent_finish) {
+        const msg s_msg(LEVEL_INFO, "", std::string("Logger thread finished"),
+                        UTXX_FILE_SRC_LOCATION);
+        dolog_msg(s_msg);
+    }
+}
+
+void logger::finalize()
+{
+    std::lock_guard<std::mutex> g(m_mutex);
+    m_abort = true;
+    if (m_thread)
+        m_thread->join();
+    m_thread.reset();
+    do_finalize();
+    m_abort = false;
+    m_initialized = false;
+}
+
+void logger::do_finalize()
+{
+    m_abort = true;
+
+    for(auto& impl : m_implementations)
+        impl.reset();
+    m_implementations.clear();
+}
+
+char* logger::
+format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
+{
+    // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line
+    // Write everything up to Message to the m_data:
+
+    // Write Timestamp
+    char*  p = a_buf;
+    p   += timestamp::format(timestamp_type(), a_msg.m_timestamp, p, a_end - p);
+    *p++ = '|';
+    // Write Level
+    *p++ = logger::log_level_to_str(a_msg.m_level)[0];
+    *p++ = '|';
+    if (show_ident())
+        p = stpncpy(p, ident().c_str(), ident().size());
+    *p++ = '|';
+    if (!a_msg.m_category.empty())
+        p = stpncpy(p, a_msg.m_category.c_str(), a_msg.m_category.size());
+    *p++ = '|';
+    return p;
+}
+
+char* logger::
+format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
+{
+    char* p = a_buf;
+
+    // Format the message in the form:
+    // Timestamp|Level|Ident|Category|Message|File:Line\n
+    if (a_msg.src_loc_len() && show_location() &&
+        likely(a_buf + a_msg.src_loc_len() + 2 < a_end))
+    {
+        static const char s_sep =
+            boost::filesystem::path("/").native().c_str()[0];
+        if (*(p-1) == '\n')
+            p--;
+
+        *p++ =  '|';
+
+        const char* q = strrchr(a_msg.src_location(), s_sep);
+        q = q ? q+1 : a_msg.src_location();
+        // extra byte for possible '\n'
+        auto len = std::min<size_t>
+            (a_end - a_buf, a_msg.src_location() + a_msg.src_loc_len() - q + 1);
+        p = stpncpy(p, a_msg.src_location(), len);
+        *p++ = '\n';
+    } else
+        // We reached the end of the streaming sequence:
+        // log_msg_info lmi; lmi << a << b << c;
+        if (*p != '\n') *p++ = '\n';
+        else p++;
+
+    *p = '\0'; // Writes terminating '\0' (note: p is not incremented)
+    return p;
+}
+
+void logger::dolog_msg(const logger::msg& a_msg) {
+    try {
+        switch (a_msg.m_type) {
+            case payload_t::CHAR_FUN: {
+                assert(a_msg.m_fun.cf);
+                char  buf[4096];
+                auto* end = buf + sizeof(buf);
+                char*   p = format_header(a_msg, buf,  end);
+                int     n = (a_msg.m_fun.cf)(p,  end - p);
+                if (p[n-1] == '\n') --p;
+                p = format_footer(a_msg, p+n,  end);
+                m_sig_slot[level_to_signal_slot(a_msg.level())](
+                    on_msg_delegate_t::invoker_type(a_msg, buf, p - buf));
+                break;
+            }
+            case payload_t::STR_FUN: {
+                assert(a_msg.m_fun.cf);
+                char  pfx[256], sfx[256];
+                char*   p = format_header(a_msg, pfx, pfx + sizeof(pfx));
+                char*   q = format_footer(a_msg, sfx, sfx + sizeof(sfx));
+                auto  res = (a_msg.m_fun.sf)(pfx, p - pfx, sfx, q - sfx);
+                m_sig_slot[level_to_signal_slot(a_msg.level())](
+                    on_msg_delegate_t::invoker_type(a_msg, res.c_str(), res.size()));
+                break;
+            }
+            case payload_t::STR: {
+                detail::basic_buffered_print<1024> buf;
+                char  pfx[256], sfx[256];
+                char* p = format_header(a_msg, pfx, pfx + sizeof(pfx));
+                char* q = format_footer(a_msg, sfx, sfx + sizeof(sfx));
+                auto ps = p - pfx;
+                auto qs = q - sfx;
+                buf.reserve(a_msg.m_fun.str.size() + ps + qs + 1);
+                buf.sprint(pfx, ps);
+                buf.print(a_msg.m_fun.str);
+                buf.sprint(sfx, qs);
+                m_sig_slot[level_to_signal_slot(a_msg.level())](
+                    on_msg_delegate_t::invoker_type(a_msg, buf.str(), buf.size()));
+                break;
             }
         }
     } catch (std::runtime_error& e) {
@@ -251,16 +432,9 @@ void logger::init(const config_tree& a_cfg)
     }
 }
 
-void logger::finalize()
-{
-    for(auto& impl : m_implementations)
-        impl.reset();
-    m_implementations.clear();
-}
-
 void logger::delete_impl(const std::string& a_name)
 {
-    boost::lock_guard<boost::mutex> guard(logger_impl_mgr::instance().mutex());
+    std::lock_guard<std::mutex> guard(logger_impl_mgr::instance().mutex());
     for (implementations_vector::iterator
             it = m_implementations.begin(), end = m_implementations.end();
             it != end; ++it)
@@ -310,25 +484,14 @@ void logger::set_min_level_filter(log_level a_level) {
     m_level_filter = static_cast<uint32_t>(~n);
 }
 
-int logger::add_msg_logger(log_level level, on_msg_delegate_t subscriber)
+int logger::add(log_level level, on_msg_delegate_t subscriber)
 {
-    return m_sig_msg[level_to_signal_slot(level)].connect(subscriber);
+    return m_sig_slot[level_to_signal_slot(level)].connect(subscriber);
 }
 
-int logger::add_bin_logger(on_bin_delegate_t subscriber)
+void logger::remove(log_level a_lvl, int a_id)
 {
-    return m_sig_bin.connect(subscriber);
-}
-
-void logger::remove_msg_logger(log_level a_lvl, int a_id)
-{
-    m_sig_msg[level_to_signal_slot(a_lvl)].disconnect(a_id);
-}
-
-/// To be called by <logger_impl> child to unregister a delegate
-void logger::remove_bin_logger(int a_id)
-{
-    m_sig_bin.disconnect(a_id);
+    m_sig_slot[level_to_signal_slot(a_lvl)].disconnect(a_id);
 }
 
 std::ostream& logger::dump(std::ostream& out) const
@@ -348,6 +511,34 @@ std::ostream& logger::dump(std::ostream& out) const
         (*it)->dump(s, "        ");
 
     return out << s.str();
+}
+
+//-----------------------------------------------------------------------------
+// logger_impl
+//-----------------------------------------------------------------------------
+logger_impl::logger_impl()
+    : m_log_mgr(NULL)
+{
+    for (int i=0; i < logger::NLEVELS; ++i)
+        m_msg_sink_id[i] = -1;
+}
+
+logger_impl::~logger_impl()
+{
+    if (m_log_mgr) {
+        for (int i=0; i < logger::NLEVELS; ++i)
+            if (m_msg_sink_id[i] != -1) {
+                log_level level = logger::signal_slot_to_level(i);
+                m_log_mgr->remove(level, m_msg_sink_id[i]);
+                m_msg_sink_id[i] = -1;
+            }
+    }
+}
+
+void logger_impl::add(log_level level, logger::on_msg_delegate_t subscriber)
+{
+    m_msg_sink_id[logger::level_to_signal_slot(level)] =
+        m_log_mgr->add(level, subscriber);
 }
 
 } // namespace utxx

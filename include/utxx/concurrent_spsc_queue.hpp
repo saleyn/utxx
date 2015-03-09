@@ -249,7 +249,7 @@ public:
     /// into the queue using a Copy or Move ctor:
     ///
     template<class ...Args>
-    T* push(Args&&... recordArgs)
+    T* push(Args&&... a_item_args)
     {
         // Must NOT be on the Consumer side:
         assert(m_side != side_t::consumer);
@@ -260,19 +260,19 @@ public:
         if (next != head().load(std::memory_order_acquire))
         {
             T* at = m_rec_ptr + t;
-            new (at) T(std::forward<Args>(recordArgs)...);
+            new (at) T(std::forward<Args>(a_item_args)...);
             tail().store(next, std::memory_order_release);
             return at;
         }
-        // Otherwise: queue is full, nothing is 
-        return NULL;
+        // Otherwise: queue is full, nothing is inserted
+        return nullptr;
     }
 
-    /// Move (or copy) the value at the front of the queue to given variable
-    bool pop(T* record)
+    /// Move (or copy) the value at the front of the queue to \a a_item.
+    bool pop(T& a_item)
     {
         // Must NOT be on the Producer side:
-        assert(m_side != side_t::producer && record != NULL);
+        assert(m_side != side_t::producer);
 
         uint32_t h = head().load(std::memory_order_relaxed);
         if (h == tail().load(std::memory_order_acquire))
@@ -280,7 +280,7 @@ public:
             return false;
 
         uint32_t next = increment(h);
-        *record = std::move(m_rec_ptr[h]);
+        a_item = std::move(m_rec_ptr[h]);
         if (!std::is_trivially_destructible<T>::value)
             m_rec_ptr[h].~T();
         head().store(next, std::memory_order_release);
@@ -367,35 +367,37 @@ public:
         return   next == head().load(std::memory_order_acquire);
     }
 
-    /// UNSAFE current count of T objects stored in the queue:
+    /// Return current count of T objects stored in the queue.
+    /// This call is UNSAFE.
     /// If called by consumer, then true count may be more (because producer may
     ///   be adding items concurrently).
     /// If called by producer, then true count may be less (because consumer may
     ///   be removing items concurrently).
     /// It is undefined to call this from any other thread:
-    /// NB: Here the caller can explicitly provide their Role for better preci-
-    ///   sion:
-    uint32_t count(side_t side = side_t::invalid) const
+    /// @param a_side the caller can provide their role for better precision.
+    uint32_t count(side_t a_side = side_t::invalid) const
     {
-        if (side == side_t::invalid)
+        if (a_side == side_t::invalid)
             // Side arg not specified, use the recoded one:
-            side = m_side;
+            a_side = m_side;
 
-        // If we are a Producer (or Both), can use "relaxed" memory order on the
-        // side under our own control (tail):
-        int tn = int(tail().load
-                       ((side != side_t::consumer)
-                        ? std::memory_order_relaxed
-                        : std::memory_order_consume));
-
-        // Similarly, if we are a Consumer (or Both), can use "relaxed" memory
-        // order on the head side which is under our own control:
-        int hn = int(head().load
-                        ((side != side_t::producer)
-                         ? std::memory_order_relaxed
-                         : std::memory_order_consume));
-                                  
-        int ret = tn - hn;
+        int ret;
+        switch (a_side) {
+            case side_t::consumer:
+                // If we are a Consumer (or Both), can use "relaxed" memory
+                // order on the head side which is under our own control:
+                ret = int(tail().load(std::memory_order_consume))
+                    - int(head().load(std::memory_order_relaxed));
+                break;
+            case side_t::producer:
+                // If we are a Producer (or Both), can use "relaxed" memory
+                // order on the side under our own control (tail):
+                ret = int(tail().load(std::memory_order_relaxed))
+                    - int(head().load(std::memory_order_consume));
+                break;
+            default:
+                assert(false);
+        }
         if (ret < 0)
             ret += m_header_ptr->m_capacity;
         assert(ret >= 0);
@@ -481,8 +483,8 @@ private:
                concurrent_spsc_queue*
               >::type                        queue
         )
-            : m_ind(ind),
-            m_queue(queue)
+            : m_ind(ind)
+            , m_queue(queue)
         {}
 
     public:

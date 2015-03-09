@@ -17,33 +17,32 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_async_logger )
 {
     variant_tree pt;
-    const char* filename = "/tmp/logger.async.file.log";
+    const char* filename = "/tmp/logger.file.log";
     const int iterations = 1000;
 
-    pt.put("logger.timestamp",           variant("none"));
-    pt.put("logger.show-ident",          variant(false));
-    pt.put("logger.show-location",       variant(false));
-    pt.put("logger.async-file.levels",   variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.async-file.filename", variant(filename));
-    pt.put("logger.async-file.append",   variant(false));
+    pt.put("logger.timestamp",     variant("none"));
+    pt.put("logger.show-ident",    variant(false));
+    pt.put("logger.show-location", variant(false));
+    pt.put("logger.file.levels",   variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename", variant(filename));
+    pt.put("logger.file.append",   variant(false));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         BOOST_MESSAGE(pt.dump(std::cout, 2, false, true));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.async-file"));
+    BOOST_REQUIRE(pt.get_child_optional("logger.file"));
 
     logger& log = logger::instance();
     log.init(pt);
 
     for (int i = 0, n = 0; i < iterations; i++) {
-        LOG_ERROR      ("(%d) This is an error #%d", ++n, 123);
-        LOG_WARNING    ("(%d) This is a %s", ++n, "warning");
-        LOG_ALERT      ("(%d) This is a %s", ++n, "alert error");
-        LOG_CAT_ERROR  ("Cat1", "(%d) This is an error #%d", ++n, 456);
-        LOG_CAT_WARNING("Cat2", "(%d) This is a %s", ++n, "warning");
-        LOG_CAT_ALERT  ("Cat3", "(%d) This is a %s", ++n, "alert error");
+        LOG_ERROR   ("(%d) This is an error #%d", ++n, 123);
+        LOG_WARNING ("(%d) This is a %s", ++n, "warning");
+        LOG_ALERT   ("(%d) This is a %s", ++n, "alert error");
+        CLOG_ERROR  ("Cat1", "(%d) This is an error #%d", ++n, 456);
+        CLOG_WARNING("Cat2", "(%d) This is a %s", ++n, "warning");
+        CLOG_ALERT  ("Cat3", "(%d) This is a %s", ++n, "alert error");
     }
-
 
     log.finalize();
 
@@ -72,6 +71,8 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
             sprintf(buf, "|F||Cat3|(%d) This is a fatal error", ++n); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
         }
+        BOOST_REQUIRE(getline(in, s));
+        BOOST_REQUIRE_EQUAL("|I|||Logger thread finished", s);
         BOOST_REQUIRE(!getline(in, s));
     }
 
@@ -114,7 +115,7 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
     localtime_r(&t, &exptm);
 
     for (int i=0; i < threads; ++i)
-        num[i] = -1, last_time[i] = 0;
+        num[i] = 0, last_time[i] = 0;
 
     unsigned long cur_time, l_time = 0, time_miss = 0;
 
@@ -129,8 +130,10 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
                       ,{"F", "This is a fatal error"}};
         for (int k=0; k < thr_msgs; ++k) {
             n++;
+            th = 1, j = 1;
             s = get_data(in, th, j, tm);
-            int idx = j % thr_msgs;
+            BOOST_REQUIRE(s != "");
+            int idx = (j-1) % thr_msgs;
             sprintf(buf, "|%s|||%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
             exp = buf;
             if (exp != s) std::cerr << "File " << filename << ":" << n << std::endl;
@@ -173,7 +176,7 @@ struct worker {
 
     void operator() () {
         barrier.wait();
-        for (int i=0, n=-1; i < iterations; i++) {
+        for (int i=0, n=0; i < iterations; i++) {
             count.fetch_add(1, std::memory_order_relaxed);
             LOG_ERROR  ("%d %9d This is an error #%d", id, ++n, 123);
             LOG_WARNING("%d %9d This is a %s", id, ++n, "warning");
@@ -192,14 +195,15 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     const int iterations = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 100000;
 
 
-    pt.put("logger.timestamp",    variant("date-time-usec"));
-    pt.put("logger.show-ident",   variant(false));
-    pt.put("logger.show-location",variant(false));
-    pt.put("logger.async-file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.async-file.filename",  variant(filename));
-    pt.put("logger.async-file.append", variant(false));
+    pt.put("logger.timestamp",          variant("date-time-usec"));
+    pt.put("logger.show-ident",         variant(false));
+    pt.put("logger.show-location",      variant(false));
+    pt.put("logger.file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename",      variant(filename));
+    pt.put("logger.file.append",        variant(false));
+    pt.put("logger.silent-finish",      variant(true));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.async-file"));
+    BOOST_REQUIRE(pt.get_child_optional("logger.file"));
 
     logger& log = logger::instance();
     log.init(pt);
@@ -250,7 +254,7 @@ struct latency_worker {
 
         for (int i=0; i < iterations; i++) {
             if (!no_histogram) histogram->start();
-            LOG_ERROR  ("%d %9d This is an error #123", id, i);
+            LOG_ERROR  ("%d %9d This is an error #123", id, i+1);
             if (!no_histogram) histogram->stop();
         }
 
@@ -284,6 +288,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
     pt.put("logger.timestamp",    variant("date-time-usec"));
     pt.put("logger.show-ident",   variant(false));
     pt.put("logger.show-location",variant(false));
+    pt.put("logger.silent-finish",variant(true));
 
     std::string s("logger."); s += config_type;
     pt.put(s + ".stdout-levels", variant("debug|info|warning|error|fatal|alert"));
@@ -340,11 +345,6 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
         verify_result(filename, threads, ITERATIONS, 1);
 
     ::unlink(filename);
-}
-
-BOOST_AUTO_TEST_CASE( test_logger_async_file_perf )
-{
-    run_test("async-file", MODE_OVERWRITE, THREADS);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite )

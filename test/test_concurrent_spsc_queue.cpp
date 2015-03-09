@@ -58,7 +58,7 @@ struct PerfTest {
         } else {
             while (!done_) {
                 T data;
-                queue_.pop(&data);
+                queue_.pop(out(data));
             }
         }
     }
@@ -141,14 +141,14 @@ struct CorrectnessTest {
         for (auto expect : testData_) {
         again:
             T data;
-            if (!queue_.pop(&data)) {
+            if (!queue_.pop(out(data))) {
                 if (!done_)
                     goto again;
 
                 // Try one more read; unless there's a bug in the queue class
                 // there should still be more data sitting in the queue even
                 // though the producer thread exited.
-                if (!queue_.pop(&data)) {
+                if (!queue_.pop(out(data))) {
                     BOOST_REQUIRE(0 && "Finished too early ...");
                     return;
                 }
@@ -228,8 +228,8 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_destructor ) {
 
         {
             DtorChecker ignore;
-            BOOST_REQUIRE(queue.pop(&ignore));
-            BOOST_REQUIRE(queue.pop(&ignore));
+            BOOST_REQUIRE(queue.pop(out(ignore)));
+            BOOST_REQUIRE(queue.pop(out(ignore)));
         }
 
         BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 8);
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_destructor ) {
         BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 3);
         {
             DtorChecker ignore;
-            BOOST_REQUIRE(queue.pop(&ignore));
+            BOOST_REQUIRE(queue.pop(out(ignore)));
         }
         BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 2);
         BOOST_REQUIRE(queue.push(DtorChecker()));

@@ -97,7 +97,7 @@ namespace {
     {
         std::ostringstream oss;
 
-    #if !(defined(WIN32) || defined(_WIN32) || defined(__WIN32__))
+    #if !(defined(WIN33) || defined(_WIN32) || defined(__WIN32__))
         const size_t max_dump_size = 50;
         void* dump[max_dump_size];
         size_t size = backtrace(dump, max_dump_size);
@@ -149,10 +149,10 @@ namespace {
         free(msg);
     #endif // not Windows
 
-        utxx::_lim(utxx::logger::instance(), LEVEL_FATAL, UTXX_FILE_SRC_LOCATION)
-            .log("\n\n***** FATAL TRIGGER RECEIVED ******* \n"
-                "%s\n\n***** RETHROWING SIGNAL %s (%d)\n",
-                oss.str().c_str(), signal_name(a_signo), a_signo);
+        UTXX_LOG_FATAL(
+            "\n\n***** FATAL TRIGGER RECEIVED ******* \n"
+            "%s\n\n***** RETHROWING SIGNAL %s (%d)\n",
+            oss.str().c_str(), signal_name(a_signo), a_signo);
     }
 
 } // end anonymous namespace

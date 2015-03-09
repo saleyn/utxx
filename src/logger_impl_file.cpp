@@ -49,9 +49,10 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
 {
     out << a_prefix << "logger." << name() << '\n'
         << a_prefix << "    filename       = " << m_filename << '\n'
-        << a_prefix << "    append         = " << (m_append ? "true" : "false") << '\n'
+        << a_prefix << "    append         = " << (m_append ? "true" : "false")       << '\n'
         << a_prefix << "    mode           = " << m_mode << '\n'
-        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n';
+        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
+        << a_prefix << "    use-mutex      = " << (m_use_mutex ? "true" : "false")    << '\n';
     return out;
 }
 
@@ -72,7 +73,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
     m_append        = a_config.get<bool>("logger.file.append", true);
     // See comments in the beginning of the logger_impl_file.hpp on
     // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
-    // Use the "use_mutex=false" option to inhibit this behavior if your
+    // Use the "use-mutex=false" option to inhibit this behavior if your
     // platform has thread-safe write(2) call.
     m_use_mutex     = m_append ? false : a_config.get<bool>("logger.file.use-mutex", true);
     m_mode          = a_config.get<int> ("logger.file.mode", 0644);
@@ -87,15 +88,13 @@ bool logger_impl_file::init(const variant_tree& a_config)
             throw io_error(errno, "Error opening file", m_filename);
 
         // Install log_msg callbacks from appropriate levels
-        for(int lvl = 0; lvl < logger_impl::NLEVELS; ++lvl) {
+        for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {
             log_level level = logger::signal_slot_to_level(lvl);
             if ((m_levels & static_cast<int>(level)) != 0)
-                this->add_msg_logger(level,
-                    on_msg_delegate_t::from_method<logger_impl_file, &logger_impl_file::log_msg>(this));
+                this->add(level,
+                    logger::on_msg_delegate_t::from_method
+                        <logger_impl_file, &logger_impl_file::log_msg>(this));
         }
-        // Install log_bin callback
-        this->add_bin_logger(
-            on_bin_delegate_t::from_method<logger_impl_file, &logger_impl_file::log_bin>(this));
     }
     return true;
 }
@@ -112,24 +111,16 @@ public:
     }
 };
 
-void logger_impl_file::log_msg(const log_msg_info& info) throw(io_error)
+void logger_impl_file::log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
+    throw(io_error)
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.
     // Note that since the use of mutex is conditional, we can't use the
     // boost::lock_guard<boost::mutex> guard and roll out our own.
     guard g(m_mutex, m_use_mutex);
 
-    if (write(m_fd, info.data(), info.data_len()) < 0)
-        io_error(errno, "Error writing to file:", m_filename, ' ', info.src_location());
-}
-
-void logger_impl_file::log_bin(
-    const std::string& a_category, const char* msg, size_t size) throw(runtime_error)
-{
-    guard g(m_mutex, m_use_mutex);
-
-    if (write(m_fd, msg, size) < 0)
-        throw io_error(errno, "Error writing to file:", m_filename);
+    if (write(m_fd, a_buf, a_size) < 0)
+        throw io_error(errno, "Error writing to file: ", m_filename, ' ', a_msg.src_location());
 }
 
 } // namespace utxx

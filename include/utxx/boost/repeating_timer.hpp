@@ -31,9 +31,9 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/condition.hpp>
 #include <boost/shared_ptr.hpp>
-#include <boost/enable_shared_from_this.hpp>
 #include <boost/weak_ptr.hpp>
 #include <boost/version.hpp>
+#include <boost/enable_shared_from_this.hpp>
 
 namespace boost {
 namespace asio {
@@ -103,7 +103,7 @@ namespace asio {
                         timer_->cancel();
                     }
                     timer_.reset();
-                }            
+                }
 
                 // create new handler.
                 handler_.reset( new handler_impl<WaitHandler>( handler ) );
@@ -131,7 +131,7 @@ namespace asio {
                         timer_->cancel();
                     }
                     timer_.reset();
-                }            
+                }
             }
 
             void cancel() {stop();}
@@ -178,7 +178,8 @@ namespace asio {
                 HandlerFunc handler_func_;
             };
 
-            class internal_timer : public boost::enable_shared_from_this<internal_timer>
+            class internal_timer
+                : public boost::enable_shared_from_this<internal_timer>
             {
             public:
                 static internal_timer_ptr create(
@@ -237,7 +238,7 @@ namespace asio {
                     start_at_   = start_at;
                     stop_at_    = stop_at;
                     first_time_ = true;
-                    
+
                     if (start_at == time_type())
                         first_time_ = false;
                     else {

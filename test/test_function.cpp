@@ -1,5 +1,6 @@
 //----------------------------------------------------------------------------
 /// \file  test_function.cpp
+// Credits: Malte Skarupke
 //----------------------------------------------------------------------------
 /// \brief This is a test file for benchmarking utxx::function functionality.
 //----------------------------------------------------------------------------
@@ -169,6 +170,94 @@ BOOST_AUTO_TEST_CASE( test_function_latency )
     time_virtual(seed);
 
     BOOST_REQUIRE(true); // to remove run-time warning
+}
+
+static void call_provided_function(const utxx::function<void ()>&    f) { f();  }
+static void call_provided_function(const utxx::function<void (int)>& f) { f(5); }
+
+BOOST_AUTO_TEST_CASE( test_function )
+{
+    {
+        utxx::function<void ()> f;
+        BOOST_CHECK(!f);
+        BOOST_CHECK_THROW(f(), utxx::bad_function_call);
+    }
+    {
+        int i = 0;
+        call_provided_function([&i]{ i = 3; });
+        BOOST_CHECK_EQUAL(3, i);
+        call_provided_function([&i](int a) { i = a; });
+        BOOST_CHECK_EQUAL(5, i);
+    }
+    {
+        int a = 0;
+        utxx::function<void ()> increment = [&a]{ ++a; };
+        increment();
+        BOOST_CHECK_EQUAL(1, a);
+
+        increment = [increment]{ increment(); increment(); };
+        increment();
+        BOOST_CHECK_EQUAL(3, a);
+
+        increment = [increment]{ increment(); increment(); };
+        increment();
+        BOOST_CHECK_EQUAL(7, a);
+
+        utxx::function<void ()> move_to = std::move(increment);
+        BOOST_CHECK(!increment);
+        move_to();
+        BOOST_CHECK_EQUAL(11, a);
+    }
+    {
+        auto some_lambda = []{};
+        utxx::function<void ()> lambdaer(std::allocator_arg, std::allocator<decltype(some_lambda)>(), some_lambda);
+        utxx::function<void ()> lambda_copy(std::allocator_arg, std::allocator<decltype(some_lambda)>(), lambdaer);
+        utxx::function<void ()> allocator_copy(std::allocator_arg, std::allocator<int>(), lambdaer);
+        utxx::function<void ()> allocator_copy2(std::allocator_arg, std::allocator<float>(), allocator_copy);
+        lambda_copy();
+        allocator_copy();
+        allocator_copy2();
+
+#   ifndef FUNC_NO_RTTI
+        BOOST_CHECK(lambdaer.target<decltype(some_lambda)>());
+        BOOST_CHECK(lambda_copy.target<decltype(some_lambda)>());
+        BOOST_CHECK(const_cast<const utxx::function<void ()> &>(allocator_copy).target<utxx::function<void ()>>());
+        BOOST_CHECK(!lambdaer.target<utxx::function<void ()>>());
+        BOOST_CHECK(!const_cast<const utxx::function<void ()> &>(allocator_copy).target<decltype(some_lambda)>());
+#   endif
+    }
+    {
+        int i = 0;
+        size_t padding_a = 0;
+        size_t padding_b = 0;
+        size_t padding_c = 1;
+        size_t padding_d = 0;
+        auto some_lambda = [&i, padding_a, padding_b, padding_c, padding_d]
+            { i += static_cast<int>(padding_a + padding_b + padding_c + padding_d); };
+        auto reference = std::ref(some_lambda);
+        utxx::function<void ()> ref_func(reference);
+        static_assert( noexcept(ref_func = reference),   "standard says this is noexcept");
+        static_assert(!noexcept(ref_func = some_lambda), "this can not be noexcept because it allocates");
+        ref_func();
+        BOOST_CHECK_EQUAL(1, i);
+        ref_func.assign(reference, std::allocator<decltype(reference)>());
+        ref_func();
+        BOOST_CHECK_EQUAL(2, i);
+    }
+    {
+        struct S
+        {
+            S(int a) : a(a) {}
+            float foo() const
+            {
+                return 1.0f / static_cast<float>(a);
+            }
+            int a;
+        };
+        utxx::function<float (const S &)> mem_fun(&S::foo);
+        S s(5);
+        BOOST_CHECK_EQUAL(0.2f, mem_fun(s));
+    }
 }
 
 //BOOST_AUTO_TEST_SUITE_END()
