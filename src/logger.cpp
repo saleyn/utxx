@@ -176,6 +176,9 @@ void logger::init(const char* filename)
 
 void logger::init(const config_tree& config)
 {
+    if (m_initialized)
+        throw std::runtime_error("Logger already initialized!");
+
     std::lock_guard<std::mutex> guard(m_mutex);
     do_finalize();
 
@@ -188,6 +191,7 @@ void logger::init(const config_tree& config)
         std::string ls   = config.get<std::string>("logger.min-level-filter", "info");
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
         long timeout_ms  = config.get<int>        ("logger.wait-timeout-ms", 2000);
+        m_silent_finish  = config.get<bool>       ("logger.silent-finish",  false);
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000000L};
 
         if ((int)m_timestamp_type < 0)
@@ -234,7 +238,8 @@ void logger::init(const config_tree& config)
             }
         }
 
-        m_abort = false;
+        m_initialized = true;
+        m_abort       = false;
 
         m_thread.reset(new std::thread([this]() { this->run(); }));
 
@@ -280,7 +285,7 @@ void logger::run()
         // Get all pending items from the queue
         for (auto* item = m_queue.pop_all(), *next=item; item; item = next) {
             next = item->next();
-            do_log(item->data());
+            dolog_msg(item->data());
 
             m_queue.free(item);
             item = next;
@@ -288,14 +293,11 @@ void logger::run()
     }
 
 DONE:
-    const msg s_msg
-        (LEVEL_INFO, "",
-         [](const char* pfx, size_t psz, const char* sfx, size_t ssz)
-            { return std::string(pfx, psz) +
-                     std::string("Logger thread finished") +
-                     std::string(sfx, ssz); },
-         UTXX_FILE_SRC_LOCATION);
-    do_log(s_msg);
+    if (!m_silent_finish) {
+        const msg s_msg(LEVEL_INFO, "", std::string("Logger thread finished"),
+                        UTXX_FILE_SRC_LOCATION);
+        dolog_msg(s_msg);
+    }
 }
 
 void logger::finalize()
@@ -306,6 +308,8 @@ void logger::finalize()
         m_thread->join();
     m_thread.reset();
     do_finalize();
+    m_abort = false;
+    m_initialized = false;
 }
 
 void logger::do_finalize()
@@ -367,12 +371,13 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
         // We reached the end of the streaming sequence:
         // log_msg_info lmi; lmi << a << b << c;
         if (*p != '\n') *p++ = '\n';
+        else p++;
 
-    *p++ = '\0'; // Writes terminating '\0'
+    *p = '\0'; // Writes terminating '\0' (note: p is not incremented)
     return p;
 }
 
-void logger::do_log(const logger::msg& a_msg) {
+void logger::dolog_msg(const logger::msg& a_msg) {
     try {
         switch (a_msg.m_type) {
             case payload_t::CHAR_FUN: {
@@ -381,7 +386,8 @@ void logger::do_log(const logger::msg& a_msg) {
                 auto* end = buf + sizeof(buf);
                 char*   p = format_header(a_msg, buf,  end);
                 int     n = (a_msg.m_fun.cf)(p,  end - p);
-                        p = format_footer(a_msg, p+n,  end);
+                if (p[n-1] == '\n') --p;
+                p = format_footer(a_msg, p+n,  end);
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, buf, p - buf));
                 break;
@@ -394,6 +400,21 @@ void logger::do_log(const logger::msg& a_msg) {
                 auto  res = (a_msg.m_fun.sf)(pfx, p - pfx, sfx, q - sfx);
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, res.c_str(), res.size()));
+                break;
+            }
+            case payload_t::STR: {
+                detail::basic_buffered_print<1024> buf;
+                char  pfx[256], sfx[256];
+                char* p = format_header(a_msg, pfx, pfx + sizeof(pfx));
+                char* q = format_footer(a_msg, sfx, sfx + sizeof(sfx));
+                auto ps = p - pfx;
+                auto qs = q - sfx;
+                buf.reserve(a_msg.m_fun.str.size() + ps + qs + 1);
+                buf.sprint(pfx, ps);
+                buf.print(a_msg.m_fun.str);
+                buf.sprint(sfx, qs);
+                m_sig_slot[level_to_signal_slot(a_msg.level())](
+                    on_msg_delegate_t::invoker_type(a_msg, buf.str(), buf.size()));
                 break;
             }
         }

@@ -122,6 +122,7 @@ struct concurrent_mpsc_queue {
         try {
             node* n = allocate(std::forward<Args>(args)...);
             push(n);
+            return true;
         } catch (std::bad_alloc const&) {
             return false;
         }

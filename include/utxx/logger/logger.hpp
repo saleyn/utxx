@@ -65,57 +65,82 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/persist_array.hpp>
 #endif
 
-namespace utxx {
-
 #ifndef UTXX_SKIP_LOG_MACROS
-#define LOG_TRACE4(Fmt,  ...)         UTXX_LOG(LEVEL_TRACE4 , "",  Fmt, ##__VA_ARGS__)
-#define LOG_TRACE3(Fmt,  ...)         UTXX_LOG(LEVEL_TRACE3 , "",  Fmt, ##__VA_ARGS__)
-#define LOG_TRACE2(Fmt,  ...)         UTXX_LOG(LEVEL_TRACE2 , "",  Fmt, ##__VA_ARGS__)
-#define LOG_TRACE1(Fmt,  ...)         UTXX_LOG(LEVEL_TRACE1 , "",  Fmt, ##__VA_ARGS__)
-#define LOG_DEBUG(Fmt,   ...)         UTXX_LOG(LEVEL_DEBUG  , "",  Fmt, ##__VA_ARGS__)
-#define LOG_INFO(Fmt,    ...)         UTXX_LOG(LEVEL_INFO   , "",  Fmt, ##__VA_ARGS__)
-#define LOG_WARNING(Fmt, ...)         UTXX_LOG(LEVEL_WARNING, "",  Fmt, ##__VA_ARGS__)
-#define LOG_ERROR(Fmt,   ...)         UTXX_LOG(LEVEL_ERROR  , "",  Fmt, ##__VA_ARGS__)
-#define LOG_FATAL(Fmt,   ...)         UTXX_LOG(LEVEL_FATAL  , "",  Fmt, ##__VA_ARGS__)
-#define LOG_ALERT(Fmt,   ...)         UTXX_LOG(LEVEL_ALERT  , "",  Fmt, ##__VA_ARGS__)
-#endif
+#ifdef  UTXX_LOGGER_NAMESPACE_PREFIX
+#   define UTXX_LOG_TRACE4(Fmt,  ...)         UTXX_CLOG(LEVEL_TRACE4 , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE3(Fmt,  ...)         UTXX_CLOG(LEVEL_TRACE3 , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE2(Fmt,  ...)         UTXX_CLOG(LEVEL_TRACE2 , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE1(Fmt,  ...)         UTXX_CLOG(LEVEL_TRACE1 , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_DEBUG(Fmt,   ...)         UTXX_CLOG(LEVEL_DEBUG  , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_INFO(Fmt,    ...)         UTXX_CLOG(LEVEL_INFO   , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_WARNING(Fmt, ...)         UTXX_CLOG(LEVEL_WARNING, "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_ERROR(Fmt,   ...)         UTXX_CLOG(LEVEL_ERROR  , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_FATAL(Fmt,   ...)         UTXX_CLOG(LEVEL_FATAL  , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_ALERT(Fmt,   ...)         UTXX_CLOG(LEVEL_ALERT  , "",  Fmt, ##__VA_ARGS__)
 
-#define LOG_CAT_TRACE4( Cat,Fmt, ...) UTXX_LOG(LEVEL_TRACE4 , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_TRACE3( Cat,Fmt, ...) UTXX_LOG(LEVEL_TRACE3 , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_TRACE2( Cat,Fmt, ...) UTXX_LOG(LEVEL_TRACE2 , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_TRACE1( Cat,Fmt, ...) UTXX_LOG(LEVEL_TRACE1 , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_DEBUG(  Cat,Fmt, ...) UTXX_LOG(LEVEL_DEBUG  , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_INFO(   Cat,Fmt, ...) UTXX_LOG(LEVEL_INFO   , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_WARNING(Cat,Fmt, ...) UTXX_LOG(LEVEL_WARNING, Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_ERROR(  Cat,Fmt, ...) UTXX_LOG(LEVEL_ERROR  , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_FATAL(  Cat,Fmt, ...) UTXX_LOG(LEVEL_FATAL  , Cat, Fmt, ##__VA_ARGS__)
-#define LOG_CAT_ALERT(  Cat,Fmt, ...) UTXX_LOG(LEVEL_ALERT  , Cat, Fmt, ##__VA_ARGS__)
-
-#ifdef _MSC_VER
-
-#define UTXX_LOG(Level,      Fmt, ...) \
-    do { if (Level > LEVEL_TRACE) printf(Fmt, ##__VA_ARGS__); } while(0)
-
-#ifndef LOG
-#  define LOG(Level) std::cout
-#endif
-
+#   define UTXX_LOG_CAT_TRACE4( Cat,Fmt, ...) UTXX_CLOG(LEVEL_TRACE4 , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_TRACE3( Cat,Fmt, ...) UTXX_CLOG(LEVEL_TRACE3 , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_TRACE2( Cat,Fmt, ...) UTXX_CLOG(LEVEL_TRACE2 , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_TRACE1( Cat,Fmt, ...) UTXX_CLOG(LEVEL_TRACE1 , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_DEBUG(  Cat,Fmt, ...) UTXX_CLOG(LEVEL_DEBUG  , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_INFO(   Cat,Fmt, ...) UTXX_CLOG(LEVEL_INFO   , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_WARNING(Cat,Fmt, ...) UTXX_CLOG(LEVEL_WARNING, Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_ERROR(  Cat,Fmt, ...) UTXX_CLOG(LEVEL_ERROR  , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_FATAL(  Cat,Fmt, ...) UTXX_CLOG(LEVEL_FATAL  , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_CAT_ALERT(  Cat,Fmt, ...) UTXX_CLOG(LEVEL_ALERT  , Cat, Fmt, ##__VA_ARGS__)
 #else
+#   define LOG_TRACE4(Fmt,  ...)              UTXX_CLOG(LEVEL_TRACE4 , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_TRACE3(Fmt,  ...)              UTXX_CLOG(LEVEL_TRACE3 , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_TRACE2(Fmt,  ...)              UTXX_CLOG(LEVEL_TRACE2 , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_TRACE1(Fmt,  ...)              UTXX_CLOG(LEVEL_TRACE1 , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_DEBUG(Fmt,   ...)              UTXX_CLOG(LEVEL_DEBUG  , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_INFO(Fmt,    ...)              UTXX_CLOG(LEVEL_INFO   , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_WARNING(Fmt, ...)              UTXX_CLOG(LEVEL_WARNING, "",  Fmt, ##__VA_ARGS__)
+#   define LOG_ERROR(Fmt,   ...)              UTXX_CLOG(LEVEL_ERROR  , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_FATAL(Fmt,   ...)              UTXX_CLOG(LEVEL_FATAL  , "",  Fmt, ##__VA_ARGS__)
+#   define LOG_ALERT(Fmt,   ...)              UTXX_CLOG(LEVEL_ALERT  , "",  Fmt, ##__VA_ARGS__)
 
+#   define LOG_CAT_TRACE4( Cat,Fmt, ...)      UTXX_CLOG(LEVEL_TRACE4 , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_TRACE3( Cat,Fmt, ...)      UTXX_CLOG(LEVEL_TRACE3 , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_TRACE2( Cat,Fmt, ...)      UTXX_CLOG(LEVEL_TRACE2 , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_TRACE1( Cat,Fmt, ...)      UTXX_CLOG(LEVEL_TRACE1 , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_DEBUG(  Cat,Fmt, ...)      UTXX_CLOG(LEVEL_DEBUG  , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_INFO(   Cat,Fmt, ...)      UTXX_CLOG(LEVEL_INFO   , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_WARNING(Cat,Fmt, ...)      UTXX_CLOG(LEVEL_WARNING, Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_ERROR(  Cat,Fmt, ...)      UTXX_CLOG(LEVEL_ERROR  , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_FATAL(  Cat,Fmt, ...)      UTXX_CLOG(LEVEL_FATAL  , Cat, Fmt, ##__VA_ARGS__)
+#   define LOG_CAT_ALERT(  Cat,Fmt, ...)      UTXX_CLOG(LEVEL_ALERT  , Cat, Fmt, ##__VA_ARGS__)
+#endif  // UTXX_LOGGER_NAMESPACE_PREFIX
+#endif  // UTXX_SKIP_LOG_MACROS
+
+/// We use the macro trickery below to implemenet a UTXX_LOG() macro that
+/// can optionally take the category as the second macro argument. The idea
+/// is to use a macro chooser that takes __VA_ARGS__ to select the
+/// UTXX_LOG_N_ARGS() macro depending on whether it was called with one
+/// or two arguments:
+#define UTXX_LOG_1_ARGS(Level) \
+    utxx::logger::msg_streamer(LEVEL_##Level, "", UTXX_FILE_SRC_LOCATION)
+#define UTXX_LOG_2_ARGS(Level, Cat) \
+    utxx::logger::msg_streamer(LEVEL_##Level, Cat, UTXX_FILE_SRC_LOCATION)
+
+#define UTXX_GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
+#define UTXX_LOG_MACRO_CHOOSER(...) \
+        UTXX_GET_3RD_ARG(__VA_ARGS__, UTXX_LOG_2_ARGS, UTXX_LOG_1_ARGS)
+
+//------------------------------------------------------------------------------
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
 /// the <printf> function: <(const char* fmt, ...)>
-#define UTXX_LOG(Level, Cat, Fmt, ...) \
-    do {  \
-        auto fun = [=](char* a_buf, size_t a_sz) \
-            { return snprintf(a_buf, a_sz, Fmt, ##__VA_ARGS__); }; \
-        utxx::logger::instance().logf(Level, Cat, fun, UTXX_FILE_SRC_LOCATION); \
-    } while(0)
+//------------------------------------------------------------------------------
+#define UTXX_CLOG(Level, Cat, Fmt, ...) \
+    utxx::logger::instance().logfmt(Level, Cat, UTXX_FILE_SRC_LOCATION, Fmt, ##__VA_ARGS__)
 
-#ifndef LOG
-#define LOG(Level) utxx::logger::msg_streamer(LEVEL_##Level, "", UTXX_FILE_SRC_LOCATION)
-#endif
+//------------------------------------------------------------------------------
+/// Suppost for streaming version of the logger
+//------------------------------------------------------------------------------
+#define UTXX_LOG(Level, ...) \
+    UTXX_LOG_MACRO_CHOOSER(Level, ##__VA_ARGS__)(Level, ##__VA_ARGS__)
 
-#endif
+namespace utxx {
 
 struct logger_impl;
 
@@ -144,7 +169,7 @@ struct logger : boost::noncopyable {
     using str_function   = function
         <std::string (const char* pfx, size_t plen, const char* sfx, size_t slen)>;
 
-    enum class payload_t { STR_FUN, CHAR_FUN };
+    enum class payload_t { STR_FUN, CHAR_FUN, STR };
 
     class msg {
         time_val      m_timestamp;
@@ -157,9 +182,11 @@ struct logger : boost::noncopyable {
         union U {
             char_function  cf;
             str_function   sf;
+            std::string    str;
             U() : cf(nullptr) {}
-            U(const char_function& f) : cf(f) {}
-            U(const str_function&  f) : sf(f) {}
+            U(const char_function& f) : cf(f)  {}
+            U(const str_function&  f) : sf(f)  {}
+            U(const std::string&   f) : str(f) {}
             ~U() {}
         } m_fun;
 
@@ -192,13 +219,25 @@ struct logger : boost::noncopyable {
         template <int N>
         msg(log_level a_ll, const std::string& a_category,
             const str_function& a_fun, const char (&a_src_loc)[N])
-            : msg(a_ll, a_category, payload_t::STR_FUN, a_fun, a_src_loc, N)
+            : msg(a_ll, a_category, payload_t::STR_FUN, a_fun, a_src_loc, N-1)
+        {}
+
+        template <int N>
+        msg(log_level a_ll, const std::string& a_category,
+            const std::string& a_str, const char (&a_src_loc)[N])
+            : msg(a_ll, a_category, payload_t::STR, a_str, a_src_loc, N-1)
+        {}
+
+        msg(log_level a_ll, const std::string& a_category,
+            const std::string& a_str, const char* a_src_loc, std::size_t a_sloc_len)
+            : msg(a_ll, a_category, payload_t::STR, a_str, a_src_loc, a_sloc_len)
         {}
 
         ~msg() {
             switch (m_type) {
-                case payload_t::STR_FUN:  m_fun.sf = nullptr; break;
-                case payload_t::CHAR_FUN: m_fun.cf = nullptr; break;
+                case payload_t::STR_FUN:  m_fun.sf = nullptr;  break;
+                case payload_t::CHAR_FUN: m_fun.cf = nullptr;  break;
+                case payload_t::STR:      m_fun.str.~basic_string(); break;
             }
         }
 
@@ -246,7 +285,8 @@ struct logger : boost::noncopyable {
             ~helper() {
                 if (!m_last)
                     return;
-                logger::instance().logc
+                m_ms->data.chop('\n');
+                logger::instance().dolog
                     (m_ms->level,       m_ms->category,
                      m_ms->data.c_str(),m_ms->data.size(),
                      m_ms->src_loc,     m_ms->src_loc_len);
@@ -291,6 +331,7 @@ private:
     std::unique_ptr<std::thread>    m_thread;
     concurrent_queue                m_queue;
     bool                            m_abort;
+    bool                            m_initialized;
     futex                           m_event;
     std::mutex                      m_mutex;
     struct timespec                 m_wait_timeout;
@@ -303,6 +344,7 @@ private:
     bool                            m_show_location;
     bool                            m_show_ident;
     std::string                     m_ident;
+    bool                            m_silent_finish;
     macro_var_map                   m_macro_var_map;
 
 
@@ -329,17 +371,17 @@ private:
     /// To be called by <logger_impl> child to unregister a delegate
     void remove(log_level a_lvl, int a_id);
 
-    void do_log(const msg& a_msg);
+    void dolog_msg(const msg& a_msg);
 
     void run();
 
     template<typename Fun>
-    bool logf(log_level a_level, const std::string& a_cat, const Fun& a_fun,
+    bool dolog(log_level a_level, const std::string& a_cat, const Fun& a_fun,
               const char* a_src_loc, std::size_t a_src_loc_len);
 
-    bool logc(log_level   a_ll,  const std::string& a_cat,
-              const char* a_buf,     std::size_t    a_size,
-              const char* a_src_loc, std::size_t    a_src_loc_len);
+    bool dolog(log_level   a_ll,  const std::string& a_cat,
+               const char* a_buf,     std::size_t    a_size,
+               const char* a_src_loc, std::size_t    a_src_loc_len);
 
     template <class A> friend class log_msg_info;
 
@@ -349,9 +391,10 @@ public:
         return s_logger;
     }
 
-    logger() 
-        : m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
-        , m_show_location(true), m_show_ident(false)
+    logger()
+        : m_abort(false), m_initialized(false)
+        , m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
+        , m_show_location(true), m_show_ident(false), m_silent_finish(false)
     {}
     ~logger() { finalize(); }
 
@@ -427,53 +470,103 @@ public:
     /// Dump internal settings
     std::ostream& dump(std::ostream& out) const;
 
-    /// Signal info/warning/error/fatal/alert level message to registered
-    /// implementations.
+    /// Log a message of given log level to the registered implementations.
+    /// \a a_msg will be copied to std::string and passed to another context
+    /// for logging.
     /// Use the provided <LOG_*> macros instead of calling it directly.
-    /// @param a_level   is the log level to record
-    /// @param a_cat     is a category of the message (use NULL if undefined).
-    /// @param a_fun     lambda that formats captured expression to a
-    ///                  string/buffer (see char_funciton or str_function types).
-    /// @param a_src_loc is the source file/line location which is obtained by
-    ///                  using UTXX_SRC_LOCATION macro.
-    template<typename Fun, int N>
-    bool logf(log_level a_level, const std::string& a_cat, const Fun& a_fun,
-              const char (&a_src_loc)[N]);
-
-    /// Signal info/warning/error/fatal/alert level message to registered
-    /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
     /// @param a_category is a category of the message (use NULL if undefined).
-    /// @param a_msg is the message to be logged
-    template<typename... Args>
-    bool logs(log_level a_level, const std::string& a_category, Args&&... args);
+    /// @param a_buf is the message to be logged
+    /// @param a_size is the message size
+    template <int N>
+    bool logcs(log_level a_level, const std::string& a_category,
+               const char* a_msg, size_t a_size, const char (&a_src_log)[N] = "");
 
-    /// Signal info/warning/error/fatal/alert level message to registered
-    /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
-    /// @param a_level is the log level to record
-    /// @param a_cat is a category of the message (use NULL if undefined).
-    /// @param a_fmt is the format string passed to <sprintf()>
-    /// @param args is the list of optional arguments passed to <args>
-    template<typename... Args>
-    bool log(log_level a_level, const std::string& a_cat, const char* a_fmt, Args&&... args)
-    { return logf(a_level, a_cat, "", a_fmt, args...); }
-
-    /// Signal info/warning/error/fatal/alert level message to registered
-    /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
+    /// Log a message of given log level to the registered implementations.
+    /// Logged message will be limited in size to 1024 bytes.
+    /// Formatting of the resulting string to be logged happens in the caller's
+    /// context, but actual message logging is handled asynchronously.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
     /// @param a_cat is a category of the message (use NULL if undefined).
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
     template<int N, typename... Args>
-    bool log(log_level a_level, const std::string& a_cat, const char (&a_src_log)[N],
-             const char* a_fmt, Args&&... a_args);
+    bool logfmt(log_level a_level, const std::string& a_cat,
+              const char (&a_src_log)[N], const char* a_fmt, Args&&... a_args);
 
-    /// Signal info/warning/error/fatal/alert level message to registered
-    /// implementations.  Use the provided <LOG_*> macros instead of calling it directly.
+    /// Log a message of given log level to the registered implementations.
+    /// Formatting of the resulting string to be logged happens in the caller's
+    /// context, but actual message logging is handled asynchronously.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_level is the log level to record
+    /// @param a_cat is a category of the message (use NULL if undefined).
+    /// @param a_fmt is the format string passed to <sprintf()>
+    /// @param args is the list of optional arguments passed to <args>
+    template<int N, typename... Args>
+    bool logs(log_level a_level, const std::string& a_cat,
+              const char (&a_src_log)[N], Args&&... a_args);
+
+    /// Log a message of given log level to registered implementations.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
     /// @param a_category is a category of the message (use NULL if undefined).
     /// @param a_msg is the message to be logged
-    bool log(log_level a_level, const std::string& a_category, const std::string& a_msg);
+    template <int N>
+    bool log(log_level a_level, const std::string& a_category,
+             const std::string& a_msg, const char (&a_src_log)[N] = "");
+
+    /// Log a message of given log level to registered implementations.
+    /// Invocation of \a a_fun happens in the context different from the caller's.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_level   is the log level to record
+    /// @param a_cat     is a category of the message (use NULL if undefined).
+    /// @param a_fun     lambda that formats captured expression to a
+    ///                  string/buffer (see char_funciton or str_function types).
+    ///                  The function will be called in the context of another
+    ///                  thread, so capture any variables by reference!
+    /// @param a_src_loc is the source file/line location which is obtained by
+    ///                  using UTXX_SRC_LOCATION macro.
+    template<typename Fun, int N>
+    bool async_logf(log_level a_level, const std::string& a_cat, const Fun& a_fun,
+              const char (&a_src_loc)[N])
+    { return dolog(a_level, a_cat, a_fun, a_src_loc, N); }
+
+    /// Log a message of given log level message to registered implementations.
+    /// Arguments \a args are copied by value to a lambda that is executed
+    /// in the context different from the caller's.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_level is the log level to record
+    /// @param a_cat   is a category of the message (use NULL if undefined).
+    /// @param args are the arguments to be converted to buffer and logged as string
+    template<typename... Args>
+    bool async_logs(log_level a_level, const std::string& a_cat, Args&&... args)
+    { return async_logs(a_level, a_cat, "", std::forward<Args>(args)...); }
+
+    /// Log a message of given log level message to registered implementations.
+    /// Arguments \a args are copied by value to a lambda that is executed
+    /// in the context different from the caller's.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_level is the log level to record
+    /// @param a_category is a category of the message (use NULL if undefined).
+    /// @param args are the arguments to be converted to buffer and logged as string
+    template<int N, typename... Args>
+    bool async_logs(log_level a_level, const std::string& a_category,
+                    const char (&a_src_log)[N], Args&&... args);
+
+    /// Asynchronously log a message of given log level message to registered
+    /// implementations.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
+    /// Arguments \a args are copied by value to a lambda that is executed
+    /// in the context different from the caller's.
+    /// @param a_level is the log level to record
+    /// @param a_cat is a category of the message (use NULL if undefined).
+    /// @param a_fmt is the format string passed to <sprintf()>
+    /// @param args is the list of optional arguments passed to <args>
+    template<int N, typename... Args>
+    bool async_logfmt(log_level a_level, const std::string& a_cat,
+                      const char (&a_src_log)[N], const char* a_fmt,
+                      Args&&... a_args);
 };
 
 // Logger back-end implementations must derive from this class.

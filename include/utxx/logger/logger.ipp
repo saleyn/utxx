@@ -40,7 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 template <typename Fun>
-inline bool logger::logf(
+inline bool logger::dolog(
     log_level           a_level,
     const std::string&  a_category,
     const Fun&          a_fun,
@@ -53,41 +53,81 @@ inline bool logger::logf(
     return m_queue.emplace(a_level, a_category, a_fun, a_src_loc, a_src_loc_len);
 }
 
-template <typename Fun, int N>
-inline bool logger::logf(
-    log_level           a_level,
-    const std::string&  a_category,
-    const Fun&          a_fun,
-    const char        (&a_src_loc)[N])
-{ return logf(a_level, a_category, a_fun, a_src_loc, N); }
-
-inline bool logger::logc(
+inline bool logger::dolog(
     log_level           a_level,
     const std::string&  a_category,
     const char*         a_buf,
     std::size_t         a_size,
     const char*         a_src_loc,
-    std::size_t         a_src_loc_len)
+    size_t              a_src_loc_len)
 {
     if (!is_enabled(a_level))
         return false;
 
     std::string sbuf(a_buf, a_size);
 
-    auto fun = [=](const char* pfx, size_t psz, const char* sfx, size_t ssz) {
-        detail::basic_buffered_print<1024> buf;
-        buf.print(pfx, psz);
-        buf.print(sbuf);
-        buf.print(sfx, ssz);
-        return buf.to_string();
-    };
-    return m_queue.emplace(a_level, a_category, fun, a_src_loc, a_src_loc_len);
+    return m_queue.emplace(a_level, a_category, sbuf, a_src_loc, a_src_loc_len);
 }
 
-template <typename... Args>
+template <int N>
+inline bool logger::logcs(
+    log_level           a_level,
+    const std::string&  a_category,
+    const char*         a_buf,
+    std::size_t         a_size,
+    const char        (&a_src_loc)[N])
+{
+    return dolog(a_level, a_category, a_buf, a_size, a_src_loc, N);
+}
+
+template <int N, typename... Args>
+inline bool logger::logfmt(
+    log_level           a_level,
+    const std::string&  a_category,
+    const char        (&a_src_loc)[N],
+    const char*         a_fmt,
+    Args&&...           a_args)
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    char buf[1024];
+    int  n = snprintf(buf, sizeof(buf), a_fmt, a_args...);
+    std::string sbuf(buf, std::min<int>(n, sizeof(buf)-1));
+    return m_queue.emplace(a_level, a_category, sbuf, a_src_loc, N-1);
+}
+
+template <int N, typename... Args>
 inline bool logger::logs(
     log_level           a_level,
     const std::string&  a_category,
+    const char        (&a_src_loc)[N],
+    Args&&...           a_args)
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    detail::basic_buffered_print<1024> buf;
+    buf.print(std::forward<Args>(a_args)...);
+    return m_queue.emplace(a_level, a_category, buf.to_string(), a_src_loc, N-1);
+}
+
+template <int N>
+inline bool logger::log(
+    log_level a_level, const std::string& a_category, const std::string& a_msg,
+    const char (&a_src_loc)[N])
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    return m_queue.emplace(a_level, a_category, a_msg, a_src_loc, N-1);
+}
+
+template <int N, typename... Args>
+inline bool logger::async_logs(
+    log_level           a_level,
+    const std::string&  a_category,
+    const char        (&a_src_loc)[N],
     Args&&...           a_args)
 {
     if (!is_enabled(a_level))
@@ -95,16 +135,17 @@ inline bool logger::logs(
 
     auto fun = [=](const char* pfx, size_t psz, const char* sfx, size_t ssz) {
         detail::basic_buffered_print<1024> buf;
-        buf.print(pfx, psz);
-        buf.print(a_args...);
-        buf.print(sfx, ssz);
+        buf.sprint(pfx, psz);
+        buf.print (std::forward<Args>(a_args)...);
+        buf.sprint(sfx, ssz);
         return buf.to_string();
     };
-    return m_queue.emplace(a_level, a_category, fun, "", 0);
+    return m_queue.emplace(a_level, a_category, fun, a_src_loc, N-1);
 }
 
+// TODO: make synchronous string formatting
 template <int N, typename... Args>
-inline bool logger::log(
+inline bool logger::async_logfmt(
     log_level           a_level,
     const std::string&  a_category,
     const char         (&a_src_loc)[N],
@@ -115,26 +156,9 @@ inline bool logger::log(
         return false;
 
     auto fun = [=](char* a_buf, size_t a_size) {
-        return snprintf(a_buf, a_size, a_fmt, a_args...);
+        return snprintf(a_buf, a_size, a_fmt, std::forward<Args>(a_args)...);
     };
     return m_queue.emplace(a_level, a_category, fun, a_src_loc, N-1);
-}
-
-inline bool logger::log(
-    log_level a_level, const std::string& a_category, const std::string& a_msg)
-{
-    if (!is_enabled(a_level))
-        return false;
-
-    auto fun = [=](const char* pfx, size_t psz, const char* sfx, size_t ssz)
-    {
-        detail::basic_buffered_print<512> buf;
-        buf.print(pfx, psz);
-        buf.print(a_msg);
-        buf.print(sfx, ssz);
-        return buf.to_string();
-    };
-    return m_queue.emplace(a_level, a_category, fun, "", 0);
 }
 
 } // namespace utxx

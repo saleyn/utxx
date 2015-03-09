@@ -78,10 +78,10 @@ void logger_impl_console::log_msg(
     const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
 {
     if (a_msg.level() & m_stdout_levels) {
-        colorize(a_msg.level(), std::cout, a_buf);
+        colorize(a_msg.level(), std::cout, std::string(a_buf, a_size));
         std::flush(std::cout);
     } else if (a_msg.level() & m_stderr_levels) {
-        colorize(a_msg.level(), std::cerr, a_buf);
+        colorize(a_msg.level(), std::cerr, std::string(a_buf, a_size));
     }
 }
 
