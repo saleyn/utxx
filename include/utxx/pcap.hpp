@@ -287,8 +287,13 @@ private:
         }
     }
 
+    /// @return 0 if opening a pipe or stdin
     long open(const char* a_filename, const std::string& a_mode, bool a_is_pipe) {
         close();
+        bool use_stdin = !a_is_pipe
+                      && (!strcmp(a_filename, "-") || !strcmp(a_filename, "/dev/stdin"));
+        if (use_stdin)
+            a_filename = "/dev/stdin";
         if (a_is_pipe)
             m_file = ::popen(a_filename, a_mode.c_str());
         else
@@ -298,7 +303,7 @@ private:
         m_is_pipe    = a_is_pipe;
         m_own_handle = true;
         long sz;
-        if (a_is_pipe)
+        if (a_is_pipe || use_stdin)
             sz = 0;
         else {
             if (fseek(m_file, 0, SEEK_END) < 0) return -1;
