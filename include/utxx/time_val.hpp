@@ -69,14 +69,16 @@ namespace utxx {
 
     struct usecs {
         long usec;
-        explicit usecs(long us) : usec(us) {}
-        explicit usecs(int  us) : usec(us) {}
+        explicit usecs(long   us) : usec(us)       {}
+        explicit usecs(size_t us) : usec(long(us)) {}
+        explicit usecs(int    us) : usec(us)       {}
     };
 
     struct secs {
         long usec;
-        explicit secs(long   s) : usec(s * 1000000) {}
-        explicit secs(int    s) : usec(s * 1000000) {}
+        explicit secs(size_t s) : usec(long(s) * 1000000)  {}
+        explicit secs(long   s) : usec(s * 1000000)        {}
+        explicit secs(int    s) : usec(s * 1000000)        {}
         explicit secs(double s) : usec(long(round(s*1e6))) {}
     };
 
