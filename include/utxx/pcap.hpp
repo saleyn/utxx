@@ -104,30 +104,24 @@ struct pcap {
 
     pcap() : m_big_endian(true), m_file(NULL), m_own_handle(false) {}
 
-    long open_read(const std::string& a_filename) {
-        return open(a_filename.c_str(), "rb");
+    long open_read(const std::string& a_filename, bool a_is_pipe = false) {
+        return open(a_filename.c_str(), a_is_pipe ? "r" : "rb");
     }
 
-    long open_write(const std::string& a_filename) {
-        long sz = open(a_filename.c_str(), "wb+");
+    long open_write(const std::string& a_filename, bool a_is_pipe = false) {
+        long sz = open(a_filename.c_str(), a_is_pipe ? "w" : "wb+", a_is_pipe);
         if (sz < 0)
             return sz;
         write_file_header();
         return sz;
     }
 
+    long popen(const char* a_filename, const std::string& a_mode) {
+        return open(a_filename, a_mode, true);
+    }
+
     long open(const char* a_filename, const std::string& a_mode) {
-        close();
-        m_file = fopen(a_filename, a_mode.c_str());
-        if (!m_file)
-            return -1;
-        m_own_handle = true;
-        if (fseek(m_file, 0, SEEK_END) < 0)
-            return -1;
-        long sz = ftell(m_file);
-        if (fseek(m_file, 0, SEEK_SET) < 0)
-            return -1;
-        return (m_file == NULL) ? -1 : sz;
+        return open(a_filename, a_mode, false);
     }
 
     ~pcap() {
@@ -287,9 +281,28 @@ struct pcap {
 private:
     void close() {
         if (m_file && m_own_handle) {
-            fclose(m_file);
-            m_file = NULL;
+            m_is_pipe ? pclose(m_file) : fclose(m_file);
+            m_is_pipe = false;
+            m_file    = NULL;
         }
+    }
+
+    long open(const char* a_filename, const std::string& a_mode, bool a_is_pipe) {
+        close();
+        if (a_is_pipe)
+            m_file = ::popen(a_filename, a_mode.c_str());
+        else
+            m_file = ::fopen(a_filename, a_mode.c_str());
+        if (!m_file)
+            return -1;
+        m_is_pipe    = a_is_pipe;
+        m_own_handle = true;
+        if (fseek(m_file, 0, SEEK_END) < 0)
+            return -1;
+        long sz = ftell(m_file);
+        if (fseek(m_file, 0, SEEK_SET) < 0)
+            return -1;
+        return (m_file == NULL) ? -1 : sz;
     }
 
     udp_frame     m_frame;
@@ -298,6 +311,7 @@ private:
     bool          m_big_endian;
     FILE*         m_file;
     bool          m_own_handle;
+    bool          m_is_pipe;
 };
 
 } // namespace utxx
