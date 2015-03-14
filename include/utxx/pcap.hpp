@@ -105,7 +105,7 @@ struct pcap {
     pcap() : m_big_endian(true), m_file(NULL), m_own_handle(false) {}
 
     long open_read(const std::string& a_filename, bool a_is_pipe = false) {
-        return open(a_filename.c_str(), a_is_pipe ? "r" : "rb");
+        return open(a_filename.c_str(), a_is_pipe ? "r" : "rb", a_is_pipe);
     }
 
     long open_write(const std::string& a_filename, bool a_is_pipe = false) {
@@ -297,11 +297,14 @@ private:
             return -1;
         m_is_pipe    = a_is_pipe;
         m_own_handle = true;
-        if (fseek(m_file, 0, SEEK_END) < 0)
-            return -1;
-        long sz = ftell(m_file);
-        if (fseek(m_file, 0, SEEK_SET) < 0)
-            return -1;
+        long sz;
+        if (a_is_pipe)
+            sz = 0;
+        else {
+            if (fseek(m_file, 0, SEEK_END) < 0) return -1;
+            sz = ftell(m_file);
+            if (fseek(m_file, 0, SEEK_SET) < 0) return -1;
+        }
         return (m_file == NULL) ? -1 : sz;
     }
 
