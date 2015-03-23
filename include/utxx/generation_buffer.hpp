@@ -275,7 +275,7 @@ namespace utxx
         /// This method is EXCLUSIVELY to be used by the producer of data in
         /// conjunction with the call to reserve().
         //----------------------------------------------------------------------
-        void commit_index(uint32_t a_idx) { Size::store(this, a_idx); }
+        void commit_index(uint32_t a_idx) { Size::store(this, a_idx+1); }
 
         //----------------------------------------------------------------------
         /// Index of the most recent entry.
@@ -299,11 +299,11 @@ namespace utxx
 #ifndef NDEBUG
             // If the buffer is full, then any "idx" (< capacity) is OK;
             // otherwise it must be < size:
-            uint32_t limit = std::min<uint32_t>(m_size, m_capacity);
+            uint32_t limit = std::min<uint32_t>(Size::get(this), m_capacity);
             if (utxx::unlikely(a_idx >= limit))
                 throw badarg_error(
                     "generation_buffer: Invalid idx=", a_idx,
-                    ", capacity=",    m_capacity, ", total_size=", m_size);
+                    ", capacity=",    m_capacity, ", total_size=", Size::get(this));
             assert(a_idx < m_capacity);
 #endif
             return m_entries[a_idx];

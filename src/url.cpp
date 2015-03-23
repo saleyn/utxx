@@ -48,6 +48,7 @@ namespace detail {
             case UDP:       return "udp";
             case UDS:       return "uds";
             case FILENAME:  return "file";
+            case CMD:       return "cmd";
             default:        return "undefined";
         }
     }
@@ -91,7 +92,8 @@ bool is_ipv4_addr(const std::string& a_addr)
 bool addr_info::parse(const std::string& a_url) {
     static std::map<std::string, std::string> proto_to_port =
             boost::assign::map_list_of
-                ("http", "80") ("https", "443") ("file", "") ("uds", "");
+                ("http", "80") ("https", "443") ("file", "")
+                ("uds",  "")   ("cmd",   "");
 
     using namespace boost::xpressive;
     // "(http|perc)://(.*?)(:(\\d+))?(/.*)" | "(file|uds)://(.*)"
@@ -101,11 +103,13 @@ bool addr_info::parse(const std::string& a_url) {
             >> optional(s2 = +set[alpha | ';' | '@' | '-' | '.' | digit])
             >> optional(':' >> (s3 = +_d))
             >> optional(s4 = '/' >> *_) )
-        | (    (s1 = icase("file") | icase("uds"))
+        | (    (s1 = icase("file") | icase("uds") | icase("cmd"))
             >> "://"
             >> optional(s4 = +_) );
 
     boost::xpressive::smatch l_what;
+
+    url = a_url;
 
     bool res = boost::xpressive::regex_search(a_url, l_what, l_re_url);
     if (res) {
@@ -118,16 +122,15 @@ bool addr_info::parse(const std::string& a_url) {
 
     if      (m_proto == "tcp"  ||
              m_proto == "http" ||
-             m_proto == "https")                    proto = TCP;
-    else if (m_proto == "udp")                      proto = UDP;
-    else if (m_proto == "uds")                      proto = UDS;
-    else if (m_proto == "file")                     proto = FILENAME;
-    else                                            proto = UNDEFINED;
+             m_proto == "https")    proto = TCP;
+    else if (m_proto == "udp")      proto = UDP;
+    else if (m_proto == "uds")      proto = UDS;
+    else if (m_proto == "file")     proto = FILENAME;
+    else if (m_proto == "cmd")      proto = CMD;
+    else                            proto = UNDEFINED;
 
     m_is_ipv4 = is_ipv4_addr(addr);
     return res;
 }
-
-
 
 } // namespace utxx
