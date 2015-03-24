@@ -49,12 +49,12 @@ namespace utxx {
 /// Keep running min/max/average/variance stats.
 //-----------------------------------------------------------------------------
 
-/// Basic holder of count / sum / min / max tuple
-template <typename CntType = size_t>
+/// Running count / sum / min / max statistics
+template <typename T, typename CntType = size_t>
 class basic_running_sum {
 protected:
     CntType m_count;
-    double  m_last, m_sum, m_min, m_max;
+    T       m_last, m_sum, m_min, m_max;
 public:
     basic_running_sum() {
         clear();
@@ -66,11 +66,19 @@ public:
         , m_min(rhs.m_min),   m_max(rhs.m_max)
     {}
 
+#if __cplusplus >= 201103L
+    basic_running_sum(basic_running_sum&& rhs) 
+        : m_count(rhs.m_count)
+        , m_last(rhs.m_last), m_sum(rhs.m_sum)
+        , m_min(rhs.m_min),   m_max(rhs.m_max)
+    {}
+#endif
+
     /// Reset the internal state.
     void clear() { 
-        m_count = 0; m_last = 0.0; m_sum = 0.0;
-        m_min = std::numeric_limits<double>::max();
-        m_max = std::numeric_limits<double>::lowest();
+        m_count = 0; m_last = 0; m_sum = 0;
+        m_min = std::numeric_limits<T>::max();
+        m_max = std::numeric_limits<T>::lowest();
     }
 
     /// Add a sample measurement.
@@ -82,14 +90,14 @@ public:
         if (x < m_min) m_min = x;
     }
 
-    void operator+= (const basic_running_sum<CntType>& a) {
+    void operator+= (const basic_running_sum<T, CntType>& a) {
         m_count += a.m_count;
         m_sum   += a.m_sum;
         if (a.m_max > m_max) m_max = a.m_max;
         if (a.m_min < m_min) m_min = a.m_min;
     }
 
-    void operator-= (const basic_running_sum<CntType>& a) {
+    void operator-= (const basic_running_sum<T, CntType>& a) {
         m_count -= a.count();
         m_sum   -= a.sum();
         //m_min    = a.min();
@@ -100,19 +108,20 @@ public:
     CntType     count() const { return m_count;  }
     bool        empty() const { return !m_count; }
 
-    double      last()  const { return m_last; }
-    double      sum()   const { return m_sum;  }
-    double      mean()  const { return likely(m_count) ? m_sum / m_count : 0.0; }
-    double      min()   const { return m_min == std::numeric_limits<double>::max()
-                                     ? 0.0 : m_min; }
-    double      max()   const { return m_max == std::numeric_limits<double>::lowest()
-                                     ? 0.0 : m_max; }
+    T           last()  const { return m_last; }
+    T           sum()   const { return m_sum;  }
+    double      mean()  const { return likely(m_count) ? double(m_sum) / m_count : 0.0; }
+    T           min()   const { return m_min == std::numeric_limits<T>::max()
+                                     ? 0 : m_min; }
+    T           max()   const { return m_max == std::numeric_limits<T>::lowest()
+                                     ? 0 : m_max; }
 };
 
-template <typename CntType = size_t>
-class basic_running_variance : public basic_running_sum<CntType> {
-    typedef basic_running_sum<CntType> base;
-    double m_var;
+/// Running variance statistics
+template <typename T, typename CntType = size_t>
+class basic_running_variance : public basic_running_sum<T, CntType> {
+    typedef basic_running_sum<T, CntType> base;
+    double  m_var;
 public:
     basic_running_variance() {
         clear();
@@ -130,8 +139,8 @@ public:
     }
 
     /// Add a sample measurement.
-    inline void add(double x) {
-        double old = base::mean();
+    inline void add(T x) {
+        double old = this->mean();
         base::add(x);
         // See Knuth TAOCP v.2, 3rd ed, p.232
         double diff = x - old;
@@ -140,7 +149,7 @@ public:
     }
 
     /// Number of samples since last invocation of clear().
-    double   variance()  const { return likely(base::m_count) ? m_var/base::m_count : 0.0; }
+    double   variance()  const { return likely(this->m_count) ? m_var/this->m_count : 0.0; }
     double   deviation() const { return sqrt(variance()); }
 };
 
@@ -336,11 +345,6 @@ public:
         m_denominator *= a_sec_interval;
     }
 };
-
-/// Running sum statistics for single-threaded use.
-typedef basic_running_sum<size_t>      running_sum;
-/// Running variance statistics for single-threaded use.
-typedef basic_running_variance<size_t> running_variance;
 
 } // namespace utxx
 
