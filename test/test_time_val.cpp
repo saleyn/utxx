@@ -113,6 +113,21 @@ BOOST_AUTO_TEST_CASE( test_time_val )
 
         BOOST_CHECK_EQUAL(13,     t.sec());
         BOOST_CHECK_EQUAL(123000, t.usec());
+
+        t += usecs(100);
+        BOOST_CHECK_EQUAL(13123100, t.microseconds());
+        t += secs(1);
+        BOOST_CHECK_EQUAL(14123100,t.microseconds());
+        t -= secs(1);
+        BOOST_CHECK_EQUAL(13123100, t.microseconds());
+        t -= usecs(100);
+        BOOST_CHECK_EQUAL(13123000, t.microseconds());
+
+        t = usecs(1123000);
+        BOOST_CHECK_EQUAL(1123100, (t + usecs(100)).microseconds());
+        BOOST_CHECK_EQUAL(2123000, (t + secs(1)).microseconds());
+        BOOST_CHECK_EQUAL(1122500, (t - usecs(500)).microseconds());
+        BOOST_CHECK_EQUAL(123000,  (t - secs(1)).microseconds());
     }
     {
         time_val t(secs(0.999999));
