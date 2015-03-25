@@ -34,9 +34,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_VARIANT_TREE_PARSER_IMPL_HPP_
 
 #include <utxx/variant_tree.hpp>
+
+#ifndef UTXX_VARIANT_TREE_NO_INFO_PARSER
 #include <boost/property_tree/info_parser.hpp>
+#endif
+
+#ifndef UTXX_VARIANT_TREE_NO_XML_PARSER
 #include <boost/property_tree/xml_parser.hpp>
+#endif
+
+#ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
 #include <boost/property_tree/ini_parser.hpp>
+#endif
+
 #include <utxx/detail/variant_tree_scon_parser.hpp>
 
 namespace utxx {
@@ -221,6 +231,7 @@ namespace detail {
                     "write error", a_filename, 0);
     }
 
+#ifndef UTXX_VARIANT_TREE_NO_INFO_PARSER
     /**
      * Read INFO format from a the given stream and translate it to a variant tree.
      * @param a_stream is an input stream
@@ -250,7 +261,9 @@ namespace detail {
         boost::property_tree::info_parser::write_info(
             a_tar, a_tree, a_settings);
     }
+#endif
 
+#ifndef UTXX_VARIANT_TREE_NO_XML_PARSER
     /// @brief Read configuration from an XML file
     /// @param a_src   is the configuration source (file or stream
     /// @param a_tree  target configuration tree
@@ -268,6 +281,9 @@ namespace detail {
         basic_variant_tree<Ch>::translate_data(pt, tr);
     }
 
+#endif
+
+#ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
     template <typename Source, typename Ch>
     void  read_ini(Source& a_src, basic_variant_tree<Ch>& a_tree, int a_flags = 0)
     {
@@ -293,6 +309,7 @@ namespace detail {
             a_tar, static_cast<detail::basic_variant_tree&>(a_tree), a_settings);
     }
     */
+#endif
 
 } // namespace detail
 } // namespace utxx

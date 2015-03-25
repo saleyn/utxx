@@ -72,6 +72,16 @@ public:
         , m_last(rhs.m_last), m_sum(rhs.m_sum)
         , m_min(rhs.m_min),   m_max(rhs.m_max)
     {}
+
+    basic_running_sum<T, CntType>&
+    operator=(basic_running_sum&& a_rhs) {
+        m_count = a_rhs.m_count;
+        m_last  = a_rhs.m_last;
+        m_sum   = a_rhs.m_sum;
+        m_min   = a_rhs.m_min;
+        m_max   = a_rhs.m_max;
+        return *this;
+    }
 #endif
 
     /// Reset the internal state.
