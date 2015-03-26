@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/error.hpp>
 #include <boost/test/unit_test.hpp>
+#include <regex>
 
 using namespace utxx;
 
@@ -55,4 +56,11 @@ BOOST_AUTO_TEST_CASE( test_error )
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     BOOST_REQUIRE_EQUAL("test: Success", utxx::sock_error(fd, "test").str());
+
+    try {
+        UTXX_THROW(utxx::runtime_error, "A ", 123);
+    } catch (std::exception& e) {
+        std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+    }
 }

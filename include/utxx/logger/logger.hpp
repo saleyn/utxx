@@ -179,24 +179,6 @@ struct logger : boost::noncopyable {
 
     enum class payload_t { STR_FUN, CHAR_FUN, STR };
 
-    class srcinfo {
-        const char* m_fileline;
-        const char* m_func;
-        int         m_fileline_len;
-        int         m_func_len;
-    public:
-        template <int N, int M>
-        constexpr srcinfo(const char (&a_fileline)[N], const char (&a_func)[M])
-            : m_fileline(a_fileline), m_func(a_func)
-            , m_fileline_len(N-1),    m_func_len(M-1)
-        {
-            static_assert(N >= 1, "Invalid string literal! Length is zero!");
-            static_assert(M >= 1, "Invalid string literal! Length is zero!");
-        }
-
-        constexpr const char* fileline() const { return m_fileline; }
-    };
-
     class msg {
         time_val      m_timestamp;
         log_level     m_level;

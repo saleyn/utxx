@@ -362,35 +362,13 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
     // Format the message in the form:
     // Timestamp|Level|Ident|Category|Message|File:Line:FunctionName\n
     if (a_msg.src_loc_len() && show_location() && likely(a_buf + n < a_end)) {
-        static const char s_sep =
-            boost::filesystem::path("/").native().c_str()[0];
         if (*(p-1) == '\n') p--;
         *p++ =  '|';
 
-        auto q = strrchr(a_msg.src_location(), s_sep);
-        q = q ? q+1 : a_msg.src_location();
-        auto e   = a_msg.src_location() + a_msg.src_loc_len();
-        // extra byte for possible '\n'
-        auto len = std::min<size_t>(a_end - p, e - q + 1);
-        p = stpncpy(p, q, len);
-
-        if (show_fun_name() && a_msg.src_fun_len()) {
-            *p++ = ' ';
-            // Function name can contain:
-            //   "static void fun()"
-            //   "static void scope::fun()"
-            //   "void scope::fun()"
-            // We search for '(' to signify the end of input, and skip
-            // everything prior to the last space:
-            auto begin = a_msg.src_fun_name();
-            for (q = begin, e = q + a_msg.src_fun_len(); q < e; ++q) {
-                if      (*q == '(') e = q;
-                else if (*q == ' ') begin = q+1;
-            }
-            // (-1) - extra byte for '\n'
-            len = std::min<size_t>(a_end - p - 1, e - begin);
-            p = stpncpy(p, begin, len);
-        }
+        p = src_info::to_string(p, a_end - p,
+                a_msg.src_location(), a_msg.src_loc_len(),
+                a_msg.src_fun_name(), a_msg.src_fun_len(),
+                show_fun_name());
     }
 
     // We reached the end of the streaming sequence:
