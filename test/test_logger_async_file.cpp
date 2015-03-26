@@ -23,9 +23,11 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     pt.put("logger.timestamp",     variant("none"));
     pt.put("logger.show-ident",    variant(false));
     pt.put("logger.show-location", variant(false));
+    pt.put("logger.silent-finish", variant(true));
     pt.put("logger.file.levels",   variant("debug|info|warning|error|fatal|alert"));
     pt.put("logger.file.filename", variant(filename));
     pt.put("logger.file.append",   variant(false));
+    pt.put("logger.file.ho-header",variant(true));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         BOOST_MESSAGE(pt.dump(std::cout, 2, false, true));
@@ -53,26 +55,26 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
         for (int i = 0, n = 0; i < iterations; i++) {
             char buf[128];
             getline(in, s);
-            sprintf(buf, "|E|||(%d) This is an error #%d", ++n, 123); exp = buf;
+            sprintf(buf, "|E||(%d) This is an error #%d", ++n, 123); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|W|||(%d) This is a %s", ++n, "warning"); exp = buf;
+            sprintf(buf, "|W||(%d) This is a %s", ++n, "warning"); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|F|||(%d) This is a %s", ++n, "fatal error"); exp = buf;
+            sprintf(buf, "|F||(%d) This is a %s", ++n, "fatal error"); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|E||Cat1|(%d) This is an error #%d", ++n, 456); exp = buf;
+            sprintf(buf, "|E|Cat1|(%d) This is an error #%d", ++n, 456); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|W||Cat2|(%d) This is a warning", ++n); exp = buf;
+            sprintf(buf, "|W|Cat2|(%d) This is a warning", ++n); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
             getline(in, s);
-            sprintf(buf, "|F||Cat3|(%d) This is a fatal error", ++n); exp = buf;
+            sprintf(buf, "|F|Cat3|(%d) This is a fatal error", ++n); exp = buf;
             BOOST_REQUIRE_EQUAL(exp, s);
         }
         BOOST_REQUIRE(getline(in, s));
-        BOOST_REQUIRE_EQUAL("|I|||Logger thread finished", s);
+        BOOST_REQUIRE_EQUAL("|I||Logger thread finished", s);
         BOOST_REQUIRE(!getline(in, s));
     }
 
@@ -93,7 +95,7 @@ std::string get_data(std::ifstream& in, int& thread, int& num, struct tm& tm) {
     tm.tm_hour = strtol(end+1, &end, 10);
     tm.tm_min  = strtol(end+1, &end, 10);
     tm.tm_sec  = strtol(end+1, &end, 10);
-    end += 7 + 5; // Skip ".XXXXXX|E|||"
+    end += 7 + 4; // Skip ".XXXXXX|E||"
     const char* p = end;
     thread = strtol(p, &end, 10);
     while(*end == ' ') end++;
@@ -132,9 +134,11 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
             n++;
             th = 1, j = 1;
             s = get_data(in, th, j, tm);
+            if (s.empty())
+                BOOST_MESSAGE("Thread" << th << ", line=" << j);
             BOOST_REQUIRE(s != "");
             int idx = (j-1) % thr_msgs;
-            sprintf(buf, "|%s|||%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
+            sprintf(buf, "|%s||%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
             exp = buf;
             if (exp != s) std::cerr << "File " << filename << ":" << n << std::endl;
             BOOST_REQUIRE_EQUAL(exp, s);
@@ -198,10 +202,11 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     pt.put("logger.timestamp",          variant("date-time-usec"));
     pt.put("logger.show-ident",         variant(false));
     pt.put("logger.show-location",      variant(false));
+    pt.put("logger.silent-finish",      variant(true));
     pt.put("logger.file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put("logger.file.filename",      variant(filename));
     pt.put("logger.file.append",        variant(false));
-    pt.put("logger.silent-finish",      variant(true));
+    pt.put("logger.file.no-header",     variant(true));
 
     BOOST_REQUIRE(pt.get_child_optional("logger.file"));
 
@@ -285,16 +290,17 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     ::unlink(filename);
 
-    pt.put("logger.timestamp",    variant("date-time-usec"));
-    pt.put("logger.show-ident",   variant(false));
-    pt.put("logger.show-location",variant(false));
-    pt.put("logger.silent-finish",variant(true));
+    pt.put("logger.timestamp",      variant("date-time-usec"));
+    pt.put("logger.show-ident",     variant(false));
+    pt.put("logger.show-location",  variant(false));
+    pt.put("logger.silent-finish",  variant(true));
 
     std::string s("logger."); s += config_type;
     pt.put(s + ".stdout-levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put(s + ".filename",  filename);
     pt.put(s + ".append",    mode == MODE_APPEND);
     pt.put(s + ".use-mutex", mode == MODE_OVERWRITE);
+    pt.put(s + ".no-header", variant(true));
 
     logger& log = logger::instance();
     log.init(pt);

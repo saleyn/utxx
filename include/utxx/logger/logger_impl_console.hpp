@@ -55,7 +55,7 @@ class logger_impl_console: public logger_impl {
         , m_stderr_levels(s_def_stderr_levels)
     {}
 
-    void colorize(log_level a_ll, std::ostream& out, const std::string& a_str);
+    void colorize(log_level a_ll, bool a_color, std::ostream&, const std::string&);
 public:
     static logger_impl_console* create(const char* a_name) {
         return new logger_impl_console(a_name);
@@ -66,7 +66,7 @@ public:
     const std::string& name()          const { return m_name; }
     int                stdout_levels() const { return m_stdout_levels; }
     int                stderr_levels() const { return m_stderr_levels; }
-    
+
     /// Dump all settings to stream
     std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
 

@@ -17,7 +17,9 @@ using namespace utxx;
 
 struct test {
     struct inner {
-        static void log (int i) { LOG_DEBUG("This is a %d debug",  i); }
+        static void log (int i) {
+            LOG_DEBUG("This is a %d debug",  i);
+        }
         static void clog(int i) { CLOG_DEBUG("Cat5", "This is a %d debug", i); }
     };
 };
@@ -27,9 +29,10 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 {
     variant_tree pt;
 
-    pt.put("logger.timestamp",  variant("time-usec"));
+    pt.put("logger.timestamp",             variant("time-usec"));
+    pt.put("logger.min-level-filter",      variant("debug"));
     pt.put("logger.console.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.show-ident", true);
+    pt.put("logger.show-ident",            true);
 
     if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
         pt.dump(std::cout, 2, false, true, ' ', 2);
@@ -154,7 +157,7 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
 
     fflush(stdout);
 
-    bool crash = getenv("UTXX_LOGGER_CRASH");
+    bool crash = getenv("UTXX_LOGGER_CRASH") && atoi(getenv("UTXX_LOGGER_CRASH"));
 
     if (crash) {
         double* p = nullptr;

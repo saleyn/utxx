@@ -333,17 +333,20 @@ format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
 {
     // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line
     // Write everything up to Message to the m_data:
+    char*  p = a_buf;
 
     // Write Timestamp
-    char*  p = a_buf;
-    p   += timestamp::format(timestamp_type(), a_msg.m_timestamp, p, a_end - p);
-    *p++ = '|';
+    if (timestamp_type() != stamp_type::NO_TIMESTAMP) {
+        p   += timestamp::format(timestamp_type(), a_msg.m_timestamp, p, a_end - p);
+        *p++ = '|';
+    }
     // Write Level
     *p++ = logger::log_level_to_str(a_msg.m_level)[0];
     *p++ = '|';
-    if (show_ident())
+    if (show_ident()) {
         p = stpncpy(p, ident().c_str(), ident().size());
-    *p++ = '|';
+        *p++ = '|';
+    }
     if (!a_msg.m_category.empty())
         p = stpncpy(p, a_msg.m_category.c_str(), a_msg.m_category.size());
     *p++ = '|';
@@ -372,10 +375,21 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
         p = stpncpy(p, q, len);
 
         if (show_fun_name() && a_msg.src_fun_len()) {
-            *p++ = ':';
+            *p++ = ' ';
+            // Function name can contain:
+            //   "static void fun()"
+            //   "static void scope::fun()"
+            //   "void scope::fun()"
+            // We search for '(' to signify the end of input, and skip
+            // everything prior to the last space:
+            auto begin = a_msg.src_fun_name();
+            for (q = begin, e = q + a_msg.src_fun_len(); q < e; ++q) {
+                if      (*q == '(') e = q;
+                else if (*q == ' ') begin = q+1;
+            }
             // (-1) - extra byte for '\n'
-            len = std::min<size_t>(a_end - p - 1, a_msg.src_fun_len());
-            p = stpncpy(p, a_msg.src_fun_name(), len);
+            len = std::min<size_t>(a_end - p - 1, e - begin);
+            p = stpncpy(p, begin, len);
         }
     }
 

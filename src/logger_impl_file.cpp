@@ -52,7 +52,8 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
         << a_prefix << "    append         = " << (m_append ? "true" : "false")       << '\n'
         << a_prefix << "    mode           = " << m_mode << '\n'
         << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    use-mutex      = " << (m_use_mutex ? "true" : "false")    << '\n';
+        << a_prefix << "    use-mutex      = " << (m_use_mutex ? "true" : "false")    << '\n'
+        << a_prefix << "    no-header      = " << (m_no_header ? "true" : "false")    << '\n';
     return out;
 }
 
@@ -75,17 +76,43 @@ bool logger_impl_file::init(const variant_tree& a_config)
     // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
     // Use the "use-mutex=false" option to inhibit this behavior if your
     // platform has thread-safe write(2) call.
-    m_use_mutex     = m_append ? false : a_config.get<bool>("logger.file.use-mutex", true);
-    m_mode          = a_config.get<int> ("logger.file.mode", 0644);
+    m_use_mutex     = m_append ? false : a_config.get("logger.file.use-mutex", true);
+    m_no_header     = a_config.get("logger.file.no-header", false);
+    m_mode          = a_config.get("logger.file.mode", 0644);
     m_levels        = logger::parse_log_levels(
         a_config.get<std::string>("logger.file.levels", logger::default_log_levels));
 
     if (m_levels != NOLOGGING) {
         m_fd = open(m_filename.c_str(),
-                    O_CREAT|O_WRONLY|O_TRUNC|O_LARGEFILE | (m_append ? O_APPEND : 0),
+                    O_CREAT|O_WRONLY|O_LARGEFILE | (m_append ? O_APPEND : 0),
                     m_mode);
         if (m_fd < 0)
             throw io_error(errno, "Error opening file", m_filename);
+
+        // Write field information
+        if (!m_no_header) {
+            char buf[256];
+            char* p = buf, *end = buf + sizeof(buf);
+
+            tzset();
+
+            p += snprintf(p, p - end, "# Logging started at: %s (UTC offset: %ld)\n#",
+                          timestamp::to_string(DATE_TIME).c_str(), -timezone);
+            if (!this->m_log_mgr ||
+                this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
+                p += snprintf(p, p - end, "Timestamp|");
+            p += snprintf(p, p - end, "Level|");
+            if (this->m_log_mgr && this->m_log_mgr->show_ident())
+                p += snprintf(p, p - end, "Ident|");
+            p += snprintf(p, p - end, "Category|Message");
+            if (this->m_log_mgr && this->m_log_mgr->show_location())
+                p += snprintf(p, p - end, "File:Line%s",
+                              this->m_log_mgr->show_fun_name() ? " Function" : "");
+            *p++ = '\n';
+
+            if (write(m_fd, buf, p - buf) < 0)
+                throw io_error(errno, "Error writing log header to file: ", m_filename);
+        }
 
         // Install log_msg callbacks from appropriate levels
         for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {

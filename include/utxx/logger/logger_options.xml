@@ -37,6 +37,13 @@
             <value val="alert"/>
         </option>
 
+        <option name="handle-crash-signals" val-type="bool" default="true"
+                desc="When true logger installs signal handlers for \n
+                      SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM"/>
+
+        <option name="silent-finish" val-type="bool" default="false"
+                desc="When true logger doesn't write completion status to log at termination"/>
+
         <option name="file" required="false"
                 desc="Logger's backend for writing data synchronously to file">
             <option name="filename" val-type="string"
@@ -53,6 +60,8 @@
                     desc="Overrides logger.show-location option"/>
             <option name="show-ident" val-type="bool" default="false"
                     desc="Overrides logger.show-indent option"/>
+            <option name="no-header" val-type="bool" default="false"
+                    desc="When enabled, no field definition header is written to file at startup"/>
         </option>
 
         <option name="async-file" required="false"

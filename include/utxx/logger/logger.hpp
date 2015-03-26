@@ -47,6 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <boost/current_function.hpp>
 #include <utxx/function.hpp>
 #include <utxx/delegate.hpp>
 #include <utxx/delegate/event.hpp>
@@ -117,7 +118,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 // Shortcut for "__FILE__:__LINE__:__func__" argument passed to the logger
 //------------------------------------------------------------------------------
-#define UTXX_LOG_SRCINFO UTXX_FILE_SRC_LOCATION, __func__
+#define UTXX_LOG_SRCINFO UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION
 
 /// We use the macro trickery below to implemenet a UTXX_LOG() macro that
 /// can optionally take the category as the second macro argument. The idea

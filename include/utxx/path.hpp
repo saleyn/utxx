@@ -57,14 +57,15 @@ static inline char slash() {
  */
 const char* basename(const char* begin, const char* end);
 
-/**
- * Checks if a file exists
- */
+/// Checks if a file exists
 bool file_exists(const char* a_path);
 
-/**
- * Removes a file
- */
+/// Get file size
+long file_size(const char* a_filename);
+/// Get file size of the file associated with the file descriptor
+long file_size(int fd);
+
+/// Removes a file
 void file_unlink(const char* a_path);
 
 /**

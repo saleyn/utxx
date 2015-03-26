@@ -114,6 +114,17 @@ void file_unlink(const char* a_path) {
     #endif
 }
 
+long file_size(const char* a_filename) {
+    struct stat stat_buf;
+    int rc = stat(a_filename, &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
+}
+
+long file_size(int fd) {
+    struct stat stat_buf;
+    int rc = fstat(fd, &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
+}
 
 std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
 {

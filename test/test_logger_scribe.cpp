@@ -79,7 +79,16 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
     log.set_ident("test_logger");
 
     // Initialize scribe logging implementation with the logging framework
-    log.init(pt);
+    try {
+        log.init(pt);
+    } catch (utxx::runtime_error& e) {
+        static const char s_err[] = "Failed to open connection";
+        if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
+            BOOST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            return;
+        }
+        throw;
+    }
 
     for (int i = 0; i < 2; i++) {
         LOG_ERROR  ("This is an error %d #%d", i, 123);
