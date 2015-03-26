@@ -114,15 +114,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #endif  // UTXX_SKIP_LOG_MACROS
 
+//------------------------------------------------------------------------------
+// Shortcut for "__FILE__:__LINE__:__func__" argument passed to the logger
+//------------------------------------------------------------------------------
+#define UTXX_LOG_SRCINFO UTXX_FILE_SRC_LOCATION, __func__
+
 /// We use the macro trickery below to implemenet a UTXX_LOG() macro that
 /// can optionally take the category as the second macro argument. The idea
 /// is to use a macro chooser that takes __VA_ARGS__ to select the
 /// UTXX_LOG_N_ARGS() macro depending on whether it was called with one
 /// or two arguments:
 #define UTXX_LOG_1_ARGS(Level) \
-    utxx::logger::msg_streamer(LEVEL_##Level, "", UTXX_FILE_SRC_LOCATION)
+    utxx::logger::msg_streamer(LEVEL_##Level, "",  UTXX_LOG_SRCINFO)
 #define UTXX_LOG_2_ARGS(Level, Cat) \
-    utxx::logger::msg_streamer(LEVEL_##Level, Cat, UTXX_FILE_SRC_LOCATION)
+    utxx::logger::msg_streamer(LEVEL_##Level, Cat, UTXX_LOG_SRCINFO)
 
 #define UTXX_GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
 #define UTXX_LOG_MACRO_CHOOSER(...) \
@@ -133,10 +138,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// the <printf> function: <(const char* fmt, ...)>
 //------------------------------------------------------------------------------
 #define UTXX_CLOG(Level, Cat, Fmt, ...) \
-    utxx::logger::instance().logfmt(Level, Cat, UTXX_FILE_SRC_LOCATION, Fmt, ##__VA_ARGS__)
+    utxx::logger::instance().logfmt(Level, Cat, UTXX_LOG_SRCINFO, \
+                                    Fmt, ##__VA_ARGS__)
 
 //------------------------------------------------------------------------------
-/// Suppost for streaming version of the logger
+/// Support for streaming version of the logger
 //------------------------------------------------------------------------------
 #define UTXX_LOG(Level, ...) \
     UTXX_LOG_MACRO_CHOOSER(Level, ##__VA_ARGS__)(Level, ##__VA_ARGS__)
@@ -172,12 +178,32 @@ struct logger : boost::noncopyable {
 
     enum class payload_t { STR_FUN, CHAR_FUN, STR };
 
+    class srcinfo {
+        const char* m_fileline;
+        const char* m_func;
+        int         m_fileline_len;
+        int         m_func_len;
+    public:
+        template <int N, int M>
+        constexpr srcinfo(const char (&a_fileline)[N], const char (&a_func)[M])
+            : m_fileline(a_fileline), m_func(a_func)
+            , m_fileline_len(N-1),    m_func_len(M-1)
+        {
+            static_assert(N >= 1, "Invalid string literal! Length is zero!");
+            static_assert(M >= 1, "Invalid string literal! Length is zero!");
+        }
+
+        constexpr const char* fileline() const { return m_fileline; }
+    };
+
     class msg {
         time_val      m_timestamp;
         log_level     m_level;
         std::string   m_category;
         std::size_t   m_src_loc_len;
         const char*   m_src_location;
+        std::size_t   m_src_fun_len;
+        const char*   m_src_fun;
         payload_t     m_type;
 
         union U {
@@ -195,43 +221,55 @@ struct logger : boost::noncopyable {
 
         template <typename Fun>
         msg(log_level a_ll, const std::string& a_category, payload_t a_type,
-            const Fun& a_fun, const char* a_src_loc, std::size_t a_sloc_len)
-            : m_timestamp   (now_utc())
+            const Fun& a_fun,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len
+        )   : m_timestamp   (now_utc())
             , m_level       (a_ll)
             , m_category    (a_category)
             , m_src_loc_len (a_sloc_len)
             , m_src_location(a_src_loc)
+            , m_src_fun_len (a_sfun_len)
+            , m_src_fun     (a_src_fun)
             , m_type        (a_type)
             , m_fun         (a_fun)
         {}
 
     public:
 
-        msg(log_level a_ll, const std::string& a_category,
-            const char_function& a_fun, const char* a_src_loc, std::size_t a_sloc_len)
-            : msg(a_ll, a_category, payload_t::CHAR_FUN, a_fun, a_src_loc, a_sloc_len)
+        msg(log_level a_ll, const std::string& a_cat, const char_function& a_fun,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len)
+            : msg(a_ll, a_cat, payload_t::CHAR_FUN, a_fun,
+                  a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
         {}
 
-        msg(log_level a_ll, const std::string& a_category,
-            const str_function& a_fun, const char* a_src_loc, std::size_t a_sloc_len)
-            : msg(a_ll, a_category, payload_t::STR_FUN, a_fun, a_src_loc, a_sloc_len)
+        msg(log_level a_ll, const std::string& a_cat, const str_function& a_fun,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len)
+            : msg(a_ll, a_cat, payload_t::STR_FUN, a_fun,
+                  a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
         {}
 
-        template <int N>
-        msg(log_level a_ll, const std::string& a_category,
-            const str_function& a_fun, const char (&a_src_loc)[N])
-            : msg(a_ll, a_category, payload_t::STR_FUN, a_fun, a_src_loc, N-1)
+        template <int N, int M>
+        msg(log_level a_ll, const std::string& a_cat, const str_function& a_fun,
+            const char (&a_src_loc)[N], const char (&a_src_fun)[M])
+            : msg(a_ll, a_cat, payload_t::STR_FUN, a_fun,
+                  a_src_loc, N-1, a_src_fun, M-1)
         {}
 
-        template <int N>
-        msg(log_level a_ll, const std::string& a_category,
-            const std::string& a_str, const char (&a_src_loc)[N])
-            : msg(a_ll, a_category, payload_t::STR, a_str, a_src_loc, N-1)
+        template <int N, int M>
+        msg(log_level a_ll, const std::string& a_cat, const std::string& a_str,
+            const char (&a_src_loc)[N], const char (&a_src_fun)[M])
+            : msg(a_ll, a_cat, payload_t::STR, a_str,
+                  a_src_loc, N-1, a_src_fun, M-1)
         {}
 
-        msg(log_level a_ll, const std::string& a_category,
-            const std::string& a_str, const char* a_src_loc, std::size_t a_sloc_len)
-            : msg(a_ll, a_category, payload_t::STR, a_str, a_src_loc, a_sloc_len)
+        msg(log_level a_ll, const std::string& a_cat, const std::string& a_str,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len)
+            : msg(a_ll, a_cat, payload_t::STR, a_str,
+                  a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
         {}
 
         ~msg() {
@@ -247,6 +285,8 @@ struct logger : boost::noncopyable {
         std::string   category    () const { return m_category;     }
         std::size_t   src_loc_len () const { return m_src_loc_len;  }
         const char*   src_location() const { return m_src_location; }
+        std::size_t   src_fun_len () const { return m_src_fun_len;  }
+        const char*   src_fun_name() const { return m_src_fun;      }
         payload_t     type        () const { return m_type;         }
     };
 
@@ -256,10 +296,15 @@ struct logger : boost::noncopyable {
         std::string                       category;
         const char*                       src_loc;
         size_t                            src_loc_len;
+        const char*                       src_fun;
+        size_t                            src_fun_len;
 
-        template <int N>
-        msg_streamer(log_level a_ll, const std::string& a_cat, const char (&a_src_loc)[N])
-            : level(a_ll), category(a_cat), src_loc(a_src_loc), src_loc_len(N-1)
+        template <int N, int M>
+        msg_streamer(log_level a_ll, const std::string& a_cat,
+                     const char (&a_src_loc)[N], const char (&a_src_fun)[M])
+            : level(a_ll), category(a_cat)
+            , src_loc(a_src_loc), src_loc_len(N-1)
+            , src_fun(a_src_fun), src_fun_len(M-1)
         {}
 
         /// Helper class used to implement streaming support in the logger.
@@ -290,7 +335,8 @@ struct logger : boost::noncopyable {
                 logger::instance().dolog
                     (m_ms->level,       m_ms->category,
                      m_ms->data.c_str(),m_ms->data.size(),
-                     m_ms->src_loc,     m_ms->src_loc_len);
+                     m_ms->src_loc,     m_ms->src_loc_len,
+                     m_ms->src_fun,     m_ms->src_fun_len);
             }
 
             template <typename T>
@@ -343,6 +389,7 @@ private:
     stamp_type                      m_timestamp_type;
     char                            m_src_location[256];
     bool                            m_show_location;
+    bool                            m_show_fun_name;
     bool                            m_show_ident;
     std::string                     m_ident;
     bool                            m_silent_finish;
@@ -377,12 +424,14 @@ private:
     void run();
 
     template<typename Fun>
-    bool dolog(log_level a_level, const std::string& a_cat, const Fun& a_fun,
-              const char* a_src_loc, std::size_t a_src_loc_len);
+    bool dolog(log_level   a_ll, const std::string& a_cat, const Fun& a_fun,
+               const char* a_src_loc,  std::size_t  a_src_loc_len,
+               const char* a_src_fun,  std::size_t  a_src_fun_len);
 
-    bool dolog(log_level   a_ll,  const std::string& a_cat,
-               const char* a_buf,     std::size_t    a_size,
-               const char* a_src_loc, std::size_t    a_src_loc_len);
+    bool dolog(log_level   a_ll, const std::string& a_cat,
+               const char* a_buf,      std::size_t  a_size,
+               const char* a_src_loc,  std::size_t  a_src_loc_len,
+               const char* a_src_fun,  std::size_t  a_src_fun_len);
 
     friend class log_msg_info;
 
@@ -395,7 +444,8 @@ public:
     logger()
         : m_abort(false), m_initialized(false)
         , m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
-        , m_show_location(true), m_show_ident(false), m_silent_finish(false)
+        , m_show_location(true), m_show_fun_name(true)
+        , m_show_ident(false), m_silent_finish(false)
     {}
     ~logger() { finalize(); }
 
@@ -417,6 +467,9 @@ public:
     ///
     /// This method is not thread-safe!
     void delete_impl(const std::string& a_name);
+
+    /// Get logger back-end implementation identified by \a a_name
+    const logger_impl* get_impl(const std::string& a_name) const;
 
     /// Set program identifier to be used in the log output.
     void set_ident(const char* ident) { m_ident = ident; }
@@ -455,6 +508,8 @@ public:
     bool        show_ident()     const { return m_show_ident; }
     /// @return true if source location display is enabled by default.
     bool        show_location()  const { return m_show_location; }
+    /// @return true if source function name display is enabled by default.
+    bool        show_fun_name()  const { return m_show_fun_name; }
 
     /// Get program identifier to be used in the log output.
     const std::string&  ident()  const { return m_ident; }
@@ -479,9 +534,14 @@ public:
     /// @param a_category is a category of the message (use NULL if undefined).
     /// @param a_buf is the message to be logged
     /// @param a_size is the message size
-    template <int N>
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_FILE_SRC_LOCATION macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
+    template <int N, int M>
     bool logcs(log_level a_level, const std::string& a_category,
-               const char* a_msg, size_t a_size, const char (&a_src_log)[N] = "");
+               const char* a_msg, size_t a_size,
+               const char (&a_src_loc)[N] = "",
+               const char (&a_src_fun)[M] = "");
 
     /// Log a message of given log level to the registered implementations.
     /// Logged message will be limited in size to 1024 bytes.
@@ -490,32 +550,44 @@ public:
     /// Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
     /// @param a_cat is a category of the message (use NULL if undefined).
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_LOG_SRCINFO macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    template<int N, typename... Args>
+    template<int N, int M, typename... Args>
     bool logfmt(log_level a_level, const std::string& a_cat,
-              const char (&a_src_log)[N], const char* a_fmt, Args&&... a_args);
+                const char (&a_src_loc)[N], const char (&a_src_fun)[M],
+                const char* a_fmt, Args&&... a_args);
 
     /// Log a message of given log level to the registered implementations.
     /// Formatting of the resulting string to be logged happens in the caller's
     /// context, but actual message logging is handled asynchronously.
     /// Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
-    /// @param a_cat is a category of the message (use NULL if undefined).
-    /// @param a_fmt is the format string passed to <sprintf()>
-    /// @param args is the list of optional arguments passed to <args>
-    template<int N, typename... Args>
+    /// @param a_cat   is a category of the message (use NULL if undefined).
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_LOG_SRCINFO macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
+    /// @param a_fmt   is the format string passed to <sprintf()>
+    /// @param args    is the list of optional arguments passed to <args>
+    template<int N, int M, typename... Args>
     bool logs(log_level a_level, const std::string& a_cat,
-              const char (&a_src_log)[N], Args&&... a_args);
+              const char (&a_src_loc)[N], const char (&a_src_fun)[M],
+              Args&&... a_args);
 
     /// Log a message of given log level to registered implementations.
     /// Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
-    /// @param a_category is a category of the message (use NULL if undefined).
-    /// @param a_msg is the message to be logged
-    template <int N>
-    bool log(log_level a_level, const std::string& a_category,
-             const std::string& a_msg, const char (&a_src_log)[N] = "");
+    /// @param a_cat   is a category of the message (use NULL if undefined).
+    /// @param a_msg   is the message to be logged
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_LOG_SRCINFO macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
+    template <int N, int M>
+    bool log(utxx::log_level a_level, const std::string& a_cat,
+             const std::string& a_msg,
+             const char (&a_src_loc)[N] = "", const char (&a_src_fun)[M] = "");
 
     /// Log a message of given log level to registered implementations.
     /// Invocation of \a a_fun happens in the context different from the caller's.
@@ -526,12 +598,13 @@ public:
     ///                  string/buffer (see char_funciton or str_function types).
     ///                  The function will be called in the context of another
     ///                  thread, so capture any variables by reference!
-    /// @param a_src_loc is the source file/line location which is obtained by
-    ///                  using UTXX_SRC_LOCATION macro.
-    template<typename Fun, int N>
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_LOG_SRCINFO macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
+    template<typename Fun, int N, int M>
     bool async_logf(log_level a_level, const std::string& a_cat, const Fun& a_fun,
-              const char (&a_src_loc)[N])
-    { return dolog(a_level, a_cat, a_fun, a_src_loc, N); }
+                    const char (&a_src_loc)[N] = "", const char (&a_src_fun)[M] = "")
+    { return dolog(a_level, a_cat, a_fun, a_src_loc, N-1, a_src_fun, M-1); }
 
     /// Log a message of given log level message to registered implementations.
     /// Arguments \a args are copied by value to a lambda that is executed
@@ -542,7 +615,7 @@ public:
     /// @param args are the arguments to be converted to buffer and logged as string
     template<typename... Args>
     bool async_logs(log_level a_level, const std::string& a_cat, Args&&... args)
-    { return async_logs(a_level, a_cat, "", std::forward<Args>(args)...); }
+    { return async_logs(a_level, a_cat, "", "", std::forward<Args>(args)...); }
 
     /// Log a message of given log level message to registered implementations.
     /// Arguments \a args are copied by value to a lambda that is executed
@@ -550,10 +623,14 @@ public:
     /// Use the provided <LOG_*> macros instead of calling it directly.
     /// @param a_level is the log level to record
     /// @param a_category is a category of the message (use NULL if undefined).
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_LOG_SRCINFO macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
     /// @param args are the arguments to be converted to buffer and logged as string
-    template<int N, typename... Args>
+    template<int N, int M, typename... Args>
     bool async_logs(log_level a_level, const std::string& a_category,
-                    const char (&a_src_log)[N], Args&&... args);
+                    const char (&a_src_loc)[N], const char (&a_src_fun)[M],
+                    Args&&... args);
 
     /// Asynchronously log a message of given log level message to registered
     /// implementations.
@@ -563,11 +640,14 @@ public:
     /// @param a_level is the log level to record
     /// @param a_cat is a category of the message (use NULL if undefined).
     /// @param a_fmt is the format string passed to <sprintf()>
+    /// @param a_src_loc identifies the "file:line" source code reference
+    ///                  obtained by using UTXX_LOG_SRCINFO macro.
+    /// @param a_src_fun identifies the current function name (i.e. __func__).
     /// @param args is the list of optional arguments passed to <args>
-    template<int N, typename... Args>
+    template<int N, int M, typename... Args>
     bool async_logfmt(log_level a_level, const std::string& a_cat,
-                      const char (&a_src_log)[N], const char* a_fmt,
-                      Args&&... a_args);
+                      const char (&a_src_loc)[N], const char (&a_src_fun)[M],
+                      const char* a_fmt, Args&&... a_args);
 };
 
 // Logger back-end implementations must derive from this class.

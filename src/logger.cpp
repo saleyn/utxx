@@ -185,6 +185,7 @@ void logger::init(const config_tree& a_cfg)
 
     try {
         m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
+        m_show_fun_name  = a_cfg.get<bool>       ("logger.show-fun-name", m_show_fun_name);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
@@ -301,7 +302,7 @@ void logger::run()
 DONE:
     if (!m_silent_finish) {
         const msg s_msg(LEVEL_INFO, "", std::string("Logger thread finished"),
-                        UTXX_FILE_SRC_LOCATION);
+                        UTXX_LOG_SRCINFO);
         dolog_msg(s_msg);
     }
 }
@@ -353,31 +354,35 @@ char* logger::
 format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
 {
     char* p = a_buf;
+    auto  n = a_msg.src_loc_len() + 2;
 
     // Format the message in the form:
-    // Timestamp|Level|Ident|Category|Message|File:Line\n
-    if (a_msg.src_loc_len() && show_location() &&
-        likely(a_buf + a_msg.src_loc_len() + 2 < a_end))
-    {
+    // Timestamp|Level|Ident|Category|Message|File:Line:FunctionName\n
+    if (a_msg.src_loc_len() && show_location() && likely(a_buf + n < a_end)) {
         static const char s_sep =
             boost::filesystem::path("/").native().c_str()[0];
-        if (*(p-1) == '\n')
-            p--;
-
+        if (*(p-1) == '\n') p--;
         *p++ =  '|';
 
-        const char* q = strrchr(a_msg.src_location(), s_sep);
+        auto q = strrchr(a_msg.src_location(), s_sep);
         q = q ? q+1 : a_msg.src_location();
+        auto e   = a_msg.src_location() + a_msg.src_loc_len();
         // extra byte for possible '\n'
-        auto len = std::min<size_t>
-            (a_end - a_buf, a_msg.src_location() + a_msg.src_loc_len() - q + 1);
-        p = stpncpy(p, a_msg.src_location(), len);
-        *p++ = '\n';
-    } else
-        // We reached the end of the streaming sequence:
-        // log_msg_info lmi; lmi << a << b << c;
-        if (*p != '\n') *p++ = '\n';
-        else p++;
+        auto len = std::min<size_t>(a_end - p, e - q + 1);
+        p = stpncpy(p, q, len);
+
+        if (show_fun_name() && a_msg.src_fun_len()) {
+            *p++ = ':';
+            // (-1) - extra byte for '\n'
+            len = std::min<size_t>(a_end - p - 1, a_msg.src_fun_len());
+            p = stpncpy(p, a_msg.src_fun_name(), len);
+        }
+    }
+
+    // We reached the end of the streaming sequence:
+    // log_msg_info lmi; lmi << a << b << c;
+    if (*p != '\n') *p++ = '\n';
+    else p++;
 
     *p = '\0'; // Writes terminating '\0' (note: p is not incremented)
     return p;
@@ -442,6 +447,17 @@ void logger::delete_impl(const std::string& a_name)
             m_implementations.erase(it);
 }
 
+const logger_impl* logger::get_impl(const std::string& a_name) const
+{
+    std::lock_guard<std::mutex> guard(logger_impl_mgr::instance().mutex());
+    for (implementations_vector::const_iterator
+            it = m_implementations.cbegin(), end = m_implementations.cend();
+            it != end; ++it)
+        if ((*it)->name() == a_name)
+            return it->get();
+    return nullptr;
+}
+
 int logger::parse_log_levels(const std::string& a_levels)
     throw(std::runtime_error)
 {
@@ -500,6 +516,7 @@ std::ostream& logger::dump(std::ostream& out) const
     s   << "Logger settings:\n"
         << "    level-filter   = " << log_levels_to_str(m_level_filter) << '\n'
         << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
+        << "    show-fun-name  = " << (m_show_fun_name ? "true" : "false") << '\n'
         << "    show-ident     = " << (m_show_ident    ? "true" : "false") << '\n'
         << "    ident          = " << m_ident << '\n'
         << "    timestamp-type = " << to_string(m_timestamp_type) << '\n';

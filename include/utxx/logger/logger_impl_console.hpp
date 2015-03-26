@@ -63,8 +63,10 @@ public:
 
     virtual ~logger_impl_console() {}
 
-    const std::string& name() const { return m_name; }
-
+    const std::string& name()          const { return m_name; }
+    int                stdout_levels() const { return m_stdout_levels; }
+    int                stderr_levels() const { return m_stderr_levels; }
+    
     /// Dump all settings to stream
     std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
 

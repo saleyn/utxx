@@ -1,7 +1,9 @@
 <config namespace="utxx" name="logger_options">
     <option name="logger" required="false">
         <option name="show-location" val-type="bool" default="false"
-                desc="When true the log entries end with [File:Line]"/>
+                desc="When true the log entries contain File:Line"/>
+        <option name="show-fun-name" val-type="bool" default="false"
+                desc="When true the log entries contain function name identifier"/>
         <option name="show-ident" val-type="bool" default="false"
                 desc="When true logger's ident property is added to output lines"/>
         <option name="ident" val-type="string" default=""

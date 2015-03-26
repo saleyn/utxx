@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include <utxx/logger.hpp>
+#include <utxx/logger/logger_impl_console.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/variant_tree.hpp>
 #include <signal.h>
@@ -13,6 +14,13 @@
 
 using namespace boost::property_tree;
 using namespace utxx;
+
+struct test {
+    struct inner {
+        static void log (int i) { LOG_DEBUG("This is a %d debug",  i); }
+        static void clog(int i) { CLOG_DEBUG("Cat5", "This is a %d debug", i); }
+    };
+};
 
 #ifndef UTXX_STANDALONE
 BOOST_AUTO_TEST_CASE( test_logger1 )
@@ -33,6 +41,15 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     logger& log = logger::instance();
     log.init(pt);
 
+    auto console = static_cast<const logger_impl_console*>(log.get_impl("console"));
+
+    BOOST_REQUIRE(console);
+
+    BOOST_REQUIRE_EQUAL(
+        LEVEL_DEBUG | LEVEL_INFO  | LEVEL_WARNING |
+        LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT,
+        console->stdout_levels());
+
     std::stringstream s;
     s << "test_logger." << getpid();
     log.set_ident(s.str().c_str());
@@ -45,6 +62,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
         LOG_WARNING("This is a %d %s", i, "warning");
         LOG_FATAL  ("This is a %d %s", i, "fatal error");
         LOG_INFO   ("This is a %d %s", i, "info");
+        test::inner::log(i);
     }
 
     for (int i = 0; i < 2; i++) {
@@ -52,6 +70,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
         CLOG_WARNING("Cat2", "This is a %d %s", i, "warning");
         CLOG_FATAL  ("Cat3", "This is a %d %s", i, "fatal error");
         CLOG_INFO   ("Cat4", "This is a %d %s", i, "info");
+        test::inner::clog(i);
     }
 
     UTXX_LOG(INFO, "A") << "This is an error #" << 10 << " and bool "

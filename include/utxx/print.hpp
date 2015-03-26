@@ -400,4 +400,23 @@ using buffered_print = detail::basic_buffered_print<>;
 
 } // namespace utxx
 
+// Handling of std::endl, std::ends, std::flush
+namespace std {
+    /// Write a newline to the buffered_print object
+    template <size_t N>
+    inline utxx::detail::basic_buffered_print<N>&
+    endl(utxx::detail::basic_buffered_print<N>& a_out)
+    { a_out << '\n'; return a_out; }
+
+    template <size_t N>
+    inline utxx::detail::basic_buffered_print<N>&
+    ends(utxx::detail::basic_buffered_print<N>& a_out)
+    { a_out << '\0'; return a_out; }
+
+    template <size_t N>
+    inline utxx::detail::basic_buffered_print<N>&
+    flush(utxx::detail::basic_buffered_print<N>& a_out)
+    { return a_out; }
+}
+
 #endif //_UTXX_PRINT_HPP_

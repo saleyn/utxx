@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
         s << timestamp::to_string(tv, TIME_WITH_USEC)
           << ": This is a message number " << i;
         auto str = s.str();
-        logger::msg msg(LEVEL_INFO, "test2", str, UTXX_FILE_SRC_LOCATION);
+        logger::msg msg(LEVEL_INFO, "test2", str, UTXX_LOG_SRCINFO);
         log->log_msg(msg, str.c_str(), str.size());
 
         static const struct timespec tout = { TIMEOUT_MSEC / 1000, TIMEOUT_MSEC % 1000 };
