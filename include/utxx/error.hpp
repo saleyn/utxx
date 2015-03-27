@@ -52,7 +52,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION)
 
 // Throw given exception with provided source location information
-#define UTXX_SRC_THROW(Exception, SrcInfo, ...) throw Exception(SrcInfo, ##__VA_ARGS__)
+#define UTXX_SRC_THROW(Exception, SrcInfo, ...) throw Exception((SrcInfo), ##__VA_ARGS__)
 
 // Throw given exception with current source location information
 #define UTXX_THROW(Exception, ...) UTXX_SRC_THROW(Exception, UTXX_SRC, ##__VA_ARGS__)
@@ -64,7 +64,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define UTXX_THROW_BADARG_ERROR(...) UTXX_SRC_THROW(utxx::badarg_error, UTXX_SRC, ##__VA_ARGS__)
 
 // Throw utxx::io_error exception with current source location information
-#define UTXX_THROW_IO_ERROR(Errno, ...) UTXX_SRC_THROW(utxx::io_error, UTXX_SRC, Errno, ##__VA_ARGS__)
+#define UTXX_THROW_IO_ERROR(Errno, ...) UTXX_SRC_THROW(utxx::io_error, UTXX_SRC, (Errno), ##__VA_ARGS__)
 
 namespace utxx {
 
