@@ -48,9 +48,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 #include <utxx/typeinfo.hpp>
 
-#define UTXX_THROW(Exception, ...) \
-    throw Exception \
-        (src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION), ##__VA_ARGS__)
+// Alias for source location information
+#define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION)
+
+// Throw given exception with provided source location information
+#define UTXX_SRC_THROW(Exception, SrcInfo, ...) throw Exception(SrcInfo, ##__VA_ARGS__)
+
+// Throw given exception with current source location information
+#define UTXX_THROW(Exception, ...) UTXX_SRC_THROW(Exception, UTXX_SRC, ##__VA_ARGS__)
 
 namespace utxx {
 
@@ -142,11 +147,17 @@ public:
 
     std::string to_string(const char* a_pfx = "", const char* a_sfx = "") const {
         char buf[256];
-        const char* end = buf + sizeof(buf)-1;
-        char* p = stpncpy(buf, a_pfx, end - buf);
+        char* p = to_string(buf, sizeof(buf), a_pfx, a_sfx);
+        return std::string(buf, p - buf);
+    }
+
+    char* to_string(char* a_buf, size_t a_sz,
+                    const char* a_pfx = "", const char* a_sfx = "") const {
+        const char* end = a_buf + a_sz-1;
+        char* p = stpncpy(a_buf, a_pfx, end - a_buf);
         p = to_string(p, end - p, m_srcloc, m_srcloc_len, m_fun, m_fun_len);
         p = stpncpy(p, a_sfx, end - p);
-        return std::string(buf, p - buf);
+        return p;
     }
 
     /// Format and write "file:line function" information to \a a_buf
