@@ -36,6 +36,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
+const src_info& sample_src() { static const auto s_src = UTXX_SRC; return s_src; }
+
 BOOST_AUTO_TEST_CASE( test_error )
 {
     BOOST_REQUIRE_EQUAL("a",   utxx::runtime_error("a").str());
@@ -59,8 +61,46 @@ BOOST_AUTO_TEST_CASE( test_error )
 
     try {
         UTXX_THROW(utxx::runtime_error, "A ", 123);
-    } catch (std::exception& e) {
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("A 123", e.str());
         std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
         BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+
+    try {
+        UTXX_THROW_RUNTIME_ERROR("A ", 123);
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("A 123", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+
+    try {
+        UTXX_THROW_BADARG_ERROR("A ", 123);
+    } catch (utxx::badarg_error& e) {
+        BOOST_CHECK_EQUAL("A 123", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+}
+
+
+BOOST_AUTO_TEST_CASE( test_error1 )
+{
+    utxx::src_info s("A", "B");
+    auto s1(s);
+    BOOST_CHECK_EQUAL("A", s1.srcloc());
+    BOOST_CHECK_EQUAL("B", s1.fun());
+
+    try {
+        UTXX_SRC_THROW(utxx::runtime_error, sample_src(), "B ", 111);
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("B 111", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ sample_src\\] B 111");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
     }
 }

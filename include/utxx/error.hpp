@@ -57,6 +57,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // Throw given exception with current source location information
 #define UTXX_THROW(Exception, ...) UTXX_SRC_THROW(Exception, UTXX_SRC, ##__VA_ARGS__)
 
+// Throw utxx::runtime_error exception with current source location information
+#define UTXX_THROW_RUNTIME_ERROR(...) UTXX_SRC_THROW(utxx::runtime_error, UTXX_SRC, ##__VA_ARGS__)
+
+// Throw utxx::badarg_error exception with current source location information
+#define UTXX_THROW_BADARG_ERROR(...) UTXX_SRC_THROW(utxx::badarg_error, UTXX_SRC, ##__VA_ARGS__)
+
+// Throw utxx::io_error exception with current source location information
+#define UTXX_THROW_IO_ERROR(Errno, ...) UTXX_SRC_THROW(utxx::io_error, UTXX_SRC, Errno, ##__VA_ARGS__)
+
 namespace utxx {
 
 /// Thread-safe function returning error string.
@@ -115,6 +124,8 @@ class src_info {
     int         m_srcloc_len;
     int         m_fun_len;
 public:
+    constexpr src_info() : src_info("", "") {}
+
     template <int N, int M>
     constexpr src_info(const char (&a_srcloc)[N], const char (&a_fun)[M]) noexcept
         : m_srcloc(a_srcloc), m_fun(a_fun)
@@ -142,6 +153,8 @@ public:
 
     int         srcloc_len() const { return m_srcloc_len; }
     int         fun_len()    const { return m_fun_len;    }
+
+    bool        empty()      const { return !m_srcloc_len;}
 
     operator std::string() { return to_string(); }
 
@@ -213,6 +226,15 @@ namespace detail {
         boost::shared_ptr<std::stringstream> m_out;
         mutable std::string m_str;
 
+        virtual void cache_str() const throw() {
+            if (m_str.empty())
+                try   { m_str = str(); }
+                catch (...) {
+                    try { m_str = "Memory allocation error"; }
+                    catch (...) {} // Give up
+                }
+        }
+
 #if __cplusplus >= 201103L
         streamed_exception& output() { return *this; }
 
@@ -239,8 +261,8 @@ namespace detail {
         template <class T>
         streamed_exception& operator<< (const T& a) { *m_out << a; return *this; }
 
-        virtual const char* what()      const throw() { m_str = str(); return m_str.c_str(); }
-        virtual std::string str()       const { return m_out->str();  }
+        virtual const char* what()      const throw() { cache_str(); return m_str.c_str(); }
+        virtual std::string str()       const         { return m_out->str();  }
     };
 }
 
@@ -251,11 +273,37 @@ namespace detail {
  * so we choose to reallocate the m_out string instead.
  */
 class runtime_error : public detail::streamed_exception {
+    using base = detail::streamed_exception;
 protected:
+    src_info m_sinfo;
+
+    virtual void cache_str() const throw() override {
+        base::cache_str();
+        if (!m_sinfo.empty())
+            try   { m_str = m_sinfo.to_string("[", "] ") + m_str; }
+            catch (...) {}
+    }
+
     runtime_error() {}
 public:
-    runtime_error(src_info&&         a_info) { *this << std::forward<src_info>(a_info); }
+    explicit runtime_error(const src_info& a_info) : m_sinfo(a_info) {}
+    explicit runtime_error(src_info&& a_info)      : m_sinfo(std::move(a_info)) {}
+
     runtime_error(const std::string& a_str)  { *this << a_str;  }
+
+    template <class... Args>
+    runtime_error(const src_info& a_info, const Args&... a_rest)
+        : m_sinfo(a_info)
+    {
+        output(a_rest...);
+    }
+
+    template <class... Args>
+    runtime_error(src_info&& a_info, const Args&... a_rest)
+        : m_sinfo(std::move(a_info))
+    {
+        output(a_rest...);
+    }
 
     template <class T, class... Args>
     runtime_error(const T& a_first, const Args&... a_rest) {
@@ -272,6 +320,8 @@ public:
     }
 
     virtual ~runtime_error() throw() {}
+
+    const src_info& src() const { return m_sinfo; }
 };
 
 /**
