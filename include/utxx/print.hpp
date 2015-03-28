@@ -236,6 +236,10 @@ namespace detail {
             memcpy(m_pos, a, n);
             m_pos += n;
         }
+        void do_print(const src_info& a) {
+            reserve(64);
+            m_pos = a.to_string(m_pos, capacity(), "[", "]");
+        }
         template <typename T>
         void do_print(typename std::enable_if<std::is_pointer<T>::value, T&&>::type a) {
             auto  x = reinterpret_cast<uint64_t>(a);
