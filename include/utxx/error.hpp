@@ -158,6 +158,10 @@ public:
 
     operator std::string() { return to_string(); }
 
+    friend inline std::ostream& operator<< (std::ostream& out, const src_info& a) {
+        return out << a.to_string("[", "]");
+    }
+
     /// Format and write "file:line function" information to \a a_buf
     /// @param a_pfx             write leading prefix
     /// @param a_sfx             write trailing suffix
@@ -514,7 +518,7 @@ typedef runtime_error decode_error;      ///< Decoding error.
 typedef runtime_error badarg_error;      ///< Bad arguments error.
 typedef runtime_error logic_error;       ///< Program logic error.
 
-} // namespace IO_UTXX_NAMESPACE
+} // namespace utxx
 
 #endif // _IO_UTXX_ERROR_HPP_
 
