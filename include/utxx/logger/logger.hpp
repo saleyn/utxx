@@ -372,7 +372,7 @@ private:
     stamp_type                      m_timestamp_type;
     char                            m_src_location[256];
     bool                            m_show_location;
-    bool                            m_show_fun_name;
+    int                             m_show_fun_namespaces;
     bool                            m_show_ident;
     std::string                     m_ident;
     bool                            m_silent_finish;
@@ -427,7 +427,7 @@ public:
     logger()
         : m_abort(false), m_initialized(false)
         , m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
-        , m_show_location(true), m_show_fun_name(true)
+        , m_show_location(true), m_show_fun_namespaces(3)
         , m_show_ident(false), m_silent_finish(false)
     {}
     ~logger() { finalize(); }
@@ -491,8 +491,11 @@ public:
     bool        show_ident()     const { return m_show_ident; }
     /// @return true if source location display is enabled by default.
     bool        show_location()  const { return m_show_location; }
-    /// @return true if source function name display is enabled by default.
-    bool        show_fun_name()  const { return m_show_fun_name; }
+    /// @return Max depth of function name scope being printed (e.g.
+    ///         0 - no function name is printed;
+    ///         1 - function name without namespaces;
+    ///         N - include N-1 preceeding namespaces in the name)
+    int         show_fun_namespaces()  const { return m_show_fun_namespaces; }
 
     /// Get program identifier to be used in the log output.
     const std::string&  ident()  const { return m_ident; }

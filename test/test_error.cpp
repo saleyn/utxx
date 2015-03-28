@@ -38,6 +38,16 @@ using namespace utxx;
 
 const src_info& sample_src() { static const auto s_src = UTXX_SRC; return s_src; }
 
+namespace abc { namespace d {
+    template <class T>
+    struct A {
+        template <class U, class V>
+        struct B {
+            static const src_info& my_fun() { static const auto s_src = UTXX_SRC; return s_src; }
+        };
+    };
+}}
+
 BOOST_AUTO_TEST_CASE( test_error )
 {
     BOOST_REQUIRE_EQUAL("a",   utxx::runtime_error("a").str());
@@ -85,11 +95,7 @@ BOOST_AUTO_TEST_CASE( test_error )
         BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
         BOOST_REQUIRE(!e.src().empty());
     }
-}
 
-
-BOOST_AUTO_TEST_CASE( test_error1 )
-{
     utxx::src_info s("A", "B");
     auto s1(s);
     BOOST_CHECK_EQUAL("A", s1.srcloc());
@@ -102,5 +108,34 @@ BOOST_AUTO_TEST_CASE( test_error1 )
         std::regex re("\\[test_error.cpp:\\d+ sample_src\\] B 111");
         BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
         BOOST_REQUIRE(!e.src().empty());
+    }
+
+    {
+        auto& src = abc::d::A<int>::B<bool,double>::my_fun();
+        {
+            auto  str = src.to_string();
+            std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",3);
+            std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",10);
+            std::regex re("test_error.cpp:\\d+ abc::d::A::B::my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",0);
+            std::regex re("^test_error.cpp:\\d+$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",1);
+            std::regex re("^test_error.cpp:\\d+ my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
     }
 }

@@ -185,7 +185,8 @@ void logger::init(const config_tree& a_cfg)
 
     try {
         m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
-        m_show_fun_name  = a_cfg.get<bool>       ("logger.show-fun-name", m_show_fun_name);
+        m_show_fun_namespaces = a_cfg.get<int>   ("logger.show-fun-namespaces",
+                                                  m_show_fun_namespaces);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
@@ -331,7 +332,7 @@ void logger::do_finalize()
 char* logger::
 format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
 {
-    // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line
+    // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line FunName
     // Write everything up to Message to the m_data:
     char*  p = a_buf;
 
@@ -360,7 +361,7 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
     auto  n = a_msg.src_loc_len() + 2;
 
     // Format the message in the form:
-    // Timestamp|Level|Ident|Category|Message|File:Line:FunctionName\n
+    // Timestamp|Level|Ident|Category|Message|File:Line FunName\n
     if (a_msg.src_loc_len() && show_location() && likely(a_buf + n < a_end)) {
         if (*(p-1) == '\n') p--;
         *p++ =  '|';
@@ -368,7 +369,7 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
         p = src_info::to_string(p, a_end - p,
                 a_msg.src_location(), a_msg.src_loc_len(),
                 a_msg.src_fun_name(), a_msg.src_fun_len(),
-                show_fun_name());
+                show_fun_namespaces());
     }
 
     // We reached the end of the streaming sequence:
@@ -506,12 +507,12 @@ std::ostream& logger::dump(std::ostream& out) const
 {
     std::stringstream s;
     s   << "Logger settings:\n"
-        << "    level-filter   = " << log_levels_to_str(m_level_filter) << '\n'
-        << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
-        << "    show-fun-name  = " << (m_show_fun_name ? "true" : "false") << '\n'
-        << "    show-ident     = " << (m_show_ident    ? "true" : "false") << '\n'
-        << "    ident          = " << m_ident << '\n'
-        << "    timestamp-type = " << to_string(m_timestamp_type) << '\n';
+        << "    level-filter        = " << log_levels_to_str(m_level_filter) << '\n'
+        << "    show-location       = " << (m_show_location ? "true" : "false") << '\n'
+        << "    show-fun-namespaces = " << m_show_fun_namespaces << '\n'
+        << "    show-ident          = " << (m_show_ident    ? "true" : "false") << '\n'
+        << "    ident               = " << m_ident << '\n'
+        << "    timestamp-type      = " << to_string(m_timestamp_type) << '\n';
 
     // Check the list of registered implementations. If corresponding
     // configuration section is found, initialize the implementation.

@@ -107,7 +107,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
             p += snprintf(p, p - end, "Category|Message");
             if (this->m_log_mgr && this->m_log_mgr->show_location())
                 p += snprintf(p, p - end, "File:Line%s",
-                              this->m_log_mgr->show_fun_name() ? " Function" : "");
+                              this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
             *p++ = '\n';
 
             if (write(m_fd, buf, p - buf) < 0)

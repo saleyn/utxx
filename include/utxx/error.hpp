@@ -158,35 +158,54 @@ public:
 
     operator std::string() { return to_string(); }
 
-    std::string to_string(const char* a_pfx = "", const char* a_sfx = "") const {
+    /// Format and write "file:line function" information to \a a_buf
+    /// @param a_pfx             write leading prefix
+    /// @param a_sfx             write trailing suffix
+    /// @param a_fun_scope_depth controls how many function name's
+    ///                          namespace levels should be included in the
+    ///                          output (0 - means don't print the function name)
+    std::string to_string(const char* a_pfx = "", const char* a_sfx = "",
+                          int a_fun_scope_depth = 3) const
+    {
         char buf[256];
-        char* p = to_string(buf, sizeof(buf), a_pfx, a_sfx);
+        char* p = to_string(buf, sizeof(buf), a_pfx, a_sfx, a_fun_scope_depth);
         return std::string(buf, p - buf);
     }
 
+    /// Format and write "file:line function" information to \a a_buf
+    /// @param a_pfx             write leading prefix
+    /// @param a_sfx             write trailing suffix
+    /// @param a_fun_scope_depth controls how many function name's
+    ///                          namespace levels should be included in the
+    ///                          output (0 - means don't print the function name)
     char* to_string(char* a_buf, size_t a_sz,
-                    const char* a_pfx = "", const char* a_sfx = "") const {
+                    const char* a_pfx = "", const char* a_sfx = "",
+                    int a_fun_scope_depth = 3) const
+    {
         const char* end = a_buf + a_sz-1;
         char* p = stpncpy(a_buf, a_pfx, end - a_buf);
-        p = to_string(p, end - p, m_srcloc, m_srcloc_len, m_fun, m_fun_len);
+        p = to_string(p, end - p, m_srcloc, m_srcloc_len, m_fun, m_fun_len,
+                      a_fun_scope_depth);
         p = stpncpy(p, a_sfx, end - p);
         return p;
     }
 
     /// Format and write "file:line function" information to \a a_buf
+    /// @param a_pfx             write leading prefix
+    /// @param a_sfx             write trailing suffix
+    /// @param a_fun_scope_depth controls how many function name's
+    ///                          namespace levels should be included in the
+    ///                          output (0 - means don't print the function name)
     static char* to_string(char* a_buf, size_t a_sz,
         const char* a_srcloc, size_t a_sl_len,
         const char* a_srcfun, size_t a_sf_len,
-        bool a_write_srcfun = true)
+        int a_fun_scope_depth = 3)
     {
         static const char s_sep =
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN64__) || defined(__CYGWIN__)
             '\\';
-#elif defined(__linux__) || defined(__MACH__) || defined(__APPLE__) || defined(__unix__)
-            '/';
 #else
             '/';
-#           error Unknown platform!
 #endif
 
         auto q = strrchr(a_srcloc, s_sep);
@@ -194,26 +213,83 @@ public:
         auto e   = a_srcloc + a_sl_len;
         // extra byte for possible '\n'
         auto p   = a_buf;
-        auto end = a_buf + a_sz;
+        auto end = a_buf + a_sz - 1;
         auto len = std::min<size_t>(end - p, e - q + 1);
         p = stpncpy(p, q, len);
 
-        if (a_write_srcfun && a_sf_len) {
+        if (a_fun_scope_depth && a_sf_len) {
             *p++ = ' ';
             // Function name can contain:
             //   "static void fun()"
             //   "static void scope::fun()"
             //   "void scope::fun()"
+            //   "void ns1::ns2::Class<Impl>::Fun()"
+            // In the last case if a_write_fun_depth = 2, then we only output:
+            //   "Class::Fun"
+            static const uint8_t N = 16;
+            // tribreces -  records positions of "<...>" delimiters
+            // scopes    -  records positions of "::"    delimiters
+            int tribrcnt = 0, scope = 1;
+            struct { const char* l; const char* r; } tribraces[N];
+            const char* scopes[N];
+            auto begin = a_srcfun;
+            auto inside = false;    // true when we are inside "<...>"
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
-            auto begin = a_srcfun;
             for (q = begin, e = q + a_sf_len; q < e; ++q) {
-                if      (*q == '(') e = q;
-                else if (*q == ' ') begin = q+1;
+                switch (*q) {
+                    case '(':
+                        e = q; break;
+                    case ' ':
+                        if (!inside) {
+                            begin    = q+1;
+                            scope    = 1;
+                            tribrcnt = 0;
+                        }
+                        break;
+                    case '<':
+                        if (tribrcnt < N) {
+                            auto& x = tribraces[tribrcnt];
+                            x.l = q; x.r = q;
+                            inside = true;
+                        }
+                        break;
+                    case '>':
+                        if (inside) {
+                            tribraces[tribrcnt++].r = q+1;
+                            inside = false;
+                        }
+                        break;
+                    case ':':
+                        if (*(q+1)==':' && scope<N) { scopes[scope++] = q+2; }
+                        break;
+                }
             }
-            // (-1) - extra byte for '\n'
-            len = std::min<size_t>(end - p - 1, e - begin);
-            p = stpncpy(p, begin, len);
+            scopes[0] = begin;
+            auto start_scope_idx =  scope > a_fun_scope_depth
+                                 ? (scope - a_fun_scope_depth) : 0;
+            // Does the name has fewer namespace scopes than what's allowed?
+            begin = scopes[start_scope_idx];
+            // Are there any templated arguments to be trimmed?
+            if (!tribrcnt) {
+                len = std::min<size_t>(end - p, e - begin);
+                p = stpncpy(p, begin, len);
+            } else {
+                q = begin;
+                // Copy all characters excluding what's inside "<...>"
+                for (int i=0; i < tribrcnt && p < end; i++) {
+                    auto qe = tribraces[i].l;
+                    if (qe <= q)
+                        continue;
+                    len = std::min<size_t>(end - p, qe - q);
+                    p = stpncpy(p, q, len);
+                    q = tribraces[i].r;
+                }
+                // Now q points to the character past last '>' found.
+                // Copy everything remaining from q to e
+                len = std::min<size_t>(end - p, e - q);
+                p   = stpncpy(p, q, len);
+            }
         }
 
         return p;
