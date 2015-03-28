@@ -56,7 +56,7 @@ size_t write_file1(const char *a_fname, std::list<std::string>& a_lst) {
     std::ofstream l_file(a_fname, std::ios::out | std::ios::binary | std::ios::app);
     char l_buf[64];
     size_t total = 0;
-    BOOST_FOREACH(std::string a_str, a_lst) {
+    for(auto& a_str : a_lst) {
         size_t n = codec.encode(a_str, l_buf, sizeof(l_buf));
         if (!n)
             return 0;
@@ -73,7 +73,7 @@ typedef reader_t::iterator it_t;
 
 size_t write_file(const char *a_fname, std::list<std::string>& a_lst) {
     writer_t l_writer(a_fname, true);
-    BOOST_FOREACH(std::string a_str, a_lst)
+    for(auto& a_str : a_lst)
         l_writer.push_back(a_str);
     return l_writer.data_offset();
 }
@@ -147,9 +147,8 @@ BOOST_FIXTURE_TEST_CASE( foreach, f1 )
 {
     reader_t r(fname);
     std::list<std::string> out;
-    BOOST_FOREACH(std::string& s, r) {
+    for(auto& s : r)
         out.push_back(s);
-    }
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 
@@ -159,14 +158,13 @@ BOOST_FIXTURE_TEST_CASE( foreach_2, f1 )
     std::list<std::string> out;
     // read first two elements
     int k = 0;
-    BOOST_FOREACH(std::string& s, r) {
+    for(auto& s : r) {
         if (++k > 2) break;
         out.push_back(s);
     }
     // read rest of elements
-    BOOST_FOREACH(std::string& s, r) {
+    for(auto& s : r)
         out.push_back(s);
-    }
     // compare...
     BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
@@ -214,7 +212,7 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
 
         reader_t r(fname, 0);
         std::list<std::string> out;
-        BOOST_FOREACH(std::string& s, r) out.push_back(s);
+        for(auto& s : r) out.push_back(s);
         BOOST_TEST_MESSAGE( "PARNT: compare collections" );
         BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 
@@ -227,7 +225,7 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
         BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
 
         out.clear();
-        BOOST_FOREACH(std::string& s, r) out.push_back(s);
+        for(auto& s : r) out.push_back(s);
         BOOST_TEST_MESSAGE( "PARNT: compare collections" );
         BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
     }

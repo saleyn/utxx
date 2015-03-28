@@ -25,7 +25,8 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #define _UTXX_IO_BASIC_UDP_RECEIVER_HPP_
 
 #include <boost/asio.hpp>
-#include <utxx/buffer.hpp>
+#include <boost/bind.hpp>
+#include <utxx/buffered_queue.hpp>
 
 namespace utxx {
 namespace io {
@@ -82,7 +83,7 @@ public:
 private:
     /// Start asynchronous socket read.
     void async_read() {
-        m_socket.async_receive_from(m_in_buffer.space(), m_sender_endpoint,
+        m_socket.async_receive_from(buffer_space(m_in_buffer), m_sender_endpoint,
             boost::bind(&basic_udp_receiver::handle_read,
                 this, boost::asio::placeholders::error,
                 boost::asio::placeholders::bytes_transferred));
