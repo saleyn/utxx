@@ -185,6 +185,8 @@ void logger::init(const config_tree& a_cfg)
 
     try {
         m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
+        m_show_fun_namespaces = a_cfg.get<int>   ("logger.show-fun-namespaces",
+                                                  m_show_fun_namespaces);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
@@ -301,7 +303,7 @@ void logger::run()
 DONE:
     if (!m_silent_finish) {
         const msg s_msg(LEVEL_INFO, "", std::string("Logger thread finished"),
-                        UTXX_FILE_SRC_LOCATION);
+                        UTXX_LOG_SRCINFO);
         dolog_msg(s_msg);
     }
 }
@@ -330,19 +332,22 @@ void logger::do_finalize()
 char* logger::
 format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
 {
-    // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line
+    // Message mormat: Timestamp|Level|Ident|Category|Message|File:Line FunName
     // Write everything up to Message to the m_data:
+    char*  p = a_buf;
 
     // Write Timestamp
-    char*  p = a_buf;
-    p   += timestamp::format(timestamp_type(), a_msg.m_timestamp, p, a_end - p);
-    *p++ = '|';
+    if (timestamp_type() != stamp_type::NO_TIMESTAMP) {
+        p   += timestamp::format(timestamp_type(), a_msg.m_timestamp, p, a_end - p);
+        *p++ = '|';
+    }
     // Write Level
     *p++ = logger::log_level_to_str(a_msg.m_level)[0];
     *p++ = '|';
-    if (show_ident())
+    if (show_ident()) {
         p = stpncpy(p, ident().c_str(), ident().size());
-    *p++ = '|';
+        *p++ = '|';
+    }
     if (!a_msg.m_category.empty())
         p = stpncpy(p, a_msg.m_category.c_str(), a_msg.m_category.size());
     *p++ = '|';
@@ -353,31 +358,24 @@ char* logger::
 format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
 {
     char* p = a_buf;
+    auto  n = a_msg.src_loc_len() + 2;
 
     // Format the message in the form:
-    // Timestamp|Level|Ident|Category|Message|File:Line\n
-    if (a_msg.src_loc_len() && show_location() &&
-        likely(a_buf + a_msg.src_loc_len() + 2 < a_end))
-    {
-        static const char s_sep =
-            boost::filesystem::path("/").native().c_str()[0];
-        if (*(p-1) == '\n')
-            p--;
-
+    // Timestamp|Level|Ident|Category|Message|File:Line FunName\n
+    if (a_msg.src_loc_len() && show_location() && likely(a_buf + n < a_end)) {
+        if (*(p-1) == '\n') p--;
         *p++ =  '|';
 
-        const char* q = strrchr(a_msg.src_location(), s_sep);
-        q = q ? q+1 : a_msg.src_location();
-        // extra byte for possible '\n'
-        auto len = std::min<size_t>
-            (a_end - a_buf, a_msg.src_location() + a_msg.src_loc_len() - q + 1);
-        p = stpncpy(p, a_msg.src_location(), len);
-        *p++ = '\n';
-    } else
-        // We reached the end of the streaming sequence:
-        // log_msg_info lmi; lmi << a << b << c;
-        if (*p != '\n') *p++ = '\n';
-        else p++;
+        p = src_info::to_string(p, a_end - p,
+                a_msg.src_location(), a_msg.src_loc_len(),
+                a_msg.src_fun_name(), a_msg.src_fun_len(),
+                show_fun_namespaces());
+    }
+
+    // We reached the end of the streaming sequence:
+    // log_msg_info lmi; lmi << a << b << c;
+    if (*p != '\n') *p++ = '\n';
+    else p++;
 
     *p = '\0'; // Writes terminating '\0' (note: p is not incremented)
     return p;
@@ -442,6 +440,17 @@ void logger::delete_impl(const std::string& a_name)
             m_implementations.erase(it);
 }
 
+const logger_impl* logger::get_impl(const std::string& a_name) const
+{
+    std::lock_guard<std::mutex> guard(logger_impl_mgr::instance().mutex());
+    for (implementations_vector::const_iterator
+            it = m_implementations.cbegin(), end = m_implementations.cend();
+            it != end; ++it)
+        if ((*it)->name() == a_name)
+            return it->get();
+    return nullptr;
+}
+
 int logger::parse_log_levels(const std::string& a_levels)
     throw(std::runtime_error)
 {
@@ -498,11 +507,12 @@ std::ostream& logger::dump(std::ostream& out) const
 {
     std::stringstream s;
     s   << "Logger settings:\n"
-        << "    level-filter   = " << log_levels_to_str(m_level_filter) << '\n'
-        << "    show-location  = " << (m_show_location ? "true" : "false") << '\n'
-        << "    show-ident     = " << (m_show_ident    ? "true" : "false") << '\n'
-        << "    ident          = " << m_ident << '\n'
-        << "    timestamp-type = " << to_string(m_timestamp_type) << '\n';
+        << "    level-filter        = " << log_levels_to_str(m_level_filter) << '\n'
+        << "    show-location       = " << (m_show_location ? "true" : "false") << '\n'
+        << "    show-fun-namespaces = " << m_show_fun_namespaces << '\n'
+        << "    show-ident          = " << (m_show_ident    ? "true" : "false") << '\n'
+        << "    ident               = " << m_ident << '\n'
+        << "    timestamp-type      = " << to_string(m_timestamp_type) << '\n';
 
     // Check the list of registered implementations. If corresponding
     // configuration section is found, initialize the implementation.

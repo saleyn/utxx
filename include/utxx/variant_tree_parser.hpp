@@ -74,10 +74,18 @@ namespace utxx {
                 detail::read_scon(a_stream, a_tree, a_filename, a_resolver);
                 break;
             case FORMAT_INI:
+#ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
                 detail::read_ini(a_stream, a_tree, a_flags);
+#else
+                throw std::invalid_argument("XML format reading is disabled!");
+#endif
                 break;
             case FORMAT_XML:
+#ifndef UTXX_VARIANT_TREE_NO_XML_PARSER
                 detail::read_xml(a_stream, a_tree, a_flags);
+#else
+                throw std::invalid_argument("XML format reading is disabled!");
+#endif
                 break;
             default:
                 throw std::invalid_argument("Not implemented!");

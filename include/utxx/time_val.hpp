@@ -294,20 +294,29 @@ namespace utxx {
             return double((universal_time() - start).m_tv) / 1e6;
         }
         static long now_diff_usec(time_val start)  { return universal_time().m_tv - start.m_tv;}
-        static long now_diff_msec(time_val start)  { return now_diff_usec(start) / 1000; }
+        static long now_diff_msec(time_val start)  { return now_diff_usec(start)/1000; }
 
-        time_val operator- (time_val tv)     const { return usecs(m_tv - tv.m_tv);    }
-        time_val operator+ (time_val tv)     const { return usecs(m_tv + tv.m_tv);    }
+        time_val operator- (time_val tv)     const { return usecs(m_tv - tv.m_tv);     }
+        time_val operator+ (time_val tv)     const { return usecs(m_tv + tv.m_tv);     }
 
-        time_val operator- (double interval) const { return operator-(secs(interval));  }
-        time_val operator+ (double interval) const { return operator+(secs(interval));  }
+        time_val operator- (usecs us)        const { return usecs(m_tv - us.usec);     }
+        time_val operator+ (usecs us)        const { return usecs(m_tv + us.usec);     }
+        time_val operator- (secs  s)         const { return usecs(m_tv - s.usec);      }
+        time_val operator+ (secs  s)         const { return usecs(m_tv + s.usec);      }
+
+        time_val operator- (double interval) const { return operator-(secs(interval)); }
+        time_val operator+ (double interval) const { return operator+(secs(interval)); }
 
         time_val operator- (const struct timeval& tv) const { return operator-(time_val(tv)); }
         time_val operator+ (const struct timeval& tv) const { return operator+(time_val(tv)); }
 
         void     operator-= (const struct timeval& tv)      { m_tv -= time_val(tv).m_tv;}
         void     operator-= (time_val tv)                   { m_tv -= tv.value(); }
+        void     operator-= (usecs     v)                   { m_tv -= v.usec;     }
+        void     operator-= (secs      v)                   { m_tv -= v.usec;     }
         void     operator+= (time_val tv)                   { m_tv += tv.value(); }
+        void     operator+= (usecs     v)                   { m_tv += v.usec;     }
+        void     operator+= (secs      v)                   { m_tv += v.usec;     }
         void     operator+= (double interval)               { add(interval);      }
 
         time_val& operator= (time_val t)                    { m_tv = t.value(); return *this;}

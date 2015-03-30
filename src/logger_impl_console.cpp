@@ -78,22 +78,24 @@ void logger_impl_console::log_msg(
     const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
 {
     if (a_msg.level() & m_stdout_levels) {
-        colorize(a_msg.level(), std::cout, std::string(a_buf, a_size));
+        bool color = m_color && isatty(fileno(stdout));
+        colorize(a_msg.level(), color, std::cout, std::string(a_buf, a_size));
         std::flush(std::cout);
     } else if (a_msg.level() & m_stderr_levels) {
-        colorize(a_msg.level(), std::cerr, std::string(a_buf, a_size));
+        bool color = m_color && isatty(fileno(stderr));
+        colorize(a_msg.level(), color, std::cerr, std::string(a_buf, a_size));
     }
 }
 
 void logger_impl_console::colorize
-    (log_level a_ll, std::ostream& out, const std::string& a_str)
+    (log_level a_ll, bool a_color, std::ostream& out, const std::string& a_str)
 {
     static const char YELLOW[] = "\E[1;33;40m";
     static const char RED[]    = "\E[1;31;40m";
     static const char MAGENTA[]= "\E[1;35;40m";
     static const char NORMAL[] = "\E[0m";
 
-    if (!m_color || a_ll <  LEVEL_WARNING) out << a_str;
+    if (!a_color || a_ll <  LEVEL_WARNING) out << a_str;
     else if        (a_ll <= LEVEL_WARNING) out << YELLOW  << a_str << NORMAL;
     else if        (a_ll >= LEVEL_FATAL)   out << MAGENTA << a_str << NORMAL;
     else if        (a_ll >= LEVEL_ERROR)   out << RED     << a_str << NORMAL;

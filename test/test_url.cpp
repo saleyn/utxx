@@ -110,5 +110,13 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_REQUIRE_EQUAL("",          l_url.port);
     BOOST_REQUIRE_EQUAL("/tmp/path", l_url.path);
     BOOST_REQUIRE(!l_url.is_ipv4());
+
+    BOOST_REQUIRE(parse_url("cmd://7z -so x temp.7z", l_url));
+    BOOST_REQUIRE_EQUAL(CMD,         l_url.proto);
+    BOOST_REQUIRE_EQUAL("",          l_url.addr);
+    BOOST_REQUIRE_EQUAL("",          l_url.port);
+    BOOST_REQUIRE_EQUAL("cmd://7z -so x temp.7z", l_url.url);
+    BOOST_REQUIRE_EQUAL("7z -so x temp.7z",       l_url.path);
+    BOOST_REQUIRE(!l_url.is_ipv4());
 }
 

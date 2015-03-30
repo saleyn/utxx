@@ -58,11 +58,13 @@ logger_impl_scribe::logger_impl_scribe(const char* a_name)
     , m_server_addr("uds:///var/run/scribed")
     , m_levels(LEVEL_NO_DEBUG)
     , m_reconnecting(0)
+    , m_engine_ptr(new async_logger_engine())
+    , m_engine(m_engine_ptr.get())
 {}
 
 void logger_impl_scribe::finalize()
 {
-    if (!m_engine->running()) {
+    if (m_engine && !m_engine->running()) {
         m_engine->close_file(m_fd);
         m_engine->stop();
     }
@@ -89,6 +91,11 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
 {
     ::apache::thrift::GlobalOutput.setOutputFunction(&thrift_output);
 
+    if (!m_engine)
+        throw utxx::runtime_error
+            ("Scribe logging engine not initialized "
+             "(missing a call to utxx::logger_impl_scribe::set_engine())!");
+
     finalize();
 
     std::stringstream str;
@@ -113,9 +120,9 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
         try {
             connect();
         } catch (const std::exception& e) {
-            throw std::runtime_error(
-                (boost::format("Failed to open connection to scribe server %s: %s")
-                    % m_server_addr % e.what()).str().c_str());
+            throw utxx::runtime_error
+                ("Failed to open connection to scribe server ", m_server_addr,
+                 ':', e.what());
         }
 
         // If this implementation started as part of the logging framework,

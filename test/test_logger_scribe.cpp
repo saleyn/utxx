@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
         s << timestamp::to_string(tv, TIME_WITH_USEC)
           << ": This is a message number " << i;
         auto str = s.str();
-        logger::msg msg(LEVEL_INFO, "test2", str, UTXX_FILE_SRC_LOCATION);
+        logger::msg msg(LEVEL_INFO, "test2", str, UTXX_LOG_SRCINFO);
         log->log_msg(msg, str.c_str(), str.size());
 
         static const struct timespec tout = { TIMEOUT_MSEC / 1000, TIMEOUT_MSEC % 1000 };
@@ -79,7 +79,16 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
     log.set_ident("test_logger");
 
     // Initialize scribe logging implementation with the logging framework
-    log.init(pt);
+    try {
+        log.init(pt);
+    } catch (utxx::runtime_error& e) {
+        static const char s_err[] = "Failed to open connection";
+        if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
+            BOOST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            return;
+        }
+        throw;
+    }
 
     for (int i = 0; i < 2; i++) {
         LOG_ERROR  ("This is an error %d #%d", i, 123);

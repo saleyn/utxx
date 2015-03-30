@@ -64,8 +64,14 @@ public:
 
     /// Returns true if current verbosity level is equal or greater
     /// than \a tp.
+    static bool enabled() {
+        return unlikely(int(level()) > int(VERBOSE_NONE));
+    }
+
+    /// Returns true if current verbosity level is equal or greater
+    /// than \a tp.
     static bool enabled(verbose_type tp) {
-        return unlikely(level() >= tp);
+        return unlikely(int(level()) >= int(tp));
     }
 
     static const char* c_str(int a) {

@@ -32,8 +32,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/error.hpp>
 #include <boost/test/unit_test.hpp>
+#include <regex>
 
 using namespace utxx;
+
+const src_info& sample_src() { static const auto s_src = UTXX_SRC; return s_src; }
+
+namespace abc { namespace d {
+    template <class T>
+    struct A {
+        template <class U, class V>
+        struct B {
+            static const src_info& my_fun() { static const auto s_src = UTXX_SRC; return s_src; }
+        };
+    };
+}}
 
 BOOST_AUTO_TEST_CASE( test_error )
 {
@@ -55,4 +68,74 @@ BOOST_AUTO_TEST_CASE( test_error )
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     BOOST_REQUIRE_EQUAL("test: Success", utxx::sock_error(fd, "test").str());
+
+    try {
+        UTXX_THROW(utxx::runtime_error, "A ", 123);
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("A 123", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+
+    try {
+        UTXX_THROW_RUNTIME_ERROR("A ", 123);
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("A 123", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+
+    try {
+        UTXX_THROW_BADARG_ERROR("A ", 123);
+    } catch (utxx::badarg_error& e) {
+        BOOST_CHECK_EQUAL("A 123", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+
+    utxx::src_info s("A", "B");
+    auto s1(s);
+    BOOST_CHECK_EQUAL("A", s1.srcloc());
+    BOOST_CHECK_EQUAL("B", s1.fun());
+
+    try {
+        UTXX_SRC_THROW(utxx::runtime_error, sample_src(), "B ", 111);
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("B 111", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ sample_src\\] B 111");
+        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
+        BOOST_REQUIRE(!e.src().empty());
+    }
+
+    {
+        auto& src = abc::d::A<int>::B<bool,double>::my_fun();
+        {
+            auto  str = src.to_string();
+            std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",3);
+            std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",10);
+            std::regex re("test_error.cpp:\\d+ abc::d::A::B::my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",0);
+            std::regex re("^test_error.cpp:\\d+$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+        {
+            auto  str = src.to_string("","",1);
+            std::regex re("^test_error.cpp:\\d+ my_fun$");
+            BOOST_CHECK(std::regex_search(str, re));
+        }
+    }
 }

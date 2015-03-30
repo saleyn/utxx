@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 
-#include <utxx/buffer.hpp>
+#include <utxx/buffered_queue.hpp>
 
 namespace utxx {
 

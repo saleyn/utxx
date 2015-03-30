@@ -41,7 +41,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_running_sum )
+using running_sum      = basic_running_sum<double>;
+using running_variance = basic_running_variance<double>;
+
+BOOST_AUTO_TEST_CASE( test_running_stat_sum )
 {
     running_sum stat;
     BOOST_REQUIRE_EQUAL(0u,  stat.count());
@@ -71,7 +74,7 @@ BOOST_AUTO_TEST_CASE( test_running_sum )
     BOOST_REQUIRE_EQUAL(15.0, stat.max());
 }
 
-BOOST_AUTO_TEST_CASE( test_running_variance )
+BOOST_AUTO_TEST_CASE( test_running_stat_variance )
 {
     running_sum      sum;
     running_variance var;
@@ -120,7 +123,7 @@ namespace std
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stats_moving_average )
+BOOST_AUTO_TEST_CASE( test_running_stat_moving_average )
 {
     #if __cplusplus >= 201103L
     {
@@ -318,7 +321,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_check )
+BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
 {
     const long ITERATIONS = getenv("ITERATIONS")
                           ? atoi(getenv("ITERATIONS")) : 100000;
