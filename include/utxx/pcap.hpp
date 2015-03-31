@@ -169,42 +169,58 @@ struct pcap {
         return read_file_header(p, sizeof(buf));
     }
 
-    int read_file_header(const char*& buf, size_t sz) {
+    // For use with externally open files
+    /// @return size of consumed file reader
+    static int read_file_header(pcap& file, const char*& buf, size_t sz) {
+        auto begin = buf;
         if (sz < sizeof(file_header) || !is_pcap_header(buf, sz))
             return -1;
 
-        m_big_endian = buf[0] == 0xa1
-                    && buf[1] == 0xb2
-                    && buf[2] == 0xc3
-                    && buf[3] == 0xd4;
-        if (!m_big_endian) {
-            m_file_header = *reinterpret_cast<const file_header*>(buf);
+        file.m_big_endian = buf[0] == 0xa1
+                         && buf[1] == 0xb2
+                         && buf[2] == 0xc3
+                         && buf[3] == 0xd4;
+        if (!file.m_big_endian) {
+            file.m_file_header = *reinterpret_cast<const file_header*>(buf);
             buf += sizeof(file_header);
         } else {
-            m_file_header.magic_number  = get32be(buf);
-            m_file_header.version_major = get16be(buf);
-            m_file_header.version_minor = get16be(buf);
-            m_file_header.thiszone      = (int32_t)get32be(buf);
-            m_file_header.sigfigs       = get32be(buf);
-            m_file_header.snaplen       = get32be(buf);
-            m_file_header.network       = get32be(buf);
+            file.m_file_header.magic_number  = get32be(buf);
+            file.m_file_header.version_major = get16be(buf);
+            file.m_file_header.version_minor = get16be(buf);
+            file.m_file_header.thiszone      = (int32_t)get32be(buf);
+            file.m_file_header.sigfigs       = get32be(buf);
+            file.m_file_header.snaplen       = get32be(buf);
+            file.m_file_header.network       = get32be(buf);
         }
-        return 0;
+        return buf - begin;
+    }
+
+    int read_file_header(const char*& buf, size_t sz) {
+        return read_file_header(*this, buf, sz);
+    }
+
+    // For use with externally open files
+    /// @param file is the PCAP file instance
+    /// @param buf  holds the PCAP data to be read
+    /// @param sz   is the size of the data in \a buf
+    /// @return size of next packet
+    static int read_packet_header(pcap& file, const char*& buf, size_t sz) {
+        if (sz < sizeof(packet_header))
+            return -1;
+        if (!file.m_big_endian) {
+            file.m_pkt_header = *reinterpret_cast<const packet_header*>(buf);
+            buf += sizeof(packet_header);
+        } else {
+            file.m_pkt_header.ts_sec   = get32be(buf);
+            file.m_pkt_header.ts_usec  = get32be(buf);
+            file.m_pkt_header.incl_len = get32be(buf);
+            file.m_pkt_header.orig_len = get32be(buf);
+        }
+        return file.m_pkt_header.incl_len;
     }
 
     int read_packet_header(const char*& buf, size_t sz) {
-        if (sz < sizeof(packet_header))
-            return -1;
-        if (!m_big_endian) {
-            m_pkt_header = *reinterpret_cast<const packet_header*>(buf);
-            buf += sizeof(packet_header);
-        } else {
-            m_pkt_header.ts_sec   = get32be(buf);
-            m_pkt_header.ts_usec  = get32be(buf);
-            m_pkt_header.incl_len = get32be(buf);
-            m_pkt_header.orig_len = get32be(buf);
-        }
-        return m_pkt_header.incl_len;
+        return read_packet_header(*this, buf, sz);
     }
 
     int parse_udp_frame(const char*&buf, size_t sz) {
@@ -215,7 +231,7 @@ struct pcap {
 
         return m_frame.ip.protocol != IPPROTO_UDP ? -1 : 42;
     }
-        
+
     /// @param a_mask is an IP address mask in network byte order.
     bool match_dst_ip(uint32_t a_ip_mask, uint16_t a_port = 0) {
         uint8_t b = a_ip_mask >> 24 & 0xFF;
