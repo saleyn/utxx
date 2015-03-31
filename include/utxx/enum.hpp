@@ -87,12 +87,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         etype  m_val;                                                       \
                                                                             \
     public:                                                                 \
-        explicit ENUM(size_t v) : m_val(etype(v)) { assert(v < s_size); }   \
-        ENUM()                  : m_val(UNDEFINED) {}                       \
-        constexpr ENUM(etype v) : m_val(v) {}                               \
+        explicit  ENUM(size_t v) : m_val(etype(v)) { assert(v < s_size); }  \
+        constexpr ENUM()         : m_val(UNDEFINED) {}                      \
+        constexpr ENUM(etype v)  : m_val(v) {}                              \
                                                                             \
-        operator           etype()     const { return m_val; }              \
-        bool               empty()     const { return m_val == UNDEFINED; } \
+        constexpr operator etype()     const { return m_val; }              \
+        constexpr bool     empty()     const { return m_val == UNDEFINED; } \
                                                                             \
         const std::string& to_string() const { return name(size_t(m_val));} \
         static const std::string&                                           \
