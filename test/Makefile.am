@@ -19,6 +19,7 @@ TEST_UTXX_SRCS = \
 	test_async_file_logger.cpp \
 	test_basic_udp_receiver.cpp \
 	test_buffer.cpp \
+	test_call_speed.cpp \
 	test_clustered_map.cpp \
 	test_collections.cpp \
 	test_concurrent_stack.cpp \
