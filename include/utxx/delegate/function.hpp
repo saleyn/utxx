@@ -28,6 +28,8 @@ For more information, please refer to <http://unlicense.org/>
 // despite that it would be nice if you give credit to Malte Skarupke
 
 #pragma once
+#include <assert.h>
+#include <utxx/compiler_hints.hpp>
 #include <utility>
 #include <type_traits>
 #include <functional>
@@ -397,6 +399,9 @@ template<typename Result, typename... Arguments>
 class function<Result (Arguments...)>
     : public detail::typedeffer<Result, Arguments...>
 {
+    static bool is_initialized(const detail::manager_storage_type& ms) {
+        return ms.manager;
+    }
 public:
     function() UTXX_FUNC_NOEXCEPT
     {
@@ -519,7 +524,13 @@ public:
     void swap(function & other) UTXX_FUNC_NOEXCEPT
     {
         detail::manager_storage_type temp_storage;
+        //if (unlikely(!is_initialized(other.manager_storage)))
+        //    other.initialize_empty();
+        assert(is_initialized(other.manager_storage));
         other.manager_storage.manager->call_move_and_destroy(temp_storage, UTXX_FUNC_MOVE(other.manager_storage));
+        //if (unlikely(!is_initialized(manager_storage)))
+        //    initialize_empty();
+        assert(is_initialized(manager_storage));
         manager_storage.manager->call_move_and_destroy(other.manager_storage, UTXX_FUNC_MOVE(manager_storage));
         temp_storage.manager->call_move_and_destroy(manager_storage, UTXX_FUNC_MOVE(temp_storage));
 

@@ -290,7 +290,7 @@ class ConfigGenerator(object):
         self.debug(lambda:
             "Loaded {0} XML files: {1}".format(
                 len(d), [i.encode('utf8') for i in d]))
-        self.check_include_loops(root, d, {filename})
+        self.check_include_loops(root, d, set(filename))
         self.expand_includes(root, d).pop(0)
         # Since includes might have made nodes non-unique, we need to add
         # a surrogate unique identifier in order to check for loops in <copy> tags

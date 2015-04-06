@@ -34,6 +34,22 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum.hpp>
 #include <iostream>
 
+/*
+#include <boost/preprocessor.hpp>
+
+#define DEFINE_ENUM_DECL_VAL(r, name, val) BOOST_PP_CAT(name, BOOST_PP_CAT(_, val))
+#define DEFINE_ENUM_VAL_STR(r, name, val) BOOST_PP_STRINGIZE(val)
+#define DEFINE_ENUM(name, val_seq)                                                 \
+  enum name {                                                                      \
+    BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(DEFINE_ENUM_DECL_VAL, name, val_seq)) \
+  };                                                                               \
+  static const char* BOOST_PP_CAT(name, _strings) {                                \
+    BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(DEFINE_ENUM_VAL_STR, name, val_seq)) \
+  };
+
+DEFINE_ENUM(E, (AAA = 'x')(BBB = 'y')(CCC))
+*/
+
 // Define an enum with values A, B, C that can be converted to string
 // and fron string using reflection class:
 UTXX_DEFINE_ENUM(my_enum,
