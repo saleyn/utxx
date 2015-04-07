@@ -107,6 +107,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return UNDEFINED;                                               \
         }                                                                   \
                                                                             \
+        static ENUM from_string(const char* a, bool a_nocase=false){        \
+            auto f = a_nocase ? &strcasecmp : &strcmp;                      \
+            for (size_t i=1; i != s_size; i++)                              \
+                if (f((names()[i]).c_str(), a) == 0) return ENUM(i);        \
+            return UNDEFINED;                                               \
+        }                                                                   \
+                                                                            \
         inline friend std::ostream& operator<< (std::ostream& out, ENUM a) {\
             return out << ENUM::to_string(a);                               \
         }                                                                   \
