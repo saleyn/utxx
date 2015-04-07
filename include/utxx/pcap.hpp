@@ -176,10 +176,11 @@ struct pcap {
         if (sz < sizeof(file_header) || !is_pcap_header(buf, sz))
             return -1;
 
-        file.m_big_endian = buf[0] == 0xa1
-                         && buf[1] == 0xb2
-                         && buf[2] == 0xc3
-                         && buf[3] == 0xd4;
+        const uint8_t* p = (const uint8_t*)buf;
+        file.m_big_endian = *p++ == 0xa1
+                         && *p++ == 0xb2
+                         && *p++ == 0xc3
+                         && *p++ == 0xd4;
         if (!file.m_big_endian) {
             file.m_file_header = *reinterpret_cast<const file_header*>(buf);
             buf += sizeof(file_header);

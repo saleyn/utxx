@@ -45,7 +45,7 @@ namespace utxx {
 
 namespace detail {
     template<typename Derived, typename T, bool FastMinMax>
-    struct minmax_impl;
+    class minmax_impl;
 
     // See:
     // http://www.archipel.uqam.ca/309/1/webmaximinalgo.pdf

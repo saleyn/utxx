@@ -156,7 +156,7 @@ struct logger_impl;
 /// log messages. Examples of backends are implemented in the logger_impl_console,
 /// logger_impl_file, logger_impl_async_file classes.
 struct logger : boost::noncopyable {
-    friend class logger_impl;
+    friend struct logger_impl;
     enum {
         NLEVELS = log<(int)LEVEL_ALERT, 2>::value
                 - log<(int)LEVEL_TRACE, 2>::value + 1
@@ -200,7 +200,7 @@ struct logger : boost::noncopyable {
             ~U() {}
         } m_fun;
 
-        friend class logger;
+        friend struct logger;
 
         template <typename Fun>
         msg(log_level a_ll, const std::string& a_category, payload_t a_type,

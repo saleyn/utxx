@@ -217,7 +217,8 @@ namespace config {
                const std::string&   a_name,
                const variant&       a_value)> custom_validator;
 
-    struct option {
+    class option {
+    public:
         std::string         name;
         option_type_t       opt_type;   // STRING | ANONYMOUS
         string_set          name_choices;

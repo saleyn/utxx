@@ -34,8 +34,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum.hpp>
 #include <iostream>
 
-/*
 #include <boost/preprocessor.hpp>
+
+#define UTXX_INTERNAL_ENUMX(x, _, item) \
+    BOOST_PP_IIF(BOOST_PP_IS_BEGIN_PARENS(item), \
+        BOOST_PP_STRINGIZE(BOOST_PP_VARIADIC_ELEM(0, item)), \
+        BOOST_PP_STRINGIZE(item))
+
+#define DEFINE_ENUM_WITH_VALUES(ENUM, ...) \
+    BOOST_PP_SEQ_ENUM(                                          \
+        BOOST_PP_SEQ_TRANSFORM(                                 \
+            UTXX_INTERNAL_ENUMX,  ,                             \
+            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)               \
+    ))                                                          \
+
+#define UTXX_INTERNAL_ENUMY(x, _, item) \
+    BOOST_PP_IF(BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(item), 1), \
+        BOOST_PP_STRINGIZE(BOOST_PP_VARIADIC_ELEM(0, item)), \
+        BOOST_PP_STRINGIZE(item))
+
+#define DEFINE_ENUM_WITH_VAL(ENUM, ...) \
+    BOOST_PP_SEQ_ENUM(                                          \
+        BOOST_PP_SEQ_TRANSFORM(                                 \
+            UTXX_INTERNAL_ENUMY,  ,                             \
+            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)               \
+    ))                                                          \
+
+/*
 
 #define DEFINE_ENUM_DECL_VAL(r, name, val) BOOST_PP_CAT(name, BOOST_PP_CAT(_, val))
 #define DEFINE_ENUM_VAL_STR(r, name, val) BOOST_PP_STRINGIZE(val)
@@ -49,6 +74,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 DEFINE_ENUM(E, (AAA = 'x')(BBB = 'y')(CCC))
 */
+
+// static const std::string s_names[] = {
+//     DEFINE_ENUM_WITH_VALUES(xxx, a, (b, 'x'), (c, 'y'), d)
+// };
+#include <boost/preprocessor/punctuation/is_begin_parens.hpp>
+
+auto x1 = BOOST_PP_TUPLE_SIZE(("a", 3));
+auto x2 = BOOST_PP_TUPLE_SIZE("b");
+auto x3 = BOOST_PP_IS_BEGIN_PARENS((a, 3));
+auto x4 = BOOST_PP_IS_BEGIN_PARENS(5);
+
+static const std::string s_names[] = {
+    DEFINE_ENUM_WITH_VAL(xxx, a, (b, 'x'), (c, 'y'), d)
+};
 
 // Define an enum with values A, B, C that can be converted to string
 // and fron string using reflection class:

@@ -290,7 +290,7 @@ struct basic_moving_average
     T max() const { return base::max(); }
 
 protected:
-    template <typename D, typename U, bool F> friend struct detail::minmax_impl;
+    template <typename D, typename U, bool F> friend class detail::minmax_impl;
 
     size_t  begin_idx()        const { return m_end - size(); }
     size_t  end_idx()          const { return m_end;          }
