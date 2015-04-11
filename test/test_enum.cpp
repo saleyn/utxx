@@ -32,62 +32,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <boost/test/unit_test.hpp>
 #include <utxx/enum.hpp>
+#include <utxx/enumx.hpp>
 #include <iostream>
 
 #include <boost/preprocessor.hpp>
 
-#define UTXX_INTERNAL_ENUMX(x, _, item) \
-    BOOST_PP_IIF(BOOST_PP_IS_BEGIN_PARENS(item), \
-        BOOST_PP_STRINGIZE(BOOST_PP_VARIADIC_ELEM(0, item)), \
-        BOOST_PP_STRINGIZE(item))
-
-#define DEFINE_ENUM_WITH_VALUES(ENUM, ...) \
-    BOOST_PP_SEQ_ENUM(                                          \
-        BOOST_PP_SEQ_TRANSFORM(                                 \
-            UTXX_INTERNAL_ENUMX,  ,                             \
-            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)               \
-    ))                                                          \
-
-#define UTXX_INTERNAL_ENUMY(x, _, item) \
-    BOOST_PP_IF(BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(item), 1), \
-        BOOST_PP_STRINGIZE(BOOST_PP_VARIADIC_ELEM(0, item)), \
-        BOOST_PP_STRINGIZE(item))
-
-#define DEFINE_ENUM_WITH_VAL(ENUM, ...) \
-    BOOST_PP_SEQ_ENUM(                                          \
-        BOOST_PP_SEQ_TRANSFORM(                                 \
-            UTXX_INTERNAL_ENUMY,  ,                             \
-            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)               \
-    ))                                                          \
-
-/*
-
-#define DEFINE_ENUM_DECL_VAL(r, name, val) BOOST_PP_CAT(name, BOOST_PP_CAT(_, val))
-#define DEFINE_ENUM_VAL_STR(r, name, val) BOOST_PP_STRINGIZE(val)
-#define DEFINE_ENUM(name, val_seq)                                                 \
-  enum name {                                                                      \
-    BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(DEFINE_ENUM_DECL_VAL, name, val_seq)) \
-  };                                                                               \
-  static const char* BOOST_PP_CAT(name, _strings) {                                \
-    BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(DEFINE_ENUM_VAL_STR, name, val_seq)) \
-  };
-
-DEFINE_ENUM(E, (AAA = 'x')(BBB = 'y')(CCC))
-*/
-
-// static const std::string s_names[] = {
-//     DEFINE_ENUM_WITH_VALUES(xxx, a, (b, 'x'), (c, 'y'), d)
-// };
-#include <boost/preprocessor/punctuation/is_begin_parens.hpp>
-
-auto x1 = BOOST_PP_TUPLE_SIZE(("a", 3));
-auto x2 = BOOST_PP_TUPLE_SIZE("b");
-auto x3 = BOOST_PP_IS_BEGIN_PARENS((a, 3));
-auto x4 = BOOST_PP_IS_BEGIN_PARENS(5);
-
-static const std::string s_names[] = {
-    DEFINE_ENUM_WITH_VAL(xxx, a, (b, 'x'), (c, 'y'), d)
-};
+UTXX_DEFINE_ENUMX(my_enumx, ' ', (A, 'a')(BB, 'b')(CCC));
 
 // Define an enum with values A, B, C that can be converted to string
 // and fron string using reflection class:
@@ -148,4 +98,46 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK(oh_my::my_enum2::X == oh_my::my_enum2::from_string("X"));
     BOOST_CHECK(oh_my::my_enum2::Y == oh_my::my_enum2::from_string("Y"));
     BOOST_CHECK(oh_my::my_enum2::UNDEFINED == oh_my::my_enum2::from_string("D"));
+}
+
+BOOST_AUTO_TEST_CASE( test_enumx )
+{
+    static_assert(3 == my_enumx::size(), "Invalid size");
+
+    my_enumx v;
+
+    BOOST_CHECK(v.empty());
+
+    BOOST_CHECK_EQUAL(' ',     (char)my_enumx::UNDEFINED);
+    BOOST_CHECK_EQUAL(my_enumx::A,   my_enumx('a'));
+    BOOST_CHECK_EQUAL(my_enumx::BB,  my_enumx('b'));
+    BOOST_CHECK_EQUAL(my_enumx::CCC, my_enumx('c'));
+    BOOST_CHECK_EQUAL("A",           my_enumx::to_string(my_enumx::A));
+    BOOST_CHECK_EQUAL("BB",          my_enumx::to_string(my_enumx::BB));
+    BOOST_CHECK_EQUAL("CCC",         my_enumx::to_string(my_enumx::CCC));
+    BOOST_CHECK_EQUAL("A",           my_enumx::from_string("A").to_string());
+
+    {
+        my_enumx val = my_enumx::from_string("BB");
+        BOOST_CHECK_EQUAL("BB", val.to_string());
+        std::stringstream s; s << my_enumx::to_string(val);
+        BOOST_CHECK_EQUAL("BB", s.str());
+    }
+
+    {
+        // Iterate over all enum values defined in my_enum type:
+        std::stringstream s;
+        my_enumx::for_each([&s](my_enumx e) {
+            s << e;
+            return true;
+        });
+        BOOST_CHECK_EQUAL("ABBCCC", s.str());
+    }
+
+    BOOST_CHECK(my_enumx::A   == my_enumx::from_string("A"));
+    BOOST_CHECK(my_enumx::BB  == my_enumx::from_string("BB"));
+    BOOST_CHECK(my_enumx::CCC == my_enumx::from_string("CCC"));
+    BOOST_CHECK(my_enumx::UNDEFINED == my_enumx::from_string("D"));
+
+    static_assert(3 == my_enumx::size(), "Invalid size");
 }

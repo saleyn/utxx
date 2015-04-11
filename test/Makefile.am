@@ -16,7 +16,6 @@ TEST_UTXX64_SRCS = \
 
 TEST_UTXX_SRCS = \
 	test_alloc_fixed_page.cpp \
-	test_async_file_logger.cpp \
 	test_basic_udp_receiver.cpp \
 	test_buffer.cpp \
 	test_call_speed.cpp \
