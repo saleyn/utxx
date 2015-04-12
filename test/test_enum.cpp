@@ -33,9 +33,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <utxx/enum.hpp>
 #include <utxx/enumx.hpp>
+#include <utxx/enum_flags.hpp>
 #include <iostream>
 
 #include <boost/preprocessor.hpp>
+#include <../../1.56.0/include/boost/smart_ptr/shared_ptr.hpp>
 
 UTXX_DEFINE_ENUMX(my_enumx, ' ', (A, 'a')(BB, 'b')(CCC));
 
@@ -45,6 +47,14 @@ UTXX_DEFINE_ENUM(my_enum,
     A,  // Comment A
     B,
     C   // Comment C
+);
+
+UTXX_DEFINE_FLAGS(my_flags,
+    A,
+    B,
+    C,
+    D,
+    E
 );
 
 // Define an enum my_enum2 inside a struct:
@@ -140,4 +150,55 @@ BOOST_AUTO_TEST_CASE( test_enumx )
     BOOST_CHECK(my_enumx::UNDEFINED == my_enumx::from_string("D"));
 
     static_assert(3 == my_enumx::size(), "Invalid size");
+}
+
+BOOST_AUTO_TEST_CASE( test_enum_flags )
+{
+    static_assert(5 == my_flags::size(), "Invalid size");
+
+    my_flags v;
+
+    BOOST_CHECK(v.empty());
+    BOOST_CHECK(v == my_flags::NONE);
+
+    v |= my_flags::B;
+
+    BOOST_CHECK_EQUAL(0,        my_flags::NONE);
+    BOOST_CHECK_EQUAL(1u << 0,  my_flags::A);
+    BOOST_CHECK_EQUAL(1u << 1,  my_flags::B);
+    BOOST_CHECK_EQUAL("A",      my_flags(my_flags::A).to_string());
+    BOOST_CHECK_EQUAL("B",      my_flags(my_flags::B).to_string());
+    BOOST_CHECK_EQUAL("A|C",    my_flags(my_flags::A, my_flags::C).to_string());
+    BOOST_CHECK_EQUAL("A",      my_flags::from_string("A").to_string());
+
+    BOOST_CHECK_THROW(my_flags::from_string("A|F"), utxx::badarg_error);
+
+    {
+        my_flags val = my_flags::from_string("A|B|E");
+        BOOST_CHECK_EQUAL("A|B|E", val.to_string());
+        std::stringstream s; s << my_flags::to_string(val);
+        BOOST_CHECK_EQUAL("A|B|E", s.str());
+    }
+
+    v |= my_flags::E;
+
+    BOOST_CHECK( v.is_all(my_flags::B | my_flags::E));
+    BOOST_CHECK(!v.is_all(my_flags::A | my_flags::B | my_flags::E));
+    BOOST_CHECK( v.is_all(my_flags::B));
+    BOOST_CHECK( v.is_all(my_flags::E));
+    BOOST_CHECK( v.is_any(my_flags::B | my_flags::E));
+    BOOST_CHECK( v.is_any(my_flags::B));
+    BOOST_CHECK( v.is_any(my_flags::E));
+    BOOST_CHECK( v.is(my_flags::B));
+    BOOST_CHECK( v.is(my_flags::E));
+
+    {
+        // Iterate over all enum values defined in my_enum type:
+        std::stringstream s;
+        v.for_each([&s](my_flags e) {
+            s << e;
+            return true;
+        });
+        BOOST_CHECK_EQUAL("BE", s.str());
+    }
 }
