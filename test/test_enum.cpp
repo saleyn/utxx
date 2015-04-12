@@ -182,15 +182,15 @@ BOOST_AUTO_TEST_CASE( test_enum_flags )
 
     v |= my_flags::E;
 
-    BOOST_CHECK( v.is_all(my_flags::B | my_flags::E));
-    BOOST_CHECK(!v.is_all(my_flags::A | my_flags::B | my_flags::E));
-    BOOST_CHECK( v.is_all(my_flags::B));
-    BOOST_CHECK( v.is_all(my_flags::E));
-    BOOST_CHECK( v.is_any(my_flags::B | my_flags::E));
-    BOOST_CHECK( v.is_any(my_flags::B));
-    BOOST_CHECK( v.is_any(my_flags::E));
-    BOOST_CHECK( v.is(my_flags::B));
-    BOOST_CHECK( v.is(my_flags::E));
+    BOOST_CHECK( v.has_all(my_flags::B | my_flags::E));
+    BOOST_CHECK(!v.has_all(my_flags::A | my_flags::B | my_flags::E));
+    BOOST_CHECK( v.has_all(my_flags::B));
+    BOOST_CHECK( v.has_all(my_flags::E));
+    BOOST_CHECK( v.has_any(my_flags::B | my_flags::E));
+    BOOST_CHECK( v.has_any(my_flags::B));
+    BOOST_CHECK( v.has_any(my_flags::E));
+    BOOST_CHECK( v.has(my_flags::B));
+    BOOST_CHECK( v.has(my_flags::E));
 
     {
         // Iterate over all enum values defined in my_enum type:

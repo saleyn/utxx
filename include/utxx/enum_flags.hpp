@@ -107,15 +107,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename... Args>                                         \
         constexpr ENUM(etype a, Args... args) : m_val(bor(a, args...)) {}   \
                                                                             \
-        constexpr operator size_t()     const { return m_val;  }            \
-        constexpr operator uint()       const { return m_val;  }            \
-        constexpr operator etype()      const { return etype(m_val); }      \
-        constexpr bool     empty()      const { return !m_val; }            \
-        constexpr bool     is(etype  a) const { return m_val & size_t(a); } \
-        constexpr bool is_any(size_t a) const { return m_val & a;         } \
-        constexpr bool is_all(size_t a) const { return (m_val & a) == a;  } \
-        constexpr bool  valid(size_t a) const { return a < _END_;    }      \
-        static constexpr size_t size()        { return s_size;       }      \
+        constexpr operator size_t()      const { return m_val;  }           \
+        constexpr operator uint()        const { return m_val;  }           \
+        constexpr operator etype()       const { return etype(m_val); }     \
+        constexpr bool     empty()       const { return !m_val; }           \
+        constexpr bool     has(etype  a) const { return m_val & size_t(a); }\
+        constexpr bool has_any(size_t a) const { return m_val & a;         }\
+        constexpr bool has_all(size_t a) const { return (m_val & a) == a;  }\
+        constexpr bool   valid(size_t a) const { return a < _END_;    }     \
+        static constexpr size_t size()         { return s_size;       }     \
                                                                             \
         ENUM operator|= (etype a) { m_val |= size_t(a); return *this; }     \
                                                                             \
