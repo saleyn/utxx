@@ -40,6 +40,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 UTXX_DEFINE_ENUMX(my_enumx, ' ', (A, 'a')(BB, 'b')(CCC));
 
+UTXX_DEFINE_ENUMX(SideT, -1, (BID)(ASK)(SIDES));
+
 // Define an enum with values A, B, C that can be converted to string
 // and fron string using reflection class:
 UTXX_DEFINE_ENUM(my_enum,
