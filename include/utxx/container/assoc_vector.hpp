@@ -177,9 +177,9 @@ namespace utxx {
 
         iterator insert(iterator pos, const value_type& val) {
             if (pos != end() && this->operator()(*pos, val) &&
-               (pos == end() - 1 ||
-                    !this->operator()(val, pos[1]) &&
-                        this->operator()(pos[1], val)))
+               (pos == end()-1  ||
+                   (!this->operator()(val, pos[1]) &&
+                     this->operator()(pos[1], val))))
                 return base::insert(pos, val);
             return insert(val).first;
         }
