@@ -168,8 +168,7 @@ namespace utxx {
             bool found(true);
             iterator i(lower_bound(val.first));
 
-            if (i == end() || this->operator()(val.first, i->first))
-            {
+            if (i == end() || this->operator()(val.first, i->first)) {
                 i = base::insert(i, val);
                 found = false;
             }
