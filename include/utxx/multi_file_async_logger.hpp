@@ -260,7 +260,7 @@ public:
     /// @param mode         - set file access mode
     int  start();
 
-    /// Stop asynchronous file writering thread
+    /// Stop asynchronous file writing thread
     void stop();
 
     /// Returns true if the async logger's thread is running
