@@ -41,9 +41,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string>
 #include <stdio.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include <assert.h>
 #include <sys/types.h>
-#include <sys/stat.h>
 #include <fcntl.h>
 
 namespace utxx {
@@ -62,6 +62,7 @@ struct async_file_logger_traits {
     using event_type = futex;
     using file_type  = FILE*;
     static constexpr const file_type null_file_value = nullptr;
+    static constexpr const int       def_permissions = 0640;
 
     //-------------------------------------------------------------------------
     /// Represents a text message to be logged by the logger
@@ -75,14 +76,17 @@ struct async_file_logger_traits {
             , m_data(const_cast<char*>(a_data))
         {}
 
-        bool        empty() const { return m_size; }
-        size_t      size()  const { return m_size; }
-        const char* data()  const { return m_data; }
-        char*       data()        { return m_data; }
+        bool        empty() const { return !m_size; }
+        size_t      size()  const { return  m_size; }
+        const char* data()  const { return  m_data; }
+        char*       data()        { return  m_data; }
     };
 
-    static file_type file_open(const std::string& a_filename) {
-        return fopen(a_filename.c_str(), "a+");
+    static file_type file_open(const std::string& a_filename,
+                               int a_perm  = def_permissions) {
+        int fd = ::open(a_filename.c_str(), O_CREAT | O_APPEND | O_RDWR, a_perm);
+        if (fd < 0) return nullptr;
+        return fdopen(fd, "a+");
     };
 
     static int file_write(file_type a_fd, const char* a_data, size_t a_sz) {
@@ -103,8 +107,9 @@ struct async_fd_logger_traits : public async_file_logger_traits {
     using file_type  = int;
     static constexpr const file_type null_file_value = -1;
 
-    static file_type file_open(const std::string& a_filename) {
-        return ::open(a_filename.c_str(), O_CREAT | O_APPEND | O_RDWR);
+    static file_type file_open(const std::string& a_filename,
+                               int a_perm  = def_permissions) {
+        return ::open(a_filename.c_str(), O_CREAT | O_APPEND | O_RDWR, a_perm);
     };
 
     static int file_write(file_type a_fd, const char* a_data, size_t a_sz) {
