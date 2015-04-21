@@ -178,7 +178,8 @@ public:
     /// Initialize and start asynchronous file writer
     /// @param a_filename           - name of the file
     /// @param a_notify_immediate   - whether to notify the I/O thread on write
-    int  start(const std::string& filename, bool a_notify_immediate = true);
+    int  start(const std::string& filename, bool a_notify_immediate = true,
+               int a_perm = traits::def_permissions);
 
     /// Stop asynchronous file writering thread
     void stop();
@@ -258,7 +259,7 @@ struct text_file_logger: public basic_async_logger<Traits> {
 
 template<typename traits>
 int basic_async_logger<traits>::
-start(const std::string& a_filename, bool a_notify_immediate)
+start(const std::string& a_filename, bool a_notify_immediate, int a_perm)
 {
     if (m_file)
         return -1;
@@ -270,7 +271,7 @@ start(const std::string& a_filename, bool a_notify_immediate)
     m_cancel            = false;
     m_notify_immediate  = a_notify_immediate;
 
-    if (!(m_file = traits::file_open(m_filename))) {
+    if (!(m_file = traits::file_open(m_filename, a_perm))) {
         print_error(-1, strerror(errno), __LINE__);
         return -2;
     }
