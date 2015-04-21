@@ -32,10 +32,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <utxx/atomic.hpp>
 #include <utxx/synch.hpp>
 #include <iostream>
 #include <functional>
+#include <atomic>
 #include <thread>
 #include <memory>
 #include <string>
