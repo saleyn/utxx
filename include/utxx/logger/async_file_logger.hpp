@@ -61,7 +61,7 @@ struct async_file_logger_traits {
     using allocator  = std::allocator<char>;
     using event_type = futex;
     using file_type  = FILE*;
-    static constexpr const file_type s_null_file_type = nullptr;
+    static constexpr const file_type null_file_value = nullptr;
 
     //-------------------------------------------------------------------------
     /// Represents a text message to be logged by the logger
@@ -92,10 +92,8 @@ struct async_file_logger_traits {
     static int file_close(file_type a_fd) { return fclose(a_fd); }
     static int file_flush(file_type a_fd) { return fflush(a_fd); }
 
-    enum {
-          commit_timeout = 1000  // commit interval in usecs
-        , write_buf_sz   = 256
-    };
+    static const int commit_timeout = 1000;  // commit interval in usecs
+    static const int write_buf_sz   = 256;
 };
 
 //-----------------------------------------------------------------------------
@@ -103,7 +101,7 @@ struct async_file_logger_traits {
 //-----------------------------------------------------------------------------
 struct async_fd_logger_traits : public async_file_logger_traits {
     using file_type  = int;
-    static constexpr const file_type s_null_file_type = -1;
+    static constexpr const file_type null_file_value = -1;
 
     static file_type file_open(const std::string& a_filename) {
         return ::open(a_filename.c_str(), O_CREAT | O_APPEND | O_RDWR);
@@ -115,11 +113,6 @@ struct async_fd_logger_traits : public async_file_logger_traits {
 
     static int file_close(file_type a_fd) { return ::close(a_fd); }
     static int file_flush(file_type a_fd) { return 0; }
-
-    enum {
-          commit_timeout = 1000  // commit interval in usecs
-        , write_buf_sz   = 256
-    };
 };
 
 //-----------------------------------------------------------------------------
@@ -165,7 +158,7 @@ protected:
 public:
     explicit basic_async_logger(const allocator& alloc = allocator())
         : m_allocator(alloc)
-        , m_file(traits::s_null_file_type)
+        , m_file(traits::null_file_value)
         , m_head(nullptr)
         , m_cancel(false)
         , m_max_queue_size(0)
@@ -173,7 +166,7 @@ public:
     {}
 
     ~basic_async_logger() {
-        if (m_file != traits::s_null_file_type)
+        if (m_file != traits::null_file_value)
             stop();
     }
 
@@ -291,7 +284,7 @@ start(const std::string& a_filename, bool a_notify_immediate)
 template<typename traits>
 void basic_async_logger<traits>::stop()
 {
-    if (m_file == traits::s_null_file_type)
+    if (m_file == traits::null_file_value)
         return;
 
     m_cancel = true;
@@ -329,7 +322,7 @@ void basic_async_logger<traits>::run(std::condition_variable* a_cv)
     }
 
     traits::file_close(m_file);
-    m_file = traits::s_null_file_type;
+    m_file = traits::null_file_value;
 }
 
 //-----------------------------------------------------------------------------
