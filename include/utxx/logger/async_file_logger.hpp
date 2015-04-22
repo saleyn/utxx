@@ -96,7 +96,8 @@ struct async_file_logger_traits {
     static int file_close(file_type a_fd) { return fclose(a_fd); }
     static int file_flush(file_type a_fd) { return fflush(a_fd); }
 
-    static const int commit_timeout = 1000;  // commit interval in usecs
+    static const int commit_timeout = 1000;    // commit interval in msecs
+    static const int max_queue_size = 1000000; // max queue size forcing commit
     static const int write_buf_sz   = 256;
 };
 
@@ -147,11 +148,13 @@ protected:
     allocator                    m_allocator;
     file_type                    m_file;
     std::atomic<log_msg_type*>   m_head;
+    std::atomic<long>            m_queue_size;
     bool                         m_cancel;
     int                          m_max_queue_size;
     std::string                  m_filename;
     event_type                   m_event;
     bool                         m_notify_immediate;
+    int                          m_commit_msec;
 
     // Invoked by the async thread to flush messages from queue to file
     int  commit(const struct timespec* tsp = NULL);
@@ -161,13 +164,15 @@ protected:
     void print_error(int, const char* what, int line);
 
 public:
-    explicit basic_async_logger(const allocator& alloc = allocator())
+    explicit basic_async_logger(int   a_commit_msec    = traits::commit_timeout,
+                                const allocator& alloc = allocator())
         : m_allocator(alloc)
         , m_file(traits::null_file_value)
         , m_head(nullptr)
         , m_cancel(false)
         , m_max_queue_size(0)
         , m_notify_immediate(true)
+        , m_commit_msec(a_commit_msec)
     {}
 
     ~basic_async_logger() {
@@ -199,6 +204,8 @@ public:
     /// @return indicates if async thread must be notified immediately
     /// when message is written to queue
     int                 notify_immediate() const { return m_notify_immediate; }
+    /// Commit interval in milliseconds
+    int                 commit_msec()      const { return m_commit_msec;      }
 
     /// Allocate a message of size \a a_sz.
     /// The content of the message is accessible via its data() property
@@ -224,8 +231,9 @@ struct text_file_logger: public basic_async_logger<Traits> {
     using log_msg_type  = typename base::log_msg_type;
     using allocator     = typename base::allocator;
 
-    explicit text_file_logger(const allocator& alloc = allocator())
-        : base(alloc)
+    explicit text_file_logger(int   a_commit_msec    = Traits::commit_timeout,
+                              const allocator& alloc = allocator())
+        : base(a_commit_msec, alloc)
     {}
 
     /// Formatted write with arguments 
@@ -284,8 +292,9 @@ start(const std::string& a_filename, bool a_notify_immediate, int a_perm)
 //-----------------------------------------------------------------------------
 template<typename traits>
 int basic_async_logger<traits>::
-start(typename traits::file_type a_file, const std::string& a_filename,
-      bool a_notify_immediate)
+start(typename traits::file_type a_file,
+      const std::string&         a_filename,
+      bool                       a_notify_immediate)
 {
     if (m_file != traits::null_file_value)
         return -1;
@@ -335,8 +344,8 @@ void basic_async_logger<traits>::run(std::condition_variable* a_cv)
         m_cancel ? "true" : "false");
 
     static const timespec ts{
-        traits::commit_timeout / 1000,
-       (traits::commit_timeout % 1000) * 1000000
+        m_commit_msec / 1000,
+       (m_commit_msec % 1000) * 1000000
     };
 
     while (true) {
@@ -375,14 +384,15 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
     } while (!m_head.compare_exchange_weak(cur_head, nullptr,
                                            std::memory_order_release,
                                            std::memory_order_relaxed));
+    m_queue_size.store(0, std::memory_order_relaxed);
 
     ASYNC_TRACE(" --> cur head: %p, new head: %p\n", cur_head, m_head);
 
     assert(cur_head);
 
-    int   count = 0;
-    log_msg_type* last = nullptr;
-    log_msg_type* next = cur_head;
+    int           count = 0;
+    log_msg_type* last  = nullptr;
+    log_msg_type* next  = cur_head;
 
     // Reverse the section of this list
     for (auto p = cur_head; next; count++, p = next) {
@@ -468,11 +478,13 @@ inline int basic_async_logger<traits>::write(log_msg_type* msg)
     } while (!m_head.compare_exchange_weak(last_head, msg,
                                            std::memory_order_release,
                                            std::memory_order_relaxed));
-    if (!last_head && m_notify_immediate)
+    if (!last_head &&
+       (m_notify_immediate ||
+        m_queue_size.load(std::memory_order_relaxed) > traits::max_queue_size))
         m_event.signal();
 
-    ASYNC_TRACE("write - cur head: %p, prev head: %p\n",
-                m_head, last_head);
+    ASYNC_TRACE("write - cur head: %p, prev head: %p, qsize: %ld\n",
+                m_head, last_head, m_queue_size.load(std::memory_order_relaxed));
     return n;
 }
 
