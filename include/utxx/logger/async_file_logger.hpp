@@ -176,10 +176,18 @@ public:
     }
 
     /// Initialize and start asynchronous file writer
-    /// @param a_filename           - name of the file
-    /// @param a_notify_immediate   - whether to notify the I/O thread on write
+    /// @param a_filename           name of the file
+    /// @param a_notify_immediate   whether to notify the I/O thread on write
     int  start(const std::string& filename, bool a_notify_immediate = true,
                int a_perm = traits::def_permissions);
+
+    /// Initialize and start asynchronous file writer
+    /// @param a_file               externally open file reference
+    /// @param a_filename           name of the file (use for reference only)
+    /// @param a_notify_immediate   whether to notify the I/O thread on write
+    int  start(typename traits::file_type a_file,
+               const std::string&         a_filename         = "",
+               bool                       a_notify_immediate = true);
 
     /// Stop asynchronous file writering thread
     void stop();
@@ -261,20 +269,34 @@ template<typename traits>
 int basic_async_logger<traits>::
 start(const std::string& a_filename, bool a_notify_immediate, int a_perm)
 {
-    if (m_file)
+    if (m_file != traits::null_file_value)
+        return -1;
+
+    typename traits::file_type file;
+    if (!(file = traits::file_open(m_filename, a_perm))) {
+        print_error(-1, strerror(errno), __LINE__);
+        return -2;
+    }
+
+    return start(file, a_filename, a_notify_immediate);
+}
+
+//-----------------------------------------------------------------------------
+template<typename traits>
+int basic_async_logger<traits>::
+start(typename traits::file_type a_file, const std::string& a_filename,
+      bool a_notify_immediate)
+{
+    if (m_file != traits::null_file_value)
         return -1;
 
     m_event.reset();
 
+    m_file              = a_file;
     m_filename          = a_filename;
     m_head              = nullptr;
     m_cancel            = false;
     m_notify_immediate  = a_notify_immediate;
-
-    if (!(m_file = traits::file_open(m_filename, a_perm))) {
-        print_error(-1, strerror(errno), __LINE__);
-        return -2;
-    }
 
     std::condition_variable      cv;
     std::mutex                   mtx;
