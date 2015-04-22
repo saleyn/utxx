@@ -96,9 +96,9 @@ struct async_file_logger_traits {
     static int file_close(file_type a_fd) { return fclose(a_fd); }
     static int file_flush(file_type a_fd) { return fflush(a_fd); }
 
-    static const int commit_timeout = 1000;    // commit interval in msecs
-    static const int max_queue_size = 1000000; // max queue size forcing commit
-    static const int write_buf_sz   = 256;
+    static const int commit_timeout     = 1000;    // commit interval in msecs
+    static const int commit_queue_limit = 1000000; // max queue size forcing commit
+    static const int write_buf_sz       = 256;
 };
 
 //-----------------------------------------------------------------------------
@@ -155,6 +155,7 @@ protected:
     event_type                   m_event;
     bool                         m_notify_immediate;
     int                          m_commit_msec;
+    int                          m_commit_queue_limit;
 
     // Invoked by the async thread to flush messages from queue to file
     int  commit(const struct timespec* tsp = NULL);
@@ -166,13 +167,14 @@ protected:
 public:
     explicit basic_async_logger(int   a_commit_msec    = traits::commit_timeout,
                                 const allocator& alloc = allocator())
-        : m_allocator(alloc)
-        , m_file(traits::null_file_value)
-        , m_head(nullptr)
-        , m_cancel(false)
-        , m_max_queue_size(0)
-        , m_notify_immediate(true)
-        , m_commit_msec(a_commit_msec)
+        : m_allocator          (alloc)
+        , m_file               (traits::null_file_value)
+        , m_head               (nullptr)
+        , m_cancel             (false)
+        , m_max_queue_size     (0)
+        , m_notify_immediate   (true)
+        , m_commit_msec        (a_commit_msec)
+        , m_commit_queue_limit (traits::commit_queue_limit)
     {}
 
     ~basic_async_logger() {
@@ -198,14 +200,21 @@ public:
     void stop();
 
     /// @return name of the log file
-    const std::string&  filename()         const { return m_filename;         }
+    const std::string&  filename()           const { return m_filename;         }
     /// @return max size of the commit queue
-    const int           max_queue_size()   const { return m_max_queue_size;   }
+    const int           max_queue_size()     const { return m_max_queue_size;   }
     /// @return indicates if async thread must be notified immediately
     /// when message is written to queue
-    int                 notify_immediate() const { return m_notify_immediate; }
+    int                 notify_immediate()   const { return m_notify_immediate; }
     /// Commit interval in milliseconds
-    int                 commit_msec()      const { return m_commit_msec;      }
+    int                 commit_msec()        const { return m_commit_msec;      }
+
+    /// Max size of the queue forcing a commit prior to elapsing of commit_msec()
+    int                 commit_queue_limit() const { return m_commit_queue_limit;}
+    void                commit_queue_limit(int a)  { m_commit_queue_limit = a;  }
+
+    /// Approximate uncommitted queue size
+    long queue_size() const { return m_queue_size.load(std::memory_order_relaxed); }
 
     /// Allocate a message of size \a a_sz.
     /// The content of the message is accessible via its data() property
@@ -479,12 +488,11 @@ inline int basic_async_logger<traits>::write(log_msg_type* msg)
                                            std::memory_order_release,
                                            std::memory_order_relaxed));
     if (!last_head &&
-       (m_notify_immediate ||
-        m_queue_size.load(std::memory_order_relaxed) > traits::max_queue_size))
+       (m_notify_immediate || queue_size() > m_commit_queue_limit))
         m_event.signal();
 
     ASYNC_TRACE("write - cur head: %p, prev head: %p, qsize: %ld\n",
-                m_head, last_head, m_queue_size.load(std::memory_order_relaxed));
+                m_head, last_head, queue_size());
     return n;
 }
 
