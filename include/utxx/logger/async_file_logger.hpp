@@ -93,8 +93,8 @@ struct async_file_logger_traits {
         return fwrite(a_data, a_sz, 1, a_fd);
     };
 
-    static int file_close(file_type a_fd) { return fclose(a_fd); }
-    static int file_flush(file_type a_fd) { return fflush(a_fd); }
+    static int file_close(file_type& a_fd) { return fclose(a_fd); a_fd = nullptr; }
+    static int file_flush(file_type  a_fd) { return fflush(a_fd); }
 
     static const int commit_timeout     = 1000;    // commit interval in msecs
     static const int commit_queue_limit = 1000000; // max queue size forcing commit
@@ -117,8 +117,8 @@ struct async_fd_logger_traits : public async_file_logger_traits {
         return ::write(a_fd, a_data, a_sz);
     };
 
-    static int file_close(file_type a_fd) { return ::close(a_fd); }
-    static int file_flush(file_type a_fd) { return 0; }
+    static int file_close(file_type& a_fd) { return ::close(a_fd); a_fd = -1; }
+    static int file_flush(file_type  a_fd) { return 0; }
 };
 
 //-----------------------------------------------------------------------------
@@ -156,6 +156,7 @@ protected:
     bool                         m_notify_immediate;
     int                          m_commit_msec;
     int                          m_commit_queue_limit;
+    bool                         m_close_on_exit;
 
     // Invoked by the async thread to flush messages from queue to file
     int  commit(const struct timespec* tsp = NULL);
@@ -164,6 +165,10 @@ protected:
     // Print error message
     void print_error(int, const char* what, int line);
 
+    int  start(typename traits::file_type a_file,
+               const std::string&         a_filename,
+               bool                       a_notify_immediate,
+               bool                       a_close_on_exit);
 public:
     explicit basic_async_logger(int   a_commit_msec    = traits::commit_timeout,
                                 const allocator& alloc = allocator())
@@ -175,6 +180,7 @@ public:
         , m_notify_immediate   (true)
         , m_commit_msec        (a_commit_msec)
         , m_commit_queue_limit (traits::commit_queue_limit)
+        , m_close_on_exit      (true)
     {}
 
     ~basic_async_logger() {
@@ -212,6 +218,9 @@ public:
     /// Max size of the queue forcing a commit prior to elapsing of commit_msec()
     int                 commit_queue_limit() const { return m_commit_queue_limit;}
     void                commit_queue_limit(int a)  { m_commit_queue_limit = a;  }
+
+    /// Close file handle on exit
+    bool                close_on_exit()      const { return m_close_on_exit; }
 
     /// Approximate uncommitted queue size
     long queue_size() const { return m_queue_size.load(std::memory_order_relaxed); }
@@ -295,7 +304,7 @@ start(const std::string& a_filename, bool a_notify_immediate, int a_perm)
         return -2;
     }
 
-    return start(file, a_filename, a_notify_immediate);
+    return start(file, a_filename, a_notify_immediate, true);
 }
 
 //-----------------------------------------------------------------------------
@@ -304,6 +313,17 @@ int basic_async_logger<traits>::
 start(typename traits::file_type a_file,
       const std::string&         a_filename,
       bool                       a_notify_immediate)
+{
+    return start(a_file, a_filename, a_notify_immediate, false);
+}
+
+//-----------------------------------------------------------------------------
+template<typename traits>
+int basic_async_logger<traits>::
+start(typename traits::file_type a_file,
+      const std::string&         a_filename,
+      bool                       a_notify_immediate,
+      bool                       a_close_on_exit)
 {
     if (m_file != traits::null_file_value)
         return -1;
@@ -315,6 +335,7 @@ start(typename traits::file_type a_file,
     m_head              = nullptr;
     m_cancel            = false;
     m_notify_immediate  = a_notify_immediate;
+    m_close_on_exit     = a_close_on_exit;
 
     std::condition_variable      cv;
     std::mutex                   mtx;
@@ -367,7 +388,8 @@ void basic_async_logger<traits>::run(std::condition_variable* a_cv)
             break;
     }
 
-    traits::file_close(m_file);
+    if (m_close_on_exit)
+        traits::file_close(m_file);
     m_file = traits::null_file_value;
 }
 
