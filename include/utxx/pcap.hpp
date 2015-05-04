@@ -148,11 +148,15 @@ struct pcap {
     }
 
     template <size_t N>
-    static int set_packet_header(char (&buf)[N], 
+    static int set_packet_header(char (&buf)[N], const struct timeval& tv, size_t len) {
+        return set_packet_header(buf, N, tv, len);
+    }
+
+    static int set_packet_header(char* a_buf, size_t a_size,
         const struct timeval& tv, size_t len)
     {
-        BOOST_STATIC_ASSERT(N >= sizeof(packet_header));
-        packet_header* p = reinterpret_cast<packet_header*>(buf);
+        assert(a_size >= sizeof(packet_header));
+        packet_header* p = reinterpret_cast<packet_header*>(a_buf);
         p->ts_sec   = tv.tv_sec;
         p->ts_usec  = tv.tv_usec;
         p->incl_len = len;

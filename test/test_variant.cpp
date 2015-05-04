@@ -348,7 +348,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
         tree.merge(tree2, &merge);
         std::stringstream out;
 
-        tree.dump(out);
+        tree.dump(out, 2, true, false);
         const char expect[] =
             "first::null()\n"
             "  n::int() = 10\n"
@@ -362,7 +362,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_merge )
     {
         tree2.update(&update);
         std::stringstream out;
-        tree2.dump(out);
+        tree2.dump(out, 2, true, false);
         const char expect[] =
             "third::string() = \"abcx\"\n"
             "fourth::null()\n"

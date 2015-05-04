@@ -488,8 +488,8 @@ public:
     (
         Stream& out,
         size_t  a_tab_width   = 2,
-        bool    a_show_types  = true,
-        bool    a_show_braces = false,
+        bool    a_show_types  = false,
+        bool    a_show_braces = true,
         Ch      a_indent_char = Ch(' '),
         int     a_indent      = 0
     ) const {
