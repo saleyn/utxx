@@ -74,8 +74,12 @@ BOOST_AUTO_TEST_CASE( test_error )
     } catch (utxx::runtime_error& e) {
         BOOST_CHECK_EQUAL("A 123", e.str());
         std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
-        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
-        BOOST_REQUIRE(!e.src().empty());
+        if (!std::regex_search(std::string(e.what()), re)) {
+            std::cout << "Error what: " << e.what() << std::endl;
+            std::cout << "Error src:  " << e.src()  << std::endl;
+            BOOST_CHECK(false);
+        }
+        BOOST_CHECK(!e.src().empty());
     }
 
     try {
@@ -95,7 +99,10 @@ BOOST_AUTO_TEST_CASE( test_error )
         BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
         BOOST_REQUIRE(!e.src().empty());
     }
+}
 
+BOOST_AUTO_TEST_CASE( test_error_srcloc )
+{
     utxx::src_info s("A", "B");
     auto s1(s);
     BOOST_CHECK_EQUAL("A", s1.srcloc());
@@ -137,5 +144,15 @@ BOOST_AUTO_TEST_CASE( test_error )
             std::regex re("^test_error.cpp:\\d+ my_fun$");
             BOOST_CHECK(std::regex_search(str, re));
         }
+    }
+
+    {
+        auto info1 = utxx::src_info("A", "BB");
+        utxx::src_info&& info2 = std::move(info1);
+
+        BOOST_CHECK_EQUAL("A",  info2.srcloc());
+        BOOST_CHECK_EQUAL(1,    info2.srcloc_len());
+        BOOST_CHECK_EQUAL("BB", info2.fun());
+        BOOST_CHECK_EQUAL(2,    info2.fun_len());
     }
 }
