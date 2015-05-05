@@ -135,13 +135,6 @@ public:
         static_assert(M >= 1, "Invalid string literal! Length is zero!");
     }
 
-    /*
-    constexpr src_info(const char a_srcloc[1], const char a_fun[1]) noexcept
-        : m_srcloc(""), m_fun("")
-        , m_srcloc_len(0),  m_fun_len(0)
-    {}
-    */
-    
     src_info(const char* a_srcloc, size_t N, const char* a_fun, size_t M)
         : m_srcloc(a_srcloc), m_fun(a_fun)
         , m_srcloc_len(N),    m_fun_len(M)
