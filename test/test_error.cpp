@@ -122,27 +122,42 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
         {
             auto  str = src.to_string();
             std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
         {
             auto  str = src.to_string("","",3);
             std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
         {
             auto  str = src.to_string("","",10);
             std::regex re("test_error.cpp:\\d+ abc::d::A::B::my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
         {
             auto  str = src.to_string("","",0);
             std::regex re("^test_error.cpp:\\d+$");
-            BOOST_CHECK(std::regex_search(str, re));
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
         {
             auto  str = src.to_string("","",1);
             std::regex re("^test_error.cpp:\\d+ my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
     }
 
@@ -154,5 +169,19 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
         BOOST_CHECK_EQUAL(1,    info2.srcloc_len());
         BOOST_CHECK_EQUAL("BB", info2.fun());
         BOOST_CHECK_EQUAL(2,    info2.fun_len());
+    }
+    {
+        utxx::src_info si("X:10",
+            "void cme::Thread<cme::MDP<cme::MD<MDB, MyTraits>, Traits> >::Run() [Impl = MB]");
+        char buf[80];
+        auto str = si.to_string(buf, sizeof(buf));
+        BOOST_CHECK_EQUAL("X:10 cme::Thread::Run", std::string(buf, str - buf));
+    }
+    {
+        utxx::src_info si("X:10",
+            "void cme::A<xx::C<U, V>>::B<U, V>::Run()");
+        char buf[80];
+        auto str = si.to_string(buf, sizeof(buf));
+        BOOST_CHECK_EQUAL("X:10 A::B::Run", std::string(buf, str - buf));
     }
 }

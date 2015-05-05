@@ -124,7 +124,9 @@ class src_info {
     int         m_srcloc_len;
     int         m_fun_len;
 public:
-    constexpr src_info() : src_info("", "") {}
+    constexpr src_info()
+        : m_srcloc(""), m_fun(""), m_srcloc_len(0), m_fun_len(0)
+    {}
 
     template <int N, int M>
     constexpr src_info(const char (&a_srcloc)[N], const char (&a_fun)[M]) noexcept
@@ -211,7 +213,6 @@ public:
 #else
             '/';
 #endif
-
         auto q = strrchr(a_srcloc, s_sep);
         q = q ? q+1 : a_srcloc;
         auto e   = a_srcloc + a_sl_len;
@@ -237,7 +238,8 @@ public:
             struct { const char* l; const char* r; } tribraces[N];
             const char* scopes[N];
             auto begin = a_srcfun;
-            auto inside = false;    // true when we are inside "<...>"
+            auto matched_open_tribrace = -1;
+            auto inside = 0;  // > 0 when we are inside "<...>"
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
             for (q = begin, e = q + a_sf_len; q < e; ++q) {
@@ -253,19 +255,23 @@ public:
                         break;
                     case '<':
                         if (tribrcnt < N) {
-                            auto& x = tribraces[tribrcnt];
+                            auto& x = tribraces[tribrcnt++];
                             x.l = q; x.r = q;
-                            inside = true;
+                            ++inside;
                         }
                         break;
                     case '>':
                         if (inside) {
-                            tribraces[tribrcnt++].r = q+1;
-                            inside = false;
+                            int i = matched_open_tribrace == -1
+                                  ? tribrcnt-1 : matched_open_tribrace-1;
+                            tribraces[i].r = q+1;
+                            inside = std::max<int>(0, inside-1);
+                            matched_open_tribrace = inside ? i : -1;
                         }
                         break;
                     case ':':
-                        if (*(q+1)==':' && scope<N) { scopes[scope++] = q+2; }
+                        if (!inside && *(q+1)==':' && scope<N)
+                            scopes[scope++] = ++q + 1;
                         break;
                 }
             }
