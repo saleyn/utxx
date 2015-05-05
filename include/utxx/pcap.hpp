@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <utxx/endian.hpp>
 #include <boost/cstdint.hpp>
+#include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
 #include <stdio.h>
 #include <arpa/inet.h>
