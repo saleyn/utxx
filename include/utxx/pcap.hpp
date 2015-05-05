@@ -70,9 +70,9 @@ struct pcap {
     };
 
     struct udp_frame {
-        struct detail::ethhdr eth;
-        struct detail::iphdr  ip;
-        struct detail::udphdr udp;
+        detail::ethhdr eth;
+        detail::iphdr  ip;
+        detail::udphdr udp;
 
         uint8_t  protocol() const { return ip.protocol;       }
         uint32_t src_ip()   const { return ntohl(ip.saddr);   }
@@ -95,7 +95,7 @@ struct pcap {
                 ip >> 24 & 0xFF, ip >> 16 & 0xFF, ip >> 8 & 0xFF, ip & 0xFF, port);
             return buf;
         }
-    } __attribute__ ((__packed__));
+    } __attribute__ ((packed));
 
     BOOST_STATIC_ASSERT(sizeof(detail::ethhdr) == 14);
     BOOST_STATIC_ASSERT(sizeof(detail::iphdr)  == 20);
@@ -147,6 +147,21 @@ struct pcap {
         return sizeof(file_header);
     }
 
+    static void init_udp_frame(udp_frame& frame)
+    {
+        memset(&frame, 0, sizeof(udp_frame));
+        frame.eth.h_proto = htons(ETH_P_IP);
+        frame.ip.version  = IPVERSION;
+        frame.ip.protocol = IPPROTO_UDP;
+        frame.ip.ihl      = 5;    // 32-bit words
+        //frame.ip.frag_off = 0;
+        //frame.ip.tos      = 0;    // No special type-of-service
+        //frame.ip.id       = 0;    // No flow id (since no frags)
+        frame.ip.ttl      = 64;   // Linux default time-to-live
+        //frame.ip.check    = 0;    // Zero the checksum
+        //frame.udp.check   = 0;    // Zero the checksum
+    }
+
     template <size_t N>
     static int set_packet_header(char (&buf)[N], const struct timeval& tv, size_t len) {
         return set_packet_header(buf, N, tv, len);
@@ -157,10 +172,11 @@ struct pcap {
     {
         assert(a_size >= sizeof(packet_header));
         packet_header* p = reinterpret_cast<packet_header*>(a_buf);
+        int sz      = len + sizeof(udp_frame);
         p->ts_sec   = tv.tv_sec;
         p->ts_usec  = tv.tv_usec;
-        p->incl_len = len;
-        p->orig_len = len;
+        p->incl_len = sz;
+        p->orig_len = sz;
         return sizeof(packet_header);
     }
 
