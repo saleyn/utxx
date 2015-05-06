@@ -215,6 +215,7 @@ AC_CHECK_FUNCS([gettimeofday socket])
 CXXFLAGS+=" $BOOST_CPPFLAGS"
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
+AC_SUBST([THRIFT_LIBS])
 
 dnl ------------------------------------------------------------------
 dnl Output.
@@ -225,10 +226,6 @@ AC_CONFIG_FILES([src/Makefile])
 AC_CONFIG_FILES([test/Makefile])
 AC_CONFIG_FILES([test.sh], [chmod +x test.sh])
 AC_CONFIG_FILES([utxx.pc:utxx.pc.in])
-
-if test -z "${with_thrift}"; then
-    sed -i 's/-lthrift //g' utxx.pc
-fi
 
 AC_OUTPUT
 

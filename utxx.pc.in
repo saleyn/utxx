@@ -7,6 +7,6 @@ Name: @PACKAGE@
 Description: C++ Utility Library.
 #Requires: boost_1_49_0
 Version: @PACKAGE_VERSION@
-Libs: -L${libdir} -lutxx -lthrift -lboost_thread
+Libs: -L${libdir} -lutxx @THRIFT_LIBS@ -lboost_thread
 Cflags: -I${includedir}
 
