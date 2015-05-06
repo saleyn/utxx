@@ -226,6 +226,10 @@ AC_CONFIG_FILES([test/Makefile])
 AC_CONFIG_FILES([test.sh], [chmod +x test.sh])
 AC_CONFIG_FILES([utxx.pc:utxx.pc.in])
 
+if test -z "${with_thrift}"; then
+    sed -i 's/-lthrift //g' utxx.pc
+fi
+
 AC_OUTPUT
 
 echo
