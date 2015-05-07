@@ -44,6 +44,10 @@ namespace abc { namespace d {
         template <class U, class V>
         struct B {
             static const src_info& my_fun() { static const auto s_src = UTXX_SRC; return s_src; }
+            static const src_info& my_funx() {
+                UTXX_PRETTY_FUNCTION();
+                static const auto s_src = UTXX_SRCX; return s_src;
+            }
         };
     };
 }}
@@ -74,8 +78,12 @@ BOOST_AUTO_TEST_CASE( test_error )
     } catch (utxx::runtime_error& e) {
         BOOST_CHECK_EQUAL("A 123", e.str());
         std::regex re("\\[test_error.cpp:\\d+ test_error::test_method\\] A 123");
-        BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
-        BOOST_REQUIRE(!e.src().empty());
+        if (!std::regex_search(std::string(e.what()), re)) {
+            std::cout << "Error what: " << e.what() << std::endl;
+            std::cout << "Error src:  " << e.src()  << std::endl;
+            BOOST_CHECK(false);
+        }
+        BOOST_CHECK(!e.src().empty());
     }
 
     try {
@@ -95,6 +103,11 @@ BOOST_AUTO_TEST_CASE( test_error )
         BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
         BOOST_REQUIRE(!e.src().empty());
     }
+}
+
+BOOST_AUTO_TEST_CASE( test_error_srcloc )
+{
+    UTXX_PRETTY_FUNCTION(); // Cache pretty function name
 
     utxx::src_info s("A", "B");
     auto s1(s);
@@ -110,32 +123,87 @@ BOOST_AUTO_TEST_CASE( test_error )
         BOOST_REQUIRE(!e.src().empty());
     }
 
+    try {
+        UTXX_THROWX_BADARG_ERROR("A ", 222);
+    } catch (utxx::runtime_error& e) {
+        BOOST_CHECK_EQUAL("A 222", e.str());
+        std::regex re("\\[test_error.cpp:\\d+ test_error_srcloc::test_method\\] A 222$");
+        BOOST_REQUIRE(!e.src().empty());
+        if (!std::regex_search(e.what(), re)) {
+            std::cout << e.what() << std::endl;
+            BOOST_CHECK(false);
+        }
+    }
+
     {
-        auto& src = abc::d::A<int>::B<bool,double>::my_fun();
-        {
-            auto  str = src.to_string();
-            std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+        utxx::src_info src[] = {
+            abc::d::A<int>::B<bool,double>::my_fun(),
+            abc::d::A<int>::B<bool,double>::my_funx()
+        };
+        for (int i=0; i < 2; ++i) {
+            auto str = src[i].to_string();
+            std::regex re("test_error.cpp:\\d+ A::B::my_fun[x]?$");
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
-        {
-            auto  str = src.to_string("","",3);
-            std::regex re("test_error.cpp:\\d+ A::B::my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+        for (int i=0; i < 2; ++i) {
+            auto str = src[i].to_string("", "", 3);
+            std::regex re("test_error.cpp:\\d+ A::B::my_fun[x]?$");
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
-        {
-            auto  str = src.to_string("","",10);
-            std::regex re("test_error.cpp:\\d+ abc::d::A::B::my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+        for (int i=0; i < 2; ++i) {
+            auto str = src[i].to_string("", "", 10);
+            std::regex re(i==0 ? "test_error.cpp:\\d+ abc::d::A::B::my_fun$"
+                               : "test_error.cpp:\\d+ A::B::my_funx$");
+            if (!std::regex_search(str, re)) {
+                std::cout << str << std::endl;
+                BOOST_CHECK(false);
+            }
         }
-        {
-            auto  str = src.to_string("","",0);
+        for (int i=0; i < 2; ++i) {
+            auto str = src[i].to_string("", "", 0);
             std::regex re("^test_error.cpp:\\d+$");
-            BOOST_CHECK(std::regex_search(str, re));
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
         }
-        {
-            auto  str = src.to_string("","",1);
-            std::regex re("^test_error.cpp:\\d+ my_fun$");
-            BOOST_CHECK(std::regex_search(str, re));
+        for (int i=0; i < 2; ++i) {
+            auto str = src[i].to_string("", "", 1);
+            std::regex re("^test_error.cpp:\\d+ my_fun[x]?$");
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
         }
+    }
+
+    {
+        auto info1 = utxx::src_info("A", "BB");
+        utxx::src_info&& info2 = std::move(info1);
+
+        BOOST_CHECK_EQUAL("A",  info2.srcloc());
+        BOOST_CHECK_EQUAL(1,    info2.srcloc_len());
+        BOOST_CHECK_EQUAL("BB", info2.fun());
+        BOOST_CHECK_EQUAL(2,    info2.fun_len());
+    }
+    {
+        utxx::src_info si("X:10",
+            "void cme::Thread<cme::MDP<cme::MD<MDB, MyTraits>, Traits> >::Run() [Impl = MB]");
+        char buf[80];
+        auto str = si.to_string(buf, sizeof(buf));
+        BOOST_CHECK_EQUAL("X:10 cme::Thread::Run", std::string(buf, str - buf));
+    }
+    {
+        utxx::src_info si("X:10",
+            "void cme::A<xx::C<U, V>>::B<U, V>::Run()");
+        char buf[80];
+        auto str = si.to_string(buf, sizeof(buf));
+        BOOST_CHECK_EQUAL("X:10 A::B::Run", std::string(buf, str - buf));
     }
 }

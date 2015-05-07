@@ -215,6 +215,7 @@ AC_CHECK_FUNCS([gettimeofday socket])
 CXXFLAGS+=" $BOOST_CPPFLAGS"
 AC_SUBST([CPPFLAGS])
 AC_SUBST([LDFLAGS])
+AC_SUBST([THRIFT_LIBS])
 
 dnl ------------------------------------------------------------------
 dnl Output.

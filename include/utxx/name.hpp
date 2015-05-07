@@ -35,8 +35,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_BASIC_SHORT_NAME_HPP_
 
 #include <boost/cstdint.hpp>
+#include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
 #include <utxx/error.hpp>
+#include <functional>
 
 namespace utxx {
     namespace {
@@ -276,7 +278,7 @@ namespace utxx {
 
     template <size_t Size>
     static inline std::size_t hash_value(basic_short_name<Size> v) {
-        return boost::hash_value(v.to_int());
+        return std::hash<size_t>()(v.to_int());
     }
 
     template <size_t Size>
@@ -285,5 +287,15 @@ namespace utxx {
     }
 
 } // namespace utxx
+
+namespace std {
+    template <size_t Size>
+    struct hash<utxx::basic_short_name<Size>>
+        : public __hash_base<size_t, utxx::basic_short_name<Size>>
+    {
+        size_t operator()(utxx::basic_short_name<Size> a) const noexcept
+        { return std::hash<size_t>()(a.to_int()); }
+    };
+}
 
 #endif // _UTXX_BASIC_SHORT_NAME_HPP_

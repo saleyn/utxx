@@ -30,41 +30,72 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _IO_UTXX_ERROR_HPP_
-#define _IO_UTXX_ERROR_HPP_
+#pragma once
 
 #include <exception>
+#include <memory>
 #include <sstream>
+#include <iostream>
 #include <stdio.h>
 #include <errno.h>
 #include <execinfo.h>
+#include <string.h>
 #include <signal.h>
 #include <assert.h>
-#include <iostream>
-#include <boost/shared_ptr.hpp>
-#include <boost/current_function.hpp>
 #include <sys/socket.h>
-#include <string.h>
+#include <boost/current_function.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/typeinfo.hpp>
 
-// Alias for source location information
+namespace utxx { namespace detail {
+    struct pf_def_arg { int scope = 3; };
+}}
+
+/// Pretty function name stripped off of angular brackets and some namespaces
+///
+/// Optional argument:
+///   int ScopeDepth    - number of namespaces to include (default: 3)
+#define UTXX_PRETTY_FUNCTION(...) \
+    static const std::string __utxx_pretty_function__ = \
+        utxx::src_info::pretty_function \
+            (BOOST_CURRENT_FUNCTION, utxx::detail::pf_def_arg{__VA_ARGS__}.scope)
+
+/// Alias for source location information
 #define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION)
 
-// Throw given exception with provided source location information
+/// Alias for source location information using cached pretty function name
+///
+/// The cached pretty function name must be declared by call to UTXX_PRETTY_FUNCTION
+#define UTXX_SRCX utxx::src_info(UTXX_FILE_SRC_LOCATION, __utxx_pretty_function__)
+
+/// Throw given exception with provided source location information
 #define UTXX_SRC_THROW(Exception, SrcInfo, ...) throw Exception((SrcInfo), ##__VA_ARGS__)
 
-// Throw given exception with current source location information
-#define UTXX_THROW(Exception, ...) UTXX_SRC_THROW(Exception, UTXX_SRC, ##__VA_ARGS__)
+/// Throw given exception with current source location information
+#define UTXX_THROW(Exception,  ...) UTXX_SRC_THROW(Exception, UTXX_SRC,  ##__VA_ARGS__)
+/// Throw given exception with current source location info and cached function name
+#define UTXX_THROWX(Exception, ...) UTXX_SRC_THROW(Exception, UTXX_SRCX, ##__VA_ARGS__)
 
-// Throw utxx::runtime_error exception with current source location information
-#define UTXX_THROW_RUNTIME_ERROR(...) UTXX_SRC_THROW(utxx::runtime_error, UTXX_SRC, ##__VA_ARGS__)
+/// Throw utxx::runtime_error exception with current source location information
+#define UTXX_THROW_RUNTIME_ERROR(...) \
+    UTXX_SRC_THROW(utxx::runtime_error, UTXX_SRC, ##__VA_ARGS__)
+/// Throw utxx::runtime_error exception with current source location and cached fun name
+#define UTXX_THROWX_RUNTIME_ERROR(...) \
+    UTXX_SRC_THROW(utxx::runtime_error, UTXX_SRCX, ##__VA_ARGS__)
 
-// Throw utxx::badarg_error exception with current source location information
-#define UTXX_THROW_BADARG_ERROR(...) UTXX_SRC_THROW(utxx::badarg_error, UTXX_SRC, ##__VA_ARGS__)
+/// Throw utxx::badarg_error exception with current source location information
+#define UTXX_THROW_BADARG_ERROR(...) \
+    UTXX_SRC_THROW(utxx::badarg_error, UTXX_SRC, ##__VA_ARGS__)
+/// Throw utxx::badarg_error exception with current source location and cached fun name
+#define UTXX_THROWX_BADARG_ERROR(...) \
+    UTXX_SRC_THROW(utxx::badarg_error, UTXX_SRCX, ##__VA_ARGS__)
 
-// Throw utxx::io_error exception with current source location information
-#define UTXX_THROW_IO_ERROR(Errno, ...) UTXX_SRC_THROW(utxx::io_error, UTXX_SRC, (Errno), ##__VA_ARGS__)
+/// Throw utxx::io_error exception with current source location information
+#define UTXX_THROW_IO_ERROR(Errno, ...) \
+    UTXX_SRC_THROW(utxx::io_error, UTXX_SRC, (Errno), ##__VA_ARGS__)
+/// Throw utxx::io_error exception with current source location and cached fun name
+#define UTXX_THROWX_IO_ERROR(Errno, ...) \
+    UTXX_SRC_THROW(utxx::io_error, UTXX_SRCX, (Errno), ##__VA_ARGS__)
 
 namespace utxx {
 
@@ -124,7 +155,9 @@ class src_info {
     int         m_srcloc_len;
     int         m_fun_len;
 public:
-    constexpr src_info() : src_info("", "") {}
+    constexpr src_info()
+        : m_srcloc(""), m_fun(""), m_srcloc_len(0), m_fun_len(0)
+    {}
 
     template <int N, int M>
     constexpr src_info(const char (&a_srcloc)[N], const char (&a_fun)[M]) noexcept
@@ -135,10 +168,13 @@ public:
         static_assert(M >= 1, "Invalid string literal! Length is zero!");
     }
 
-    constexpr src_info(const char a_srcloc[1], const char a_fun[1]) noexcept
-        : m_srcloc(""), m_fun("")
-        , m_srcloc_len(0),  m_fun_len(0)
-    {}
+    template <int N>
+    constexpr src_info(const char (&a_srcloc)[N], const std::string& a_fun) noexcept
+        : m_srcloc(a_srcloc), m_fun(a_fun.c_str())
+        , m_srcloc_len(N-1),  m_fun_len(a_fun.size())
+    {
+        static_assert(N >= 1, "Invalid string literal! Length is zero!");
+    }
 
     src_info(const char* a_srcloc, size_t N, const char* a_fun, size_t M)
         : m_srcloc(a_srcloc), m_fun(a_fun)
@@ -199,6 +235,20 @@ public:
         return p;
     }
 
+    /// Format function name by stripping angular brackets and extra namespaces
+    /// @param a_fun_scope_depth controls how many function name's
+    ///                          namespace levels should be included in the
+    ///                          output (0 - means don't print the function name)
+    static std::string pretty_function(const char* a_pretty_funcation,
+                                       int a_fun_scope_depth = 3)
+    {
+        char buf[128];
+        char* end = to_string(buf, sizeof(buf), "", 0,
+                              a_pretty_funcation, strlen(a_pretty_funcation),
+                              a_fun_scope_depth);
+        return std::string(buf, end - buf);
+    }
+
     /// Format and write "file:line function" information to \a a_buf
     /// @param a_pfx             write leading prefix
     /// @param a_sfx             write trailing suffix
@@ -216,18 +266,21 @@ public:
 #else
             '/';
 #endif
+        const char* q, *e;
 
-        auto q = strrchr(a_srcloc, s_sep);
-        q = q ? q+1 : a_srcloc;
-        auto e   = a_srcloc + a_sl_len;
-        // extra byte for possible '\n'
         auto p   = a_buf;
         auto end = a_buf + a_sz - 1;
-        auto len = std::min<size_t>(end - p, e - q + 1);
-        p = stpncpy(p, q, len);
 
+        if (a_sl_len) {
+            q = strrchr(a_srcloc, s_sep);
+            q = q ? q+1 : a_srcloc;
+            e = a_srcloc + a_sl_len;
+            // extra byte for possible '\n'
+            auto len = std::min<size_t>(end - p, e - q + 1);
+            p = stpncpy(p, q, len);
+        }
         if (a_fun_scope_depth && a_sf_len) {
-            *p++ = ' ';
+            if (a_sl_len) *p++ = ' ';
             // Function name can contain:
             //   "static void fun()"
             //   "static void scope::fun()"
@@ -242,7 +295,8 @@ public:
             struct { const char* l; const char* r; } tribraces[N];
             const char* scopes[N];
             auto begin = a_srcfun;
-            auto inside = false;    // true when we are inside "<...>"
+            auto matched_open_tribrace = -1;
+            auto inside = 0;  // > 0 when we are inside "<...>"
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
             for (q = begin, e = q + a_sf_len; q < e; ++q) {
@@ -258,19 +312,23 @@ public:
                         break;
                     case '<':
                         if (tribrcnt < N) {
-                            auto& x = tribraces[tribrcnt];
+                            auto& x = tribraces[tribrcnt++];
                             x.l = q; x.r = q;
-                            inside = true;
+                            ++inside;
                         }
                         break;
                     case '>':
                         if (inside) {
-                            tribraces[tribrcnt++].r = q+1;
-                            inside = false;
+                            int i = matched_open_tribrace == -1
+                                  ? tribrcnt-1 : matched_open_tribrace-1;
+                            tribraces[i].r = q+1;
+                            inside = std::max<int>(0, inside-1);
+                            matched_open_tribrace = inside ? i : -1;
                         }
                         break;
                     case ':':
-                        if (*(q+1)==':' && scope<N) { scopes[scope++] = q+2; }
+                        if (!inside && *(q+1)==':' && scope<N)
+                            scopes[scope++] = ++q + 1;
                         break;
                 }
             }
@@ -281,7 +339,7 @@ public:
             begin = scopes[start_scope_idx];
             // Are there any templated arguments to be trimmed?
             if (!tribrcnt) {
-                len = std::min<size_t>(end - p, e - begin);
+                auto len = std::min<size_t>(end - p, e - begin);
                 p = stpncpy(p, begin, len);
             } else {
                 q = begin;
@@ -290,14 +348,12 @@ public:
                     auto qe = tribraces[i].l;
                     if (qe <= q)
                         continue;
-                    len = std::min<size_t>(end - p, qe - q);
-                    p = stpncpy(p, q, len);
+                    p = stpncpy(p, q, std::min<size_t>(end - p, qe - q));
                     q = tribraces[i].r;
                 }
                 // Now q points to the character past last '>' found.
                 // Copy everything remaining from q to e
-                len = std::min<size_t>(end - p, e - q);
-                p   = stpncpy(p, q, len);
+                p = stpncpy(p, q, std::min<size_t>(end - p, e - q));
             }
         }
 
@@ -308,7 +364,7 @@ public:
 namespace detail {
     class streamed_exception : public std::exception {
     protected:
-        boost::shared_ptr<std::stringstream> m_out;
+        std::shared_ptr<std::stringstream> m_out;
         mutable std::string m_str;
 
         virtual void cache_str() const throw() {
@@ -320,7 +376,6 @@ namespace detail {
                 }
         }
 
-#if __cplusplus >= 201103L
         streamed_exception& output() { return *this; }
 
         template <class... Args>
@@ -333,7 +388,6 @@ namespace detail {
             *m_out << h;
             return output(std::forward<Args>(t)...);
         }
-#endif
 
     public:
         streamed_exception() : m_out(new std::stringstream()) {}
@@ -467,7 +521,7 @@ class sock_error : public runtime_error {
 
         if (getsockopt(a_fd, SOL_SOCKET, SO_ERROR, (void *)&ec, &errlen) < 0)
             ec = errno;
-        
+
         return errno_string(ec);
     }
 public:
@@ -524,6 +578,3 @@ typedef runtime_error badarg_error;      ///< Bad arguments error.
 typedef runtime_error logic_error;       ///< Program logic error.
 
 } // namespace utxx
-
-#endif // _IO_UTXX_ERROR_HPP_
-
