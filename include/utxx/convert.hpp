@@ -440,7 +440,7 @@ inline const char* unsafe_fixed_atol(const char* p, int64_t& value) {
 }
 
 /**
- * A replacement to atoi() library function that does the job 4 times faster.
+ * A replacement to itoa() library function that does the job 4 times faster.
  * The value written is aligned on the left and padded on the right with \a pad
  * character, unless it is '\0'.
  * @return Pointer above the rightmost character (value or pad) written.
@@ -497,7 +497,7 @@ inline const char* atoi_left(const Char (&bytes)[N], T& value, Char skip = '\0')
 
 
 /**
- * A replacement to atoi() library function that does the job 4 times faster.
+ * A replacement to itoa() library function that does the job 4 times faster.
  * The value written is aligned on the right and padded on the left with \a pad
  * character, unless it is '\0'.
  * @return Pointer below the leftmost character (value or pad) written.
@@ -533,7 +533,7 @@ inline std::string itoa_right(T value, char pad = '\0') {
  * A faster replacement to atoi() library function.
  * Additionally it allows skipping trailing characters before making a conversion.
  * @param bytes will be set to the end of parsed value.
- * @return parsed integer value.
+ * @return pointer past the last parsed character in the input string.
  */
 template <typename T, int N, typename Char>
 inline const char* atoi_right(const Char* bytes, T& value, Char skip = '\0') {

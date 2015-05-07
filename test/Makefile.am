@@ -39,7 +39,6 @@ TEST_UTXX_SRCS = \
 	test_iovec.cpp \
 	test_iovector.cpp \
 	test_logger.cpp \
-	test_logger_async_file.cpp \
 	test_logger_scribe.cpp \
 	test_logger_syslog.cpp \
 	test_math.cpp \
