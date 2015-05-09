@@ -36,7 +36,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum_flags.hpp>
 #include <iostream>
 
-#include <boost/preprocessor.hpp>
+UTXX_DEFINE_ENUMX
+(my_enumx0, ' ',
+    (A,  'a')
+    (BB, 'b')
+    (CCC)
+);
 
 UTXX_DEFINE_ENUMX(my_enumx, ' ', (A, 'a')(BB, 'b')(CCC));
 
