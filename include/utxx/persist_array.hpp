@@ -158,7 +158,8 @@ namespace utxx {
         /// Initialize the storage
         /// @return true if the storage file didn't exist and was created
         bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
-            int a_mode = default_file_mode()) throw (io_error, utxx::runtime_error);
+            int a_mode = default_file_mode(), void const* a_map_address = nullptr,
+            int a_map_options = 0) throw (io_error, utxx::runtime_error);
 
         /// Initialize the storage in shared memory.
         /// @param a_segment  the shared memory segment
@@ -314,7 +315,7 @@ namespace utxx {
 
     template <typename T, size_t NLocks, typename Lock, typename Ext>
     bool persist_array<T,NLocks,Lock,Ext>::
-    init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode)
+    init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode, void const* a_map_address, int a_map_options)
         throw (io_error, utxx::runtime_error)
     {
         auto sz = total_size(a_max_recs);
@@ -395,12 +396,14 @@ namespace utxx {
 
             auto mode = a_read_only ? bip::read_only : bip::read_write;
             bip::file_mapping  shmf  (a_filename, mode);
-            bip::mapped_region region(shmf,       mode);
+            bip::mapped_region region(shmf, mode, 0, sz, a_map_address, a_map_options);
 
             //Get the address of the mapped region
             void*  addr  = region.get_address();
             #ifndef NDEBUG
             size_t size  = region.get_size();
+            assert(addr != nullptr && (a_map_address == nullptr || a_map_address == addr));
+            assert(size == sz);
             #endif
 
             m_file  .swap(shmf);
