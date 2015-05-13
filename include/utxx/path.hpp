@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_PATH_HPP_
 
 #include <string>
+#include <fstream>
+#include <utxx/error.hpp>
 
 namespace utxx {
 namespace path {
@@ -67,6 +69,18 @@ long file_size(int fd);
 
 /// Removes a file
 void file_unlink(const char* a_path);
+
+/// Read the entire content of given file to string
+inline const std::string read_file(std::ifstream& a_in) {
+    return static_cast<std::stringstream const&>(std::stringstream() << a_in.rdbuf()).str();
+}
+
+/// Read the entire content of given file to string
+inline const std::string read_file(const std::string& a_filename) {
+    std::ifstream in(a_filename);
+    if (!in) UTXX_THROW_IO_ERROR(errno, "Unable to open file: ", a_filename);
+    return read_file(in);
+}
 
 /**
  * Return portable value of the home path
