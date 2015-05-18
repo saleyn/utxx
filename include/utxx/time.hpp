@@ -183,9 +183,10 @@ namespace utxx {
     std::tm
     to_tm_utc(std::chrono::time_point<std::chrono::system_clock, Duration> tp)
     {
-        using namespace std;
-        using namespace std::chrono;
-        typedef duration<int, ratio_multiply<hours::period, ratio<24>>> days;
+        using period = std::ratio_multiply<
+                        std::chrono::hours::period,
+                        std::ratio<24>>;
+        using days   = std::chrono::duration<int, period>;
         // t is time duration since 1970-01-01
         Duration t = tp.time_since_epoch();
         // d is days since 1970-01-01
@@ -196,9 +197,11 @@ namespace utxx {
         int year, month, day;
         std::tie(year, month, day) = from_gregorian_days(d.count());
 
-        int h = duration_cast<hours>(t).count();   t -= hours(tp);
-        int m = duration_cast<minutes>(t).count(); t -= minutes(tp);
-        int s = duration_cast<seconds>(t).count();
+        int h  = std::chrono::duration_cast<std::chrono::hours>(t).count();
+            t -= std::chrono::hours(tp);
+        int m  = std::chrono::duration_cast<std::chrono::minutes>(t).count();
+            t -= std::chrono::minutes(tp);
+        int s  = std::chrono::duration_cast<std::chrono::seconds>(t).count();
 
         std::tm tm = {
             s, m, h, day, month-1, year-1900,
