@@ -161,7 +161,7 @@ public:
 
     // This method allows the logging implementation to use
     // an external logging engine
-    void set_engine(multi_file_async_logger& a_engine);
+    void set_engine(multi_file_async_logger& a_engine) { m_engine = &a_engine; }
 
     const std::string& name() const { return m_name; }
 
