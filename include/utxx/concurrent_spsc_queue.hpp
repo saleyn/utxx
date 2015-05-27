@@ -397,6 +397,7 @@ public:
                 break;
             default:
                 assert(false);
+                ret = -1; // To remove the uninitialized warning
         }
         if (ret < 0)
             ret += m_header_ptr->m_capacity;

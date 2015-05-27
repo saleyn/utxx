@@ -126,9 +126,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// UTXX_LOG_N_ARGS() macro depending on whether it was called with one
 /// or two arguments:
 #define UTXX_LOG_1_ARGS(Level) \
-    utxx::logger::msg_streamer(LEVEL_##Level, "",  UTXX_LOG_SRCINFO)
+    utxx::logger::msg_streamer(utxx::LEVEL_##Level, "",  UTXX_LOG_SRCINFO)
 #define UTXX_LOG_2_ARGS(Level, Cat) \
-    utxx::logger::msg_streamer(LEVEL_##Level, Cat, UTXX_LOG_SRCINFO)
+    utxx::logger::msg_streamer(utxx::LEVEL_##Level, Cat, UTXX_LOG_SRCINFO)
 
 #define UTXX_GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
 #define UTXX_LOG_MACRO_CHOOSER(...) \
