@@ -66,7 +66,7 @@ namespace utxx {
         #else
         #  error Platform not supported!
         #endif
-        
+
         template <typename T, int N>
         struct bitcount_helper;
 

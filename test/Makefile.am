@@ -1,11 +1,10 @@
-bindir			   	= ${exec_prefix}/test
-#datadir			 	= ${exec_prefix}/test
+bindir              = ${exec_prefix}/test
+#datadir            = ${exec_prefix}/test
 test_utxxdir        = ${exec_prefix}/test
 
-bin_PROGRAMS       	= test_utxx \
-					  example_delegate \
-			  		  example_repeating_timer \
-					  example_scribe \
+bin_PROGRAMS        = test_utxx \
+                      example_delegate \
+                      example_repeating_timer \
                       example_fast_read
 
 TEST_UTXX64_SRCS = \
@@ -17,7 +16,7 @@ TEST_UTXX64_SRCS = \
 TEST_UTXX_SRCS = \
 	test_alloc_fixed_page.cpp \
 	test_assoc_vector.cpp \
-    test_async_file_logger.cpp \
+	test_async_file_logger.cpp \
 	test_basic_udp_receiver.cpp \
 	test_buffer.cpp \
 	test_call_speed.cpp \
@@ -94,24 +93,24 @@ test_config_validator.cpp: generated/test_config_validator.generated.hpp
 $(top_srcdir)/test/generated:
 	mkdir -v $@
 
-AM_CPPFLAGS = $(if $(debug),\
-				-g $(if $(optimize),-O$(optimize),-O0),\
-				$(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS))
+AM_CPPFLAGS        = $(if $(debug),\
+                       -g $(if $(optimize),-O$(optimize),-O0),\
+                       $(if $(optimize),-O$(optimize) -DBOOST_DISABLE_ASSERTS))
 
 if Ix86
-test_utxx_SOURCES  	= $(TEST_UTXX_SRCS)
+test_utxx_SOURCES  = $(TEST_UTXX_SRCS)
 else
-test_utxx_SOURCES  	= $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
+test_utxx_SOURCES  = $(TEST_UTXX64_SRCS) $(TEST_UTXX_SRCS)
 endif
 
-test_utxx_CXXFLAGS 	= -I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(THRIFT_CPPFLAGS)
-test_utxx_LDFLAGS  	= $(BOOST_LDFLAGS) \
+test_utxx_CXXFLAGS = -I$(top_srcdir)/include -DBOOST_TEST_DYN_LINK $(THRIFT_CPPFLAGS)
+test_utxx_LDFLAGS  = $(BOOST_LDFLAGS) \
                       -L$(srcdir)/../src/.libs -lrt \
                       -rpath $(abspath $(srcdir)/../src/.libs) \
                       -rpath $(abspath $(prefix)/gcc/lib) \
                       $(if $(THRIFT_LIBDIR),-rpath $(THRIFT_LIBDIR))
 
-test_utxx_LDADD    	= -lutxx \
+test_utxx_LDADD    = -lutxx \
                           $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
                           $(BOOST_DATE_TIME_LIB) \
                           $(BOOST_TIMER_LIB) \
@@ -120,7 +119,7 @@ test_utxx_LDADD    	= -lutxx \
                           $(THRIFT_LDFLAGS) $(THRIFT_LIBS) \
                           $(RTLIB)
 
-test_utxx_DATA 		= test_config_validator.xml
+test_utxx_DATA     = test_config_validator.xml
 
 
 example_repeating_timer_CXXFLAGS = -I$(top_srcdir)/include
@@ -131,21 +130,13 @@ example_repeating_timer_LDADD    = $(srcdir)/../src/.libs/libutxx.la \
                                    $(BOOST_TIMER_LIB) $(BOOST_FILESYSTEM_LIB) \
                                    $(THRIFT_LDFLAGS) $(THRIFT_LIBS)
 
-example_delegate_SOURCES	= example_delegate.cpp
-example_delegate_CXXFLAGS 	= $(if $(debug),\
-                                -g $(if $(optimize),-O$(optimize),-O0),\
-                                $(if $(optimize),-O$(optimize))) \
-					          -DUTXX_STANDALONE -I$(srcdir)/../include
-example_delegate_LDFLAGS        = $(BOOST_LDFLAGS)
-example_delegate_LDADD          = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) \
-                                  $(THRIFT_LDFLAGS) $(THRIFT_LIBS)
-
-example_scribe_SOURCES          = test_logger_scribe.cpp
-example_scribe_CXXFLAGS         = -DUTXX_STANDALONE -I$(srcdir)/../include $(THRIFT_CPPFLAGS) \
-							  -I${top_srcdir}/src -I$(THRIFT_DIR)/include/thrift/fb303
-example_scribe_LDFLAGS          = $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) $(THRIFT_LDFLAGS)
-example_scribe_LDADD            = $(BOOST_SYSTEM_LIB) $(BOOST_FILESYSTEM_LIB) \
-                                  $(BOOST_THREAD_LIB) $(THRIFT_LIBS) \
-                                  $(srcdir)/../src/.libs/libutxx.la
+example_delegate_SOURCES         = example_delegate.cpp
+example_delegate_CXXFLAGS        = $(if $(debug),\
+                                   -g $(if $(optimize),-O$(optimize),-O0),\
+                                   $(if $(optimize),-O$(optimize))) \
+                                   -DUTXX_STANDALONE -I$(srcdir)/../include
+example_delegate_LDFLAGS         = $(BOOST_LDFLAGS)
+example_delegate_LDADD           = -lrt $(BOOST_SYSTEM_LIB) $(BOOST_TIMER_LIB) \
+                                   $(THRIFT_LDFLAGS) $(THRIFT_LIBS)
 
 EXTRA_DIST = test_config_validator.xml $(top_src_dir)/bin/config_validator_codegen.py

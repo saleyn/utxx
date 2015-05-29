@@ -1,10 +1,5 @@
-#ifndef UTXX_STANDALONE
-#   include <boost/test/unit_test.hpp>
-#elif UTXX_HAVE_THRIFT_H
-#   include <utxx/logger/logger_impl_scribe.hpp>
-#else
-#   define BOOST_TEST_MODULE logger_test
-#endif
+#include <boost/test/unit_test.hpp>
+#define BOOST_TEST_MODULE logger_test
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -12,37 +7,44 @@
 #pragma GCC diagnostic pop
 
 #include <utxx/logger.hpp>
-#include <utxx/logger/logger_impl_scribe.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_THRIFT_H
+#   include <utxx/logger/logger_impl_scribe.hpp>
+#endif
 
 using namespace boost::property_tree;
 using namespace utxx;
 
-#ifdef UTXX_STANDALONE
-int main(int argc, char* argv[])
-{
-    #ifdef UTXX_HAVE_THRIFT_H
-    boost::shared_ptr<logger_impl_scribe> log( logger_impl_scribe::create("test") );
+#ifdef UTXX_HAVE_THRIFT_H
 
-    if (argc > 1 && (!strcmp("-h", argv[1]) || !strcmp("--help", argv[1]))) {
-        printf("Usage: %s ScribeURL [TimeoutMsec [Iterations]]\n"
-               "    TimeoutMsec    - default 100\n"
-               "    Iterations     - default 10\n"
-               "Example:\n"
-               "    %s uds:///tmp/scribed 1000 10\n",
-               argv[0], argv[0]);
-        exit(1);
-    }
+BOOST_AUTO_TEST_CASE( test_logger_scribe1 )
+{
+    std::shared_ptr<logger_impl_scribe> log( logger_impl_scribe::create("test") );
+
+    const int ITERATIONS = getenv("UTXX_SCRIBE_ITERATIONS")
+                         ? atoi(getenv("UTXX_SCRIBE_ITERATIONS")) : 10;
+    const int TIMEOUT    = getenv("UTXX_SCRIBE_TIMEOUT_MSEC")
+                         ? atoi(getenv("UTXX_SCRIBE_TIMEOUT_MSEC")) : 100;
+    const char* ADDRESS  = getenv("UTXX_SCRIBE_ADDRESS")
+                         ? getenv("UTXX_SCRIBE_ADDRESS")
+                         : "uds:///var/run/scribed";
 
     variant_tree pt;
-    pt.put("logger.scribe.address", argc > 1 ? argv[1] : variant("uds:///var/run/scribed"));
-    pt.put("logger.scribe.levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.scribe.address", variant(ADDRESS));
+    pt.put("logger.scribe.levels",  variant("debug|info|warning|error|fatal|alert"));
 
-    log->init(pt);
-
-    static const int TIMEOUT_MSEC = argc > 2 ? atoi(argv[2]) : 100;
-
-    static const int ITERATIONS = argc > 3 ? atoi(argv[3]) : 10;
+    try {
+        log->init(pt);
+    } catch (utxx::runtime_error& e) {
+        static const char s_err[] = "Failed to open connection";
+        if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
+            BOOST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            return;
+        }
+        throw;
+    }
 
     for (int i=0; i < ITERATIONS; i++) {
         time_val tv(time_val::universal_time());
@@ -53,23 +55,19 @@ int main(int argc, char* argv[])
         logger::msg msg(LEVEL_INFO, "test2", str, UTXX_LOG_SRCINFO);
         log->log_msg(msg, str.c_str(), str.size());
 
-        static const struct timespec tout = { TIMEOUT_MSEC / 1000, TIMEOUT_MSEC % 1000 };
+        static const struct timespec tout = { TIMEOUT / 1000, TIMEOUT % 1000 };
 
         nanosleep(&tout, NULL);
     }
 
+    // Unregister scribe implementation from the logging framework
     log.reset();
-
-    #endif
-
-    return 0;
 }
-#else
-BOOST_AUTO_TEST_CASE( test_logger_scribe )
+
+BOOST_AUTO_TEST_CASE( test_logger_scribe2 )
 {
     variant_tree pt;
 
-    #ifdef UTXX_HAVE_THRIFT_H
     pt.put("logger.console.stderr-levels",  std::string("info|warning|error|fatal|alert"));
     pt.put("logger.scribe.address",         std::string("uds:///var/run/scribed"));
     pt.put("logger.scribe.levels",          std::string("debug|info|warning|error|fatal|alert"));
@@ -105,10 +103,9 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe )
     // Unregister scribe implementation from the logging framework
     log.delete_impl("scribe");
 
-    #endif
-
     BOOST_REQUIRE(true); // Just to suppress the warning
 }
-#endif
+
+#endif // UTXX_HAVE_THRIFT_H
 
 //BOOST_AUTO_TEST_SUITE_END()

@@ -160,7 +160,17 @@ void usage(const char* program) {
          "Return code: = 0  - if the process received at least one packet\n"
          "             > 0  - if no packets were received or there was an error\n\n"
          "Example:\n"
-         "  %s -a \"micex+udp://91.203.253.233@239.195.4.11:26011/RTS-5\" -v -i 1 -d 3\n\n",
+         "  %s -a \"micex+udp://91.203.253.233@239.195.4.11:26011/RTS-5\" -v -i 1 -d 3\n\n"
+         "Reporting format:\n"
+         "  |Sok:|          - Socket ID\n"
+         "  |KBytes/s|      - KBytes per second\n"
+         "  |Pkts/s|        - Packets per second rate\n"
+         "  |OutOfO|        - Out of order packets (available if MARKET is supported by this tool)\n"
+         "  |SqGap|         - Number of sequence gaps (available if MARKET is supported)\n"
+         "  |Es|            - Number of empty sockets\n"
+         "  |Gs|            - Number of sockets that had gaps\n"
+         "  |Os|            - Number of sockets that has out-of-order packets\n"
+         "\n",
          program, program);
   exit(1);
 }

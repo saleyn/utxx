@@ -245,7 +245,7 @@ static inline void set_bit(int n, volatile unsigned long* addr) {
             : "memory");
     } else {
         asm volatile("lock; bts %1,%0"
-            : UTXX_ADDR(addr) : "Ir" (n) : "memory");
+            : UTXX_ADDR__(addr) : "Ir" (n) : "memory");
     }
 }
 
@@ -258,10 +258,10 @@ static inline void clear_bit(int n, volatile unsigned long* addr) {
             : "iq" ((uint8_t)bits::detail::const_mask(n)));
     } else {
         asm volatile("lock; btr %1,%0"
-            : UTXX_ADDR(addr) : "Ir" (n));
+            : UTXX_ADDR__(addr) : "Ir" (n));
     }
     */
-    asm volatile("lock; btr %1,%0" : UTXX_ADDR(addr) : "Ir" (n));
+    asm volatile("lock; btr %1,%0" : UTXX_ADDR__(addr) : "Ir" (n));
 }
 
 /// Atomically toggle a bit in memory
@@ -272,7 +272,7 @@ static inline void change_bit(int n, volatile unsigned long* addr) {
             : "iq" ((uint8_t)bits::detail::const_mask(n)));
     } else {
         asm volatile("lock; btc %1,%0"
-            : UTXX_ADDR(addr) : "Ir" (n));
+            : UTXX_ADDR__(addr) : "Ir" (n));
     }
 }
 
@@ -280,7 +280,7 @@ static inline void change_bit(int n, volatile unsigned long* addr) {
 static inline int test_and_set_bit(int n, volatile unsigned long *addr) {
     int oldbit;
     asm volatile("lock; bts %2,%1\n\t"
-        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR(addr) : "Ir" (n) : "memory");
+        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
     return oldbit;
 }
 
@@ -288,7 +288,7 @@ static inline int test_and_set_bit(int n, volatile unsigned long *addr) {
 static inline int test_and_clear_bit(int n, volatile unsigned long *addr) {
     int oldbit;
     asm volatile("lock; btr %2,%1\n\t"
-        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR(addr) : "Ir" (n) : "memory");
+        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
     return oldbit;
 }
 
@@ -296,7 +296,7 @@ static inline int test_and_clear_bit(int n, volatile unsigned long *addr) {
 static inline int test_and_change_bit(int n, volatile unsigned long *addr) {
     int oldbit;
     asm volatile("lock; btc %2,%1\n\t"
-        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR(addr) : "Ir" (n) : "memory");
+        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
     return oldbit;
 }
 
