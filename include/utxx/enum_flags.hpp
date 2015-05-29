@@ -108,6 +108,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         constexpr ENUM(etype a, Args... args) : m_val(bor(a, args...)) {}   \
                                                                             \
         void               clear()             { m_val = 0;     }           \
+        void               clear(etype  a)     { m_val &= ~size_t(a); }     \
+        void               clear(size_t a)     { m_val &= ~a;   }           \
         constexpr operator size_t()      const { return m_val;  }           \
         constexpr operator uint()        const { return m_val;  }           \
         constexpr operator etype()       const { return etype(m_val); }     \
@@ -118,7 +120,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         constexpr bool   valid(size_t a) const { return a < _END_;    }     \
         static constexpr size_t size()         { return s_size;       }     \
                                                                             \
-        ENUM operator|= (etype a) { m_val |= size_t(a); return *this; }     \
+        ENUM operator=  (etype  a) { m_val  = size_t(a); return *this; }    \
+        ENUM operator=  (size_t a) { m_val  = a;         return *this; }    \
+        ENUM operator|= (etype  a) { m_val |= size_t(a); return *this; }    \
                                                                             \
         friend constexpr ENUM operator| (ENUM a, ENUM b)  {                 \
             return ENUM(etype(a.m_val | b.m_val));                          \

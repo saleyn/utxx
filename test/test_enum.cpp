@@ -207,4 +207,10 @@ BOOST_AUTO_TEST_CASE( test_enum_flags )
         });
         BOOST_CHECK_EQUAL("BE", s.str());
     }
+
+    v.clear();
+    BOOST_CHECK(v.empty());
+    v = my_flags::B | my_flags::C | my_flags::E;
+    v.clear(my_flags::C | my_flags::E);
+    BOOST_CHECK(v == my_flags::B);
 }
