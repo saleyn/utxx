@@ -139,13 +139,11 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
         }
     }
 
-    auto sthis = this->shared_from_this();
-
     m_fd = m_engine->open_stream(m_name.c_str(),
-                                 [sthis](async_logger_engine::stream_info& a_si,
+                                 [this](async_logger_engine::stream_info& a_si,
                                          const char** a_categories,
                                          const iovec* a_data, size_t a_size) {
-                                    return sthis->writev
+                                    return this->writev
                                         (a_si, a_categories, a_data, a_size);
                                  },
                                  nullptr,
@@ -154,9 +152,11 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     if (!m_fd)
         throw std::runtime_error("Error opening scribe logging stream!");
 
-    m_engine->set_reconnect(m_fd,
-                           boost::bind(&logger_impl_scribe::on_reconnect,
-                                       this->shared_from_this(), _1));
+    m_engine->set_reconnect
+        (m_fd, [this](typename async_logger_engine::stream_info& a_si) {
+                    return this->on_reconnect(a_si);
+               });
+
     m_engine->start();
 
     return true;

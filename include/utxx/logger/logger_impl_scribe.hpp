@@ -76,21 +76,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <thrift/transport/TSocket.h>
 #include <thrift/transport/TBufferTransports.h>
 
-#if __cplusplus >= 201103L
-#  include <memory>
-#else
-#  include <boost/enable_shared_from_this.hpp>
-#endif
+#include <memory>
 
 namespace utxx {
 
 class logger_impl_scribe
     : public logger_impl
-#if __cplusplus >= 201103L
-    , public std::enable_shared_from_this<logger_impl_scribe>
-#else
-    , public boost::enable_shared_from_this<logger_impl_scribe>
-#endif
 {
 //     struct logger_traits: public multi_file_async_logger_traits {
 //         typedef memory::cached_allocator<char> allocator;
