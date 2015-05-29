@@ -107,6 +107,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename... Args>                                         \
         constexpr ENUM(etype a, Args... args) : m_val(bor(a, args...)) {}   \
                                                                             \
+        void               clear()             { m_val = 0;     }           \
         constexpr operator size_t()      const { return m_val;  }           \
         constexpr operator uint()        const { return m_val;  }           \
         constexpr operator etype()       const { return etype(m_val); }     \
