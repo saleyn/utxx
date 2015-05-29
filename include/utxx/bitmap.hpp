@@ -64,8 +64,9 @@ public:
     bool            empty()  const { return m_data == 0; }
     void            clear()        { m_data = 0; }
 
-    void set(unsigned int i)   { valid(i); m_data |= 1ul << i; }
-    void clear(unsigned int i) { valid(i); m_data ^= m_data & (1ul << i); }
+    void fill()                    { m_data = uint64_t(-1); }
+    void set(unsigned int i)       { valid(i); m_data |= 1ul << i; }
+    void clear(unsigned int i)     { valid(i); m_data ^= m_data & (1ul << i); }
     bool is_set(unsigned int i) const { valid(i); return m_data & (1ul << i); }
     int  first() const { return m_data ? atomic::bit_scan_forward(m_data) : end(); }
     int  last()  const { return m_data ? atomic::bit_scan_reverse(m_data) : end(); }
@@ -124,6 +125,11 @@ public:
     unsigned int                end()   const { return max+1; }
     bool                        empty() const { return base::value() == 0; }
 
+    void fill() {
+        for (int i=0; i < s_hi_dim; ++i) m_data[i].fill();
+        base::fill();
+    }
+
     void clear() {
         for (int i=0; i < s_hi_dim; ++i) m_data[i].clear();
         base::clear();
@@ -135,7 +141,7 @@ public:
         m_data[hi].set(lo);
         base::set(m_data[hi].value() ? hi : 0);
     }
-    
+
     void clear(unsigned int i) {
         valid(i); 
         unsigned int hi = i>>s_hi_sft, lo = i&s_lo_mask;
