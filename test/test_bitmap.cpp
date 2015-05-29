@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( bitmap_low_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_low )
 {
     bitmap64 bm;
 
@@ -66,13 +66,16 @@ BOOST_AUTO_TEST_CASE( bitmap_low_test )
     BOOST_REQUIRE_EQUAL(57,             bm.prev(63)); // valid range [63..1]
     BOOST_REQUIRE_EQUAL((int)bm.end(),  bm.prev(1));  // valid range [63..0]
     BOOST_REQUIRE_EQUAL((int)bm.end(),  bm.next(62)); // valid range [0..62]
-    
+
     BOOST_REQUIRE_EQUAL(57,             bm.prev(63));
     BOOST_REQUIRE_EQUAL(3,              bm.prev(57));
     BOOST_REQUIRE_EQUAL((int)bm.end(),  bm.prev(3));
+
+    bm.fill();
+    BOOST_REQUIRE_EQUAL(uint64_t(-1),   bm.value());
 }
 
-BOOST_AUTO_TEST_CASE( bit_count_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_bit_count )
 {
     {
         uint32_t n;
@@ -100,7 +103,7 @@ BOOST_AUTO_TEST_CASE( bit_count_test )
     }
 }
 
-BOOST_AUTO_TEST_CASE( bitmap_low_boundary_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_low_boundary )
 {
     bitmap64 bm;
     unsigned int max = bitmap64::max;
@@ -120,7 +123,7 @@ BOOST_AUTO_TEST_CASE( bitmap_low_boundary_test )
     BOOST_REQUIRE_EQUAL((int)bm.end(), bm.prev(0));
 }
 
-BOOST_AUTO_TEST_CASE( bitmap_low_clear_all_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_low_clear_all )
 {
     bitmap64 bm;
 
@@ -134,7 +137,7 @@ BOOST_AUTO_TEST_CASE( bitmap_low_clear_all_test )
     BOOST_REQUIRE(bm.empty());
 }
 
-BOOST_AUTO_TEST_CASE( bitmap_high_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_high )
 {
     bitmap4096 bm;
 
@@ -188,7 +191,7 @@ BOOST_AUTO_TEST_CASE( bitmap_high_test )
     BOOST_REQUIRE_EQUAL((int)bm.end(),   bm.prev(3));
 }
 
-BOOST_AUTO_TEST_CASE( high_boundary_test )
+BOOST_AUTO_TEST_CASE( bitmap_high_boundary_test )
 {
     bitmap4096 bm;
     int max = bitmap4096::max;
@@ -206,7 +209,7 @@ BOOST_AUTO_TEST_CASE( high_boundary_test )
     BOOST_REQUIRE_EQUAL(max, bm.next(max-1));
 }
 
-BOOST_AUTO_TEST_CASE( high_boundary_test2 )
+BOOST_AUTO_TEST_CASE( bitmap_high_boundary_test2 )
 {
     bitmap4096 bm;
 
@@ -215,7 +218,7 @@ BOOST_AUTO_TEST_CASE( high_boundary_test2 )
     BOOST_REQUIRE_EQUAL((int)bm.end(), bm.next(8));
 }
 
-BOOST_AUTO_TEST_CASE( bitmap_high_clear_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_high_clear_test )
 {
     bitmap4096 bm;
 
@@ -237,7 +240,7 @@ BOOST_AUTO_TEST_CASE( bitmap_high_clear_test )
     BOOST_REQUIRE(bm.empty());
 }
 
-BOOST_AUTO_TEST_CASE( bitmap_high_clear_all_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_high_clear_all_test )
 {
     bitmap4096 bm;
 
@@ -286,7 +289,7 @@ BOOST_AUTO_TEST_CASE( test_bitmap_clear )
     }
 }
 
-BOOST_AUTO_TEST_CASE( bitmap_mid_test )
+BOOST_AUTO_TEST_CASE( test_bitmap_mid )
 {
     typedef bitmap_high<129> bitmap129;
     bitmap129 bm;
