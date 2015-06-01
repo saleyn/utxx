@@ -61,14 +61,17 @@ const char* basename(const char* begin, const char* end);
 
 /// Checks if a file exists
 bool file_exists(const char* a_path);
+inline bool file_exists(const std::string& a_path) { return file_exists(a_path.c_str()); }
 
 /// Get file size
 long file_size(const char* a_filename);
+inline long file_size(const std::string& a_filename) { return file_size(a_filename.c_str()); }
 /// Get file size of the file associated with the file descriptor
 long file_size(int fd);
 
 /// Removes a file
 void file_unlink(const char* a_path);
+inline void file_unlink(const std::string& a_path) { file_unlink(a_path.c_str()); }
 
 /// Read the entire content of given file to string
 inline const std::string read_file(std::ifstream& a_in) {
