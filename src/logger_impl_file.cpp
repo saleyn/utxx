@@ -96,9 +96,9 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
             tzset();
 
-            auto tz = -timezone;
-            auto hh = tz / 3600;
-            auto mm = tz % 60;
+            int  tz = -timezone;
+            int  hh = tz / 3600;
+            int  mm = tz % 60;
             p += snprintf(p, p - end, "# Logging started at: %s %c%02d:%02d\n#",
                           timestamp::to_string(DATE_TIME).c_str(),
                           tz > 0 ? '+' : '-', hh, mm);

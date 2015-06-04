@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_LOGGER_ENUMS_HPP_
 #define _UTXX_LOGGER_ENUMS_HPP_
 
+#include <strings.h>
+
 namespace utxx { 
 
 struct logger;
@@ -57,6 +59,28 @@ enum log_level {
     , LEVEL_NO_TRACE = LEVEL_NO_DEBUG | LEVEL_DEBUG
     , LEVEL_LOG_ALL  = LEVEL_NO_TRACE | LEVEL_TRACE1 | LEVEL_TRACE2 | LEVEL_TRACE3 |
                        LEVEL_TRACE4   | LEVEL_TRACE5
+};
+
+/// Class to map log_level into range:
+///   1 = WARNING, 2 = INFO, 3 = DEBUG, 4 = TRACE, 5..9 = TRACE1-5
+template <log_level L>
+constexpr int as_int() {
+    return  L >= LEVEL_WARNING                 ? 1 :
+            (L & LEVEL_INFO)                   ? 2 :
+            (L & LEVEL_DEBUG)                  ? 3 :
+            (L & LEVEL_TRACE5) == LEVEL_TRACE5 ? 9 :
+            (L & LEVEL_TRACE4) == LEVEL_TRACE4 ? 8 :
+            (L & LEVEL_TRACE3) == LEVEL_TRACE3 ? 7 :
+            (L & LEVEL_TRACE2) == LEVEL_TRACE2 ? 6 :
+            (L & LEVEL_TRACE1) == LEVEL_TRACE1 ? 5 :
+            (L & LEVEL_TRACE)  == LEVEL_TRACE  ? 4 : 0;
+};
+
+/// Class to map log_level into range [1 ... 9].
+/// Same as the static version above, but usable at run-time
+inline int as_int(log_level L) {
+    int level = ffs(L);
+    return 10 - (level > 9 ? 9 : level);
 };
 
 } // namespace utxx

@@ -29,6 +29,32 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 {
     variant_tree pt;
 
+    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ALERT>()));
+    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_FATAL>()));
+    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ERROR>()));
+    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_WARNING>()));
+    BOOST_CHECK_EQUAL(2, (as_int<LEVEL_INFO>()));
+    BOOST_CHECK_EQUAL(3, (as_int<LEVEL_DEBUG>()));
+    BOOST_CHECK_EQUAL(4, (as_int<LEVEL_TRACE>()));
+    BOOST_CHECK_EQUAL(5, (as_int<LEVEL_TRACE1>()));
+    BOOST_CHECK_EQUAL(6, (as_int<LEVEL_TRACE2>()));
+    BOOST_CHECK_EQUAL(7, (as_int<LEVEL_TRACE3>()));
+    BOOST_CHECK_EQUAL(8, (as_int<LEVEL_TRACE4>()));
+    BOOST_CHECK_EQUAL(9, (as_int<LEVEL_TRACE5>()));
+
+    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ALERT)));
+    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_FATAL)));
+    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ERROR)));
+    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_WARNING)));
+    BOOST_CHECK_EQUAL(2, (as_int(LEVEL_INFO)));
+    BOOST_CHECK_EQUAL(3, (as_int(LEVEL_DEBUG)));
+    BOOST_CHECK_EQUAL(4, (as_int(LEVEL_TRACE)));
+    BOOST_CHECK_EQUAL(5, (as_int(LEVEL_TRACE1)));
+    BOOST_CHECK_EQUAL(6, (as_int(LEVEL_TRACE2)));
+    BOOST_CHECK_EQUAL(7, (as_int(LEVEL_TRACE3)));
+    BOOST_CHECK_EQUAL(8, (as_int(LEVEL_TRACE4)));
+    BOOST_CHECK_EQUAL(9, (as_int(LEVEL_TRACE5)));
+
     pt.put("logger.timestamp",             variant("time-usec"));
     pt.put("logger.min-level-filter",      variant("debug"));
     pt.put("logger.console.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
