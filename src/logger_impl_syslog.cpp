@@ -70,6 +70,7 @@ static int get_priority(log_level level) {
     switch (level) {
         case LEVEL_DEBUG:   return LOG_DEBUG;
         case LEVEL_INFO:    return LOG_INFO;
+        case LEVEL_NOTICE:  return LOG_NOTICE;
         case LEVEL_WARNING: return LOG_WARNING;
         case LEVEL_ERROR:   return LOG_ERR;
         case LEVEL_FATAL:   return LOG_CRIT;

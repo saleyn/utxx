@@ -73,6 +73,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define UTXX_LOG_TRACE1( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE1 , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_DEBUG(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_DEBUG  , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_INFO(   Fmt, ...)     UTXX_CLOG(utxx::LEVEL_INFO   , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_NOTICE( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_NOTICE , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_WARNING(Fmt, ...)     UTXX_CLOG(utxx::LEVEL_WARNING, "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_ERROR(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_ERROR  , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_FATAL(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_FATAL  , "",  Fmt, ##__VA_ARGS__)
@@ -83,6 +84,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define UTXX_CLOG_TRACE2( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE2 , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_TRACE1( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE1 , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_DEBUG(  Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_DEBUG  , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_CLOG_NOTICE( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_NOTICE , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_INFO(   Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_INFO   , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_WARNING(Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_WARNING, Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_ERROR(  Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_ERROR  , Cat, Fmt, ##__VA_ARGS__)
@@ -96,6 +98,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define LOG_TRACE1   UTXX_LOG_TRACE1
 #   define LOG_DEBUG    UTXX_LOG_DEBUG
 #   define LOG_INFO     UTXX_LOG_INFO
+#   define LOG_NOTICE   UTXX_LOG_NOTICE
 #   define LOG_WARNING  UTXX_LOG_WARNING
 #   define LOG_ERROR    UTXX_LOG_ERROR
 #   define LOG_FATAL    UTXX_LOG_FATAL
@@ -107,6 +110,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define CLOG_TRACE1  UTXX_CLOG_TRACE1
 #   define CLOG_DEBUG   UTXX_CLOG_DEBUG
 #   define CLOG_INFO    UTXX_CLOG_INFO
+#   define CLOG_NOTICE  UTXX_CLOG_NOTICE
 #   define CLOG_WARNING UTXX_CLOG_WARNING
 #   define CLOG_ERROR   UTXX_CLOG_ERROR
 #   define CLOG_FATAL   UTXX_CLOG_FATAL

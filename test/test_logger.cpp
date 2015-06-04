@@ -33,31 +33,33 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(1, (as_int<LEVEL_FATAL>()));
     BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ERROR>()));
     BOOST_CHECK_EQUAL(1, (as_int<LEVEL_WARNING>()));
-    BOOST_CHECK_EQUAL(2, (as_int<LEVEL_INFO>()));
-    BOOST_CHECK_EQUAL(3, (as_int<LEVEL_DEBUG>()));
-    BOOST_CHECK_EQUAL(4, (as_int<LEVEL_TRACE>()));
-    BOOST_CHECK_EQUAL(5, (as_int<LEVEL_TRACE1>()));
-    BOOST_CHECK_EQUAL(6, (as_int<LEVEL_TRACE2>()));
-    BOOST_CHECK_EQUAL(7, (as_int<LEVEL_TRACE3>()));
-    BOOST_CHECK_EQUAL(8, (as_int<LEVEL_TRACE4>()));
-    BOOST_CHECK_EQUAL(9, (as_int<LEVEL_TRACE5>()));
+    BOOST_CHECK_EQUAL(2, (as_int<LEVEL_NOTICE>()));
+    BOOST_CHECK_EQUAL(3, (as_int<LEVEL_INFO>()));
+    BOOST_CHECK_EQUAL(4, (as_int<LEVEL_DEBUG>()));
+    BOOST_CHECK_EQUAL(5, (as_int<LEVEL_TRACE>()));
+    BOOST_CHECK_EQUAL(6, (as_int<LEVEL_TRACE1>()));
+    BOOST_CHECK_EQUAL(7, (as_int<LEVEL_TRACE2>()));
+    BOOST_CHECK_EQUAL(8, (as_int<LEVEL_TRACE3>()));
+    BOOST_CHECK_EQUAL(9, (as_int<LEVEL_TRACE4>()));
+    BOOST_CHECK_EQUAL(10,(as_int<LEVEL_TRACE5>()));
 
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ALERT)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_FATAL)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ERROR)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_WARNING)));
-    BOOST_CHECK_EQUAL(2, (as_int(LEVEL_INFO)));
-    BOOST_CHECK_EQUAL(3, (as_int(LEVEL_DEBUG)));
-    BOOST_CHECK_EQUAL(4, (as_int(LEVEL_TRACE)));
-    BOOST_CHECK_EQUAL(5, (as_int(LEVEL_TRACE1)));
-    BOOST_CHECK_EQUAL(6, (as_int(LEVEL_TRACE2)));
-    BOOST_CHECK_EQUAL(7, (as_int(LEVEL_TRACE3)));
-    BOOST_CHECK_EQUAL(8, (as_int(LEVEL_TRACE4)));
-    BOOST_CHECK_EQUAL(9, (as_int(LEVEL_TRACE5)));
+    BOOST_CHECK_EQUAL(2, (as_int(LEVEL_NOTICE)));
+    BOOST_CHECK_EQUAL(3, (as_int(LEVEL_INFO)));
+    BOOST_CHECK_EQUAL(4, (as_int(LEVEL_DEBUG)));
+    BOOST_CHECK_EQUAL(5, (as_int(LEVEL_TRACE)));
+    BOOST_CHECK_EQUAL(6, (as_int(LEVEL_TRACE1)));
+    BOOST_CHECK_EQUAL(7, (as_int(LEVEL_TRACE2)));
+    BOOST_CHECK_EQUAL(8, (as_int(LEVEL_TRACE3)));
+    BOOST_CHECK_EQUAL(9, (as_int(LEVEL_TRACE4)));
+    BOOST_CHECK_EQUAL(10,(as_int(LEVEL_TRACE5)));
 
     pt.put("logger.timestamp",             variant("time-usec"));
     pt.put("logger.min-level-filter",      variant("debug"));
-    pt.put("logger.console.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.console.stdout-levels", variant("debug|info|notice|warning|error|fatal|alert"));
     pt.put("logger.show-ident",            true);
 
     if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
@@ -75,7 +77,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_REQUIRE(console);
 
     BOOST_REQUIRE_EQUAL(
-        LEVEL_DEBUG | LEVEL_INFO  | LEVEL_WARNING |
+        LEVEL_DEBUG | LEVEL_INFO  | LEVEL_NOTICE | LEVEL_WARNING |
         LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT,
         console->stdout_levels());
 
@@ -157,7 +159,7 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
     variant_tree pt;
 
     pt.put("logger.timestamp",  variant("time-usec"));
-    pt.put("logger.console.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.console.stdout-levels", variant("debug|notice|info|warning|error|fatal|alert"));
     pt.put("logger.show-ident", false);
     pt.put("logger.handle-crash-signals", true); // This is default behavior
 

@@ -86,6 +86,7 @@ const char* logger::log_level_to_str(log_level level) noexcept
         case LEVEL_TRACE    : return "TRACE";
         case LEVEL_DEBUG    : return "DEBUG";
         case LEVEL_INFO     : return "INFO";
+        case LEVEL_NOTICE   : return "NOTICE";
         case LEVEL_WARNING  : return "WARNING";
         case LEVEL_ERROR    : return "ERROR";
         case LEVEL_FATAL    : return "FATAL";
@@ -106,6 +107,7 @@ size_t logger::log_level_size(log_level level) noexcept
         case LEVEL_TRACE    :
         case LEVEL_DEBUG    : return 5;
         case LEVEL_INFO     : return 4;
+        case LEVEL_NOTICE   : return 6;
         case LEVEL_WARNING  : return 7;
         case LEVEL_ERROR    :
         case LEVEL_FATAL    :
@@ -126,10 +128,11 @@ int logger::level_to_signal_slot(log_level level) noexcept
         case LEVEL_TRACE    : return 0;
         case LEVEL_DEBUG    : return 1;
         case LEVEL_INFO     : return 2;
-        case LEVEL_WARNING  : return 3;
-        case LEVEL_ERROR    : return 4;
-        case LEVEL_FATAL    : return 5;
-        case LEVEL_ALERT    : return 6;
+        case LEVEL_NOTICE   : return 3;
+        case LEVEL_WARNING  : return 4;
+        case LEVEL_ERROR    : return 5;
+        case LEVEL_FATAL    : return 6;
+        case LEVEL_ALERT    : return 7;
         default             : assert(false);
     }
 }
@@ -140,15 +143,16 @@ log_level logger::signal_slot_to_level(int slot) noexcept
         case 0: return LEVEL_TRACE;
         case 1: return LEVEL_DEBUG;
         case 2: return LEVEL_INFO;
-        case 3: return LEVEL_WARNING;
-        case 4: return LEVEL_ERROR;
-        case 5: return LEVEL_FATAL;
-        case 6: return LEVEL_ALERT;
+        case 3: return LEVEL_NOTICE;
+        case 4: return LEVEL_WARNING;
+        case 5: return LEVEL_ERROR;
+        case 6: return LEVEL_FATAL;
+        case 7: return LEVEL_ALERT;
         default: assert(false);
     }
 }
 
-const char* logger::default_log_levels = "INFO|WARNING|ERROR|ALERT|FATAL";
+const char* logger::default_log_levels = "INFO|NOTICE|WARNING|ERROR|ALERT|FATAL";
 
 void logger::add_macro(const std::string& a_macro, const std::string& a_value)
 {
@@ -475,6 +479,7 @@ int logger::parse_log_levels(const std::string& a_levels)
         else if (*it == "TRACE5")  result |= LEVEL_TRACE | LEVEL_TRACE5;
         else if (*it == "DEBUG")   result |= LEVEL_DEBUG;
         else if (*it == "INFO")    result |= LEVEL_INFO;
+        else if (*it == "NOTICE")  result |= LEVEL_NOTICE;
         else if (*it == "WARNING") result |= LEVEL_WARNING;
         else if (*it == "ERROR")   result |= LEVEL_ERROR;
         else if (*it == "FATAL")   result |= LEVEL_FATAL;
