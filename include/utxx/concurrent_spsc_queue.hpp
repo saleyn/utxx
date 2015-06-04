@@ -396,8 +396,10 @@ public:
                     - int(head().load(std::memory_order_consume));
                 break;
             default:
-                assert(false);
-                ret = -1; // To remove the uninitialized warning
+                // If we are undetermined (e.g. Both), use "consume" memory
+                // order hoping it's going to be valid:
+                ret = int(tail().load(std::memory_order_consume))
+                    - int(head().load(std::memory_order_consume));
         }
         if (ret < 0)
             ret += m_header_ptr->m_capacity;
