@@ -56,14 +56,14 @@ enum log_level {
     , LEVEL_FATAL    = 1 << 11
     , LEVEL_ALERT    = 1 << 12
     , LEVEL_LOG      = 1 << 13
-    , LEVEL_NO_DEBUG = LEVEL_INFO | LEVEL_NOTICE | LEVEL_WARNING | 
-                       LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT | LEVEL_LOG
+    , LEVEL_NO_DEBUG = LEVEL_INFO     | LEVEL_NOTICE | LEVEL_WARNING | 
+                       LEVEL_ERROR    | LEVEL_FATAL  | LEVEL_ALERT   | LEVEL_LOG
     , LEVEL_NO_TRACE = LEVEL_NO_DEBUG | LEVEL_DEBUG
-    , LEVEL_LOG_ALL  = LEVEL_NO_TRACE | LEVEL_TRACE1 | LEVEL_TRACE2 | LEVEL_TRACE3 |
+    , LEVEL_LOG_ALL  = LEVEL_NO_TRACE | LEVEL_TRACE1 | LEVEL_TRACE2  | LEVEL_TRACE3 |
                        LEVEL_TRACE4   | LEVEL_TRACE5
 };
 
-/// Class to map log_level into range:
+/// Function to map log_level into range:
 ///   1 = WARNING, 2 = NOTICE, 3 = INFO, 4 = DEBUG, 5 = TRACE, 6..10 = TRACE1-5
 template <log_level L>
 constexpr int as_int() {
@@ -79,12 +79,18 @@ constexpr int as_int() {
             (L & LEVEL_TRACE)  == LEVEL_TRACE  ? 5 : 0;
 };
 
-/// Class to map log_level into range [1 ... 10].
+/// Function to map log_level into range [1 ... 10].
 /// Same as the static version above, but usable at run-time
 inline int as_int(log_level L) {
     int level = ffs(L);
     return 11 - (level > 10 ? 10 : level);
 };
+
+/// Function to map an integer in range [1 ... 10] to log_level [WARNING ... TRACE5].
+inline int as_log_level(uint8_t a) {
+    uint8_t i = 10 - (a > 10 ? 10 : a);
+    return log_level(i < 5 ? (1 << 5 | 1 << i) : 1 << i);
+}
 
 } // namespace utxx
 

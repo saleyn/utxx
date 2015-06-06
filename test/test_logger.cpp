@@ -57,6 +57,18 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(9, (as_int(LEVEL_TRACE4)));
     BOOST_CHECK_EQUAL(10,(as_int(LEVEL_TRACE5)));
 
+    BOOST_CHECK(LEVEL_ERROR   == as_log_level(0 ));
+    BOOST_CHECK(LEVEL_WARNING == as_log_level(1 ));
+    BOOST_CHECK(LEVEL_NOTICE  == as_log_level(2 ));
+    BOOST_CHECK(LEVEL_INFO    == as_log_level(3 ));
+    BOOST_CHECK(LEVEL_DEBUG   == as_log_level(4 ));
+    BOOST_CHECK(LEVEL_TRACE   == as_log_level(5 ));
+    BOOST_CHECK(LEVEL_TRACE1  == as_log_level(6 ));
+    BOOST_CHECK(LEVEL_TRACE2  == as_log_level(7 ));
+    BOOST_CHECK(LEVEL_TRACE3  == as_log_level(8 ));
+    BOOST_CHECK(LEVEL_TRACE4  == as_log_level(9 ));
+    BOOST_CHECK(LEVEL_TRACE5  == as_log_level(10));
+
     pt.put("logger.timestamp",             variant("time-usec"));
     pt.put("logger.min-level-filter",      variant("debug"));
     pt.put("logger.console.stdout-levels", variant("debug|info|notice|warning|error|fatal|alert"));
