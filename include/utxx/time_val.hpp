@@ -78,7 +78,7 @@ namespace utxx {
         long usec;
         explicit secs(size_t s) : usec(long(s) * 1000000)  {}
         explicit secs(long   s) : usec(s * 1000000)        {}
-        explicit secs(int    s) : usec(s * 1000000)        {}
+        explicit secs(int    s) : usec(long(s) * 1000000)  {}
         explicit secs(double s) : usec(long(round(s*1e6))) {}
     };
 
