@@ -77,7 +77,7 @@ def print_element(e, stream = sys.stdout, with_offset=True, ids=None):
     print >> stream, node_to_string(e, with_offset=with_offset, ids=ids)
 
 def format_name(name):
-    return re.sub('[-.,;:]', '_', name.upper())
+    return re.sub('[-.,;: ]', '_', name.upper())
 
 class RenamedTemporaryFile(object):
     """
@@ -340,7 +340,7 @@ class ConfigGenerator(object):
             f.write("//%s\n\n" % ("-" * 78))
 
             ifdeftag = "_UTXX_AUTOGEN_%s_" % \
-                       outname.strip(" \\").upper().replace('.', '_')
+                       outname.strip(" \\").upper().replace('.', '_').replace('-', '_')
             f.write("#ifndef %s\n" % ifdeftag)
             f.write("#define %s\n\n" % ifdeftag)
             f.write("#include <utxx/config_validator.hpp>\n\n")

@@ -88,7 +88,7 @@ namespace utxx {
     {
         static const long   N10e6 = 1000000;
         static const size_t N10e9 = 1000000000u;
-        long m_tv;
+        int64_t             m_tv;
 
     public:
         time_val() : m_tv(0) {}
