@@ -26,7 +26,7 @@ AM_CONDITIONAL([Ix86], [case x$host_cpu in xi?86) test -n a;; *) test;; esac])
 
 AC_ARG_VAR([ERLC_FLAGS], [general flags to prepend to ERLC_FLAGS])
 
-CXXFLAGS="-MMD -D_REENTRANT -Wno-unused-local-typedefs -Wdeprecated-declarations -DBOOST_SYSTEM_NO_DEPRECATED"
+CXXFLAGS="-MMD -D_REENTRANT -Wno-unused-local-typedefs -Wno-deprecated-declarations -DBOOST_SYSTEM_NO_DEPRECATED"
 CPPFLAGS=
 LDFLAGS=
 

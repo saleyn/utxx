@@ -188,7 +188,7 @@ namespace detail {
             if (skip)
                 while (*p == skip && p != end) p++;
             double res = 0.0;
-            (void)atof<double>(p, end, &res);
+            (void)atof<double>(p, end, res);
             return res;
         }
 

@@ -614,7 +614,7 @@ inline Char* itoa_right(Char* a_data, size_t a_size, T a_value, Char a_pad = '\0
 /// @return input string ptr beyond the the value read if successful, NULL otherwise
 //
 template <typename T, bool TillEOL = true>
-const char* fast_atoi(const char* a_str, const char* a_end, T& res) {
+inline const char* fast_atoi(const char* a_str, const char* a_end, T& res) {
     if (a_str >= a_end) return nullptr;
 
     bool l_neg;
@@ -680,17 +680,17 @@ char* itoa(T value, char*& result, int base = 10) {
 /// right-aligned, left-padded with '0's if necessary)
 /// @return pointer to the end
 template <typename T, int N>
-char* itoa16_right(char* (&result), T value)
+char* itoa16_right(char*& a_result, T a_value)
 {
-  detail::unrolled_loop_itoa16_right<T,N>::convert(result, value);
-  return result + N;
+  detail::unrolled_loop_itoa16_right<T,N>::convert(a_result, a_value);
+  return a_result + N;
 }
 
 template <typename T, int N>
-char* itoa16_right(char (&result)[N], T value)
+char* itoa16_right(char (&a_result)[N], T a_value)
 {
-  char* buff = static_cast<char*>(result);
-  detail::unrolled_loop_itoa16_right<T,N>::convert(buff, value);
+  char* buff = static_cast<char*>(a_result);
+  detail::unrolled_loop_itoa16_right<T,N>::convert(buff, a_value);
   return buff + N;
 }
 
@@ -990,9 +990,11 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
 //      Contributor: 2010-10-15 Serge Aleynikov
 //--------------------------------------------------------------------------------
 template <typename T>
-inline const char* atof(const char* p, const char* end, T* result)
+inline typename std::enable_if<std::is_same<T,double>::value ||
+                               std::is_same<T,float >::value, const char*>::
+type atof(const char* p, const char* end, T& result)
 {
-    BOOST_ASSERT(p != NULL && end != NULL && result != NULL);
+    BOOST_ASSERT(p != nullptr && end != nullptr);
 
     // Skip leading white space, if any.
     while (p < end && (*p == ' ' || *p == '0'))
@@ -1034,23 +1036,28 @@ inline const char* atof(const char* p, const char* end, T* result)
         value += acc / pow10;
     }
 
-    *result = sign * value;
+    result = sign * value;
     return p;
 }
 
-/**
- * Convert an integer to string.
- */
+/// Convert an integer to string.
 template <typename T>
-std::string int_to_string(T n) {
-    char buf[20];
+inline typename std::enable_if<std::numeric_limits<T>::is_integer, std::string>::
+type int_to_string(T n) {
+    static const int s_size =
+        sizeof(T) == 1 ?  2 :
+        sizeof(T) == 2 ?  6 :
+        sizeof(T) == 4 ? 10 :
+        sizeof(T) == 8 ? 20 : -1;
+    static_assert(s_size != -1, "Invalid type T");
+    char buf[s_size];
     itoa_left(buf, n);
     return buf;
 }
 
 namespace detail {
     template <typename T>
-    typename std::enable_if<std::is_unsigned<T>::value, int>::type
+    inline typename std::enable_if<std::is_unsigned<T>::value, int>::type
     itoa_hex(T a, char*& s, size_t sz) {
         size_t len = a ? 0 : 1;
         if (a)
@@ -1073,8 +1080,8 @@ namespace detail {
 ///         \a a. If it exceeds \a sz - nothing is written.
 //--------------------------------------------------------------------------------
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value, int>::type
-itoa_hex(T a, char*& s, size_t sz) {
+inline typename std::enable_if<std::numeric_limits<T>::is_integer, int>::
+type itoa_hex(T a, char*& s, size_t sz) {
     typedef typename std::make_unsigned<T>::type U;
     return detail::itoa_hex<U>(a, s, sz);
 }

@@ -175,9 +175,6 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
     pt.put("logger.show-ident", false);
     pt.put("logger.handle-crash-signals", true); // This is default behavior
 
-    logger& log = logger::instance();
-    //log.init(pt);
-
     std::vector<std::pair<int,std::string>> sigs
         {{SIGTERM, "SIGTERM"},
          {SIGABRT, "SIGABRT"},
