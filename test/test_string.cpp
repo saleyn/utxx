@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE( test_string_length )
     const char s[] = "abc";
     static_assert(length(s) == 3, "Wrong length");
     BOOST_REQUIRE_EQUAL(3u, length(s));
-    
+
     static const char* s_ops[] = {"a", "b", "c"};
     BOOST_REQUIRE_EQUAL(3u, length(s_ops));
 
@@ -97,6 +97,11 @@ BOOST_AUTO_TEST_CASE( test_string_to_int64 )
     BOOST_REQUIRE_EQUAL(258u,     to_int64("\1\2"));
     BOOST_REQUIRE_EQUAL(66051u,   to_int64("\1\2\3"));
     BOOST_REQUIRE_EQUAL(4276803u, to_int64("ABC"));
+
+    char buf[4];
+    auto p = from_int64(4276803u, buf);
+    BOOST_CHECK_EQUAL(buf, "ABC");
+    BOOST_CHECK(p ==  buf+3);
 }
 
 BOOST_AUTO_TEST_CASE( test_string_nocase )

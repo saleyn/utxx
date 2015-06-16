@@ -136,6 +136,20 @@ namespace utxx {
         return to_int64(a, N-1);
     }
 
+    template <int N>
+    inline char* from_int64(size_t a_int, char (&out)[N], char a_eol = '\0') {
+        char*       p = out;
+        const char* e = out + N-1;
+        while (a_int && p != e) {
+            *p++ = a_int & 0xFF;
+            a_int >>= 8;
+        }
+        for (int i = 0, j = (p - out - 1); i < j; i++, j--)
+            std::swap(out[i], out[j]);
+        *p = a_eol;
+        return p;
+    }
+
     /// Find the position of character \a c.
     /// @return pointer to the position of character \a c, or \a end if
     ///         no character \a c is found.
