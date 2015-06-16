@@ -121,7 +121,9 @@ namespace {
 
 template <char... Chars>
 struct to_int {
-    static const size_t value = to_int_helper<(sizeof...(Chars))-1, Chars...>::value;
+    static constexpr size_t value() {
+        return to_int_helper<(sizeof...(Chars))-1, Chars...>::value;
+    }
 };
 
 // For generic types, directly use the result of the signature of its 'operator()'

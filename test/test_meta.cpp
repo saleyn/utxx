@@ -62,11 +62,11 @@ BOOST_AUTO_TEST_CASE( test_meta )
     BOOST_STATIC_ASSERT(1 == to_underlying(B::B1));
     BOOST_REQUIRE_EQUAL(1, to_underlying(B::B1));
 
-    BOOST_STATIC_ASSERT(0x00     == to_int<'\0'>::value);
-    BOOST_STATIC_ASSERT(0x01     == to_int<'\1'>::value);
-    BOOST_STATIC_ASSERT(0x0100   == to_int<'\1', '\0'>::value);
-    BOOST_STATIC_ASSERT(0x0102   == to_int<'\1', '\2'>::value);
-    BOOST_STATIC_ASSERT(0x010203 == to_int<'\1', '\2', '\3'>::value);
+    BOOST_STATIC_ASSERT(0x00     == to_int<'\0'>::value());
+    BOOST_STATIC_ASSERT(0x01     == to_int<'\1'>::value());
+    BOOST_STATIC_ASSERT(0x0100   == to_int<'\1', '\0'>::value());
+    BOOST_STATIC_ASSERT(0x0102   == to_int<'\1', '\2'>::value());
+    BOOST_STATIC_ASSERT(0x010203 == to_int<'\1', '\2', '\3'>::value());
 
     BOOST_STATIC_ASSERT(0  == upper_power<0,  2>::value);
     BOOST_STATIC_ASSERT(1  == upper_power<1,  2>::value);
