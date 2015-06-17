@@ -734,6 +734,7 @@ bool fast_atoi(const std::string& a_value, T& a_res)
 /// @param precision is the number of digits past the decimal point
 /// @param compact when true extra trailing 0's will be truncated
 /// @return number of digits written or -1 on error
+template <bool WithTerminator = true, char Terminator = '\0'>
 inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, bool compact = true)
 {
     using detail::FTOA;
@@ -782,7 +783,8 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
             *p++ = 'a';
             *p++ = 'n';
         }
-        *p = '\0';
+        if (WithTerminator)
+            *p = Terminator;
         return p - buffer;
     }
 
@@ -799,7 +801,8 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         /* Delete trailing zeroes */
         if (compact)
             p = detail::find_first_trailing_zero(p);
-        *p = '\0';
+        if (WithTerminator)
+            *p = Terminator;
         return p - buffer;
     } else if (exp >= FTOA::FRAC_SIZE) {
         int_part  = mantissa << (exp - FTOA::FRAC_SIZE);
@@ -835,12 +838,11 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
     if (precision > 0) {
         *p++ = '.';
 
-        int max = buffer_size - (p - buffer) - 1 /* leave room for trailing '\0' */;
+        int max = buffer_size - (p - buffer)
+                - (WithTerminator ? 1 : 0) /* leave room for trailing '\0' */;
 
-        if (precision > max)
-            return -1;  /* the number is not large enough to fit in the buffer */
-
-        max = precision;
+        if (precision < max)
+            max = precision;
 
         for (int i = 0; i < max; i++) {
             frac_part = (frac_part << 3) + (frac_part << 1);  /* equiv. *= 10; */
@@ -852,7 +854,9 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         if (compact)
             p = detail::find_first_trailing_zero(p);
     }
-    *p = '\0';
+    if (WithTerminator)
+        *p = Terminator;
+
     return p - buffer;
 }
 
