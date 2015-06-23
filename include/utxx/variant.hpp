@@ -59,11 +59,9 @@ class variant: public boost::variant<null, bool, long, double, std::string>
     typedef boost::mpl::vector<null, bool, long, double, std::string> internal_types;
 
     struct string_visitor: public boost::static_visitor<std::string> {
-        std::string operator () (null v) const { return "<NULL>"; }
+        std::string operator () (null v) const { return "<NULL>";             }
         std::string operator () (bool v) const { return v ? "true" : "false"; }
-        std::string operator () (long v) const {
-            std::stringstream s; s << v; return s.str();
-        }
+        std::string operator () (long v) const { return std::to_string(v);    }
         std::string operator () (double v) const {
             char buf[128];
             snprintf(buf, sizeof(buf)-1, "%f", v);

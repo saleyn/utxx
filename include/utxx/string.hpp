@@ -153,6 +153,12 @@ namespace utxx {
         return from_int64(a_int, out, out+N, a_eol);
     }
 
+    inline std::string from_int64(size_t a_int) {
+        char buf[32];
+        auto end = from_int64(a_int, buf);
+        return std::string(buf, end-buf);
+    }
+
     /// Find the position of character \a c.
     /// @return pointer to the position of character \a c, or \a end if
     ///         no character \a c is found.
