@@ -56,8 +56,8 @@ volatile long timestamp::s_syscalls;
 
 namespace {
     static const char* s_values[] = {
-        "none", "time",   "time-msec", "time-usec",
-        "date-time", "date-time-msec", "date-time-usec"
+        "none", "time",      "time-msec",      "time-usec",
+        "date", "date-time", "date-time-msec", "date-time-usec"
     };
 }
 
@@ -208,6 +208,7 @@ size_t timestamp::format_size(stamp_type a_tp)
         case TIME:                  return 8;
         case TIME_WITH_USEC:        return 15;
         case TIME_WITH_MSEC:        return 12;
+        case DATE:                  return 8;
         case DATE_TIME:             return 17;
         case DATE_TIME_WITH_USEC:   return 24;
         case DATE_TIME_WITH_MSEC:   return 21;
@@ -256,6 +257,9 @@ int timestamp::format(stamp_type a_tp,
             a_buf[8] = '.';
             itoa_right(a_buf+9, 3, l_usec / 1000, '0');
             return 12;
+        case DATE:
+            write_date(a_buf, sec, a_utc, 9);
+            return 8;
         case DATE_TIME:
             write_date(a_buf, sec, a_utc, 9);
             write_time(a_buf+9, sec, 8);
@@ -279,9 +283,9 @@ int timestamp::format(stamp_type a_tp,
 }
 
 time_val timestamp::from_string(const char* a_datetime, size_t n, bool a_utc) {
-    if (unlikely(a_datetime[8] != '-' ||
-                 a_datetime[11] != ':' || a_datetime[14] != ':' ||
-                 n < 17))
+    if (unlikely(n < 8 ||
+                (n > 8 && (n < 17 || a_datetime[8]  != '-' ||
+                           a_datetime[11] != ':' || a_datetime[14] != ':'))))
         throw badarg_error("Invalid time format: ", std::string(a_datetime, n));
 
     const char* p = a_datetime;
@@ -292,29 +296,32 @@ time_val timestamp::from_string(const char* a_datetime, size_t n, bool a_utc) {
         return i;
     };
 
+    unsigned hour = 0, min = 0, sec = 0, usec = 0;
     int      year = parse(4);
     unsigned mon  = parse(2);
-    unsigned day  = parse(2); p++;
-    unsigned hour = parse(2); p++;
-    unsigned min  = parse(2); p++;
-    unsigned sec  = parse(2);
-    unsigned usec = 0;
+    unsigned day  = parse(2);
+    if (n > 8) {
+        p++;
+        hour = parse(2); p++;
+        min  = parse(2); p++;
+        sec  = parse(2);
 
-    const char* dot = p++;
+        const char* dot = p++;
 
-    if (*dot == '.' && n > 17)
-    {
-        const char* end = p + std::min<size_t>(6, n - (p - a_datetime));
-        while (*p >= '0' && *p <= '9' && p != end)
-            usec = 10*usec + (*p++ - '0');
-
-        int len = p - dot - 1;
-        switch (len)
+        if (*dot == '.' && n > 17)
         {
-            case 3:  usec *= 1000; break;
-            case 6:  break;
-            default: throw badarg_error("Invalid millisecond format: ",
-                                        std::string(a_datetime, end - a_datetime));
+            const char* end = p + std::min<size_t>(6, n - (p - a_datetime));
+            while (*p >= '0' && *p <= '9' && p != end)
+                usec = 10*usec + (*p++ - '0');
+
+            int len = p - dot - 1;
+            switch (len)
+            {
+                case 3:  usec *= 1000; break;
+                case 6:  break;
+                default: throw badarg_error("Invalid millisecond format: ",
+                                            std::string(a_datetime, end - a_datetime));
+            }
         }
     }
 

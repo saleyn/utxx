@@ -48,6 +48,7 @@ enum stamp_type {
     , TIME
     , TIME_WITH_MSEC
     , TIME_WITH_USEC
+    , DATE
     , DATE_TIME
     , DATE_TIME_WITH_MSEC
     , DATE_TIME_WITH_USEC
