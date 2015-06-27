@@ -61,4 +61,35 @@ std::string to_bin_string(const char* buf, size_t sz,
     return out.str();
 }
 
+bool wildcard_match(const char* a_input, const char* a_pattern)
+{
+    const char* ip = nullptr, *pp = nullptr;
+
+    while (*a_input && *a_pattern != '*') {
+        if ((*a_pattern != *a_input) && (*a_pattern != '?'))
+            return false;
+        a_pattern++;
+        a_input++;
+    }
+
+    while (*a_input) {
+        if (*a_pattern == '*') {
+            if (!*++a_pattern)
+                return true;
+            pp = a_pattern;
+            ip = a_input+1;
+        } else if ((*a_pattern == *a_input) || (*a_pattern == '?')) {
+            a_pattern++;
+            a_input++;
+        } else {
+            a_pattern = pp;
+            a_input = ip++;
+        }
+    }
+
+    while (*a_pattern == '*') a_pattern++;
+
+    return !*a_pattern;
+}
+
 } // namespace utxx

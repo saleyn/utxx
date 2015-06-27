@@ -166,7 +166,18 @@ BOOST_AUTO_TEST_CASE( test_path_list_files )
     create_file("test_file_3.bin");
 
     auto res = path::list_files(temp_path(), "test_file_[1-3]\\.bin");
+    BOOST_CHECK(res.first);
+    BOOST_CHECK_EQUAL(3u, res.second.size());
 
+    res = path::list_files(temp_path(), "test_file_?.bin", path::FileMatchT::WILDCARD);
+    BOOST_CHECK(res.first);
+    BOOST_CHECK_EQUAL(3u, res.second.size());
+
+    res = path::list_files(temp_path(), "test_file_?.b*", path::FileMatchT::WILDCARD);
+    BOOST_CHECK(res.first);
+    BOOST_CHECK_EQUAL(3u, res.second.size());
+
+    res = path::list_files(temp_path(), "test_file_", path::FileMatchT::PREFIX);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 

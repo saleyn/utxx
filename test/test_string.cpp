@@ -104,6 +104,120 @@ BOOST_AUTO_TEST_CASE( test_string_to_int64 )
     BOOST_CHECK(p ==  buf+3);
 }
 
+#define TEST_WILDCARD(A, B, C) \
+        BOOST_CHECK(wildcard_match((A),(B)) == C)
+
+BOOST_AUTO_TEST_CASE( test_string_wildcard )
+{
+    BOOST_CHECK(wildcard_match("foo3h.txt", "foo?h.*"));
+    BOOST_CHECK(wildcard_match("foo3h.txt", "foo*h.*"));
+    BOOST_CHECK(!wildcard_match("foo3k",    "foo*h"));
+
+    TEST_WILDCARD("abcccd", "*ccd", true);
+    TEST_WILDCARD("mississipissippi", "*issip*ss*", true);
+    TEST_WILDCARD("xxxx*zzzzzzzzy*f", "xxxx*zzy*fffff", false);
+    TEST_WILDCARD("xxxx*zzzzzzzzy*f", "xxx*zzy*f", true);
+    TEST_WILDCARD("xxxxzzzzzzzzyf", "xxxx*zzy*fffff", false);
+    TEST_WILDCARD("xxxxzzzzzzzzyf", "xxxx*zzy*f", true);
+    TEST_WILDCARD("xyxyxyzyxyz", "xy*z*xyz", true);
+    TEST_WILDCARD("mississippi", "*sip*", true);
+    TEST_WILDCARD("xyxyxyxyz", "xy*xyz", true);
+    TEST_WILDCARD("mississippi", "mi*sip*", true);
+    TEST_WILDCARD("ababac", "*abac*", true);
+    TEST_WILDCARD("ababac", "*abac*", true);
+    TEST_WILDCARD("aaazz", "a*zz*", true);
+    TEST_WILDCARD("a12b12", "*12*23", false);
+    TEST_WILDCARD("a12b12", "a12b", false);
+    TEST_WILDCARD("a12b12", "*12*12*", true);
+
+    // Additional cases where the '*' char appears in the tame string.
+    TEST_WILDCARD("*", "*", true);
+    TEST_WILDCARD("a*abab", "a*b", true);
+    TEST_WILDCARD("a*r", "a*", true);
+    TEST_WILDCARD("a*ar", "a*aar", false);
+
+    // More double wildcard scenarios.
+    TEST_WILDCARD("XYXYXYZYXYz", "XY*Z*XYz", true);
+    TEST_WILDCARD("missisSIPpi", "*SIP*", true);
+    TEST_WILDCARD("mississipPI", "*issip*PI", true);
+    TEST_WILDCARD("xyxyxyxyz", "xy*xyz", true);
+    TEST_WILDCARD("miSsissippi", "mi*sip*", true);
+    TEST_WILDCARD("miSsissippi", "mi*Sip*", false);
+    TEST_WILDCARD("abAbac", "*Abac*", true);
+    TEST_WILDCARD("abAbac", "*Abac*", true);
+    TEST_WILDCARD("aAazz", "a*zz*", true);
+    TEST_WILDCARD("A12b12", "*12*23", false);
+    TEST_WILDCARD("a12B12", "*12*12*", true);
+    TEST_WILDCARD("oWn", "*oWn*", true);
+
+    // Completely tame (no wildcards) cases.
+    TEST_WILDCARD("bLah", "bLah", true);
+    TEST_WILDCARD("bLah", "bLaH", false);
+
+    // Simple mixed wildcard tests suggested by IBMer Marlin Deckert.
+    TEST_WILDCARD("a", "*?", true);
+    TEST_WILDCARD("ab", "*?", true);
+    TEST_WILDCARD("abc", "*?", true);
+
+    // More mixed wildcard tests including coverage for false positives.
+    TEST_WILDCARD("a", "??", false);
+    TEST_WILDCARD("ab", "?*?", true);
+    TEST_WILDCARD("ab", "*?*?*", true);
+    TEST_WILDCARD("abc", "?**?*?", true);
+    TEST_WILDCARD("abc", "?**?*&?", false);
+    TEST_WILDCARD("abcd", "?b*??", true);
+    TEST_WILDCARD("abcd", "?a*??", false);
+    TEST_WILDCARD("abcd", "?**?c?", true);
+    TEST_WILDCARD("abcd", "?**?d?", false);
+    TEST_WILDCARD("abcde", "?*b*?*d*?", true);
+
+    // Single-character-match cases.
+    TEST_WILDCARD("bLah", "bL?h", true);
+    TEST_WILDCARD("bLaaa", "bLa?", false);
+    TEST_WILDCARD("bLah", "bLa?", true);
+    TEST_WILDCARD("bLaH", "?Lah", false);
+    TEST_WILDCARD("bLaH", "?LaH", true);
+
+    // Many-wildcard scenarios.
+    TEST_WILDCARD("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaab",
+            "a*a*a*a*a*a*aa*aaa*a*a*b", true);
+    TEST_WILDCARD("abababababababababababababababababababaacacacacaca\
+cacadaeafagahaiajakalaaaaaaaaaaaaaaaaaffafagaagggagaaaaaaaab",
+            "*a*b*ba*ca*a*aa*aaa*fa*ga*b*", true);
+    TEST_WILDCARD("abababababababababababababababababababaacacacacaca\
+cacadaeafagahaiajakalaaaaaaaaaaaaaaaaaffafagaagggagaaaaaaaab",
+            "*a*b*ba*ca*a*x*aaa*fa*ga*b*", false);
+    TEST_WILDCARD("abababababababababababababababababababaacacacacaca\
+cacadaeafagahaiajakalaaaaaaaaaaaaaaaaaffafagaagggagaaaaaaaab",
+            "*a*b*ba*ca*aaaa*fa*ga*gggg*b*", false);
+    TEST_WILDCARD("abababababababababababababababababababaacacacacaca\
+cacadaeafagahaiajakalaaaaaaaaaaaaaaaaaffafagaagggagaaaaaaaab",
+            "*a*b*ba*ca*aaaa*fa*ga*ggg*b*", true);
+    TEST_WILDCARD("aaabbaabbaab", "*aabbaa*a*", true);
+    TEST_WILDCARD("a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*",
+            "a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*", true);
+    TEST_WILDCARD("aaaaaaaaaaaaaaaaa",
+            "*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*", true);
+    TEST_WILDCARD("aaaaaaaaaaaaaaaa",
+            "*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*a*", false);
+    TEST_WILDCARD("abc*abcd*abcde*abcdef*abcdefg*abcdefgh*abcdefghi*a\
+bcdefghij*abcdefghijk*abcdefghijkl*abcdefghijklm*abcdefghijklmn",
+            "abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*a\
+            bc*", false);
+    TEST_WILDCARD("abc*abcd*abcde*abcdef*abcdefg*abcdefgh*abcdefghi*a\
+bcdefghij*abcdefghijk*abcdefghijkl*abcdefghijklm*abcdefghijklmn",
+            "abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*", true);
+    TEST_WILDCARD("abc*abcd*abcd*abc*abcd", "abc*abc*abc*abc*abc", false);
+    TEST_WILDCARD(
+            "abc*abcd*abcd*abc*abcd*abcd*abc*abcd*abc*abc*abcd",
+            "abc*abc*abc*abc*abc*abc*abc*abc*abc*abc*abcd", true);
+    TEST_WILDCARD("abc", "********a********b********c********", true);
+    TEST_WILDCARD("********a********b********c********", "abc", false);
+    TEST_WILDCARD("abc", "********a********b********b********", false);
+    TEST_WILDCARD("*abc*", "***a*b*c***", true);
+}
+
 BOOST_AUTO_TEST_CASE( test_string_nocase )
 {
     string_nocase s("AbcDe123");

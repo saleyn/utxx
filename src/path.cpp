@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/conversion.hpp>
 #include <utxx/path.hpp>
 #include <utxx/error.hpp>
+#include <utxx/string.hpp>
 #include <utxx/scope_exit.hpp>
 #include <dirent.h>
 #include <regex>
@@ -224,12 +225,16 @@ filename_with_backup(const char* a_filename,
 }
 
 std::pair<bool, std::list<std::string>>
-list_files(std::string const& a_dir, std::string const& a_regex_match)
+list_files(std::string const& a_dir, std::string const& a_filter,
+           FileMatchT a_match_type)
 {
-    DIR*             dir;
-    struct dirent    ent;
-    struct dirent*   res;
-    const std::regex filter(a_regex_match);
+    DIR*           dir;
+    struct dirent  ent;
+    struct dirent* res;
+    std::regex     filter;
+
+    if (a_match_type == FileMatchT::REGEX)
+        filter = a_filter.c_str();
 
     std::list<std::string> out;
 
@@ -250,9 +255,23 @@ list_files(std::string const& a_dir, std::string const& a_regex_match)
         if (stat(ent.d_name, &s) < 0 || !S_ISREG(s.st_mode))
             continue;
 
-        if (!a_regex_match.empty()) {
+        if (!a_filter.empty()) {
+            bool matched;
             // Skip if no match
-            if (!std::regex_match(file, filter))
+            switch (a_match_type) {
+                case FileMatchT::REGEX:
+                    matched = std::regex_match(file, filter);
+                    break;
+                case FileMatchT::PREFIX:
+                    matched = strncmp(file.c_str(), a_filter.c_str(), a_filter.size()) == 0;
+                    break;
+                case FileMatchT::WILDCARD:
+                    matched = wildcard_match(file.c_str(), a_filter.c_str());
+                    break;
+                default:
+                    matched = false;
+            }
+            if (!matched)
                 continue;
         }
         out.push_back(file);

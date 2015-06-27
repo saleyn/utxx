@@ -91,11 +91,19 @@ inline const std::string read_file(const std::string& a_filename) {
     return read_file(in);
 }
 
+enum class FileMatchT {
+    REGEX,
+    PREFIX,
+    WILDCARD
+};
+
 /// List files in a directory
 /// @param a_dir directory to check
-/// @param a_regex_match regular expression to match against each file
+/// @param a_filter is a regular expression/prefix/wildcard used to match filename
+/// @param a_match_type type of matching to perform on filenames
 std::pair<bool, std::list<std::string>>
-list_files(std::string const& a_dir, std::string const& a_regex_match = "");
+list_files(std::string const& a_dir, std::string const& a_filter = "",
+           FileMatchT a_match_type = FileMatchT::REGEX);
 
 /// Return portable value of the home path
 std::string home();

@@ -244,7 +244,7 @@ namespace utxx {
     /// @return 1 if \a a_src matches the \a a_pattern.
     ///         0 if \a a_src doesn't match the \a a_pattern.
     ///        -1 if there's some other error.
-    int wildcard_match(const char* a_src, const char* a_pattern);
+    bool wildcard_match(const char* a_src, const char* a_pattern);
 
     /// Case insensitive traits for implementing string_nocase
     ///
