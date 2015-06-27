@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_PATH_HPP_
 
 #include <string>
+#include <list>
 #include <fstream>
 #include <utxx/error.hpp>
 #include <utxx/time_val.hpp>
@@ -89,6 +90,12 @@ inline const std::string read_file(const std::string& a_filename) {
     if (!in) UTXX_THROW_IO_ERROR(errno, "Unable to open file: ", a_filename);
     return read_file(in);
 }
+
+/// List files in a directory
+/// @param a_dir directory to check
+/// @param a_regex_match regular expression to match against each file
+std::pair<bool, std::list<std::string>>
+list_files(std::string const& a_dir, std::string const& a_regex_match = "");
 
 /// Return portable value of the home path
 std::string home();

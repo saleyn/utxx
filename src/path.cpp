@@ -37,6 +37,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/conversion.hpp>
 #include <utxx/path.hpp>
 #include <utxx/error.hpp>
+#include <utxx/scope_exit.hpp>
+#include <dirent.h>
+#include <regex>
 
 #if defined(_WIN32) || defined (_WIN64) || defined(_MSC_VER)
 #include <boost/smart_ptr/scoped_ptr.hpp>
@@ -218,6 +221,44 @@ filename_with_backup(const char* a_filename,
             ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
             ptm->tm_hour, ptm->tm_min, ptm->tm_sec, l_ext.c_str());
     return std::make_pair(l_filename, buf);
+}
+
+std::pair<bool, std::list<std::string>>
+list_files(std::string const& a_dir, std::string const& a_regex_match)
+{
+    DIR*             dir;
+    struct dirent    ent;
+    struct dirent*   res;
+    const std::regex filter(a_regex_match);
+
+    std::list<std::string> out;
+
+    if ((dir = ::opendir(a_dir.c_str())) == nullptr)
+        return std::make_pair(false, out);
+
+    char buf[512];
+
+    getcwd(buf, sizeof(buf));
+    chdir(a_dir.c_str());
+
+    scope_exit se([dir, &buf]() { closedir(dir); chdir(buf); });
+
+    while (::readdir_r(dir, &ent, &res) == 0 && res != nullptr) {
+        struct stat s;
+        std::string file(ent.d_name);
+
+        if (stat(ent.d_name, &s) < 0 || !S_ISREG(s.st_mode))
+            continue;
+
+        if (!a_regex_match.empty()) {
+            // Skip if no match
+            if (!std::regex_match(file, filter))
+                continue;
+        }
+        out.push_back(file);
+    }
+
+    return std::make_pair(true, out);
 }
 
 program::program()
