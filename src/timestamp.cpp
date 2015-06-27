@@ -258,7 +258,7 @@ int timestamp::format(stamp_type a_tp,
             itoa_right(a_buf+9, 3, l_usec / 1000, '0');
             return 12;
         case DATE:
-            write_date(a_buf, sec, a_utc, 9);
+            write_date(a_buf, sec, a_utc, 8);
             return 8;
         case DATE_TIME:
             write_date(a_buf, sec, a_utc, 9);

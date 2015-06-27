@@ -48,25 +48,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 namespace path {
 
-//------------------------------------------------------------------------------
-// environment variable replacement
-//------------------------------------------------------------------------------
-namespace {
-
-    std::string regex_format_fun(const boost::xpressive::smatch& what) {
-        if (what[1].str() == "EXEPATH") // special case
-            return program::abs_path();
-
-        const char* env = getenv(what[1].str().c_str());
-        return env ? env : "";
-    }
-
-    std::string regex_home_var(const boost::xpressive::smatch& what) {
-        return home();
-    }
-
-} // internal namespace
-
 const char* basename(const char* begin, const char* end) {
     BOOST_ASSERT(begin <= end);
     for(const char ch = path::slash(); end != begin; --end)
@@ -126,28 +107,56 @@ long file_size(int fd) {
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
-std::string replace_env_vars(const std::string& a_path, const struct tm* a_now)
+std::string replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
+                             const std::map<std::string, std::string>* a_bindings)
+{
+    if (!a_now.empty()) {
+        auto tm = a_now.to_tm(a_utc);
+        return replace_env_vars(a_path, &tm, a_bindings);
+    }
+    return replace_env_vars(a_path, nullptr, a_bindings);
+}
+
+std::string replace_env_vars(const std::string& a_path, const struct tm* a_now,
+                             const std::map<std::string, std::string>* a_bindings)
 {
     using namespace boost::posix_time;
     using namespace boost::xpressive;
+
+    auto regex_format_fun = [a_bindings](const smatch& what) {
+        if (what[1].str() == "EXEPATH") // special case
+            return program::abs_path();
+
+        if (a_bindings) {
+            auto it = a_bindings->find(what[1].str());
+            if (it != a_bindings->end())
+                return it->second;
+        }
+
+        const char* env = getenv(what[1].str().c_str());
+        return std::string(env ? env : "");
+    };
+
+    auto regex_home_var = [](const smatch& what) { return home(); };
+
     std::string x(a_path);
     {
         #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-        sregex re = "%" >> (s1 = +_w) >> '%';
+        sregex re = "%"  >> (s1 = +_w) >> '%';
         #else
         sregex re = "${" >> (s1 = +_w) >> '}';
         #endif
 
-        x = regex_replace(x, re, &regex_format_fun);
+        x = regex_replace(x, re, regex_format_fun);
     }
     #if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
     {
         sregex re = '$' >> (s1 = +_w);
-        x = regex_replace(x, re, &regex_format_fun);
+        x = regex_replace(x, re, regex_format_fun);
     }
     {
         sregex re = bos >> '~';
-        x = regex_replace(x, re, &regex_home_var);
+        x = regex_replace(x, re, regex_home_var);
     }
     #endif
 

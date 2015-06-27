@@ -147,10 +147,7 @@ namespace utxx {
         }
 
         std::tuple<int, unsigned, unsigned> to_ymd(bool a_utc = true) const {
-            struct tm tm;
-            time_t s = sec();
-            if (a_utc) gmtime_r   (&s, &tm);
-            else       localtime_r(&s, &tm);
+            auto tm = to_tm(a_utc);
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday);
         }
 
@@ -168,15 +165,28 @@ namespace utxx {
 
         std::tuple<int, unsigned, unsigned, unsigned, unsigned, unsigned>
         to_ymdhms(bool a_utc = true) const {
-            struct tm tm;
-            time_t s = sec();
-            if (a_utc) gmtime_r   (&s, &tm);
-            else       localtime_r(&s, &tm);
+            auto tm = to_tm(a_utc);
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
                                    tm.tm_hour,      tm.tm_min,   tm.tm_sec);
         }
 
         #endif
+
+        /// Convert time to "tm" structure
+        template <bool UTC>
+        struct tm               to_tm()    const {
+            struct tm tm;
+            time_t s = sec();
+
+            if (UTC) gmtime_r   (&s, &tm);
+            else     localtime_r(&s, &tm);
+
+            return tm;
+        }
+
+        struct tm               to_tm(bool a_utc) const {
+            return a_utc ? to_tm<true>() : to_tm<false>();
+        }
 
         struct timeval          timeval()  const {
             struct timeval tv; copy_to(tv); return tv;

@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string>
 #include <fstream>
 #include <utxx/error.hpp>
+#include <utxx/time_val.hpp>
 #include <unistd.h>
 
 namespace utxx {
@@ -89,47 +90,56 @@ inline const std::string read_file(const std::string& a_filename) {
     return read_file(in);
 }
 
-/**
- * Return portable value of the home path
- */
+/// Return portable value of the home path
 std::string home();
 
-/**
- * \brief Substitute all environment variables and day-time
- * formatting symbols (see strptime(3)) in a given filename.
- * The variables can be represented by "%VARNAME%" notation
- * on Windows and "${VARNAME}" notation on Unix. The function
- * also recognizes Unix-specific variables in the form
- * "$VARNAME", replaces leading '~' with value of "$HOME" directory
- * and replaces special variable "${EXEPATH}" with the
- * absolute path to the executable program.
- * If \a a_now is not null will also substitute time in the a_path
- * using strftime(3).
- */
+/// @brief Substitute all environment variables and day-time
+/// formatting symbols (see strptime(3)) in a given filename.
+/// The variables can be represented by "%VARNAME%" notation
+/// on Windows and "${VARNAME}" notation on Unix. The function
+/// also recognizes Unix-specific variables in the form
+/// "$VARNAME", replaces leading '~' with value of "$HOME" directory
+/// and replaces special variable "${EXEPATH}" with the
+/// absolute path to the executable program.
+/// @param a_now      when it is not null, the function will also substitute
+///                   time in the a_path using strftime(3).
+/// @param a_bindings contains optional value map that will be used
+///                   for variable substitution prior to using environment
+///                   variables.
 std::string replace_env_vars(
-    const std::string& a_path, const struct tm* a_now = NULL);
+    const std::string& a_path, const struct tm* a_now = NULL,
+    const std::map<std::string, std::string>* a_bindings = NULL);
 
-/**
- * Returns a pair containing a file name with substituted
- * environment variables and day-time formatting symbols
- * replaced (see strptime(3)), and a backup file name to
- * be used in case the filename exists in the filesystem.
- * The backup name is optionally prefixes with a \a
- * a_backup_dir directory and suffixed with \a a_backup_suffix.
- * If the later is not provided the "@YYYY-MM-DD.hhmmss"
- * string will be inserted between the base of the
- * filename and file extension.
- * @param a_filename is the name of the name of the file
- *          with substitution formatting macros.
- * @param a_backup_dir is the name of the backup directory
- *          to use as the leading part of the second value
- *          in the returned pair.
- * @param a_backup_suffix is the suffix to assign to the
- *          BackupName value instead of "@YYYY-MM-DD.hhmmss"
- * @param a_now is the timestamp to use for BackupName. If
- *          it is NULL, the local system time will be used.
- * @return a pair <Filename, BackupName>.
- */
+/// Replace environment variables and time in strptime(3) format in \a a_str.
+/// @param a_str string to replace
+/// @param a_now now time (if contains time_val(), no strftime(3) call is made)
+/// @param a_utc treat \a a_now as UTC time instead of local time
+/// @param a_bindings contains optional value map that will be used
+///                   for variable substitution prior to using environment
+///                   variables.
+std::string replace_env_vars(
+    const std::string& a_str, time_val a_now, bool a_utc = false,
+    const std::map<std::string, std::string>* a_bindings = NULL);
+
+/// Returns a pair containing a file name with substituted
+/// environment variables and day-time formatting symbols
+/// replaced (see strptime(3)), and a backup file name to
+/// be used in case the filename exists in the filesystem.
+/// The backup name is optionally prefixes with a \a
+/// a_backup_dir directory and suffixed with \a a_backup_suffix.
+/// If the later is not provided the "@YYYY-MM-DD.hhmmss"
+/// string will be inserted between the base of the
+/// filename and file extension.
+/// @param a_filename is the name of the name of the file
+///          with substitution formatting macros.
+/// @param a_backup_dir is the name of the backup directory
+///          to use as the leading part of the second value
+///          in the returned pair.
+/// @param a_backup_suffix is the suffix to assign to the
+///          BackupName value instead of "@YYYY-MM-DD.hhmmss"
+/// @param a_now is the timestamp to use for BackupName. If
+///          it is NULL, the local system time will be used.
+/// @return a pair <Filename, BackupName>.
 std::pair<std::string, std::string>
 filename_with_backup(const char* a_filename,
     const char* a_backup_dir = NULL, const char* a_backup_suffix = NULL,
@@ -140,10 +150,7 @@ extern "C" {
     extern const char* __progname_full;
 }
 
-/**
- * Return the short name, full name, or full pathname of
- * current executable program.
- */
+/// Return the short name, full name, or full pathname of current program.
 class program {
     std::string m_exe;
     std::string m_rel_path;
