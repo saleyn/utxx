@@ -54,6 +54,14 @@ static inline char slash() {
     #endif
 }
 
+static inline const char* slash_str() {
+    #if defined(__windows__) || defined(_WIN32) || defined(_WIN64)
+    return "\\";
+    #else
+    return "/";
+    #endif
+}
+
 /**
  * Return basename of the filename defined between \a begin and \a end
  * arguments.
@@ -91,6 +99,21 @@ inline const std::string read_file(const std::string& a_filename) {
     return read_file(in);
 }
 
+/// Split \a a_path to directory and filename
+inline std::pair<std::string, std::string> split(std::string const& a_path) {
+    auto found = a_path.find_last_of(slash());
+    return found == std::string::npos
+         ? std::make_pair("", a_path)
+         : std::make_pair(a_path.substr(0, found), a_path.substr(found+1));
+}
+
+/// Join \a a_dir and \a a_file
+inline std::string join(std::string const& a_dir, std::string const& a_file) {
+    return a_dir.empty()                    ? a_file
+         : a_dir[a_dir.size()-1] == slash() ? a_dir + a_file
+         : a_dir + slash_str() + a_file;
+}
+
 enum class FileMatchT {
     REGEX,
     PREFIX,
@@ -103,7 +126,14 @@ enum class FileMatchT {
 /// @param a_match_type type of matching to perform on filenames
 std::pair<bool, std::list<std::string>>
 list_files(std::string const& a_dir, std::string const& a_filter = "",
-           FileMatchT a_match_type = FileMatchT::REGEX);
+           FileMatchT a_match_type = FileMatchT::WILDCARD);
+
+std::pair<bool, std::list<std::string>>
+inline list_files(std::string const& a_dir_with_file_mask,
+                  FileMatchT a_match_type = FileMatchT::WILDCARD) {
+    auto   res = split(a_dir_with_file_mask);
+    return list_files(res.first, res.second, a_match_type);
+}
 
 /// Return portable value of the home path
 std::string home();

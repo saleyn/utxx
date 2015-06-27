@@ -152,10 +152,25 @@ BOOST_AUTO_TEST_CASE( test_path_file_exists )
     file.close();
 }
 
+BOOST_AUTO_TEST_CASE( test_path_split_join )
+{
+    auto res = path::split(temp_path() + path::slash_str() + "abc.txt");
+    BOOST_CHECK_EQUAL(temp_path(), res.first);
+    BOOST_CHECK_EQUAL("abc.txt",   res.second);
+    res = path::split("abc.txt");
+    BOOST_CHECK_EQUAL("",          res.first);
+    BOOST_CHECK_EQUAL("abc.txt",   res.second);
+
+    auto s   = path::join(temp_path(), "abc.txt");
+    auto exp = temp_path() + path::slash_str() + "abc.txt";
+    BOOST_CHECK_EQUAL(exp, s);
+    BOOST_CHECK_EQUAL("abc.txt", path::join("", "abc.txt"));
+}
+
 BOOST_AUTO_TEST_CASE( test_path_list_files )
 {
     auto create_file = [](const char* name) {
-        auto file = temp_path() + "/" + name;
+        auto file = temp_path() + path::slash_str() + name;
 
         std::ofstream f(file, std::ios::trunc);
         BOOST_REQUIRE(f.is_open());
@@ -165,15 +180,19 @@ BOOST_AUTO_TEST_CASE( test_path_list_files )
     create_file("test_file_2.bin");
     create_file("test_file_3.bin");
 
-    auto res = path::list_files(temp_path(), "test_file_[1-3]\\.bin");
+    auto res = path::list_files(temp_path(), "test_file_[1-3]\\.bin", path::FileMatchT::REGEX);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path(), "test_file_?.bin", path::FileMatchT::WILDCARD);
+    res = path::list_files(temp_path(), "test_file_?.bin");
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
     res = path::list_files(temp_path(), "test_file_?.b*", path::FileMatchT::WILDCARD);
+    BOOST_CHECK(res.first);
+    BOOST_CHECK_EQUAL(3u, res.second.size());
+
+    res = path::list_files(temp_path() + path::slash_str() + "test_file_?.b*", path::FileMatchT::WILDCARD);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
