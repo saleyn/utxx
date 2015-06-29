@@ -16,6 +16,7 @@
             <value val="time"           desc="HH:MM:DD"/>
             <value val="time-msec"      desc="HH:MM:DD.sss"/>
             <value val="time-usec"      desc="HH:MM:DD.ssssss"/>
+            <value val="date"           desc="YYYYmmdd"/>
             <value val="date-time"      desc="YYYYmmdd-HH:MM:DD"/>
             <value val="date-time-msec" desc="YYYYmmdd-HH:MM:DD.sss"/>
             <value val="date-time-usec" desc="YYYYmmdd-HH:MM:DD.ssssss"/>
