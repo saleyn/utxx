@@ -196,7 +196,8 @@ public:
 
     bool                to_bool()   const { return boost::get<bool>(*this); }
     long                to_int()    const { return boost::get<long>(*this); }
-    long                to_float()  const { return boost::get<double>(*this); }
+    double              to_float()  const { return boost::get<double>(*this); }
+    double              to_double() const { return boost::get<double>(*this); }
     const std::string&  to_str()    const { return boost::get<std::string>(*this); }
     const char*         c_str()     const { return boost::get<std::string>(
                                                     *this).c_str(); }
