@@ -210,12 +210,15 @@ namespace detail {
             memcpy(m_pos, a, n);
             m_pos += n;
         }
+        /*Don't move strings or else it may lead to incidental "stealing" of
+          string objects from the owner
         void do_print(std::string&& a) {
             size_t n = a.size();
             reserve(n);
             memcpy(m_pos, a.c_str(), n);
             m_pos += n;
         }
+        */
         void do_print(const std::string& a) {
             size_t n = a.size();
             reserve(n);
@@ -335,7 +338,7 @@ namespace detail {
 
         template <class T, class... Args>
         void print(T&& a, Args&&... args) {
-            do_print(std::move(a));
+            do_print(std::forward<T>(a));
             print(std::forward<Args>(args)...);
         }
 
