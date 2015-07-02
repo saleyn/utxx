@@ -166,6 +166,8 @@ struct logger : boost::noncopyable {
                 - log<(int)LEVEL_TRACE, 2>::value + 1
     };
 
+    /// Return log level as a 1-char string
+    static const std::string& log_level_to_abbrev(log_level level)  noexcept;
     static const std::string& log_level_to_string(log_level level)  noexcept;
     static const char*        log_level_to_str(log_level level)     noexcept
                               { return log_level_to_string(level).c_str(); }

@@ -75,6 +75,31 @@ std::string logger::log_levels_to_str(int a_levels) noexcept
     return s.str();
 }
 
+const std::string& logger::log_level_to_abbrev(log_level level) noexcept
+{
+    static const std::string s_levels[] = {
+        "T", "D", "I", "N", "W", "E", "F", "A", "L"
+    };
+
+    switch (level) {
+        case LEVEL_TRACE5   :
+        case LEVEL_TRACE4   :
+        case LEVEL_TRACE3   :
+        case LEVEL_TRACE2   :
+        case LEVEL_TRACE1   :
+        case LEVEL_TRACE    : return s_levels[0];
+        case LEVEL_DEBUG    : return s_levels[1];
+        case LEVEL_INFO     : return s_levels[2];
+        case LEVEL_NOTICE   : return s_levels[3];
+        case LEVEL_WARNING  : return s_levels[4];
+        case LEVEL_ERROR    : return s_levels[5];
+        case LEVEL_FATAL    : return s_levels[6];
+        case LEVEL_ALERT    : return s_levels[7];
+        case LEVEL_LOG      : return s_levels[8];
+        default             : assert(false);
+    }
+}
+
 const std::string& logger::log_level_to_string(log_level level) noexcept
 {
     static const std::string s_levels[] = {
@@ -138,6 +163,7 @@ int logger::level_to_signal_slot(log_level level) noexcept
         case LEVEL_ERROR    : return 5;
         case LEVEL_FATAL    : return 6;
         case LEVEL_ALERT    : return 7;
+        case LEVEL_LOG      : return 8;
         default             : assert(false);
     }
 }
