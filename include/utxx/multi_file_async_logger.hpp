@@ -164,7 +164,7 @@ private:
     cmd_allocator                                   m_cmd_allocator;
     msg_allocator                                   m_msg_allocator;
     std::atomic<command_t*>                         m_head;
-    volatile bool                                   m_cancel;
+    std::atomic<bool>                               m_cancel;
     int                                             m_max_queue_size;
     std::atomic<long>                               m_total_msgs_processed;
     event_type                                      m_event;
@@ -779,7 +779,7 @@ stop() {
 
     std::shared_ptr<std::thread> t = m_thread;
     if (t) {
-        m_cancel = true;
+        m_cancel.store(true, std::memory_order_release);
         m_event.signal();
 
         t->join();
@@ -815,7 +815,7 @@ run() {
         // CPU-friendly spin for 250us
         time_val deadline(rel_time(0, 250));
         while (!m_head.load(std::memory_order_relaxed)) {
-            if (m_cancel)
+            if (m_cancel.load(std::memory_order_relaxed))
                 goto DONE;
             if (now_utc() > deadline)
                 break;
@@ -1106,7 +1106,7 @@ int basic_multi_file_async_logger<traits>::
 internal_write(const file_id& a_id, const std::string& a_category,
                char* a_data, size_t a_sz, bool copied)
 {
-    if (unlikely(!a_id.stream() || m_cancel)) {
+    if (unlikely(!a_id.stream() || m_cancel.load(std::memory_order_relaxed))) {
         if (copied)
             deallocate(a_data, a_sz);
         return -1;
@@ -1185,7 +1185,8 @@ commit(const struct timespec* tsp)
 
     int event_val = m_event.value();
 
-    while (!m_cancel && !m_head.load(std::memory_order_relaxed)) {
+    while (!m_cancel.load(std::memory_order_relaxed) &&
+           !m_head.  load(std::memory_order_relaxed)) {
         #ifdef DEBUG_ASYNC_LOGGER
         wakeup_result n =
         #endif
@@ -1194,11 +1195,11 @@ commit(const struct timespec* tsp)
         ASYNC_DEBUG_TRACE(
             ("  %s COMMIT awakened (res=%s, val=%d, futex=%d), cancel=%d, head=%p\n",
              timestamp::to_string().c_str(), to_string(n), event_val, m_event.value(),
-             m_cancel, m_head.load())
+             m_cancel.load(std::memory_order_relaxed), m_head.load())
         );
     }
 
-    if (m_cancel && !m_head.load(std::memory_order_relaxed))
+    if (m_cancel.load(std::memory_order_relaxed) && !m_head.load(std::memory_order_relaxed))
         return 0;
 
     command_t* cur_head;
