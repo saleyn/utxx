@@ -166,13 +166,15 @@ struct logger : boost::noncopyable {
                 - log<(int)LEVEL_TRACE, 2>::value + 1
     };
 
-    static const char* log_level_to_str(log_level level) noexcept;
-    static size_t      log_level_size  (log_level level) noexcept;
-    static std::string log_levels_to_str(int a_levels)   noexcept;
+    static const std::string& log_level_to_string(log_level level)  noexcept;
+    static const char*        log_level_to_str(log_level level)     noexcept
+                              { return log_level_to_string(level).c_str(); }
+    static size_t             log_level_size  (log_level level)     noexcept;
+    static std::string        log_levels_to_str(int a_levels)       noexcept;
     /// Convert a <level> to the slot number in the <m_sig_msg> array
-    static int         level_to_signal_slot(log_level level) noexcept;
+    static int                level_to_signal_slot(log_level level) noexcept;
     /// Convert a <level> to the slot number in the <m_sig_msg> array
-    static log_level   signal_slot_to_level(int slot) noexcept;
+    static log_level          signal_slot_to_level(int slot)        noexcept;
 
     typedef boost::shared_ptr<logger_impl>  impl;
     typedef std::vector<impl>               implementations_vector;
