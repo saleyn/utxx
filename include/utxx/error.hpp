@@ -297,18 +297,23 @@ public:
             auto begin = a_srcfun;
             auto matched_open_tribrace = -1;
             auto inside = 0;  // > 0 when we are inside "<...>"
+            if (strncmp(begin, "static ",   7)==0) begin += 7;
+            if (strncmp(begin, "typename ", 9)==0) begin += 9;
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
             for (q = begin, e = q + a_sf_len; q < e; ++q) {
                 switch (*q) {
                     case '(':
-                        e = q; break;
+                        if (inside)
+                            continue;
+                        e = q;
+                        break;
                     case ' ':
-                        if (!inside) {
-                            begin    = q+1;
-                            scope    = 1;
-                            tribrcnt = 0;
-                        }
+                        if (inside)
+                            continue;
+                        begin    = q+1;
+                        scope    = 1;
+                        tribrcnt = 0;
                         break;
                     case '<':
                         if (tribrcnt < N) {

@@ -33,14 +33,31 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <boost/test/unit_test.hpp>
 #include <regex>
+#include <type_traits>
 
 using namespace utxx;
 
 const src_info& sample_src() { static const auto s_src = UTXX_SRC; return s_src; }
 
 namespace abc { namespace d {
+    struct EventType {
+        enum etype { a,b,c };
+    };
+
     template <class T>
     struct A {
+
+        template <EventType::etype ET>
+        struct ChannelEvent {};
+
+        template <EventType::etype ET>
+        static typename std::enable_if<ET == EventType::a ||
+                                ET == EventType::b ||
+                                ET == EventType::c, const src_info&>::type
+        OnData(const ChannelEvent<ET>& a) {
+            static const auto s_src = UTXX_SRC; return s_src;
+        };
+
         template <class U, class V>
         struct B {
             static const src_info& my_fun() { static const auto s_src = UTXX_SRC; return s_src; }
@@ -176,6 +193,18 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
         for (int i=0; i < 2; ++i) {
             auto str = src[i].to_string("", "", 1);
             std::regex re("^test_error.cpp:\\d+ my_fun[x]?$");
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
+        }
+
+        {
+            auto& s = abc::d::A<int>::OnData<abc::d::EventType::b>(abc::d::A<int>::ChannelEvent<abc::d::EventType::b>());
+            //BOOST_MESSAGE(s.fun());
+            auto str = s.to_string("","",3);
+            //BOOST_MESSAGE(str);
+            std::regex re("^test_error.cpp:\\d+ d::A::OnData$");
             if (!std::regex_search(str, re)) {
                 std::cout << '"' << str << '"' << std::endl;
                 BOOST_CHECK(false);
