@@ -12,6 +12,7 @@ before_script:
   - sudo apt-get install -qq automake autoconf autoconf-archive libboost1.55-all-dev
   - dpkg -S /usr/include/boost/version.hpp
   - sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev libthrift0 thrift-compiler
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 90
   - ./bootstrap
   - g++ --version
 script:
