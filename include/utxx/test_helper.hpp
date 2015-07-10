@@ -59,6 +59,46 @@ inline long env(const char* a_var, long a_default) {
     return p ? atoi(p) : a_default;
 }
 
+inline bool get_test_argv(const std::string& a_opt,
+                          const std::string& a_long_opt = "") {
+    int    argc = boost::unit_test::framework::master_test_suite().argc;
+    char** argv = boost::unit_test::framework::master_test_suite().argv;
+
+    if (a_opt.empty() && a_long_opt.empty()) return false;
+
+    auto same = [=](const std::string& a, int i) {
+        return !a.empty() && a == argv[i];
+    };
+
+    for (int i=1; i < argc; i++) {
+        if (same(a_opt,      i)) return true;
+        if (same(a_long_opt, i)) return true;
+    }
+
+    return false;
+}
+
+inline bool get_test_argv(const std::string& a_opt,
+                          const std::string& a_long_opt,
+                          std::string& a_value) {
+    int    argc = boost::unit_test::framework::master_test_suite().argc;
+    char** argv = boost::unit_test::framework::master_test_suite().argv;
+
+    if (a_opt.empty() && a_long_opt.empty()) return false;
+
+    auto same = [=](const std::string& a, int i) {
+        return !a.empty() && a == argv[i] &&
+               (i < argc-1 && argv[i+1][i] != '-');
+    };
+
+    for (int i=1; i < argc; i++) {
+        if (same(a_opt,      i)) { a_value = argv[++i]; return true; }
+        if (same(a_long_opt, i)) { a_value = argv[++i]; return true; }
+    }
+
+    return false;
+}
+
 } // namespace utxx::test
 
 #endif // _UTXX_TEST_HELPER_HPP_
