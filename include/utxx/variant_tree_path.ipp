@@ -23,18 +23,18 @@ namespace utxx
         return t;
     }
 
+    inline tree_path operator/ (const tree_path& a, const char* s) {
+        return a / tree_path(s, a.separator());
+    }
+
     inline tree_path operator/ (const tree_path& a, const std::string& s) {
         tree_path t(a);
         t /= s;
         return t;
     }
 
-    inline tree_path& operator/ (tree_path& a, const std::string& s) {
-        return a /= s;
-    }
-
     inline tree_path operator/ (const std::string& a, const tree_path& s) {
-        tree_path t(a);
+        tree_path t(a, s.separator());
         t /= s;
         return t;
     }
@@ -58,28 +58,26 @@ namespace utxx
         return t;
     }
 
-    inline tree_path& operator/ (tree_path& a,
+    inline tree_path& operator/=(tree_path& a,
         const std::pair<std::string,std::string>& a_option_with_value)
     {
         return a /= a_option_with_value.first + '[' + a_option_with_value.second + ']';
     }
 
-    inline tree_path& operator/ (tree_path& a,
+    inline tree_path& operator/=(tree_path& a,
         const std::pair<const char*,const char*>& a_option_with_value)
     {
         return a /= (std::string(a_option_with_value.first) +
                     '[' + a_option_with_value.second + ']');
     }
 
-    inline tree_path make_tree_path_pair(const char* a_path, const char* a_data) {
-        tree_path t;
-        return t / std::make_pair(a_path, a_data);
+    inline tree_path make_tree_path_pair(const char* a_path, const char* a_data, char a_sep) {
+        return tree_path(a_sep) / std::make_pair(a_path, a_data);
     }
 
     inline tree_path make_tree_path_pair(
-            const std::string& a_path, const std::string& a_data) {
-        tree_path t;
-        return t / std::make_pair(a_path, a_data);
+            const std::string& a_path, const std::string& a_data, char a_sep) {
+        return tree_path(a_sep) / std::make_pair(a_path, a_data);
     }
 
 } // namespace utxx

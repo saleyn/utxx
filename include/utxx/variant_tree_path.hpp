@@ -53,13 +53,19 @@ basic_tree_path<Ch> operator/
     const basic_tree_path<Ch>& b
 );
 
+template <class Ch>
+basic_tree_path<Ch> operator/
+(
+    const basic_tree_path<Ch>& a,
+    const char* b
+);
+
 /// Constructs a path in the form "Node[Data]"
-tree_path make_tree_path_pair(const char*,const char*);
+tree_path make_tree_path_pair(const char*,const char*, char a_sep = '.');
 /// Constructs a path in the form "Node[Data]"
-tree_path make_tree_path_pair(const std::string&, const std::string&);
+tree_path make_tree_path_pair(const std::string&, const std::string&, char a_sep = '.');
 
 tree_path  operator/ (const tree_path& a, const std::string& s);
-tree_path& operator/ (tree_path& a,       const std::string& s);
 tree_path  operator/ (const std::string& a, const tree_path& s);
 
 tree_path  operator/ (const tree_path& a,
@@ -68,10 +74,10 @@ tree_path  operator/ (const tree_path& a,
 tree_path  operator/ (const tree_path& a,
     const std::pair<const char*,const char*>& a_option_with_value);
 
-tree_path& operator/ (tree_path& a,
+tree_path& operator/=(tree_path& a,
     const std::pair<std::string,std::string>& a_option_with_value);
 
-tree_path& operator/ (tree_path& a,
+tree_path& operator/=(tree_path& a,
     const std::pair<const char*,const char*>& a_option_with_value);
 
 } // namespace utxx
