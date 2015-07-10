@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/xpressive/xpressive.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -40,7 +39,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/string.hpp>
 #include <utxx/scope_exit.hpp>
 #include <dirent.h>
-#include <regex>
 
 #if defined(_WIN32) || defined (_WIN64) || defined(_MSC_VER)
 #include <boost/smart_ptr/scoped_ptr.hpp>
@@ -109,76 +107,6 @@ long file_size(int fd) {
     struct stat stat_buf;
     int rc = fstat(fd, &stat_buf);
     return rc == 0 ? stat_buf.st_size : -1;
-}
-
-std::string replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
-                             const std::map<std::string, std::string>* a_bindings)
-{
-    if (!a_now.empty()) {
-        auto tm = a_now.to_tm(a_utc);
-        return replace_env_vars(a_path, &tm, a_bindings);
-    }
-    return replace_env_vars(a_path, nullptr, a_bindings);
-}
-
-std::string replace_env_vars(const std::string& a_path, const struct tm* a_now,
-                             const std::map<std::string, std::string>* a_bindings)
-{
-    using namespace boost::posix_time;
-    using namespace boost::xpressive;
-
-    auto regex_format_fun = [a_bindings](const smatch& what) {
-        if (what[1].str() == "EXEPATH") // special case
-            return program::abs_path();
-
-        if (a_bindings) {
-            auto it = a_bindings->find(what[1].str());
-            if (it != a_bindings->end())
-                return it->second;
-        }
-
-        const char* env = getenv(what[1].str().c_str());
-        return std::string(env ? env : "");
-    };
-
-    auto regex_home_var = [](const smatch& what) { return home(); };
-
-    std::string x(a_path);
-    {
-        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-        sregex re = "%"  >> (s1 = +_w) >> '%';
-        #else
-        sregex re = "${" >> (s1 = +_w) >> '}';
-        #endif
-
-        x = regex_replace(x, re, regex_format_fun);
-    }
-    #if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
-    {
-        sregex re = '$' >> (s1 = +_w);
-        x = regex_replace(x, re, regex_format_fun);
-    }
-    {
-        sregex re = bos >> '~';
-        x = regex_replace(x, re, regex_home_var);
-    }
-    #endif
-
-    if (a_now != NULL && x.find('%') != std::string::npos) {
-        char buf[384];
-        if (strftime(buf, sizeof(buf), x.c_str(), a_now) == 0)
-            throw badarg_error("Invalid time specification!");
-        return buf;
-    }
-    /*
-    struct tm tm;
-    const struct tm* ptm = &tm;
-    ptime now = second_clock::local_time();
-    tm = boost::posix_time::to_tm(now);
-    if (strftime(buf, sizeof(buf), x.c_str(), ptm) == 0)
-        throw badarg_error("Invalid time specification!");
-    */
-    return x;
 }
 
 std::pair<std::string, std::string>

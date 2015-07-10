@@ -220,5 +220,5 @@ public:
 } // namespace path
 } // namespace utxx
 
+#include <utxx/path.ipp>
 #endif // _UTXX_PATH_HPP_
-
