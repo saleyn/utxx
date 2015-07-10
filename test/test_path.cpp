@@ -88,6 +88,16 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
     tm.tm_sec  = 3;
     s = path::replace_env_vars(temp_path() + "/file%Y-%m-%d::%T.txt", &tm);
     BOOST_REQUIRE_EQUAL(temp_path() + "/file2000-01-02::05:04:03.txt", s);
+
+    std::string str = "${env}/${instance}";
+    std::map<std::string, std::string> bindings
+    {
+        {"env",      "one"},
+        {"instance", "two"}
+    };
+
+    s = path::replace_env_vars(str, time_val(), false, &bindings);
+    BOOST_CHECK_EQUAL("one/two", s);
 }
 
 
