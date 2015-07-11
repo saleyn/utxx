@@ -79,10 +79,15 @@ bool        is_symlink (const char* a_path);
 inline bool is_symlink (const std::string& a) { return is_symlink(a.c_str());  }
 
 /// Get file size
-long file_size(const char* a_filename);
+long        file_size(const char* a_filename);
 inline long file_size(const std::string& a_filename) { return file_size(a_filename.c_str()); }
 /// Get file size of the file associated with the file descriptor
-long file_size(int fd);
+long        file_size(int fd);
+
+/// Create a symlink to file
+inline int  file_symlink(const std::string& a_file, const std::string& a_symlink) {
+    return ::symlink(a_file.c_str(), a_symlink.c_str());
+}
 
 /// Removes a file
 void file_unlink(const char* a_path);
