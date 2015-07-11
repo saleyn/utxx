@@ -108,6 +108,25 @@ replace_env_vars(const std::string& a_path, const struct tm* a_now,
     return x;
 }
 
+inline std::string
+replace_macros(const std::string& a_path,
+               const std::map<std::string, std::string>& a_bindings)
+{
+    using namespace boost::posix_time;
+    using namespace boost::xpressive;
+
+    auto regex_format_fun = [&](const smatch& what) {
+        auto it = a_bindings.find(what[1].str());
+        if (it != a_bindings.end())
+            return it->second;
+        return std::string();
+    };
+
+    std::string x(a_path);
+    sregex re = "{{" >> (s1 = +_w) >> "}}";
+    return regex_replace(x, re, regex_format_fun);
+}
+
 } // namespace path
 } // namespace utxx
 

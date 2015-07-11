@@ -265,8 +265,10 @@ namespace detail {
                     // Parser expects key
                     case s_key:
                     {
-                        // directive is found (e.g. $include, etc.)
-                        if (*text == Ch('$') && (mode == PARSE_STREAM || mode == PARSE_DATA))
+                        // directive is found (e.g. $include, etc.) and it's not
+                        // a macro like "$(...)"
+                        if (*text == Ch('$') && *(text+1) != '(' &&
+                            (mode == PARSE_STREAM || mode == PARSE_DATA))
                         {
                             // Entering directive parsing mode
 

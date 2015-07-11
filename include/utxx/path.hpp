@@ -166,6 +166,16 @@ std::string replace_env_vars(
     const std::string& a_str, time_val a_now, bool a_utc = false,
     const std::map<std::string, std::string>* a_bindings = NULL);
 
+/// Replace macro variables found in the \a a_bindings.
+/// The values should be defined in the string in the following form:
+/// "My name is {{name}}"
+/// @param a_str string to replace containing macros surrounded by "{{" and "}}"
+/// @param a_bindings contains optional value map that will be used
+///                   for variable substitution.
+std::string replace_macros(
+    const std::string& a_path,
+    const std::map<std::string, std::string>& a_bindings);
+
 /// Returns a pair containing a file name with substituted
 /// environment variables and day-time formatting symbols
 /// replaced (see strptime(3)), and a backup file name to
