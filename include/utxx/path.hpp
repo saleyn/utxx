@@ -71,8 +71,12 @@ static inline const char* slash_str() {
 const char* basename(const char* begin, const char* end);
 
 /// Checks if a file exists
-bool file_exists(const char* a_path);
-inline bool file_exists(const std::string& a_path) { return file_exists(a_path.c_str()); }
+bool        file_exists(const char* a_path);
+inline bool file_exists(const std::string& a) { return file_exists(a.c_str()); }
+
+/// Check if given path is a symlink
+bool        is_symlink (const char* a_path);
+inline bool is_symlink (const std::string& a) { return is_symlink(a.c_str());  }
 
 /// Get file size
 long file_size(const char* a_filename);

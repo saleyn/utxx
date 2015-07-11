@@ -40,9 +40,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 #include <boost/xpressive/xpressive.hpp>
 #include <regex>
+#include <sys/stat.h>
 
 namespace utxx {
 namespace path {
+
+inline bool is_symlink(const char* a_path) {
+    struct stat s;
+    return lstat(a_path, &s) == 0 && S_ISLNK(s.st_mode);
+}
 
 inline std::string
 replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
