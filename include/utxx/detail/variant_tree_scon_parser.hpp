@@ -649,13 +649,24 @@ namespace detail {
         }
 
         // Extract word (whitespace delimited) and advance pointer accordingly
+        // (skip {{...}} that can be used for defining macros
         str_t read_word(bool is_data) {
             skip_whitespace();
             const Ch *start = text;
-            while (*text != Ch('\0') && *text != Ch('=')
-                && *text != Ch(',')  && *text != Ch('{') && *text != Ch('}')
-                && !std::isspace(*text) && !iscomment())
+            while (true) {
+                if (*text == Ch('\0')   || *text == Ch('=') || *text == Ch(',')
+                ||  std::isspace(*text) || iscomment())
+                    break;
+                if (*text == Ch('{')) {
+                    if (*(text+1) == Ch('{')) ++text;
+                    else                      break;
+                }
+                if (*text == Ch('}')) {
+                    if (*(text+1) == Ch('}')) ++text;
+                    else                      break;
+                }
                 ++text;
+            }
             return expand_escapes(start, is_data);
         }
 
