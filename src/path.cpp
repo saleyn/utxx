@@ -89,26 +89,6 @@ bool file_exists(const char* a_path) {
     return false;
 }
 
-void file_unlink(const char* a_path) {
-    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-    ::_unlink(a_path);
-    #else
-    ::unlink(a_path);
-    #endif
-}
-
-long file_size(const char* a_filename) {
-    struct stat stat_buf;
-    int rc = stat(a_filename, &stat_buf);
-    return rc == 0 ? stat_buf.st_size : -1;
-}
-
-long file_size(int fd) {
-    struct stat stat_buf;
-    int rc = fstat(fd, &stat_buf);
-    return rc == 0 ? stat_buf.st_size : -1;
-}
-
 std::pair<std::string, std::string>
 filename_with_backup(const char* a_filename,
     const char* a_backup_dir, const char* a_backup_suffix, const struct tm* a_now)

@@ -90,8 +90,8 @@ inline int  file_symlink(const std::string& a_file, const std::string& a_symlink
 }
 
 /// Removes a file
-void file_unlink(const char* a_path);
-inline void file_unlink(const std::string& a_path) { file_unlink(a_path.c_str()); }
+int        file_unlink(const char* a_path);
+inline int file_unlink(const std::string& a_path) { return file_unlink(a_path.c_str()); }
 
 /// Get current working directory
 inline std::string curdir() { char buf[512]; getcwd(buf,sizeof(buf)); return buf; }

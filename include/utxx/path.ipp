@@ -61,6 +61,26 @@ replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
     return replace_env_vars(a_path, nullptr, a_bindings);
 }
 
+inline int file_unlink(const char* a_path) {
+    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+    return ::_unlink(a_path);
+    #else
+    return ::unlink(a_path);
+    #endif
+}
+
+inline long file_size(const char* a_filename) {
+    struct stat stat_buf;
+    int rc = stat(a_filename, &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
+}
+
+inline long file_size(int fd) {
+    struct stat stat_buf;
+    int rc = fstat(fd, &stat_buf);
+    return rc == 0 ? stat_buf.st_size : -1;
+}
+
 inline std::string
 replace_env_vars(const std::string& a_path, const struct tm* a_now,
                  const std::map<std::string, std::string>*   a_bindings)
