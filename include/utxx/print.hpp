@@ -77,10 +77,16 @@ private:
 /// Alignment enumerator
 template <int Width, alignment Align, class T>
 struct width {
+    using TT = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+
     // For integers and bool types
     width(T a_val, char a_pad = ' ') : m_value(a_val), m_pad(a_pad), m_precision(0)
     {
-        static_assert(std::is_integral<T>::value, "Mast be bool or integer type");
+        static_assert(std::is_integral<TT>::value           ||
+                      std::is_same<const char*, TT>::value  ||
+                      std::is_same<char*, TT>::value        ||
+                      std::is_same<std::string, TT>::value,
+                      "Mast be bool, integer or string type");
     }
 
     // For floating point types
@@ -103,32 +109,7 @@ struct width {
     /// Write Width characters to \a a_buf.
     /// The argument buffer must have at least Width bytes.
     void write(char* a_buf) const {
-        if (Align == LEFT) {
-            if (std::is_integral<T>::value && !std::is_same<T, bool>::value)
-                itoa_left<T,  Width>(a_buf, m_value, m_pad);
-            else if (std::is_floating_point<T>::value) {
-                int   n = ftoa_left(m_value, a_buf, Width, m_precision);
-                padit(a_buf + std::max<int>(n, 0), a_buf + Width);
-            } else if (std::is_same<T, bool>::value) {
-                char* p = stpncpy(a_buf, m_value ? "true" : "false", Width);
-                padit(p, a_buf + Width);
-            } else
-                assert(false);
-        } else { // Align == RIGHT
-            if (std::is_integral<T>::value && !std::is_same<T, bool>::value)
-                itoa_right<T, Width>(a_buf, m_value, m_pad);
-            else if (std::is_floating_point<T>::value)
-                ftoa_right(m_value, a_buf, Width, m_precision, m_pad);
-            else if (std::is_same<T, bool>::value) {
-                int len; const char* v;
-                if (m_value) { len = std::min<int>(4, Width); v = "true";  }
-                else         { len = std::min<int>(5, Width); v = "false"; }
-                int n = Width-len;
-                padit(a_buf, a_buf + n);
-                memcpy(a_buf+n, v, len);
-            } else
-                assert(false);
-        }
+        do_write(m_value, a_buf);
     }
 
     static constexpr const alignment s_align = Align;
@@ -143,7 +124,63 @@ private:
     int  m_precision;
 
     void padit(char* p, const char* end) const { while (p < end) *p++ = m_pad; }
+
+    void do_write(bool a_value, char* a_buf) const {
+        do_write(a_value ? "true" : "false", a_buf);
+    }
+
+    void do_write(long a_value, char* a_buf) const {
+        if (Align == RIGHT)
+            itoa_right<T, Width>(a_buf, a_value, m_pad);
+        else
+            itoa_left<T,  Width>(a_buf, a_value, m_pad);
+    }
+
+    void do_write(int a_value, char* a_buf) const {
+        if (Align == RIGHT)
+            itoa_right<T, Width>(a_buf, a_value, m_pad);
+        else
+            itoa_left<T,  Width>(a_buf, a_value, m_pad);
+    }
+
+    void do_write(const char* a_value, size_t a_len, char* a_buf) const {
+        int len = std::min<int>(Width, a_len);
+        if (Align == RIGHT) {
+            auto n = Width - len;
+            auto e = a_buf + n;
+            padit(a_buf, e);
+            a_buf  = e;
+        }
+        memcpy(a_buf, a_value, len);
+        if (Align == LEFT)
+            padit(a_buf+len, a_buf+Width);
+    }
+
+    void do_write(const char* a_value, char* a_buf) const {
+        do_write(a_value, strnlen(a_value, Width), a_buf);
+    }
+
+    void do_write(std::string const& a_value, char* a_buf) const {
+        do_write(a_value.c_str(), a_value.size(), a_buf);
+    }
+
+    void do_write(double a_value, char* a_buf) const {
+        if (Align == RIGHT)
+            ftoa_right(a_value, a_buf, Width, m_precision, m_pad);
+        else {
+            int n = ftoa_left(a_value, a_buf, Width, m_precision);
+            padit(a_buf + std::max<int>(n, 0), a_buf + Width);
+        }
+    }
+
+    template <typename U>
+    void do_write(U a, char*) const {
+        UTXX_THROW_RUNTIME_ERROR("Writing of ", a, " not supported!");
+    }
 };
+
+template <int Width, alignment Align, typename T>
+width<Width,Align,T> make_width(T a, char a_pad = ' ') { return width<Width, Align, T>(a, a_pad); }
 
 namespace detail {
     template <size_t N = 256, class Alloc = std::allocator<char>>
@@ -153,6 +190,8 @@ namespace detail {
         char*           m_pos;
         char*           m_end;
         char            m_data[N];
+        int             m_max_src_scope = 3;
+        int             m_precision     = 6;
 
         void deallocate() {
             if (m_begin == m_data) return;
@@ -175,12 +214,12 @@ namespace detail {
         }
         void do_print(double a)
         {
-            int n = ftoa_left(a, m_pos, capacity(), 6, true);
+            int n = ftoa_left(a, m_pos, capacity(), m_precision, true);
             if (unlikely(n < 0)) {
-                n = snprintf(m_pos, capacity(), "%.6f", a);
+                n = snprintf(m_pos, capacity(), "%.*f", m_precision, a);
                 if (unlikely(m_pos + n > m_end)) {
                     reserve(n);
-                    snprintf(m_pos, capacity(), "%.6f", a);
+                    snprintf(m_pos, capacity(), "%.*f", m_precision, a);
                 }
             }
             m_pos += n;
@@ -296,6 +335,11 @@ namespace detail {
         char&       last()            { return m_pos == m_begin
                                              ? *m_begin : *(m_pos - 1); }
         const char* end()       const { return m_end;   }
+
+        /// Max depth of src_info scope printed
+        void        max_src_scope(int a) { m_max_src_scope = a; }
+        /// Precision of floating point (default: 6)
+        void        precision    (int a) { m_precision     = a; }
 
         /// Reserve space in the buffer to hold additional \a a_sz bytes
         void reserve(size_t a_sz) {

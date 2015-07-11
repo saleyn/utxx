@@ -61,6 +61,11 @@ BOOST_AUTO_TEST_CASE( test_print )
     { std::string s = print(width<7, RIGHT,bool>  (true     ));     BOOST_CHECK_EQUAL("   true", s); }
     { std::string s = print(width<7, LEFT, bool>  (false    ));     BOOST_CHECK_EQUAL("false  ", s); }
     { std::string s = print(width<7, RIGHT,bool>  (false    ));     BOOST_CHECK_EQUAL("  false", s); }
+    { std::string s = print(make_width<7, RIGHT>  ("abc"));         BOOST_CHECK_EQUAL("    abc", s); }
+    { std::string s = print(make_width<7, LEFT>   ("abc"));         BOOST_CHECK_EQUAL("abc    ", s); }
+    { std::string s = print(width<7, RIGHT,const std::string&>(str)); BOOST_CHECK_EQUAL("    xxx", s); }
+    { std::string s = print(width<7, LEFT, const std::string&>(str)); BOOST_CHECK_EQUAL("xxx    ", s); }
+    { std::string s = print(make_width<7, LEFT>(str)); BOOST_CHECK_EQUAL("xxx    ", s); }
 }
 
 
