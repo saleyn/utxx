@@ -47,9 +47,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 #include <utxx/typeinfo.hpp>
 
-namespace utxx { namespace detail {
-    struct pf_def_arg { int scope = 3; };
-}}
+namespace utxx {
+    /// Controls src_info printing defaults
+    struct src_info_defaults {
+        static int print_fun_scopes;        // Initialized in error.cpp
+
+        src_info_defaults(int a_scopes = -1)
+            : m_scopes(a_scopes < 0 ? print_fun_scopes : a_scopes)
+        {}
+
+        int scopes() const { return m_scopes; }
+    private:
+        int m_scopes;
+    };
+}
 
 /// Pretty function name stripped off of angular brackets and some namespaces
 ///
@@ -58,7 +69,7 @@ namespace utxx { namespace detail {
 #define UTXX_PRETTY_FUNCTION(...) \
     static const std::string __utxx_pretty_function__ = \
         utxx::src_info::pretty_function \
-            (BOOST_CURRENT_FUNCTION, utxx::detail::pf_def_arg{__VA_ARGS__}.scope)
+            (BOOST_CURRENT_FUNCTION, utxx::src_info_defaults(__VA_ARGS__).scopes())
 
 /// Alias for source location information
 #define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION)
@@ -237,14 +248,14 @@ public:
 
     /// Format function name by stripping angular brackets and extra namespaces
     /// @param a_fun_scope_depth controls how many function name's
-    ///                          namespace levels should be included in the
+    ///                          namespace scopes should be included in the
     ///                          output (0 - means don't print the function name)
-    static std::string pretty_function(const char* a_pretty_funcation,
+    static std::string pretty_function(const char* a_pretty_function,
                                        int a_fun_scope_depth = 3)
     {
         char buf[128];
         char* end = to_string(buf, sizeof(buf), "", 0,
-                              a_pretty_funcation, strlen(a_pretty_funcation),
+                              a_pretty_function, strlen(a_pretty_function),
                               a_fun_scope_depth);
         return std::string(buf, end - buf);
     }

@@ -7,6 +7,7 @@ UTXX64_SRCS = \
 
 UTXX_SRCS = \
     config_validator.cpp \
+    error.cpp \
     futex.cpp \
     high_res_timer.cpp \
     logger.cpp \
