@@ -190,9 +190,18 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
                 BOOST_CHECK(false);
             }
         }
-        for (int i=0; i < 2; ++i) {
-            auto str = src[i].to_string("", "", 1);
+        {
+            auto str = src[0].to_string("", "", 1);
             std::regex re("^test_error.cpp:\\d+ my_fun[x]?$");
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
+            // my_funx() printing scope is controlled by
+            // src_info_defaults::print_fun_scopes, and therefore scope argument
+            // 1 is overriden by 3:
+            str = src[1].to_string("", "", 1);
+            re  = "^test_error.cpp:\\d+ A::B::my_fun[x]?$";
             if (!std::regex_search(str, re)) {
                 std::cout << '"' << str << '"' << std::endl;
                 BOOST_CHECK(false);

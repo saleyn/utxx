@@ -77,7 +77,7 @@ namespace utxx {
 /// Alias for source location information using cached pretty function name
 ///
 /// The cached pretty function name must be declared by call to UTXX_PRETTY_FUNCTION
-#define UTXX_SRCX utxx::src_info(UTXX_FILE_SRC_LOCATION, __utxx_pretty_function__)
+#define UTXX_SRCX utxx::src_info(UTXX_FILE_SRC_LOCATION, __utxx_pretty_function__, true)
 
 /// Throw given exception with provided source location information
 #define UTXX_SRC_THROW(Exception, SrcInfo, ...) throw Exception((SrcInfo), ##__VA_ARGS__)
@@ -163,33 +163,41 @@ public:
 class src_info {
     const char* m_srcloc;
     const char* m_fun;
-    int         m_srcloc_len;
-    int         m_fun_len;
+    int16_t     m_srcloc_len;
+    int16_t     m_fun_len;
+    bool        m_fun_verbatim;
 public:
     constexpr src_info()
         : m_srcloc(""), m_fun(""), m_srcloc_len(0), m_fun_len(0)
+        , m_fun_verbatim(false)
     {}
 
     template <int N, int M>
-    constexpr src_info(const char (&a_srcloc)[N], const char (&a_fun)[M]) noexcept
+    constexpr src_info(const char (&a_srcloc)[N], const char (&a_fun)[M],
+                       bool a_fun_verbatim = false) noexcept
         : m_srcloc(a_srcloc), m_fun(a_fun)
         , m_srcloc_len(N-1),  m_fun_len(M-1)
+        , m_fun_verbatim(a_fun_verbatim)
     {
         static_assert(N >= 1, "Invalid string literal! Length is zero!");
         static_assert(M >= 1, "Invalid string literal! Length is zero!");
     }
 
     template <int N>
-    constexpr src_info(const char (&a_srcloc)[N], const std::string& a_fun) noexcept
+    constexpr src_info(const char (&a_srcloc)[N], const std::string& a_fun,
+                       bool  a_fun_verbatim = false) noexcept
         : m_srcloc(a_srcloc), m_fun(a_fun.c_str())
         , m_srcloc_len(N-1),  m_fun_len(a_fun.size())
+        , m_fun_verbatim(a_fun_verbatim)
     {
         static_assert(N >= 1, "Invalid string literal! Length is zero!");
     }
 
-    src_info(const char* a_srcloc, size_t N, const char* a_fun, size_t M)
+    src_info(const char* a_srcloc, size_t N, const char* a_fun, size_t M,
+             bool  a_fun_verbatim = false) noexcept
         : m_srcloc(a_srcloc), m_fun(a_fun)
         , m_srcloc_len(N),    m_fun_len(M)
+        , m_fun_verbatim(a_fun_verbatim)
     {
         assert(N >  0);
         assert(M >= 0);
@@ -200,15 +208,15 @@ public:
     src_info(src_info&& a)                  = default;
     src_info& operator=(const src_info& a)  = default;
 
-    const char* srcloc()     const { return m_srcloc;     }
-    const char* fun()        const { return m_fun;        }
+    const char* srcloc()       const { return m_srcloc;       }
+    const char* fun()          const { return m_fun;          }
 
-    int         srcloc_len() const { return m_srcloc_len; }
-    int         fun_len()    const { return m_fun_len;    }
+    int         srcloc_len()   const { return m_srcloc_len;   }
+    int         fun_len()      const { return m_fun_len;      }
+    bool        fun_verbatim() const { return m_fun_verbatim; }
+    bool        empty()        const { return !m_srcloc_len;  }
 
-    bool        empty()      const { return !m_srcloc_len;}
-
-    operator std::string() { return to_string(); }
+    operator    std::string()  const { return to_string();    }
 
     friend inline std::ostream& operator<< (std::ostream& out, const src_info& a) {
         return out << a.to_string("[", "]");
@@ -221,7 +229,7 @@ public:
     ///                          namespace levels should be included in the
     ///                          output (0 - means don't print the function name)
     std::string to_string(const char* a_pfx = "", const char* a_sfx = "",
-                          int a_fun_scope_depth = 3) const
+                          int a_fun_scope_depth = -1) const
     {
         char buf[256];
         char* p = to_string(buf, sizeof(buf), a_pfx, a_sfx, a_fun_scope_depth);
@@ -236,12 +244,12 @@ public:
     ///                          output (0 - means don't print the function name)
     char* to_string(char* a_buf, size_t a_sz,
                     const char* a_pfx = "", const char* a_sfx = "",
-                    int a_fun_scope_depth = 3) const
+                    int a_fun_scope_depth = -1) const
     {
         const char* end = a_buf + a_sz-1;
         char* p = stpncpy(a_buf, a_pfx, end - a_buf);
         p = to_string(p, end - p, m_srcloc, m_srcloc_len, m_fun, m_fun_len,
-                      a_fun_scope_depth);
+                      a_fun_scope_depth, m_fun_verbatim);
         p = stpncpy(p, a_sfx, end - p);
         return p;
     }
@@ -251,7 +259,7 @@ public:
     ///                          namespace scopes should be included in the
     ///                          output (0 - means don't print the function name)
     static std::string pretty_function(const char* a_pretty_function,
-                                       int a_fun_scope_depth = 3)
+                                       int a_fun_scope_depth = -1)
     {
         char buf[128];
         char* end = to_string(buf, sizeof(buf), "", 0,
@@ -266,10 +274,11 @@ public:
     /// @param a_fun_scope_depth controls how many function name's
     ///                          namespace levels should be included in the
     ///                          output (0 - means don't print the function name)
+    /// @param a_fun_verbatim    print function name as is without prettifying
     static char* to_string(char* a_buf, size_t a_sz,
         const char* a_srcloc, size_t a_sl_len,
         const char* a_srcfun, size_t a_sf_len,
-        int a_fun_scope_depth = 3)
+        int a_fun_scope_depth = -1, bool a_fun_verbatim = false)
     {
         static const char s_sep =
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN64__) || defined(__CYGWIN__)
@@ -277,6 +286,9 @@ public:
 #else
             '/';
 #endif
+        const int fun_scope_depth = a_fun_scope_depth < 0
+                                  ? src_info_defaults::print_fun_scopes
+                                  : a_fun_scope_depth;
         const char* q, *e;
 
         auto p   = a_buf;
@@ -290,8 +302,14 @@ public:
             auto len = std::min<size_t>(end - p, e - q + 1);
             p = stpncpy(p, q, len);
         }
-        if (a_fun_scope_depth && a_sf_len) {
+        if (fun_scope_depth && a_sf_len) {
             if (a_sl_len) *p++ = ' ';
+            // If asked to print function name as-is, just copy it and return
+            if (a_fun_verbatim) {
+                auto len = std::min<size_t>(end - p, a_sf_len + 1);
+                p = stpncpy(p, a_srcfun, len);
+                return p;
+            }
             // Function name can contain:
             //   "static void fun()"
             //   "static void scope::fun()"
@@ -349,8 +367,8 @@ public:
                 }
             }
             scopes[0] = begin;
-            auto start_scope_idx =  scope > a_fun_scope_depth
-                                 ? (scope - a_fun_scope_depth) : 0;
+            auto start_scope_idx =  scope > fun_scope_depth
+                                 ? (scope - fun_scope_depth) : 0;
             // Does the name has fewer namespace scopes than what's allowed?
             begin = scopes[start_scope_idx];
             // Are there any templated arguments to be trimmed?
