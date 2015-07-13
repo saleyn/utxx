@@ -60,8 +60,6 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     time_val now12 = now;
     time_val now13(now);
 
-    static_assert(std::is_trivially_copyable<time_val>::value, "Not trivially copyable");
-
     BOOST_CHECK_EQUAL(now.microseconds(), now12.microseconds());
     BOOST_CHECK_EQUAL(now.microseconds(), now13.microseconds());
 
