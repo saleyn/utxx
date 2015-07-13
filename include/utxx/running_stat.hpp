@@ -317,13 +317,12 @@ class weighted_average {
     double m_denominator;   ///< Equals m_sec_interval*60
 
     void reset(size_t a_sec_interval) {
-        m_sec_interval = a_sec_interval;
-        m_denominator  = a_sec_interval * 60;
+        interval(a_sec_interval);
         m_last_seconds = 0;
         m_last = m_last_wavg = 0;
     }
 
-public:    
+public:
     explicit weighted_average(size_t a_sec_interval = 15u) {
         reset(a_sec_interval);
     }
@@ -352,7 +351,7 @@ public:
         if (a_sec_interval == 0)
             throw std::out_of_range("Argument must be > 0!");
         m_sec_interval = a_sec_interval;
-        m_denominator *= a_sec_interval;
+        m_denominator  = a_sec_interval * 60;
     }
 };
 

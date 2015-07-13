@@ -57,6 +57,14 @@ BOOST_AUTO_TEST_CASE( test_time_val )
 
     BOOST_REQUIRE((now1 - now).milliseconds() <= 1);
 
+    time_val now12 = now;
+    time_val now13(now);
+
+    static_assert(std::is_trivially_copyable<time_val>::value, "Not trivially copyable");
+
+    BOOST_CHECK_EQUAL(now.microseconds(), now12.microseconds());
+    BOOST_CHECK_EQUAL(now.microseconds(), now13.microseconds());
+
     #if __cplusplus >= 201103L
     time_val now2(std::move(now1));
     BOOST_REQUIRE_EQUAL(now1.microseconds(), now2.microseconds());

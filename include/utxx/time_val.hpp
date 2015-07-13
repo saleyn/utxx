@@ -95,7 +95,6 @@ namespace utxx {
         time_val(secs   s)          : m_tv(s.usec)           {}
         time_val(usecs us)          : m_tv(us.usec)          {}
         time_val(long _s, long _us) : m_tv(_s * N10e6 + _us) {}
-        time_val(const time_val& a) : m_tv(a.m_tv)           {}
         time_val(time_val tv, long _s)           : m_tv(tv.m_tv + _s*N10e6)       {}
         time_val(time_val tv, long _s, long _us) : m_tv(tv.m_tv + _s*N10e6 + _us) {}
         time_val(time_val tv, double interval) { set(tv, interval); }
@@ -131,8 +130,10 @@ namespace utxx {
 
         explicit time_val(boost::posix_time::ptime a) { *this = a; }
 
-        #if __cplusplus >= 201103L
-        time_val(time_val&& a) : m_tv(a.m_tv) {}
+        time_val(const time_val& a)             = default;
+        time_val(time_val&& a)                  = default;
+        time_val& operator=(const time_val& a)  = default;
+        time_val& operator=(time_val&&      a)  = default;
 
         template <class Clock, class Duration = typename Clock::Duration>
         time_val(const std::chrono::time_point<Clock, Duration>& a_tp) {
@@ -169,8 +170,6 @@ namespace utxx {
             return std::make_tuple(tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
                                    tm.tm_hour,      tm.tm_min,   tm.tm_sec);
         }
-
-        #endif
 
         /// Convert time to "tm" structure
         template <bool UTC>
@@ -329,7 +328,6 @@ namespace utxx {
         void     operator+= (secs      v)                   { m_tv += v.usec;     }
         void     operator+= (double interval)               { add(interval);      }
 
-        time_val& operator= (time_val t)                    { m_tv = t.value(); return *this;}
         time_val& operator= (const struct timeval& t)       { m_tv = time_val(t).m_tv; return *this; }
 
         void operator= (boost::posix_time::ptime a_rhs) {

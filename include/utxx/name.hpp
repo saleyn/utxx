@@ -149,9 +149,7 @@ namespace utxx {
         bool valid_char(char ch) { return s_fwd_name_lookup_table[static_cast<int>(ch)]; }
     public:
         /// Number of characters needed to store the value.
-        enum { SIZE = Size };
-
-        size_t size() const { return SIZE; }
+        static constexpr size_t size() { return Size; }
 
         template <int N>
         void set(const char (&a_buf)[N], bool a_no_case = false) throw (badarg_error) {
@@ -217,7 +215,7 @@ namespace utxx {
 
         /// Write decoded name to a given character buffer
         int write(char* a_buf, size_t a_size) const {
-            BOOST_ASSERT(a_size == SIZE || a_size > length());
+            BOOST_ASSERT(a_size == Size || a_size > length());
             size_t n = unsafe_write(a_buf);
             if (n < a_size) a_buf[n] = '\0';
             return n;
@@ -231,7 +229,7 @@ namespace utxx {
         }
 
         std::string to_string(char pad = '\0') const {
-            char buf[SIZE];
+            char buf[Size];
             size_t len = write(buf, pad);
             return std::string(buf, len);
         }
