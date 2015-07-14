@@ -42,10 +42,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 namespace path {
 
-/**
- * Return a platform-specific slash character used as
- * path separator.
- */
+
+/// Return a platform-specific slash path separator character
 static inline char slash() {
     #if defined(__windows__) || defined(_WIN32) || defined(_WIN64)
     return '\\';
@@ -54,6 +52,7 @@ static inline char slash() {
     #endif
 }
 
+/// Return a platform-specific slash path separator character (as string)
 static inline const char* slash_str() {
     #if defined(__windows__) || defined(_WIN32) || defined(_WIN64)
     return "\\";
@@ -62,12 +61,11 @@ static inline const char* slash_str() {
     #endif
 }
 
-/**
- * Return basename of the filename defined between \a begin and \a end
- * arguments.
- * @param begin is the start of the filename
- * @param end is the end of the filename
- */
+
+/// Return basename of the filename defined between \a begin and \a end
+/// arguments.
+/// @param begin is the start of the filename
+/// @param end is the end of the filename
 const char* basename(const char* begin, const char* end);
 
 /// Checks if a file exists
@@ -78,6 +76,12 @@ inline bool file_exists(const std::string& a) { return file_exists(a.c_str()); }
 bool        is_symlink (const char* a_path);
 inline bool is_symlink (const std::string& a) { return is_symlink(a.c_str());  }
 
+/// Get the name of the file pointed by \a a_symlink
+/// @param a_symlink name of a symlink
+/// @return filename name pointed by \a a_symlink; empty string if
+///         \a a_symlink is not a symlink or there is some other error.
+std::string file_readlink(const std::string& a_symlink);
+
 /// Get file size
 long        file_size(const char* a_filename);
 inline long file_size(const std::string& a_filename) { return file_size(a_filename.c_str()); }
@@ -85,13 +89,13 @@ inline long file_size(const std::string& a_filename) { return file_size(a_filena
 long        file_size(int fd);
 
 /// Create a symlink to file
-inline int  file_symlink(const std::string& a_file, const std::string& a_symlink) {
-    return ::symlink(a_file.c_str(), a_symlink.c_str());
+inline bool file_symlink(const std::string& a_file, const std::string& a_symlink) {
+    return ::symlink(a_file.c_str(), a_symlink.c_str()) == 0;
 }
 
 /// Removes a file
-int        file_unlink(const char* a_path);
-inline int file_unlink(const std::string& a_path) { return file_unlink(a_path.c_str()); }
+bool        file_unlink(const char* a_path);
+inline bool file_unlink(const std::string& a_path) { return file_unlink(a_path.c_str()); }
 
 /// Get current working directory
 inline std::string curdir() { char buf[512]; getcwd(buf,sizeof(buf)); return buf; }
@@ -106,6 +110,19 @@ inline const std::string read_file(const std::string& a_filename) {
     std::ifstream in(a_filename);
     if (!in) UTXX_THROW_IO_ERROR(errno, "Unable to open file: ", a_filename);
     return read_file(in);
+}
+
+/// Write string to file
+inline bool write_file(const std::string& a_file, const std::string& a_data, bool a_append=false) {
+    std::ofstream out(a_file, a_append ? std::ios_base::app : std::ios_base::trunc);
+    if (!out) return false;
+    out << a_data;
+    return true;
+}
+inline bool write_file(const std::string& a_file, std::string&& a_data, bool a_append=false) {
+    std::ofstream out(a_file, a_append ? std::ios_base::app : std::ios_base::trunc);
+    out << a_data;
+    return true;
 }
 
 /// Split \a a_path to directory and filename

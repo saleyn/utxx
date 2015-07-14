@@ -83,7 +83,7 @@ bool file_exists(const char* a_path) {
     }
     #else
     struct stat buf;
-    if (::stat(a_path, &buf) != -1)
+    if (::lstat(a_path, &buf) != -1)
         return true;
     #endif
     return false;

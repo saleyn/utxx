@@ -32,15 +32,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_PATH_IPP_
 #define _UTXX_PATH_IPP_
 
-#include <string>
-#include <list>
-#include <fstream>
-#include <utxx/error.hpp>
-#include <utxx/time_val.hpp>
-#include <unistd.h>
+#include <utxx/path.hpp>
+#include <sys/stat.h>
 #include <boost/xpressive/xpressive.hpp>
 #include <regex>
-#include <sys/stat.h>
 
 namespace utxx {
 namespace path {
@@ -61,12 +56,18 @@ replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
     return replace_env_vars(a_path, nullptr, a_bindings);
 }
 
-inline int file_unlink(const char* a_path) {
+inline bool file_unlink(const char* a_path) {
     #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-    return ::_unlink(a_path);
+    return ::_unlink(a_path) == 0;
     #else
-    return ::unlink(a_path);
+    return ::unlink(a_path) == 0;
     #endif
+}
+
+inline std::string file_readlink(const std::string& a_symlink) {
+    char buf[256];
+    int  n = ::readlink(a_symlink.c_str(), buf, sizeof(buf));
+    return std::string(buf, n < 0 ? 0 : n);
 }
 
 inline long file_size(const char* a_filename) {

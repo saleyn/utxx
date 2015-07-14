@@ -38,12 +38,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
-static std::string temp_path() {
-    #ifdef _MSC_VER
-    auto p = getenv("TEMP"); return p ? p : "c:\temp";
+static std::string temp_path(const std::string& a_add_str = "") {
+    #if defined(__windows__) || defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER)
+    auto    p = getenv("TEMP");
+    if (!p) p = "";
     #else
-    return P_tmpdir;
+    auto    p = P_tmpdir;
     #endif
+    auto r = std::string(p);
+    return (a_add_str.empty()) ? r : r + path::slash_str() + a_add_str;
 }
 
 BOOST_AUTO_TEST_CASE( test_path_slash )
@@ -75,7 +78,6 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
     s = path::replace_env_vars("~/path/to/exe");
     BOOST_REQUIRE_EQUAL(home+"/path/to/exe", s);
 
-    
     s = path::replace_env_vars(temp_path() + "/file%Y-%m-%d::%T.txt");
     BOOST_REQUIRE_EQUAL(temp_path() + "/file%Y-%m-%d::%T.txt", s);
 
@@ -98,8 +100,33 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
 
     s = path::replace_env_vars(str, time_val(), false, &bindings);
     BOOST_CHECK_EQUAL("one/two", s);
+
+    s = path::replace_macros("abc {{env}}-{{instance}}", bindings);
+    BOOST_CHECK_EQUAL("abc one-two", s);
 }
 
+BOOST_AUTO_TEST_CASE( test_path_symlink )
+{
+    auto p = temp_path("xxx-file-name.test.txt");
+    auto s = temp_path("xxx-file-link.test.link");
+    if (path::file_exists(p))
+        BOOST_CHECK(path::file_unlink(p));
+    if (path::file_exists(s))
+        BOOST_CHECK(path::file_unlink(s));
+
+    BOOST_CHECK(!path::file_exists(p));
+    BOOST_CHECK(!path::file_exists(s));
+
+    BOOST_CHECK(path::write_file(p, "test"));
+    BOOST_CHECK_EQUAL("test", path::read_file(p));
+
+    BOOST_CHECK(path::file_symlink(p, s));
+    BOOST_CHECK(path::is_symlink(s));
+    BOOST_CHECK_EQUAL(p, path::file_readlink(s));
+
+    BOOST_CHECK(path::file_unlink(p));
+    BOOST_CHECK(path::file_unlink(s));
+}
 
 BOOST_AUTO_TEST_CASE( test_path_filename_with_backup )
 {
