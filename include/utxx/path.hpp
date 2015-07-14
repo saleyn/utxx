@@ -74,6 +74,15 @@ static inline const char* slash_str() {
 /// @param end is the end of the filename
 const char* basename(const char* begin, const char* end);
 
+/// Return basename of the filename (no directory name)
+/// @param a_file is the filename to get the basename of
+/// @param a_strip_ext when not empty, the basename's extension matching
+///                    \a a_strip_ext (taken verbatim) will be erased
+std::string basename(const std::string& a_file, const std::string& a_strip_ext = "");
+
+/// Return dirname portion of the filename
+std::string dirname(const std::string& a_filename);
+
 /// Checks if a file exists
 bool        file_exists(const char* a_path);
 inline bool file_exists(const std::string& a) { return file_exists(a.c_str()); }

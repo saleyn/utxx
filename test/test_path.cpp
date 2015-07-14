@@ -107,14 +107,20 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
 
 BOOST_AUTO_TEST_CASE( test_path_symlink )
 {
-    BOOST_CHECK(path::is_dir(temp_path()));
+    auto tp = temp_path();
+    BOOST_CHECK(path::is_dir(tp));
 
-    auto p = temp_path("xxx-file-name.test.txt");
-    auto s = temp_path("xxx-file-link.test.link");
+    auto fn = "xxx-file-name.test.txt";
+    auto p  = temp_path(fn);
+    auto s  = temp_path("xxx-file-link.test.link");
     if (path::file_exists(p))
         BOOST_CHECK(path::file_unlink(p));
     if (path::file_exists(s))
         BOOST_CHECK(path::file_unlink(s));
+
+    BOOST_CHECK_EQUAL(tp, path::dirname(p));
+    BOOST_CHECK_EQUAL(fn, path::basename(p));
+    BOOST_CHECK_EQUAL("xxx-file-name.test", path::basename(p, ".txt"));
 
     BOOST_CHECK(!path::file_exists(p));
     BOOST_CHECK(!path::file_exists(s));

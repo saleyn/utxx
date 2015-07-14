@@ -34,29 +34,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
-#include <utxx/path.hpp>
+#include <boost/xpressive/xpressive.hpp>
+#include <utxx/path.ipp>
 #include <utxx/error.hpp>
 #include <utxx/string.hpp>
 #include <utxx/scope_exit.hpp>
+#include <string.h>
 #include <dirent.h>
+#include <regex>
 
 #if defined(_WIN32) || defined (_WIN64) || defined(_MSC_VER)
-#include <boost/smart_ptr/scoped_ptr.hpp>
 #include <fstream>
-#else
-#include <sys/stat.h>
 #endif
 
 namespace utxx {
 namespace path {
-
-const char* basename(const char* begin, const char* end) {
-    BOOST_ASSERT(begin <= end);
-    for(const char ch = path::slash(); end != begin; --end)
-        if (*end == ch)
-            return ++end;
-    return begin;
-}
 
 std::string home() {
     const char* env = getenv("HOME");
@@ -73,6 +65,17 @@ std::string home() {
     #endif
 }
 
+std::string basename(const std::string& a_file, const std::string& a_strip_ext) {
+    auto e = a_file.c_str() + a_file.size();
+    auto p = basename(a_file.c_str(), e);
+    if (!a_strip_ext.empty() && (e-p) > int(a_strip_ext.size())) {
+        auto q = e - a_strip_ext.size();
+        if (memcmp(q, a_strip_ext.c_str(), a_strip_ext.size()) == 0)
+            e = q;
+    }
+    return std::string(p, e - p);
+}
+
 bool file_exists(const char* a_path) {
     #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
     std::ifstream l_stream;
@@ -87,6 +90,78 @@ bool file_exists(const char* a_path) {
         return true;
     #endif
     return false;
+}
+
+inline std::string
+replace_env_vars(const std::string& a_path, const struct tm* a_now,
+                 const std::map<std::string, std::string>*   a_bindings)
+{
+    using namespace boost::posix_time;
+    using namespace boost::xpressive;
+
+    auto regex_format_fun = [a_bindings](const smatch& what) {
+        if (what[1].str() == "EXEPATH") // special case
+            return program::abs_path();
+
+        if (a_bindings) {
+            auto it = a_bindings->find(what[1].str());
+            if (it != a_bindings->end())
+                return it->second;
+        }
+
+        const char* env = getenv(what[1].str().c_str());
+        return std::string(env ? env : "");
+    };
+
+    auto regex_home_var = [](const smatch& what) { return home(); };
+
+    std::string x(a_path);
+    {
+        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+        sregex re = "%"  >> (s1 = +_w) >> '%';
+        #else
+        sregex re = "${" >> (s1 = +_w) >> '}';
+        #endif
+
+        x = regex_replace(x, re, regex_format_fun);
+    }
+    #if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
+    {
+        sregex re = '$' >> (s1 = +_w);
+        x = regex_replace(x, re, regex_format_fun);
+    }
+    {
+        sregex re = bos >> '~';
+        x = regex_replace(x, re, regex_home_var);
+    }
+    #endif
+
+    if (a_now != NULL && x.find('%') != std::string::npos) {
+        char buf[384];
+        if (strftime(buf, sizeof(buf), x.c_str(), a_now) == 0)
+            throw badarg_error("Invalid time specification!");
+        return buf;
+    }
+    return x;
+}
+
+std::string
+replace_macros(const std::string& a_path,
+               const std::map<std::string, std::string>& a_bindings)
+{
+    using namespace boost::posix_time;
+    using namespace boost::xpressive;
+
+    auto regex_format_fun = [&](const smatch& what) {
+        auto it = a_bindings.find(what[1].str());
+        if (it != a_bindings.end())
+            return it->second;
+        return std::string();
+    };
+
+    std::string x(a_path);
+    sregex re = "{{" >> (s1 = +_w) >> "}}";
+    return regex_replace(x, re, regex_format_fun);
 }
 
 std::pair<std::string, std::string>

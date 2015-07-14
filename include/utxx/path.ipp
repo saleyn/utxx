@@ -34,11 +34,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/path.hpp>
 #include <sys/stat.h>
-#include <boost/xpressive/xpressive.hpp>
-#include <regex>
+#include <assert.h>
 
 namespace utxx {
 namespace path {
+
+inline const char* basename(const char* a_begin, const char* a_end) {
+    assert(a_begin <= a_end);
+    auto p = (const char*)memrchr(a_begin, slash(), a_end - a_begin);
+    return p ? p+1 : a_begin;
+}
+
+inline std::string dirname(const std::string& a_filename) {
+    auto n = a_filename.find_last_of(slash());
+    return n == std::string::npos ? "" : a_filename.substr(0, n);
+}
 
 inline bool is_symlink(const char* a_path) {
     struct stat s;
@@ -90,78 +100,6 @@ inline long file_size(int fd) {
     struct stat stat_buf;
     int rc = fstat(fd, &stat_buf);
     return rc == 0 ? stat_buf.st_size : -1;
-}
-
-inline std::string
-replace_env_vars(const std::string& a_path, const struct tm* a_now,
-                 const std::map<std::string, std::string>*   a_bindings)
-{
-    using namespace boost::posix_time;
-    using namespace boost::xpressive;
-
-    auto regex_format_fun = [a_bindings](const smatch& what) {
-        if (what[1].str() == "EXEPATH") // special case
-            return program::abs_path();
-
-        if (a_bindings) {
-            auto it = a_bindings->find(what[1].str());
-            if (it != a_bindings->end())
-                return it->second;
-        }
-
-        const char* env = getenv(what[1].str().c_str());
-        return std::string(env ? env : "");
-    };
-
-    auto regex_home_var = [](const smatch& what) { return home(); };
-
-    std::string x(a_path);
-    {
-        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-        sregex re = "%"  >> (s1 = +_w) >> '%';
-        #else
-        sregex re = "${" >> (s1 = +_w) >> '}';
-        #endif
-
-        x = regex_replace(x, re, regex_format_fun);
-    }
-    #if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
-    {
-        sregex re = '$' >> (s1 = +_w);
-        x = regex_replace(x, re, regex_format_fun);
-    }
-    {
-        sregex re = bos >> '~';
-        x = regex_replace(x, re, regex_home_var);
-    }
-    #endif
-
-    if (a_now != NULL && x.find('%') != std::string::npos) {
-        char buf[384];
-        if (strftime(buf, sizeof(buf), x.c_str(), a_now) == 0)
-            throw badarg_error("Invalid time specification!");
-        return buf;
-    }
-    return x;
-}
-
-inline std::string
-replace_macros(const std::string& a_path,
-               const std::map<std::string, std::string>& a_bindings)
-{
-    using namespace boost::posix_time;
-    using namespace boost::xpressive;
-
-    auto regex_format_fun = [&](const smatch& what) {
-        auto it = a_bindings.find(what[1].str());
-        if (it != a_bindings.end())
-            return it->second;
-        return std::string();
-    };
-
-    std::string x(a_path);
-    sregex re = "{{" >> (s1 = +_w) >> "}}";
-    return regex_replace(x, re, regex_format_fun);
 }
 
 } // namespace path
