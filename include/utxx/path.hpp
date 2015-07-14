@@ -40,8 +40,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 
 namespace utxx {
-namespace path {
 
+enum class FileMatchT {
+    REGEX,
+    PREFIX,
+    WILDCARD
+};
+
+namespace path {
 
 /// Return a platform-specific slash path separator character
 static inline char slash() {
@@ -76,6 +82,12 @@ inline bool file_exists(const std::string& a) { return file_exists(a.c_str()); }
 bool        is_symlink (const char* a_path);
 inline bool is_symlink (const std::string& a) { return is_symlink(a.c_str());  }
 
+/// Check if given \a a_path is a regular file
+bool        is_regular (const std::string& a_path);
+
+/// Check if given \a a_path is a directory
+bool        is_dir     (const std::string& a_path);
+
 /// Get the name of the file pointed by \a a_symlink
 /// @param a_symlink name of a symlink
 /// @return filename name pointed by \a a_symlink; empty string if
@@ -96,6 +108,11 @@ inline bool file_symlink(const std::string& a_file, const std::string& a_symlink
 /// Removes a file
 bool        file_unlink(const char* a_path);
 inline bool file_unlink(const std::string& a_path) { return file_unlink(a_path.c_str()); }
+
+/// Renames a file
+inline bool file_rename(const std::string& a_from, const std::string& a_to) {
+    return ::rename(a_from.c_str(), a_to.c_str()) == 0;
+}
 
 /// Get current working directory
 inline std::string curdir() { char buf[512]; getcwd(buf,sizeof(buf)); return buf; }
@@ -139,12 +156,6 @@ inline std::string join(std::string const& a_dir, std::string const& a_file) {
          : a_dir[a_dir.size()-1] == slash() ? a_dir + a_file
          : a_dir + slash_str() + a_file;
 }
-
-enum class FileMatchT {
-    REGEX,
-    PREFIX,
-    WILDCARD
-};
 
 /// List files in a directory
 /// @param a_dir directory to check

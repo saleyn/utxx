@@ -107,6 +107,8 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
 
 BOOST_AUTO_TEST_CASE( test_path_symlink )
 {
+    BOOST_CHECK(path::is_dir(temp_path()));
+
     auto p = temp_path("xxx-file-name.test.txt");
     auto s = temp_path("xxx-file-link.test.link");
     if (path::file_exists(p))
@@ -119,6 +121,15 @@ BOOST_AUTO_TEST_CASE( test_path_symlink )
 
     BOOST_CHECK(path::write_file(p, "test"));
     BOOST_CHECK_EQUAL("test", path::read_file(p));
+
+    BOOST_CHECK(path::is_regular(p));
+
+    BOOST_CHECK(path::file_rename(p, s));
+    BOOST_CHECK(!path::file_exists(p));
+    BOOST_CHECK(path::file_exists(s));
+    BOOST_CHECK(path::file_rename(s, p));
+    BOOST_CHECK(path::file_exists(p));
+    BOOST_CHECK(!path::file_exists(s));
 
     BOOST_CHECK(path::file_symlink(p, s));
     BOOST_CHECK(path::is_symlink(s));
@@ -217,7 +228,7 @@ BOOST_AUTO_TEST_CASE( test_path_list_files )
     create_file("test_file_2.bin");
     create_file("test_file_3.bin");
 
-    auto res = path::list_files(temp_path(), "test_file_[1-3]\\.bin", path::FileMatchT::REGEX);
+    auto res = path::list_files(temp_path(), "test_file_[1-3]\\.bin", FileMatchT::REGEX);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
@@ -225,15 +236,15 @@ BOOST_AUTO_TEST_CASE( test_path_list_files )
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path(), "test_file_?.b*", path::FileMatchT::WILDCARD);
+    res = path::list_files(temp_path(), "test_file_?.b*", FileMatchT::WILDCARD);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path() + path::slash_str() + "test_file_?.b*", path::FileMatchT::WILDCARD);
+    res = path::list_files(temp_path() + path::slash_str() + "test_file_?.b*", FileMatchT::WILDCARD);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path(), "test_file_", path::FileMatchT::PREFIX);
+    res = path::list_files(temp_path(), "test_file_", FileMatchT::PREFIX);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 

@@ -45,6 +45,16 @@ inline bool is_symlink(const char* a_path) {
     return lstat(a_path, &s) == 0 && S_ISLNK(s.st_mode);
 }
 
+inline bool is_regular(const std::string& a_path) {
+    struct stat s;
+    return lstat(a_path.c_str(), &s) == 0 && S_ISREG(s.st_mode);
+}
+
+inline bool is_dir(const std::string& a_path) {
+    struct stat s;
+    return lstat(a_path.c_str(), &s) == 0 && S_ISDIR(s.st_mode);
+}
+
 inline std::string
 replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
                  const std::map<std::string, std::string>*  a_bindings)
