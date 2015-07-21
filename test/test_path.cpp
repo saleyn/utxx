@@ -250,9 +250,16 @@ BOOST_AUTO_TEST_CASE( test_path_list_files )
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
+    res = path::list_files(temp_path(), "test_file_", FileMatchT::PREFIX, true);
+    BOOST_CHECK(res.first);
+    BOOST_REQUIRE_EQUAL(3u, res.second.size());
+    auto fn = path::join(temp_path(), "test_file_3.bin");
+    BOOST_CHECK_EQUAL(fn, *res.second.begin());
+
     res = path::list_files(temp_path(), "test_file_", FileMatchT::PREFIX);
     BOOST_CHECK(res.first);
-    BOOST_CHECK_EQUAL(3u, res.second.size());
+    BOOST_REQUIRE_EQUAL(3u, res.second.size());
+    BOOST_CHECK_EQUAL("test_file_3.bin", *res.second.begin());
 
     for (auto& f : res.second) {
         path::file_unlink(temp_path() + f);

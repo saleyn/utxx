@@ -172,13 +172,13 @@ inline std::string join(std::string const& a_dir, std::string const& a_file) {
 /// @param a_match_type type of matching to perform on filenames
 std::pair<bool, std::list<std::string>>
 list_files(std::string const& a_dir, std::string const& a_filter = "",
-           FileMatchT a_match_type = FileMatchT::WILDCARD);
+           FileMatchT a_match_type = FileMatchT::WILDCARD, bool a_join_dir = false);
 
 std::pair<bool, std::list<std::string>>
 inline list_files(std::string const& a_dir_with_file_mask,
                   FileMatchT a_match_type = FileMatchT::WILDCARD) {
     auto   res = split(a_dir_with_file_mask);
-    return list_files(res.first, res.second, a_match_type);
+    return list_files(res.first, res.second, a_match_type, true);
 }
 
 /// Return portable value of the home path
