@@ -154,7 +154,9 @@ char* timestamp::write_date(
     if (unlikely(a_utc_seconds * 1000000 >= s_next_utc_midnight_useconds))
         update_midnight_useconds(now_utc());
 
-    if (a_sep)
+    auto today_utc_midnight = s_next_utc_midnight_useconds - 86400000000L;
+
+    if (a_sep || a_utc_seconds < today_utc_midnight)
         return internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
     else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
