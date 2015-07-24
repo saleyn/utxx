@@ -209,7 +209,7 @@ filename_with_backup(const char* a_filename,
 
 std::pair<bool, std::list<std::string>>
 list_files(std::string const& a_dir, std::string const& a_filter,
-           FileMatchT a_match_type)
+           FileMatchT a_match_type, bool a_join_dir)
 {
     DIR*           dir;
     struct dirent  ent;
@@ -257,7 +257,7 @@ list_files(std::string const& a_dir, std::string const& a_filter,
             if (!matched)
                 continue;
         }
-        out.push_back(file);
+        out.push_back(a_join_dir ? join(a_dir, file) : file);
     }
 
     return std::make_pair(true, out);

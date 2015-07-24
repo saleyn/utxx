@@ -30,10 +30,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_TEST_HELPER_HPP_
-#define _UTXX_TEST_HELPER_HPP_
+#pragma once
 
 #include <boost/test/unit_test.hpp>
+#include <boost/test/detail/unit_test_parameters.hpp>
 
 #define BOOST_CURRENT_TEST_NAME \
   boost::unit_test::framework::current_test_case().p_name->c_str()
@@ -100,6 +100,3 @@ inline bool get_test_argv(const std::string& a_opt,
 }
 
 } // namespace utxx::test
-
-#endif // _UTXX_TEST_HELPER_HPP_
-
