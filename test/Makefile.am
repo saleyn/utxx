@@ -51,6 +51,7 @@ TEST_UTXX_SRCS = \
 	test_persist_array.cpp \
 	test_persist_blob.cpp \
 	test_pidfile.cpp \
+	test_rate_throttle.cpp \
 	test_registrar.cpp \
 	test_robust_mutex.cpp \
 	test_ring_buffer.cpp \
