@@ -62,11 +62,12 @@ namespace utxx {
 template <typename T = uint32_t>
 class basic_time_spacing_throttle {
 public:
-    time_spacing_throttle(uint32_t a_rate, uint32_t a_window_msec = 1000,
+    basic_time_spacing_throttle(uint32_t a_rate, uint32_t a_window_msec = 1000,
                           time_val a_now = now_utc())
         : m_rate        (a_rate)
-        , m_window_us   (a_window_msec*1000)
-        , m_step_us     (m_window /  m_rate)
+        , m_window_us   (a_window_msec * 1000)
+        , m_step_us     (m_window_us / m_rate)
+        , m_next_time   (a_now)
     {}
 
     /// Add \a a_samples to the throtlle's counter.
@@ -74,12 +75,19 @@ public:
     /// that the throttler is fully congested, and more time needs to elapse
     /// before the throttles gets reset to accept more samples.
     T add(T a_samples  = 1, time_val a_now = now_utc()) {
-        assert(a_now  >= m_next_time);
-        auto next_time = m_next_time + long(a_samples * m_step_us);
+        auto next_time = m_next_time;
+        next_time.add_usec(a_samples * m_step_us);
         auto diff      = next_time.microseconds()
                        - (a_now.microseconds() + m_window_us);
-        auto n = (diff < 0) ? a_samples : a_samples - (T(diff) / m_step_us);
-        m_next_time = next_time;
+        if (diff < 0)  {
+            // All samples fit the throttling threshold
+            m_next_time = next_time;
+            return a_samples;
+        }
+
+        // Figure out how many samples fit the throttling threshold
+        auto n = std::max<T>(0, a_samples - (T(diff) / m_step_us));
+        m_next_time.add_usec(n * m_step_us);
         return n;
     }
 
@@ -92,7 +100,7 @@ public:
     /// Return the number of available samples given \a a_now current time.
     T        available(time_val a_now = now_utc()) const{
         auto   diff = (a_now - m_next_time).microseconds();
-        return diff < 0 ? m_rate : T(m_window_us - diff) / m_step_us;
+        return diff >= 0 ? m_rate : T(m_window_us + diff) / m_step_us;
     }
 
 private:
@@ -134,6 +142,10 @@ public:
         init(a_interval);
     }
 
+    basic_rate_throttler           (const basic_rate_throttler&) = default;
+    basic_rate_throttler           (basic_rate_throttler&&)      = default;
+    basic_rate_throttler& operator=(const basic_rate_throttler&) = default;
+
     /// Initialize the internal buffer setting the throttling interval
     /// measured in seconds.
     void init(int a_throttle_interval)
@@ -142,7 +154,8 @@ public:
         if (a_throttle_interval == m_interval)
             return;
         m_interval = a_throttle_interval << s_log_buckets_sec;
-        if (a_throttle_interval < 0 || (size_t)a_throttle_interval > s_bucket_count / s_buckets_per_sec)
+        if (a_throttle_interval < 0 ||
+            (size_t)a_throttle_interval > s_bucket_count / s_buckets_per_sec)
             throw badarg_error("Invalid throttle interval:", a_throttle_interval);
         reset();
     }
@@ -155,9 +168,9 @@ public:
     }
 
     /// Return running interval.
-    int     interval()      const { return m_interval >> s_log_buckets_sec; }
+    long    interval()     const { return m_interval >> s_log_buckets_sec; }
     /// Return current running sum over the interval.
-    int     running_sum()  const { return m_sum; }
+    long    running_sum()  const { return m_sum; }
     /// Return current running sum over the interval.
     double  running_avg()  const { return (double)m_sum / (m_interval >> s_log_buckets_sec); }
 
@@ -165,13 +178,13 @@ public:
     /// @param a_time is monotonically increasing time value.
     /// @param a_count is the count to add to the bucket associated with \a a_time.
     /// @return current running sum.
-    size_t add(const timeval& a_time, int a_count = 1);
+    long   add(time_val a_time, int a_count = 1);
 
     /// Update current timestamp.
-    size_t refresh(const timeval& a_time) { return add(a_time, 0); }
+    long   refresh(time_val a_time) { return add(a_time, 0); }
 
     /// Dump the internal state to stream
-    void dump(std::ostream& out, const timeval& a_time);
+    void   dump(std::ostream& out, time_val a_time);
 private:
     size_t  m_buckets[s_bucket_count];
     time_t  m_last_time;
@@ -186,12 +199,10 @@ private:
 // Implementation
 //------------------------------------------------------------------------------
 template<size_t MaxSeconds, size_t BucketsPerSec>
-size_t basic_rate_throttler<MaxSeconds, BucketsPerSec>::
-add(const timeval& a_time, int a_count)
+long basic_rate_throttler<MaxSeconds, BucketsPerSec>::
+add(time_val a_time, int a_count)
 {
-    time_t l_now = (time_t)( ((double)a_time.tv_sec +
-                              (double)a_time.tv_usec / 1000000)
-                            * s_buckets_per_sec);
+    time_t l_now = (time_t)(a_time.seconds() * s_buckets_per_sec);
     if (unlikely(!m_last_time))
        m_last_time = l_now;
     int  l_bucket    = l_now & s_bucket_mask;
@@ -256,7 +267,7 @@ add(const timeval& a_time, int a_count)
     }
     m_last_time = l_now;
     #ifdef THROTTLE_DEBUG
-    dumpt(std::cout);
+    dump(std::cout);
     #endif
 
     return m_sum;
@@ -264,11 +275,9 @@ add(const timeval& a_time, int a_count)
 
 template<size_t MaxSeconds, size_t BucketsPerSec>
 void basic_rate_throttler<MaxSeconds, BucketsPerSec>::
-dump(std::ostream& out, const timeval& a_time)
+dump(std::ostream& out, time_val a_time)
 {
-    time_t l_now = (time_t)( ((double)a_time.tv_sec +
-                              (double)a_time.tv_usec / 1000000)
-                            * s_buckets_per_sec);
+    time_t l_now    = (time_t)(a_time.seconds() * s_buckets_per_sec);
     size_t l_bucket = l_now & s_bucket_mask;
 
     char buf[256];

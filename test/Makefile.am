@@ -51,7 +51,7 @@ TEST_UTXX_SRCS = \
 	test_persist_array.cpp \
 	test_persist_blob.cpp \
 	test_pidfile.cpp \
-	test_rate_throttle.cpp \
+	test_rate_throttler.cpp \
 	test_registrar.cpp \
 	test_robust_mutex.cpp \
 	test_ring_buffer.cpp \
@@ -62,7 +62,6 @@ TEST_UTXX_SRCS = \
 	test_static_polymorphism.cpp \
 	test_stream64.cpp \
 	test_string.cpp \
-	test_throttler.cpp \
 	test_time_val.cpp \
 	test_timestamp.cpp \
 	test_type_traits.cpp \
