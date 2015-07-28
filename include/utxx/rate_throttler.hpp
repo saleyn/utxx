@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   throttler.hpp
+/// \file   rate_throttler.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Efficiently calculates the throttling rate over a number of seconds.
@@ -47,11 +47,70 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/error.hpp>
 #include <utxx/meta.hpp>
-#include <utxx/compiler_hints.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/compiler_hints.hpp>
 #include <time.h>
 
 namespace utxx {
+
+/// @brief Throttle given rate over a number of seconds.
+/// Implementation uses time spacing reservation algorithm where each
+/// allocation of samples reserves a fraction of space in the throttling
+/// window. The reservation gets freed as the time goes by.  No more than
+/// the "rate()" number of samples are allowed to fit in the "window_msec()"
+/// window.
+template <typename T = uint32_t>
+class basic_time_spacing_throttle {
+public:
+    basic_time_spacing_throttle(uint32_t a_rate, uint32_t a_window_msec = 1000,
+                          time_val a_now = now_utc())
+        : m_rate        (a_rate)
+        , m_window_us   (a_window_msec * 1000)
+        , m_step_us     (m_window_us / m_rate)
+        , m_next_time   (a_now)
+    {}
+
+    /// Add \a a_samples to the throtlle's counter.
+    /// @return number of samples that fit in the throttling window. 0 means
+    /// that the throttler is fully congested, and more time needs to elapse
+    /// before the throttles gets reset to accept more samples.
+    T add(T a_samples  = 1, time_val a_now = now_utc()) {
+        auto next_time = m_next_time;
+        next_time.add_usec(a_samples * m_step_us);
+        auto diff      = next_time.microseconds()
+                       - (a_now.microseconds() + m_window_us);
+        if (diff < 0)  {
+            // All samples fit the throttling threshold
+            m_next_time = next_time;
+            return a_samples;
+        }
+
+        // Figure out how many samples fit the throttling threshold
+        auto n = std::max<T>(0, a_samples - (T(diff) / m_step_us));
+        m_next_time.add_usec(n * m_step_us);
+        return n;
+    }
+
+    T        rate()        const { return m_rate;             }
+    long     step()        const { return m_step_us;          }
+    long     window_msec() const { return m_window_us / 1000; }
+    long     window_usec() const { return m_window_us;        }
+    time_val next_time()   const { return m_next_time;        }
+
+    /// Return the number of available samples given \a a_now current time.
+    T        available(time_val a_now = now_utc()) const{
+        auto   diff = (a_now - m_next_time).microseconds();
+        return diff >= 0 ? m_rate : T(m_window_us + diff) / m_step_us;
+    }
+
+private:
+    T        m_rate;
+    long     m_window_us;
+    T        m_step_us;
+    time_val m_next_time;
+};
+
+using time_spacing_throttle = basic_time_spacing_throttle<>;
 
 /**
  * \brief Efficiently calculates the throttling rate over a number of seconds.
@@ -84,11 +143,8 @@ public:
     }
 
     basic_rate_throttler           (const basic_rate_throttler&) = default;
-    basic_rate_throttler& operator=(const basic_rate_throttler&) = default;
-
-#if __cplusplus >= 201103L
     basic_rate_throttler           (basic_rate_throttler&&)      = default;
-#endif
+    basic_rate_throttler& operator=(const basic_rate_throttler&) = default;
 
     /// Initialize the internal buffer setting the throttling interval
     /// measured in seconds.
@@ -104,7 +160,7 @@ public:
         reset();
     }
 
-    /// Reset the internal circular buffer.
+    /// Reset the inturnal circular buffer.
     void reset() {
         memset(m_buckets, 0, sizeof(m_buckets));
         m_last_time     = 0;
@@ -112,7 +168,7 @@ public:
     }
 
     /// Return running interval.
-    int     interval()     const { return m_interval >> s_log_buckets_sec; }
+    long    interval()     const { return m_interval >> s_log_buckets_sec; }
     /// Return current running sum over the interval.
     long    running_sum()  const { return m_sum; }
     /// Return current running sum over the interval.
@@ -128,7 +184,7 @@ public:
     long   refresh(time_val a_time) { return add(a_time, 0); }
 
     /// Dump the internal state to stream
-    void dump(std::ostream& out, time_val a_time);
+    void   dump(std::ostream& out, time_val a_time);
 private:
     size_t  m_buckets[s_bucket_count];
     time_t  m_last_time;
@@ -221,7 +277,7 @@ template<size_t MaxSeconds, size_t BucketsPerSec>
 void basic_rate_throttler<MaxSeconds, BucketsPerSec>::
 dump(std::ostream& out, time_val a_time)
 {
-    time_t l_now = (time_t)(a_time.seconds() * s_buckets_per_sec);
+    time_t l_now    = (time_t)(a_time.seconds() * s_buckets_per_sec);
     size_t l_bucket = l_now & s_bucket_mask;
 
     char buf[256];
