@@ -64,7 +64,7 @@ private:
     int                 m_latencies[BUCKETS];
     double              m_min_time, m_max_time, m_sum_time;
     struct timespec     m_last_start;
-    int                 m_count;
+    long                m_count;
     std::string         m_header;
     clock_type          m_clock_type;
 
@@ -98,6 +98,9 @@ public:
     {
         reset();
     }
+
+    /// Total number of samples
+    long count() const { return m_count; }
 
     /// Reset internal statistics counters
     void reset(const char* a_header = NULL, clock_type a_type = DEFAULT) {
