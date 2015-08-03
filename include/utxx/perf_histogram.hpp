@@ -47,26 +47,26 @@ namespace utxx {
 
 struct perf_histogram {
     enum clock_type {
-          DEFAULT       = 0
-        , REALTIME      = CLOCK_REALTIME
-        , MONOTONIC     = CLOCK_MONOTONIC
-        , HIGH_RES      = CLOCK_PROCESS_CPUTIME_ID
-        , THREAD_SPEC   = CLOCK_THREAD_CPUTIME_ID
+          DEFAULT     = 0
+        , REALTIME    = CLOCK_REALTIME
+        , MONOTONIC   = CLOCK_MONOTONIC
+        , HIGH_RES    = CLOCK_PROCESS_CPUTIME_ID
+        , THREAD_SPEC = CLOCK_THREAD_CPUTIME_ID
     };
 
 private:
     enum {
-          MIN_RES = 10
-        , MAX_RES = MIN_RES + 500/25 + 1000/250
-        , BUCKETS = MAX_RES+1
+          MIN_RES     = 10
+        , MAX_RES     = MIN_RES + 500/25 + 1000/250
+        , BUCKETS     = MAX_RES+1
     };
 
-    int             m_latencies[BUCKETS];
-    double          m_minTime, m_maxTime, m_sumTime;
-    struct timespec m_last_start;
-    int             m_count;
-    std::string     m_header;
-    clock_type      m_clock_type;
+    int                 m_latencies[BUCKETS];
+    double              m_min_time, m_max_time, m_sum_time;
+    struct timespec     m_last_start;
+    int                 m_count;
+    std::string         m_header;
+    clock_type          m_clock_type;
 
     static int to_bucket(double d) 
     {
@@ -78,7 +78,7 @@ private:
 
     static int from_bucket(int i)
     {
-        if (i < MIN_RES)            return i;
+        if      (i < MIN_RES)       return i;
         else if (i < MIN_RES + 24)  return MIN_RES + (i-MIN_RES)*25;
         else                        return MIN_RES + 500/25 + (i - MIN_RES - 500/25)*250;
     }
@@ -104,8 +104,8 @@ public:
         if (a_header) m_header      = a_header;
         if (a_type)   m_clock_type  = a_type;
         m_count   = 0;
-        m_minTime = 9999999;
-        m_maxTime = m_sumTime = 0;
+        m_min_time = 9999999;
+        m_max_time = m_sum_time = 0;
         memset(m_latencies,   0, sizeof(m_latencies));
         memset(&m_last_start, 0, sizeof(struct timespec));
     }
@@ -123,13 +123,17 @@ public:
         static const double fraction = 1 / 1000000000.0;
         double diff = (double)(now.tv_sec  - m_last_start.tv_sec)
                     + (double)(now.tv_nsec - m_last_start.tv_nsec) * fraction;
-        if (diff < 0)
-            return;
-        if (m_minTime > diff) m_minTime = diff;
-        if (m_maxTime < diff) m_maxTime = diff;
-        m_sumTime += diff;
+        add(diff);
+    }
+
+    /// Add the measurement sample to histogram
+    void add(double a_duration_seconds) {
+        assert(a_duration_seconds >= 0);
+        if (m_min_time > a_duration_seconds) m_min_time = a_duration_seconds;
+        if (m_max_time < a_duration_seconds) m_max_time = a_duration_seconds;
+        m_sum_time    += a_duration_seconds;
         m_count++;
-        int k = to_bucket(diff);
+        int k = to_bucket(a_duration_seconds);
         if (k < BUCKETS)
             m_latencies[k]++;
     }
@@ -138,9 +142,9 @@ public:
     void operator+= (const perf_histogram& a_rhs) {
         if (!a_rhs.m_count) return;
 
-        if (m_maxTime < a_rhs.m_maxTime) m_maxTime = a_rhs.m_maxTime;
-        if (m_minTime > a_rhs.m_minTime) m_minTime = a_rhs.m_minTime;
-        m_sumTime += a_rhs.m_sumTime;
+        if (m_max_time < a_rhs.m_max_time) m_max_time = a_rhs.m_max_time;
+        if (m_min_time > a_rhs.m_min_time) m_min_time = a_rhs.m_min_time;
+        m_sum_time += a_rhs.m_sum_time;
         m_count   += a_rhs.m_count;
 
         for (int i = 0; i < BUCKETS; i++)
@@ -155,9 +159,9 @@ public:
         }
 
         out << m_header.c_str() << std::endl << std::fixed << std::setprecision(6)
-            << "  MinTime = " << m_minTime << std::endl
-            << "  MaxTime = " << m_maxTime << std::endl
-            << "  AvgTime = " << m_sumTime / m_count << std::endl;
+            << "  MinTime = " << m_min_time << std::endl
+            << "  MaxTime = " << m_max_time << std::endl
+            << "  AvgTime = " << m_sum_time / m_count << std::endl;
 
         double tot = 0;
         for (int i = 0; i < BUCKETS; i++)
