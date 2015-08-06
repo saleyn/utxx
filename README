@@ -1,9 +1,15 @@
 utxx - an open-source collection of C++ miscelaneous components
 ===============================================================
 
-    This library provides a set of classes that complement C++ and
-    boost with functionality needed by many applications.
+    This dual-licenced library provides a set of classes that
+    complement C++ and boost with functionality needed by many
+    applications.
 
+    The library is free to use under LGPLv2 license for
+    non-commercial projects, and has a commercial open source licence
+    for commercial use (contact the author for commercial
+    licensing details).
+    
     The components include:
 
     - Custom allocators
@@ -22,6 +28,7 @@ utxx - an open-source collection of C++ miscelaneous components
     - Metaprogramming functions
     - Persistent blob and array
     - PCAP format reader
+    - Throttling components
     - PID file manager
     - Variant / variant tree components
     - Configuration framework with option validation
@@ -58,4 +65,5 @@ Contributors
 
 LICENSE
 =======
-    GNU Lesser General Public License 2.1
+    Non-commercial: GNU Lesser General Public License 2.1
+    Commercial:     (contact the author for details)
