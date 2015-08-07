@@ -37,6 +37,7 @@ TEST_UTXX_SRCS = \
 	test_high_res_timer.cpp \
 	test_iovec.cpp \
 	test_iovector.cpp \
+	test_leb128.cpp \
 	test_logger.cpp \
 	test_logger_scribe.cpp \
 	test_logger_syslog.cpp \

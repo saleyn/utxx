@@ -156,6 +156,17 @@ private:
             padit(a_buf+len, a_buf+Width);
     }
 
+    void do_write(char a_value, char* a_buf) const {
+        if (Align == RIGHT) {
+            auto e = a_buf + Width - 1;
+            padit(a_buf, e);
+            a_buf  = e;
+        }
+        *a_buf = a_value;
+        if (Align == LEFT)
+            padit(a_buf+1, a_buf+Width);
+    }
+
     void do_write(const char* a_value, char* a_buf) const {
         do_write(a_value, strnlen(a_value, Width), a_buf);
     }
