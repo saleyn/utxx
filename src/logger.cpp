@@ -230,7 +230,7 @@ void logger::init(const config_tree& a_cfg)
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
         long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 2000);
         m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
-        m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000000L};
+        m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
@@ -296,6 +296,9 @@ void logger::init(const config_tree& a_cfg)
 
 void logger::run()
 {
+    if (m_on_before_run)
+        m_on_before_run();
+
     int event_val = 1;
     while (!m_abort)
     {
@@ -328,7 +331,42 @@ void logger::run()
         // Get all pending items from the queue
         for (auto* item = m_queue.pop_all(), *next=item; item; item = next) {
             next = item->next();
-            dolog_msg(item->data());
+
+            try   { dolog_msg(item->data()); }
+            catch ( std::exception const& e  )
+            {
+                // Unhandled error writing data to some destination
+                // Print error report to stderr (can't do anything better --
+                // the error happened in the m_on_error callback!)
+                const msg msg(LEVEL_INFO, "",
+                              std::string("Fatal exception in logger"),
+                              UTXX_LOG_SRCINFO);
+                detail::basic_buffered_print<1024> buf;
+                char  pfx[256], sfx[256];
+                char* p = format_header(msg, pfx, pfx + sizeof(pfx));
+                char* q = format_footer(msg, sfx, sfx + sizeof(sfx));
+                auto ps = p - pfx;
+                auto qs = q - sfx;
+                buf.reserve(msg.m_fun.str.size() + ps + qs + 1);
+                buf.sprint(pfx, ps);
+                buf.print(msg.m_fun.str);
+                buf.sprint(sfx, qs);
+                std::cerr << buf.str() << std::endl;
+
+                m_abort = true;
+
+                // TODO: implement attempt to store transient messages to some
+                // other medium
+
+                // Free all pending messages
+                while (item) {
+                    m_queue.free(item);
+                    item = next;
+                    next = item->next();
+                }
+
+                goto DONE;
+            }
 
             m_queue.free(item);
             item = next;
@@ -337,10 +375,13 @@ void logger::run()
 
 DONE:
     if (!m_silent_finish) {
-        const msg s_msg(LEVEL_INFO, "", std::string("Logger thread finished"),
-                        UTXX_LOG_SRCINFO);
-        dolog_msg(s_msg);
+        const msg msg(LEVEL_INFO, "", std::string("Logger thread finished"),
+                      UTXX_LOG_SRCINFO);
+        try { dolog_msg(msg); } catch (...) {}
     }
+
+    if (m_on_after_run)
+        m_on_after_run();
 }
 
 void logger::finalize()

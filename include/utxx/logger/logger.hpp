@@ -387,7 +387,12 @@ private:
     macro_var_map                   m_macro_var_map;
 
 
+    /// Callback executed on error (e.g. problem writing to logger's back-end)
     std::function<void (const char* a_reason)> m_error;
+    /// Callback executed on start of async thread (in the thread's context)
+    std::function<void ()>                     m_on_before_run;
+    /// Callback executed on finish of async thread (in the thread's context)
+    std::function<void ()>                     m_on_after_run;
 
     void  do_finalize();
 
@@ -476,7 +481,13 @@ public:
     /// Set an error handler delegate to fire when there is an error
     /// instead of throwing run-time exceptions.  Note that the handler
     /// may be called from different threads so it has to be thread-safe.
-    void set_error_handler(boost::function<void (const char*)>& eh) { m_error = eh; }
+    void set_error_handler(std::function<void (const char*)>& eh) { m_error = eh; }
+
+    /// Set a callback to be called on start of the logger's async thread
+    void set_on_before_run(std::function<void()> a_cb) { m_on_before_run = a_cb; }
+
+    /// Set a callback to be called on start of the logger's async thread
+    void set_on_after_run (std::function<void()> a_cb) { m_on_after_run  = a_cb; }
 
     // FIXME: macros are temporary experimental feature that will be
     // replaces in a future release
