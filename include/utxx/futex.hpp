@@ -58,6 +58,18 @@ enum class wakeup_result {
 /// Convert wakeup_result to string
 const char* to_string(wakeup_result res);
 
+/// Call futex_wait() and loop in case of EINTR
+/// @return SIGNALED - futex was awoken;
+///         CHANGED  - futex value changed before entering the wait state;
+///         TIMEDOUT - the call timed out;
+///         ERROR    - there was an error.
+wakeup_result futex_wait_slow(int* old, int val, const timespec* rel = 0);
+
+/// Wake up \a count threads waiting for the futex associated with \a value.
+/// Note: function loops on EINTR.
+/// @return 0 on success and -1 on error.
+int           futex_wake_slow(int* value, int count = 1);
+
 /** Fast futex-based concurrent notification primitive.
  * Supports signal/wait semantics.
  */
@@ -73,10 +85,6 @@ class futex {
     #endif
 
     static const int FUTEX_PASSED = -(1 << 30);
-
-    /// @return -1 - fail, 0 - wakeup, 1 - pass, 2 - didn't sleep
-    wakeup_result wait_slow  (int val, const timespec* rel = 0);
-    int        signal_slow(int count = 1);
 
     /// Atomic dec of internal counter.
     /// @return CHANGED  when value is different from old_value
@@ -140,8 +148,13 @@ public:
     /// variable and optionally making a system call.
     /// @return Number of processes woken up
     int signal(int count_to_wake = 1) {
-        if (!signal_fast()) // Someone might be waiting
-            return signal_slow(count_to_wake);
+        if (!signal_fast()) { // Someone might be waiting
+            //commit(1);
+            #ifdef PERF_STATS
+            ++m_wake_count;
+            #endif
+            return futex_wake_slow(reinterpret_cast<int*>(&m_count), count_to_wake);
+        }
         #ifdef PERF_STATS
         ++m_wake_fast_count;
         #endif
@@ -150,7 +163,9 @@ public:
 
     /// Signal all waiting threads.
     /// @return number of processes woken up.
-    int signal_all() { return signal_slow(INT_MAX); };
+    int signal_all() {
+        return futex_wake_slow(reinterpret_cast<int*>(&m_count), INT_MAX);
+    };
 
     /// Non-blocking attempt to wait for signal
     /// @return 0 - success, -1 - no pending signal
@@ -193,6 +208,63 @@ public:
         return wait(&ts, old_val);
     }
 
+};
+
+class light_mutex {
+public:
+    typedef std::lock_guard<light_mutex> scoped_lock;
+
+    light_mutex() : m_count(0) {}
+
+    /// Lock the mutex
+    void lock()
+    {
+        // Change value atomically from 0 to 1.
+        if (try_lock() == 0)
+            return; // Mutex locked
+
+        // Value wasn't zero -- somebody held the lock
+        int old_zero = 0;
+        int old_one  = 1;
+        do {
+            // Assume the lock is still taken -- set to 2 and wait
+            if (m_count.load(std::memory_order_relaxed) == 2 ||
+                m_count.compare_exchange_weak(old_one, 2)) {
+                // let's wait, but only if the value is still 2
+                futex_wait_slow(reinterpret_cast<int*>(&m_count), 2, nullptr);
+            }
+            // Retry assuming the lock is free (count == 0)
+        } while (!m_count.compare_exchange_weak(old_zero, 2));
+        // Lock update from 0 to 2 succedded
+    }
+
+    /// Try to lock mutex
+    /// @return 0 on success, -1 on failure.
+    int try_lock() {
+        // Change value atomically from 0 to 1.
+        int    old_zero = 0;
+        return m_count.compare_exchange_strong(old_zero, 1,
+                                               std::memory_order_release,
+                                               std::memory_order_relaxed)
+            ?  0  // Mutex locked
+            : -1; // Mutex lock failed
+    }
+
+    /// Lock the mutex
+    void unlock()
+    {
+        // We own the lock, so it's either 1 or 2.
+        // If it is 2, then we need to wake up another waiting thread.
+        if (m_count.fetch_sub(1, std::memory_order_release) == 2)
+        {
+            // We are still holding the lock -- release it
+            m_count.store(0, std::memory_order_release);
+            // wake up one thread (no fairness assumed)
+            futex_wake_slow(reinterpret_cast<int*>(&m_count), 1);
+        }
+    }
+private:
+    std::atomic<int> m_count;
 };
 
 } // namespace utxx

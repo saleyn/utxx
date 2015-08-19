@@ -70,6 +70,34 @@ const char* to_string(wakeup_result res)
 }
 
 
+/// @returns  SIGNALED  if the process was woken by a FUTEX_WAKE call.
+///           CHANGED   if value changed before futex_wait call
+///           TIMEDOUT  if timed out
+///           ERROR     if some other error
+wakeup_result futex_wait_slow(int* old, int val, const struct timespec *rel) {
+    int res;
+    // futex_wake returns 0 or -1
+    // see: http://man7.org/linux/man-pages/man2/futex.2.html
+    while ((res = futex_wait(old, val, rel)) < 0
+           && errno == EINTR);
+    if (res == 0) {
+        return wakeup_result::SIGNALED;
+    } else if (errno == EWOULDBLOCK)
+        return wakeup_result::CHANGED;   // value changed before futex_wait
+    else if (errno == ETIMEDOUT)
+        return wakeup_result::TIMEDOUT;
+    else
+        return wakeup_result::ERROR;     // This really should never happen
+}
+
+/// Wake up \a count threads waiting for the futex associated with \a value.
+/// Note: function loops on EINTR.
+int futex_wake_slow(int* value, int count) {
+    int res;
+    while ((res = futex_wake(value, count, NULL)) < 0 && errno == EINTR);
+    return res;
+}
+
 futex::futex(int initialize) {
     int pagesize = sysconf(_SC_PAGESIZE);
 
@@ -103,12 +131,18 @@ wakeup_result futex::wait(const struct timespec *timeout, int* old_val) {
     int val = old_val ? *old_val : value();
 
     while ((res = wait_fast(&val)) == wakeup_result::TIMEDOUT) {
-        switch (res = wait_slow(val, timeout)) {
+        #ifdef PERF_STATS
+        ++m_wait_count;
+        #endif
+        switch (res = futex_wait_slow(reinterpret_cast<int*>(&m_count), val, timeout)) {
             case wakeup_result::ERROR:
             case wakeup_result::CHANGED:
                 val = value();
                 break;                  // Value changed.
             case wakeup_result::SIGNALED:
+                #ifdef PERF_STATS
+                ++m_wake_signaled_count;
+                #endif
                 val = 0;
                 commit(val);            // Slept and got woken
                 break;                  // someone else might be sleeping too
@@ -127,43 +161,6 @@ wakeup_result futex::wait(const struct timespec *timeout, int* old_val) {
 wait_done:
     if (old_val)
         *old_val = val;
-    return res;
-}
-
-/// @returns  SIGNALED  if the process was woken by a FUTEX_WAKE call.
-///           CHANGED   if value changed before futex_wait call
-///           TIMEDOUT  if timed out
-///           ERROR     if some other error
-wakeup_result futex::wait_slow(int val, const struct timespec *rel) {
-    #ifdef PERF_STATS
-    ++m_wait_count;
-    #endif
-    int res;
-    // futex_wake returns 0 or -1
-    // see: http://man7.org/linux/man-pages/man2/futex.2.html
-    while ((res = futex_wait(reinterpret_cast<int*>(&m_count), val, rel)) < 0
-           && errno == EINTR);
-    if (res == 0) {
-        #ifdef PERF_STATS
-        ++m_wake_signaled_count;
-        #endif
-        return wakeup_result::SIGNALED;
-    } else if (errno == EWOULDBLOCK)
-        return wakeup_result::CHANGED;   // value changed before futex_wait
-    else if (errno == ETIMEDOUT)
-        return wakeup_result::TIMEDOUT;
-    else
-        return wakeup_result::ERROR;     // This really should never happen
-}
-
-int futex::signal_slow(int count) {
-    //commit(1);
-    #ifdef PERF_STATS
-    ++m_wake_count;
-    #endif
-    int res;
-    while ((res = futex_wake(reinterpret_cast<int*>(&m_count), count, NULL)) < 0
-           && errno == EINTR);
     return res;
 }
 
