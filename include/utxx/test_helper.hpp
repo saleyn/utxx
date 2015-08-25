@@ -99,4 +99,13 @@ inline bool get_test_argv(const std::string& a_opt,
     return false;
 }
 
+/// Prevent variable optimization by the compiler
+#ifdef _MSC_VER
+#pragma optimize("", off)
+template <class T> void dont_optimize_var(T&& v) { v = v; }
+#pragma optimize("", on)
+#else
+template <class T> void dont_optimize_var(T&& v) { asm volatile("":"+r" (v)); }
+#endif
+
 } // namespace utxx::test

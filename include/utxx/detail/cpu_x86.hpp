@@ -152,7 +152,7 @@ inline int cores_per_proc_pak(void) {
 /// Return the Advanced Programmable Interface Controller (APIC) ID.
 // EBX[31:24] Bits 24-31 contains the 8-bit initial APIC ID for the
 // processor this code is running on.
-static unsigned int apic_id () {
+inline unsigned int apic_id () {
     static const unsigned int INITIAL_APIC_ID_BITS = 0xFF000000;
     unsigned int a,b,c,d;
     cpuid( 1, a, b, c, d );

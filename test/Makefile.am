@@ -15,6 +15,8 @@ TEST_UTXX64_SRCS = \
 
 TEST_UTXX_SRCS = \
 	test_alloc_fixed_page.cpp \
+	test_atomic_hash_array.cpp \
+	test_atomic_hash_map.cpp \
 	test_assoc_vector.cpp \
 	test_async_file_logger.cpp \
 	test_basic_udp_receiver.cpp \
@@ -63,6 +65,8 @@ TEST_UTXX_SRCS = \
 	test_static_polymorphism.cpp \
 	test_stream64.cpp \
 	test_string.cpp \
+	test_thread_cached_int.cpp \
+	test_thread_local.cpp \
 	test_time_val.cpp \
 	test_timestamp.cpp \
 	test_type_traits.cpp \
