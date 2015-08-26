@@ -32,32 +32,32 @@ inline T get_opt(const char* a, T a_default) {
 
 BOOST_AUTO_TEST_CASE( test_thread_local_single_threaded_not_cached ) {
     thread_cached_int<int64_t> val(0, 0);
-    BOOST_CHECK_EQUAL(0, val.readFast());
+    BOOST_CHECK_EQUAL(0, val.read_fast());
     ++val;
-    BOOST_CHECK_EQUAL(1, val.readFast());
+    BOOST_CHECK_EQUAL(1, val.read_fast());
     for (int i = 0; i < 41; ++i) {
         val.increment(1);
     }
-    BOOST_CHECK_EQUAL(42, val.readFast());
+    BOOST_CHECK_EQUAL(42, val.read_fast());
     --val;
-    BOOST_CHECK_EQUAL(41, val.readFast());
+    BOOST_CHECK_EQUAL(41, val.read_fast());
 }
 
 // Note: This is somewhat fragile to the implementation.  If this causes
 // problems, feel free to remove it.
 BOOST_AUTO_TEST_CASE( test_thread_local_single_threaded_cached ) {
     thread_cached_int<int64_t> val(0, 10);
-    BOOST_CHECK_EQUAL(0, val.readFast());
+    BOOST_CHECK_EQUAL(0, val.read_fast());
     ++val;
-    BOOST_CHECK_EQUAL(0, val.readFast());
+    BOOST_CHECK_EQUAL(0, val.read_fast());
     for (int i = 0; i < 7; ++i)
         val.increment(1);
-    BOOST_CHECK_EQUAL(0, val.readFast());
-    BOOST_CHECK_EQUAL(0, val.readFastAndReset());
-    BOOST_CHECK_EQUAL(8, val.readFull());
-    BOOST_CHECK_EQUAL(8, val.readFullAndReset());
-    BOOST_CHECK_EQUAL(0, val.readFull());
-    BOOST_CHECK_EQUAL(0, val.readFast());
+    BOOST_CHECK_EQUAL(0, val.read_fast());
+    BOOST_CHECK_EQUAL(0, val.read_fast_and_reset());
+    BOOST_CHECK_EQUAL(8, val.read_full());
+    BOOST_CHECK_EQUAL(8, val.read_full_and_reset());
+    BOOST_CHECK_EQUAL(0, val.read_full());
+    BOOST_CHECK_EQUAL(0, val.read_fast());
 }
 
 thread_cached_int<int32_t> globalInt32(0, 11);
@@ -106,9 +106,9 @@ BOOST_AUTO_TEST_CASE( test_thread_local_multi_threaded_cached ) {
         ++otherTCInt64;
 
         // Threads are done incrementing, but caches have not been flushed yet, so
-        // we have to readFull.
-        BOOST_CHECK(kNumInserts != TCInt64.readFast());
-        BOOST_CHECK_EQUAL(kNumInserts, TCInt64.readFull());
+        // we have to read_full.
+        BOOST_CHECK(kNumInserts != TCInt64.read_fast());
+        BOOST_CHECK_EQUAL(kNumInserts, TCInt64.read_full());
 
         run.store(false);
         for (auto& t : threads)
@@ -116,5 +116,5 @@ BOOST_AUTO_TEST_CASE( test_thread_local_multi_threaded_cached ) {
 
     }  // Caches are flushed when threads finish
 
-    BOOST_CHECK_EQUAL(kNumInserts, TCInt64.readFast());
+    BOOST_CHECK_EQUAL(kNumInserts, TCInt64.read_fast());
 }

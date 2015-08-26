@@ -237,10 +237,10 @@ public:
     // safe.
     void clear();
 
-    // Exact number of elements in the map - note that readFull() acquires a
+    // Exact number of elements in the map - note that read_full() acquires a
     // mutex.  See folly/thread_cached_int.h for more details.
     size_t size() const {
-        return m_num_entries.readFull() -
+        return m_num_entries.read_full() -
                m_num_erases.load(std::memory_order_relaxed);
     }
 
@@ -269,11 +269,11 @@ public:
     double max_load_factor() const { return ((double) m_max_entries) / m_capacity; }
 
     void entry_count_thr_cache_size(uint32_t newSize) {
-        m_num_entries.setCacheSize(newSize);
-        m_pend_entries.setCacheSize(newSize);
+        m_num_entries.cache_size(newSize);
+        m_pend_entries.cache_size(newSize);
     }
 
-    int entry_count_thr_cache_size() const { return m_num_entries.getCacheSize(); }
+    int entry_count_thr_cache_size() const { return m_num_entries.cache_size(); }
 
 private:
     template <class K, class V, class H, class E, class A, class S, class SM>

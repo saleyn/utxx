@@ -37,9 +37,9 @@ using namespace utxx;
 
 struct Widget {
     static int m_total_val;
-    int val_;
+    int m_val;
     ~Widget() {
-        m_total_val += val_;
+        m_total_val += m_val;
     }
 
     static void customDeleter(Widget* w, tlp_destruct_mode mode) {
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_basic_destructor2 ) {
     thr_local_ptr<Widget> w;
     std::thread([&w]() {
         w.reset(new Widget());
-        w.get()->val_ += 10;
+        w.get()->m_val += 10;
     }).join();
     BOOST_CHECK_EQUAL(10, Widget::m_total_val);
 }
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter1 ) {
         thr_local_ptr<Widget> w;
         std::thread([&w]() {
             w.reset(new Widget(), Widget::customDeleter);
-            w.get()->val_ += 10;
+            w.get()->m_val += 10;
         }).join();
         BOOST_CHECK_EQUAL(10, Widget::m_total_val);
     }
@@ -88,7 +88,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_test_release ) {
     std::unique_ptr<Widget> wPtr;
     std::thread([&w, &wPtr]() {
         w.reset(new Widget());
-        w.get()->val_ += 10;
+        w.get()->m_val += 10;
 
         wPtr.reset(w.release());
     }).join();
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter2) {
         thr_local_ptr<Widget> w;
         t = std::thread([&]() {
             w.reset(new Widget(), Widget::customDeleter);
-            w.get()->val_ += 10;
+            w.get()->m_val += 10;
 
             // Notify main thread that we're done
             {
@@ -130,7 +130,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter2) {
             }
         });
 
-        // Wait for main thread to start (and set w.get()->val_)
+        // Wait for main thread to start (and set w.get()->m_val)
         {
             std::unique_lock<std::mutex> lock(mutex);
             while (state != State::DONE)
@@ -159,7 +159,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter2) {
 BOOST_AUTO_TEST_CASE( test_thread_local_basic_destructor ) {
     Widget::m_total_val = 0;
     thr_local<Widget> w;
-    std::thread([&w]() { w->val_ += 10; }).join();
+    std::thread([&w]() { w->m_val += 10; }).join();
     BOOST_CHECK_EQUAL(10, Widget::m_total_val);
 }
 
@@ -167,11 +167,11 @@ BOOST_AUTO_TEST_CASE( test_thread_local_simple_repeat_destructor ) {
     Widget::m_total_val = 0;
     {
         thr_local<Widget> w;
-        w->val_ += 10;
+        w->m_val += 10;
     }
     {
         thr_local<Widget> w;
-        w->val_ += 10;
+        w->m_val += 10;
     }
     BOOST_CHECK_EQUAL(20, Widget::m_total_val);
 }
@@ -192,13 +192,13 @@ BOOST_AUTO_TEST_CASE( test_thread_local_interleaved_destructors ) {
                     return;
                 if (wVersion > wVersionPrev) {
                     // We have a new version of w, so it should be initialized to zero
-                    BOOST_CHECK_EQUAL((*w)->val_, 0);
+                    BOOST_CHECK_EQUAL((*w)->m_val, 0);
                     break;
                 }
             }
             std::lock_guard<std::mutex> g(lock);
             wVersionPrev = wVersion;
-            (*w)->val_  += 10;
+            (*w)->m_val  += 10;
             ++thIter;
         }
     });
@@ -226,13 +226,13 @@ BOOST_AUTO_TEST_CASE( test_thread_local_interleaved_destructors ) {
 
 class SimpleThreadCachedInt {
     class NewTag;
-    thr_local<int,NewTag> val_;
+    thr_local<int,NewTag> m_val;
 public:
-    void add(int val) { *val_ += val; }
+    void add(int val) { *m_val += val; }
 
     int read() {
         int ret = 0;
-        for (const auto& i : val_.access_all_threads())
+        for (const auto& i : m_val.access_all_threads())
             ret += i;
         return ret;
     }

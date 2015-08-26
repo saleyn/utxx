@@ -268,7 +268,7 @@ remaining_space() const {
     for (int i=0; i < num_maps; ++i) {
         auto  map   = m_submaps[i].load(std::memory_order_relaxed);
         rem_space  += std::max
-            (0,  map->m_max_entries - &map->m_num_entries.readFull());
+            (0,  map->m_max_entries - &map->m_num_entries.read_full());
     }
     return rem_space;
 }

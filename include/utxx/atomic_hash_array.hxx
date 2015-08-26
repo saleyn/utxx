@@ -115,7 +115,7 @@ internal_insert(const KeyT& key_in, T&& value) {
         assert(idx < m_capacity);
         value_type* cell = &m_cells[idx];
         if (is_empty_eq(load_key_relaxed(*cell))) {
-        // NOTE: m_is_full is set based on m_num_entries.readFast(), so it's
+        // NOTE: m_is_full is set based on m_num_entries.read_fast(), so it's
         // possible to insert more than m_max_entries entries. However, it's not
         // possible to insert past m_capacity.
         ++m_pend_entries;
@@ -133,7 +133,7 @@ internal_insert(const KeyT& key_in, T&& value) {
             (
                 int count=0;
                 m_is_full.load(std::memory_order_acquire) != NO_PENDING_INSERTS
-                && m_pend_entries.readFull() != 0
+                && m_pend_entries.read_full() != 0
                 && count < 10000;
                 count++
             )
@@ -171,7 +171,7 @@ internal_insert(const KeyT& key_in, T&& value) {
                 assert(is_key_eq(load_key_relaxed(*cell), key_in));
                 --m_pend_entries;
                 ++m_num_entries;  // This is a thread cached atomic increment :)
-                if (m_num_entries.readFast() >= int(m_max_entries))
+                if (m_num_entries.read_fast() >= int(m_max_entries))
                     m_is_full.store(NO_NEW_INSERTS, std::memory_order_relaxed);
 
                 return simple_ret_t(idx, true);
