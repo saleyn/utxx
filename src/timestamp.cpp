@@ -41,13 +41,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 boost::mutex            timestamp::s_mutex;
-__thread hrtime_t       timestamp::s_last_hrtime;
-__thread long           timestamp::s_last_time                    = 0;
-__thread long           timestamp::s_next_local_midnight_useconds = 0;
-__thread long           timestamp::s_next_utc_midnight_useconds   = 0;
-__thread time_t         timestamp::s_utc_usec_offset              = 0;
-__thread char           timestamp::s_local_timestamp[16];
-__thread char           timestamp::s_utc_timestamp[16];
+thread_local hrtime_t   timestamp::s_last_hrtime;
+thread_local long       timestamp::s_last_time                    = 0;
+thread_local long       timestamp::s_next_local_midnight_nseconds = 0;
+thread_local long       timestamp::s_next_utc_midnight_nseconds   = 0;
+thread_local time_t     timestamp::s_utc_nsec_offset              = 0;
+thread_local char       timestamp::s_local_timestamp[16];
+thread_local char       timestamp::s_utc_timestamp[16];
 
 #ifdef DEBUG_TIMESTAMP
 volatile long timestamp::s_hrcalls;
@@ -78,10 +78,11 @@ char* timestamp::write_time(
     char* a_buf,  time_val a_time, stamp_type a_type, bool a_utc,
     char  a_delim, char a_sep)
 {
-    auto tsec = a_utc ? a_time : a_time.add_usec(s_utc_usec_offset);
-    auto pair = tsec.split();
-    unsigned long n  = pair.first /   86400;
-                  n  = pair.first - n*86400;
+    auto     tsec   = a_utc ? a_time : a_time.add_nsec(s_utc_nsec_offset);
+    long     s, ns;
+    std::tie(s, ns) = tsec.split();
+    unsigned long n = s /   86400;
+                  n = s - n*86400;
     int hour = n / 3600;    n -= hour*3600;
     int min  = n / 60;
     int sec  = n - min*60;  n = hour / 10;
@@ -99,14 +100,14 @@ char* timestamp::write_time(
             break;
         case TIME_WITH_MSEC: {
             if (a_sep) *p++ = a_sep;
-            int msec = pair.second / 1000;
+            int msec = ns / 1000000;
             (void)itoa_right<int, 3>(p, msec, '0');
             p += 3;
             break;
         }
         case TIME_WITH_USEC: {
             if (a_sep) *p++ = a_sep;
-            int usec = pair.second;
+            int usec = ns / 1000;
             (void)itoa_right<int, 6>(p, usec, '0');
             p += 6;
             break;
@@ -121,7 +122,7 @@ char* timestamp::write_time(
 char* timestamp::internal_write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
-    assert(s_next_utc_midnight_useconds);
+    assert(s_next_utc_midnight_nseconds);
 
     if (!a_utc) a_utc_seconds += utc_offset();
     int y; unsigned m,d;
@@ -151,12 +152,12 @@ char* timestamp::write_date(
     char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
 {
     // If same day - use cached string value
-    if (unlikely(a_utc_seconds * 1000000 >= s_next_utc_midnight_useconds))
-        update_midnight_useconds(now_utc());
+    if (unlikely(long(a_utc_seconds)*1000000000L >= s_next_utc_midnight_nseconds))
+        update_midnight_nseconds(now_utc());
 
-    auto today_utc_midnight = s_next_utc_midnight_useconds - 86400000000L;
+    auto today_utc_midnight = s_next_utc_midnight_nseconds - 86400000000000L;
 
-    if (a_sep || a_utc_seconds < today_utc_midnight)
+    if (a_sep || a_utc_seconds*1000000000L < today_utc_midnight)
         return internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
     else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
@@ -165,16 +166,16 @@ char* timestamp::write_date(
     }
 }
 
-void timestamp::update_midnight_useconds(time_val a_now)
+void timestamp::update_midnight_nseconds(time_val a_now)
 {
-    auto tv = a_now.timeval();
+    auto s = a_now.sec();
     struct tm tm;
-    localtime_r(&tv.tv_sec, &tm);
-    s_utc_usec_offset = tm.tm_gmtoff * 1000000;
-    s_next_utc_midnight_useconds   = (a_now.microseconds() -
-                                      a_now.microseconds() % (86400L * 1000000))
-                                   + 86400L * 1000000;
-    s_next_local_midnight_useconds = s_next_utc_midnight_useconds - s_utc_usec_offset;
+    localtime_r(&s, &tm);
+    s_utc_nsec_offset = tm.tm_gmtoff * 1000000000L;
+    s_next_utc_midnight_nseconds   = (a_now.nanoseconds() -
+                                      a_now.nanoseconds() % (86400L * 1000000000L))
+                                   + 86400L * 1000000000L;
+    s_next_local_midnight_nseconds = s_next_utc_midnight_nseconds - s_utc_nsec_offset;
 
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
     internal_write_date(s_local_timestamp, a_now.sec(), false, 9, '\0');
@@ -184,7 +185,7 @@ void timestamp::update_midnight_useconds(time_val a_now)
 time_val timestamp::now() {
     // thread safe - we use TLV storage
     auto tv       = time_val::universal_time();
-    s_last_time   = tv.value();
+    s_last_time   = tv.nanoseconds();
     s_last_hrtime = high_res_timer::gettime();
     return tv;
 }
@@ -199,8 +200,8 @@ void timestamp::update_slow()
     // FIXME: the method below will produce incorrect time stamps during
     // switch to/from daylight savings time because of the unaccounted
     // utc_offset change.
-    if (unlikely(s_last_time >= s_next_utc_midnight_useconds))
-        update_midnight_useconds(last_time());
+    if (unlikely(s_last_time >= s_next_utc_midnight_nseconds))
+        update_midnight_nseconds(last_time());
 }
 
 size_t timestamp::format_size(stamp_type a_tp)
@@ -229,21 +230,21 @@ int timestamp::format(stamp_type a_tp,
         return 0;
     }
 
-    long midnight = a_utc ? s_next_utc_midnight_useconds : s_next_local_midnight_useconds;
-    if (unlikely(tv.value() >= midnight)) {
+    long midnight = a_utc ? s_next_utc_midnight_nseconds : s_next_local_midnight_nseconds;
+    if (unlikely(tv.nanoseconds() >= midnight)) {
         timestamp ts; ts.update();
     }
 
     // If small time is given, it's a relative value.
     bool l_rel  = tv.microseconds() < (86400L * 1000000L);
     if (l_rel)
-        tv.add_usec(s_last_time);
+        tv.add_nsec(s_last_time);
     if (!a_utc)
-        tv.add_usec(s_utc_usec_offset);
+        tv.add_nsec(s_utc_nsec_offset);
 
     auto pair   = tv.split();
     time_t sec  = pair.first;
-    long l_usec = pair.second;
+    long l_usec = pair.second / 1000;
 
     switch (a_tp) {
         case TIME:

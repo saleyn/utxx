@@ -65,16 +65,16 @@ const char* to_string(stamp_type a_type);
 
 class timestamp {
 protected:
-    static const long DAY_USEC = 86400l * 1000000;
+    static const long DAY_NSEC = 86400L * 1000000000L;
 
     static boost::mutex             s_mutex;
-    static __thread hrtime_t        s_last_hrtime;
-    static __thread long            s_last_time;
-    static __thread long            s_next_utc_midnight_useconds;
-    static __thread long            s_next_local_midnight_useconds;
-    static __thread long            s_utc_usec_offset;
-    static __thread char            s_utc_timestamp[16];
-    static __thread char            s_local_timestamp[16];
+    static thread_local hrtime_t    s_last_hrtime;
+    static thread_local long        s_last_time;  // In nanoseconds
+    static thread_local long        s_next_utc_midnight_nseconds;
+    static thread_local long        s_next_local_midnight_nseconds;
+    static thread_local long        s_utc_nsec_offset;
+    static thread_local char        s_utc_timestamp[16];
+    static thread_local char        s_local_timestamp[16];
 
     #ifdef DEBUG_TIMESTAMP
     static volatile long s_hrcalls;
@@ -84,12 +84,12 @@ protected:
     static char* internal_write_date(
         char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep);
 
-    static void update_midnight_useconds(time_val a_now);
+    static void update_midnight_nseconds(time_val a_now);
 
     static void update_slow();
 
     static void check_midnight_seconds() {
-        if (likely(s_next_utc_midnight_useconds)) return;
+        if (likely(s_next_utc_midnight_nseconds)) return;
         timestamp ts; ts.update();
     }
 
@@ -148,23 +148,23 @@ public:
     static time_val now();
 
     /// Return last timestamp obtained by calling update() or now().
-    static time_val last_time() { return usecs(s_last_time); }
+    static time_val last_time() { return nsecs(s_last_time); }
 
     /// Equivalent to calling update() and last_time()
     static time_val cached_time()   { update(); return last_time(); }
 
     /// Return the number of seconds from epoch to midnight in UTC.
-    static time_t utc_midnight_seconds()   { return utc_midnight_useconds().value() / 1000000; }
+    static time_t utc_midnight_seconds()   { return utc_midnight_nseconds().sec();  }
     /// Return the number of seconds from epoch to midnight in local time.
-    static time_t local_midnight_seconds() { return local_midnight_useconds().value()/1000000; }
+    static time_t local_midnight_seconds() { return local_midnight_nseconds().sec();}
 
-    /// Return the number of seconds from epoch to midnight in UTC.
-    static time_val utc_midnight_useconds()   {
-        return usecs(s_next_utc_midnight_useconds - DAY_USEC);
+    /// Return the number of nanoseconds from epoch to midnight in UTC.
+    static time_val utc_midnight_nseconds()   {
+        return nsecs(s_next_utc_midnight_nseconds - DAY_NSEC);
     }
-    /// Return the number of seconds from epoch to midnight in local time.
-    static time_val local_midnight_useconds() {
-        return usecs(s_next_local_midnight_useconds - DAY_USEC);
+    /// Return the number of nanoseconds from epoch to midnight in local time.
+    static time_val local_midnight_nseconds() {
+        return nsecs(s_next_local_midnight_nseconds - DAY_NSEC);
     }
 
     /// Number of seconds since midnight in local time zone for a given UTC time.
@@ -175,28 +175,28 @@ public:
 
     /// Return offset from UTC in seconds.
     static time_t utc_offset() {
-        if (unlikely(!s_next_utc_midnight_useconds)) {
+        if (unlikely(!s_next_utc_midnight_nseconds)) {
             timestamp ts; ts.update();
         }
-        return s_utc_usec_offset / 1000000;
+        return s_utc_nsec_offset / 1000000000L;
     }
 
     /// Convert a timestamp to the number of microseconds
     /// since midnight in local time.
     static int64_t local_usec_since_midnight(time_val a_now_utc) {
         check_midnight_seconds();
-        long diff = a_now_utc.value() - local_midnight_useconds().value();
-        if (unlikely(diff < 0)) diff = -diff % DAY_USEC;
-        return diff;
+        long diff = a_now_utc.diff_nsec(local_midnight_nseconds());
+        if (unlikely(diff < 0)) diff = -diff % DAY_NSEC;
+        return diff / 1000;
     }
 
     /// Convert a timestamp to the number of microseconds
     /// since midnight in UTC.
     static uint64_t utc_usec_since_midnight(time_val a_now_utc) {
         check_midnight_seconds();
-        long diff = a_now_utc.value() - utc_midnight_useconds().value();
-        if (unlikely(diff < 0)) diff = -diff % DAY_USEC;
-        return diff;
+        long diff = a_now_utc.diff_nsec(utc_midnight_nseconds());
+        if (unlikely(diff < 0)) diff = -diff % DAY_NSEC;
+        return diff / 1000;
     }
 
     #ifdef DEBUG_TIMESTAMP
@@ -284,10 +284,10 @@ struct test_timestamp : public timestamp {
     /// to times different from now.  Otherwise in production code
     /// always use timestamp::update() instead.
     void update(time_val a_now, hrtime_t a_hrnow) {
-        s_last_time = a_now.value();
+        s_last_time = a_now.nanoseconds();
 
-        if (unlikely(a_now.value() >= s_next_utc_midnight_useconds))
-            update_midnight_useconds(a_now);
+        if (unlikely(a_now.nanoseconds() >= s_next_utc_midnight_nseconds))
+            update_midnight_nseconds(a_now);
         s_last_hrtime = a_hrnow;
     }
 
@@ -297,8 +297,8 @@ struct test_timestamp : public timestamp {
     /// for testing in combination with update(a_now, a_hrnow).
     /// Note: it only resets the midnight seconds in the current thread's TLS
     static void reset() {
-        s_next_local_midnight_useconds = 0;
-        s_next_utc_midnight_useconds   = 0;
+        s_next_local_midnight_nseconds = 0;
+        s_next_utc_midnight_nseconds   = 0;
     }
 
     /// Use for testing only.

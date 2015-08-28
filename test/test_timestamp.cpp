@@ -324,7 +324,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     time_val tt(tv);
     timestamp::format(TIME, tt, buf);
     strncpy(temp, expected+9, 9);
-    BOOST_REQUIRE_EQUAL(temp, buf);
+    BOOST_CHECK_EQUAL(temp, buf);
 
     timestamp::format(TIME, tt, buf, true);
     strncpy(temp, expected_utc+9, 9);

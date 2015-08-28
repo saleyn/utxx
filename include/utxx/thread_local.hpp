@@ -199,8 +199,8 @@ public:
         friend class thr_local_ptr<T,Tag>;
 
         thr_local_detail::static_meta<Tag>& m_meta;
-        std::mutex*                        m_lock;
-        int                                m_id;
+        std::mutex*                         m_lock;
+        int                                 m_id;
 
     public:
         class        iterator;

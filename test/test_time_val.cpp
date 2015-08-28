@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
 
     while(now == time_val::universal_time());
 
-    BOOST_REQUIRE((now1 - now).milliseconds() <= 1);
+    BOOST_CHECK((now1 - now).milliseconds() <= 1);
 
     time_val now12 = now;
     time_val now13(now);
