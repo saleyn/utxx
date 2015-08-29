@@ -144,9 +144,9 @@ BOOST_AUTO_TEST_CASE( test_config_validator0 )
             if (*it1 != *it2)
                 break;
         if (it1 != e1)
-            BOOST_MESSAGE("Expected[" << i << "]: " << *it1);
+            BOOST_TEST_MESSAGE("Expected[" << i << "]: " << *it1);
         if (it2 != e2)
-            BOOST_MESSAGE("Got     [" << i << "]: " << *it2);
+            BOOST_TEST_MESSAGE("Got     [" << i << "]: " << *it2);
     }
     BOOST_REQUIRE_EQUAL(expected, got);
 }

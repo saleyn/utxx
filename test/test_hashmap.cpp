@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
     double elapsed1 = perf.elapsed();
 
-    BOOST_MESSAGE(
+    BOOST_TEST_MESSAGE(
         (boost::format("StrHashFun   speed: %.3f us/call") %
                        (1000000.0 * elapsed1 / (COUNT*ITERATIONS))).str());
 
@@ -111,11 +111,11 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     double elapsed2 = elapsed1;
     #endif
 
-    BOOST_MESSAGE(
+    BOOST_TEST_MESSAGE(
         (boost::format("std::hash    speed: %.3f us/call") %
                        (1000000.0 * elapsed2 / (COUNT*ITERATIONS))).str());
 
-    BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed1 / elapsed2)).str());
+    BOOST_TEST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed1 / elapsed2)).str());
 
     perf.reset();
     for (int i=0; i < ITERATIONS; ++i)
@@ -126,11 +126,11 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
     double elapsed3 = perf.elapsed();
 
-    BOOST_MESSAGE(
+    BOOST_TEST_MESSAGE(
         (boost::format("crapwow      speed: %.3f us/call") %
                        (1000000.0 * elapsed3 / (COUNT*ITERATIONS))).str());
 
-    BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed3 / elapsed2)).str());
+    BOOST_TEST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed3 / elapsed2)).str());
 
     perf.reset();
     for (int i=0; i < ITERATIONS; ++i)
@@ -141,9 +141,9 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
     double elapsed4 = perf.elapsed();
 
-    BOOST_MESSAGE(
+    BOOST_TEST_MESSAGE(
         (boost::format("murmur_hash  speed: %.3f us/call") %
                        (1000000.0 * elapsed4 / (COUNT*ITERATIONS))).str());
 
-    BOOST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed4 / elapsed2)).str());
+    BOOST_TEST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed4 / elapsed2)).str());
 }

@@ -106,7 +106,7 @@ static std::unique_ptr<AHMapT>                  globalAHM;
 static int genVal(int key) { return key / 3; }
 
 BOOST_AUTO_TEST_CASE( test_atomic_hash_map_grow ) {
-    BOOST_MESSAGE("Overhead: " << sizeof(AHArrayT) << " (array) " <<
+    BOOST_TEST_MESSAGE("Overhead: " << sizeof(AHArrayT) << " (array) " <<
         sizeof(AHMapT) + sizeof(AHArrayT) << " (map/set) Bytes.");
     uint64_t numEntries = 1000;
     float sizeFactor = 0.46;
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_basic_erase) {
         }
         BOOST_CHECK(success);
     }
-    BOOST_MESSAGE("Final number of subMaps = " << s->num_submaps());
+    BOOST_TEST_MESSAGE("Final number of subMaps = " << s->num_submaps());
 }
 
 namespace {
@@ -352,7 +352,7 @@ void runThreads(void *(*thread)(void*), int numThreads, void **statuses) {
     for (int64_t j = 0; j < numThreads; j++) {
         pthread_t tid;
         if (pthread_create(&tid, nullptr, thread, (void*) j) != 0)
-            BOOST_MESSAGE("Could not start thread");
+            BOOST_TEST_MESSAGE("Could not start thread");
         else
             threadIds.push_back(tid);
     }
@@ -376,14 +376,14 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
 
     float sizeFactor = 0.46;
     int entrySize = sizeof(KeyT) + sizeof(ValueT);
-    BOOST_MESSAGE("Testing " << numInserts << " unique " << entrySize <<
+    BOOST_TEST_MESSAGE("Testing " << numInserts << " unique " << entrySize <<
         " Byte entries replicated in " << numThreads <<
         " threads with " << maxLoadFactor * 100.0 << "% max load factor.");
 
     globalAHM.reset(new AHMapT(int(numInserts * sizeFactor), config));
 
     size_t sizeInit = globalAHM->capacity();
-    BOOST_MESSAGE("  Initial capacity: " << sizeInit);
+    BOOST_TEST_MESSAGE("  Initial capacity: " << sizeInit);
 
     double start = nowInUsec();
     runThreads([](void*) -> void* { // collisionInsertThread
@@ -397,9 +397,9 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
 
     size_t finalCap = globalAHM->capacity();
     size_t sizeAHM = globalAHM->size();
-    BOOST_MESSAGE(elapsed/sizeAHM << " usec per " << numThreads <<
+    BOOST_TEST_MESSAGE(elapsed/sizeAHM << " usec per " << numThreads <<
         " duplicate inserts (atomic).");
-    BOOST_MESSAGE("  Final capacity: " << finalCap << " in " <<
+    BOOST_TEST_MESSAGE("  Final capacity: " << finalCap << " in " <<
         globalAHM->num_submaps() << " sub maps (" <<
         sizeAHM * 100 / finalCap << "% load factor, " <<
         (finalCap - sizeInit) * 100 / sizeInit << "% growth).");
@@ -425,7 +425,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
 
     elapsed = nowInUsec() - start;
 
-    BOOST_MESSAGE((elapsed/sizeAHM) << " usec per " << numThreads <<
+    BOOST_TEST_MESSAGE((elapsed/sizeAHM) << " usec per " << numThreads <<
         " duplicate finds (atomic).");
 }
 
@@ -443,7 +443,7 @@ void* raceIterateThread(void* jj) {
         ++count;
         if (count > raceFinalSizeEstimate) {
             BOOST_CHECK(false);
-            BOOST_MESSAGE("Infinite loop in iterator.");
+            BOOST_TEST_MESSAGE("Infinite loop in iterator.");
             return nullptr;
         }
     }
@@ -467,7 +467,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_race_insert_iterate_thread_test) {
     const int kIterateThreads = 20;
     raceFinalSizeEstimate = kInsertThreads * kInsertPerThread;
 
-    BOOST_MESSAGE("Testing iteration and insertion with " << kInsertThreads
+    BOOST_TEST_MESSAGE("Testing iteration and insertion with " << kInsertThreads
         << " threads inserting and " << kIterateThreads << " threads iterating.");
 
     globalAHM.reset(new AHMapT(raceFinalSizeEstimate / 9, config));
@@ -479,15 +479,15 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_race_insert_iterate_thread_test) {
             (j < kInsertThreads ? raceInsertRandomThread : raceIterateThread);
         if (pthread_create(&tid, nullptr, thread, (void*) j) != 0) {
             BOOST_CHECK(false);
-            BOOST_MESSAGE("Could not start thread");
+            BOOST_TEST_MESSAGE("Could not start thread");
         } else
             threadIds.push_back(tid);
     }
     for (size_t i = 0; i < threadIds.size(); ++i) {
         pthread_join(threadIds[i], nullptr);
     }
-    BOOST_MESSAGE("Ended up with "     << globalAHM->num_submaps() << " submaps");
-    BOOST_MESSAGE("Final size of map " << globalAHM->size());
+    BOOST_TEST_MESSAGE("Ended up with "     << globalAHM->num_submaps() << " submaps");
+    BOOST_TEST_MESSAGE("Final size of map " << globalAHM->size());
 }
 
 namespace {
@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_thread_erase_insert_race) {
     const int kInsertThreads = 1;
     const int kEraseThreads = utxx::detail::cpu_count()-1;
 
-    BOOST_MESSAGE("Testing insertion and erase with " << kInsertThreads
+    BOOST_TEST_MESSAGE("Testing insertion and erase with " << kInsertThreads
         << " thread inserting and " << kEraseThreads << " threads erasing.");
 
     globalAHM.reset(new AHMapT(kTestEraseInsertions / 4, config));
@@ -554,7 +554,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_thread_erase_insert_race) {
         if (pthread_create(&tid, nullptr, thread, (void*) j) == 0)
             threadIds.push_back(tid);
         else {
-            BOOST_MESSAGE("Could not start thread");
+            BOOST_TEST_MESSAGE("Could not start thread");
             BOOST_REQUIRE(false);
         }
     }
@@ -564,7 +564,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_thread_erase_insert_race) {
     BOOST_CHECK(globalAHM->empty());
     BOOST_CHECK_EQUAL(globalAHM->size(), 0u);
 
-    BOOST_MESSAGE("Ended up with " << globalAHM->num_submaps() << " submaps");
+    BOOST_TEST_MESSAGE("Ended up with " << globalAHM->num_submaps() << " submaps");
 }
 
 // Repro for T#483734: Duplicate AHM inserts due to incorrect AHA return value.

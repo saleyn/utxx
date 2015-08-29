@@ -290,8 +290,8 @@ void generic_parser_test
 
     // Compare original with read
     if (pt != pt2) {
-        BOOST_MESSAGE("Expected tree:\n" << pt.to_string());
-        BOOST_MESSAGE("\nActual tree:\n" << pt2.to_string());
+        BOOST_TEST_MESSAGE("Expected tree:\n" << pt.to_string());
+        BOOST_TEST_MESSAGE("\nActual tree:\n" << pt2.to_string());
     }
     BOOST_REQUIRE(pt == pt2);
 }
@@ -314,7 +314,7 @@ void generic_parser_test_ok
 {
     using namespace boost::property_tree;
 
-    BOOST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
+    BOOST_TEST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
 
     try
     {
@@ -334,7 +334,7 @@ void generic_parser_test_ok
         if (actual_total_size != total_size ||
             actual_data_size != total_data_size ||
             actual_keys_size != total_keys_size)
-            BOOST_MESSAGE(
+            BOOST_TEST_MESSAGE(
                 "File: " << filename_1 << "Sizes: " <<
                 "total={" << actual_total_size << ',' << total_size << "}, " <<
                 "keys={"  << actual_data_size  << ',' << total_data_size << "}, " <<
@@ -366,7 +366,7 @@ void generic_parser_test_error
     unsigned long expected_error_line
 )
 {
-    BOOST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
+    BOOST_TEST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
 
     {
         // Create ptree as a copy of test ptree (to test if read failure does not damage ptree)
@@ -384,7 +384,7 @@ void generic_parser_test_error
         catch (Error &e)
         {
             if (expected_error_line != e.line())
-                BOOST_MESSAGE("Error test file: " << filename_1);
+                BOOST_TEST_MESSAGE("Error test file: " << filename_1);
             BOOST_CHECK_EQUAL(expected_error_line, e.line()); // Test line number
             BOOST_REQUIRE(pt == get_test_ptree<Ptree>());   // Test if error damaged contents
         }
@@ -579,7 +579,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
             {
                 std::stringstream s;
                 t.dump(s, 2, false);
-                //BOOST_MESSAGE("Tree=====\n" << s.str());
+                //BOOST_TEST_MESSAGE("Tree=====\n" << s.str());
             }
             return t.get<std::string>(key);
         }

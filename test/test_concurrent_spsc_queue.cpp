@@ -42,7 +42,7 @@ struct PerfTest {
 
         auto duration = duration_cast<milliseconds>(
             system_clock::now() - startTime);
-        BOOST_MESSAGE("     done: " << duration.count() << "ms");
+        BOOST_TEST_MESSAGE("     done: " << duration.count() << "ms");
     }
 
     void producer() {
@@ -69,7 +69,7 @@ struct PerfTest {
 };
 
 template<class TestType> void doTest(const char* name) {
-    BOOST_MESSAGE("  testing: " << name);
+    BOOST_TEST_MESSAGE("  testing: " << name);
     std::unique_ptr<TestType> const t(new TestType());
     (*t)();
 }
@@ -78,7 +78,7 @@ template<class T, bool Pop = false>
 void perfTestType(const char* type) {
     const size_t size = 0xfffe;
 
-    BOOST_MESSAGE("Type: " << type);
+    BOOST_TEST_MESSAGE("Type: " << type);
     doTest<PerfTest<concurrent_spsc_queue<T>,size,Pop>>("ProducerConsumerQueue");
 }
 
@@ -165,7 +165,7 @@ struct CorrectnessTest {
 
 template<class T, size_t Size, bool Pop = false>
 void correctnessTestType(const std::string& type) {
-    BOOST_MESSAGE("Type: " << type);
+    BOOST_TEST_MESSAGE("Type: " << type);
     doTest<CorrectnessTest<concurrent_spsc_queue<T>,Size,Pop> >(
         "ProducerConsumerQueue");
 }
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_iterator )
     srand48(time(NULL));
 
     for (size_t N : sizes) {
-        BOOST_MESSAGE("Capacity=" << C << ", NItems=" << N);
+        BOOST_TEST_MESSAGE("Capacity=" << C << ", NItems=" << N);
 
         concurrent_spsc_queue<size_t> q(C);
         BOOST_REQUIRE_EQUAL(size_t(CAPACITY), q.capacity());
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_iterator )
 
         size_t r = size_t(floor(drand48() * double(n)));
         BOOST_REQUIRE(0 <= r && r < n);
-        BOOST_MESSAGE("r =" << r);
+        BOOST_TEST_MESSAGE("r =" << r);
         q.erase(q.begin() + r);
 
         BOOST_REQUIRE_EQUAL(n-1, q.count());

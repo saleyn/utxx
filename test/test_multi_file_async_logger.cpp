@@ -145,7 +145,7 @@ auto worker = [&](int id, int iterations, boost::barrier* barrier,
                 "total logged: %lu\n",
                 id, int(double(iterations) / *elapsed), lat,
                 logger->total_msgs_processed());
-        BOOST_MESSAGE(buf);
+        BOOST_TEST_MESSAGE(buf);
     }
 };
 
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         sum_time += elapsed[i];
     }
 
-    BOOST_MESSAGE("All threads finished!");
+    BOOST_TEST_MESSAGE("All threads finished!");
 
     if (verbosity::level() >= utxx::VERBOSE_DEBUG) {
         sum_time /= THREADS;
@@ -205,17 +205,17 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         sprintf(buf, "Avg speed = %8d it/s, latency = %.3f us\n",
                (int)((double)ITERATIONS / sum_time),
                sum_time * 1000000 / ITERATIONS);
-        BOOST_MESSAGE(buf);
+        BOOST_TEST_MESSAGE(buf);
         if (!getenv("NOHISTOGRAM")) {
             std::stringstream s;
             totals.dump(s);
-            BOOST_MESSAGE(s.str());
+            BOOST_TEST_MESSAGE(s.str());
         }
     }
 
     std::stringstream s;
     s << "Max queue size = " << logger.max_queue_size();
-    BOOST_MESSAGE(s.str());
+    BOOST_TEST_MESSAGE(s.str());
 
 
 #ifdef PERF_STATS

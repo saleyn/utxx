@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     pt.put("logger.file.ho-header",variant(true));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
-        BOOST_MESSAGE(pt.dump(std::cout, 2, false, true));
+        BOOST_TEST_MESSAGE(pt.dump(std::cout, 2, false, true));
 
     BOOST_REQUIRE(pt.get_child_optional("logger.file"));
 
@@ -135,7 +135,7 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
             th = 1, j = 1;
             s = get_data(in, th, j, tm);
             if (s.empty())
-                BOOST_MESSAGE("Thread" << th << ", line=" << j);
+                BOOST_TEST_MESSAGE("Thread" << th << ", line=" << j);
             BOOST_REQUIRE(s != "");
             int idx = (j-1) % thr_msgs;
             sprintf(buf, "|%s||%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
@@ -284,7 +284,7 @@ const int THREADS    = getenv("THREADS")    ? atoi(getenv("THREADS"))      : 3;
 
 void run_test(const char* config_type, open_mode mode, int def_threads)
 {
-    BOOST_MESSAGE("Testing back-end: " << config_type);
+    BOOST_TEST_MESSAGE("Testing back-end: " << config_type);
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
 
@@ -324,7 +324,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     barrier.wait();
 
-    BOOST_MESSAGE("Producers started");
+    BOOST_TEST_MESSAGE("Producers started");
 
     perf_histogram totals(to_string("Total ",config_type," performance"));
     double sum_time = 0;

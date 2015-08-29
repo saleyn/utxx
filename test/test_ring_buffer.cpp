@@ -40,7 +40,7 @@ namespace utxx {
 template <typename Buffer>
 void test(const char* a_desc, size_t a_exp_capacity, size_t a_capacity,
           void* a_memory, size_t a_mem_sz, bool a_construct = true) {
-    BOOST_MESSAGE("Testing " << a_desc << " ring buffer");
+    BOOST_TEST_MESSAGE("Testing " << a_desc << " ring buffer");
 
     std::unique_ptr<Buffer, void(*)(Buffer*&)>
         buf(

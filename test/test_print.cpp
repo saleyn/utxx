@@ -101,9 +101,9 @@ BOOST_AUTO_TEST_CASE( test_print_perf )
         elapsed2 = tm.elapsed();
     }
 
-    BOOST_MESSAGE(" printf      speed: " << fixed(double(ITERATIONS)/elapsed1, 10, 0) << " calls/s");
-    BOOST_MESSAGE(" utxx::print speed: " << fixed(double(ITERATIONS)/elapsed2, 10, 0) << " calls/s");
-    BOOST_MESSAGE("    printf / print: " << fixed(elapsed1/elapsed2, 6, 4) << " times");
+    BOOST_TEST_MESSAGE(" printf      speed: " << fixed(double(ITERATIONS)/elapsed1, 10, 0) << " calls/s");
+    BOOST_TEST_MESSAGE(" utxx::print speed: " << fixed(double(ITERATIONS)/elapsed2, 10, 0) << " calls/s");
+    BOOST_TEST_MESSAGE("    printf / print: " << fixed(elapsed1/elapsed2, 6, 4) << " times");
 
 }
 

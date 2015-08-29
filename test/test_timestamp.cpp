@@ -110,7 +110,7 @@ struct test1 {
               #endif
               << ", speed=" << std::fixed << ((double)iterations / tv.seconds())
               << ", latency=" << (1000000000.0*tv.seconds()/iterations) << " ns";
-            BOOST_MESSAGE(s.str());
+            BOOST_TEST_MESSAGE(s.str());
         }
     }
 };
@@ -150,7 +150,7 @@ struct test2 {
               << " Mcalls/s,";
             s.precision(3);
             s << " latency=" << (1000000.0*end.seconds()/n) << " us";
-            BOOST_MESSAGE(s.str());
+            BOOST_TEST_MESSAGE(s.str());
         }
     };
 
@@ -182,7 +182,7 @@ struct test2 {
           << ", speed=" << std::fixed << tmr.speed(iterations) << " calls/s,";
         s.precision(3);
         s << " latency=" << tmr.latency_usec(iterations) << " us" << std::endl;
-        BOOST_MESSAGE(s.str());
+        BOOST_TEST_MESSAGE(s.str());
 
         // Testing gettimeofday speed
         {

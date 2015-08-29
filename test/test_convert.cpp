@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
     for (uint32_t i=0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
         bool res = fast_atoi(tests[i].test, n);
         if (tests[i].fatoi_success != res)
-            BOOST_MESSAGE(
+            BOOST_TEST_MESSAGE(
                 "Case i=" << i << ", res=" << res <<
                 ", n=" << n << ", test=" << tests[i].test);
         BOOST_REQUIRE_EQUAL(tests[i].fatoi_success,
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
         bool       ok = !tests[i].expected || e == (tests[i].test + tests[i].len);
 
         if (tests[i].expected != n || !ok)
-            BOOST_MESSAGE("Test signed #" << i << " failed");
+            BOOST_TEST_MESSAGE("Test signed #" << i << " failed");
         BOOST_REQUIRE_EQUAL(tests[i].expected, n);
         BOOST_REQUIRE(ok);
 
@@ -428,7 +428,7 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
             ok = !tests[i].expected || e == (tests[i].test + tests[i].len);
 
             if (tests[i].expected != (long)u || !ok)
-                BOOST_MESSAGE("Test unsigned #" << i << " failed");
+                BOOST_TEST_MESSAGE("Test unsigned #" << i << " failed");
             BOOST_REQUIRE_EQUAL(tests[i].expected, (long)u);
             BOOST_REQUIRE(ok);
         }
@@ -477,7 +477,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
 
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
 
-    BOOST_MESSAGE(       "             iterations: " << ITERATIONS);
+    BOOST_TEST_MESSAGE(       "             iterations: " << ITERATIONS);
     {
         cpu_timer t;
         const std::string buf("1234567890");
@@ -494,7 +494,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         std::stringstream s;
         s << boost::format("         fast_atoi time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
-        BOOST_MESSAGE(s.str());
+        BOOST_TEST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
@@ -517,7 +517,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         s << boost::format("unsafe_fixed_atoul time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
 
-        BOOST_MESSAGE(s.str());
+        BOOST_TEST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
@@ -534,7 +534,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         std::stringstream s;
         s << boost::format("              atoi time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
-        BOOST_MESSAGE(s.str());
+        BOOST_TEST_MESSAGE(s.str());
     }
 }
 

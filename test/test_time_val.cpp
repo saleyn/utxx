@@ -92,9 +92,9 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         struct tm tm; localtime_r(&t, &tm);
         time_val gmt = time_val::universal_time(2014, 7, 10, 0,0,0, 0);
         time_val loc = time_val::local_time    (2014, 7, 10, 0,0,0, 0);
-        BOOST_MESSAGE("TZ  offset: " << tm.tm_gmtoff);
-        BOOST_MESSAGE("GMT   time: " << gmt.sec());
-        BOOST_MESSAGE("Local time: " << loc.sec());
+        BOOST_TEST_MESSAGE("TZ  offset: " << tm.tm_gmtoff);
+        BOOST_TEST_MESSAGE("GMT   time: " << gmt.sec());
+        BOOST_TEST_MESSAGE("Local time: " << loc.sec());
         BOOST_REQUIRE_EQUAL(gmt.sec() - loc.sec(), tm.tm_gmtoff);
     }
 
@@ -222,25 +222,25 @@ BOOST_AUTO_TEST_CASE( test_time_val_perf )
     time_t now_sec = now.sec();
     localtime_r(&now_sec, &tm);
     int offset = tm.tm_gmtoff;
-    BOOST_MESSAGE("TZ offset = " << offset);
+    BOOST_TEST_MESSAGE("TZ offset = " << offset);
     std::tie(y,m,d) = now.to_ymd(true);
     time_t tt = mktime_utc(y,m,d);
-    BOOST_MESSAGE("mktime_utc(" << y << '-' << m << '-' << d << ") = " << tt);
+    BOOST_TEST_MESSAGE("mktime_utc(" << y << '-' << m << '-' << d << ") = " << tt);
     std::tie(y,m,d) = now.to_ymd(true);
-    BOOST_MESSAGE("now.to_ymd(true)  = " << y << '-' << m << '-' << d << " | " << now.sec());
+    BOOST_TEST_MESSAGE("now.to_ymd(true)  = " << y << '-' << m << '-' << d << " | " << now.sec());
     std::tie(y,m,d) = now.to_ymd(false);
-    BOOST_MESSAGE("now.to_ymd(false) = " << y << '-' << m << '-' << d << " | " << now.sec()+offset);
+    BOOST_TEST_MESSAGE("now.to_ymd(false) = " << y << '-' << m << '-' << d << " | " << now.sec()+offset);
     std::tie(y,m,d) = from_gregorian_time(now.sec() + offset);
-    BOOST_MESSAGE("from_greg_time(" << y << '-' << m << '-' << d << ") = " << now.sec()+offset);
+    BOOST_TEST_MESSAGE("from_greg_time(" << y << '-' << m << '-' << d << ") = " << now.sec()+offset);
 
     std::tie(y,m,d) = now.to_ymd(false);
-    BOOST_MESSAGE("local to_ymd              = " << y << '-' << m << '-' << d);
+    BOOST_TEST_MESSAGE("local to_ymd              = " << y << '-' << m << '-' << d);
     std::tie(y,m,d) = from_gregorian_time(now.sec() + offset);
-    BOOST_MESSAGE("local from_gregorian_days = " << y << '-' << m << '-' << d);
+    BOOST_TEST_MESSAGE("local from_gregorian_days = " << y << '-' << m << '-' << d);
     std::tie(y,m,d) = now.to_ymd(true);
-    BOOST_MESSAGE("utc   to_ymd              = " << y << '-' << m << '-' << d);
+    BOOST_TEST_MESSAGE("utc   to_ymd              = " << y << '-' << m << '-' << d);
     std::tie(y,m,d) = from_gregorian_time(now.sec());
-    BOOST_MESSAGE("utc   from_gregorian_time = " << y << '-' << m << '-' << d);
+    BOOST_TEST_MESSAGE("utc   from_gregorian_time = " << y << '-' << m << '-' << d);
 
     BOOST_CHECK(now.to_ymd(false) == from_gregorian_time(now.sec() + offset));
     BOOST_CHECK(now.to_ymd(true)  == from_gregorian_time(now.sec()));
@@ -256,7 +256,7 @@ BOOST_AUTO_TEST_CASE( test_time_val_perf )
             std::tie(y,m,d) = from_gregorian_time(now.sec() + offset);
         elapsed2 = t.elapsed();
     }
-    BOOST_MESSAGE("local time_val::to_ymd / from_gregorian_days = "
+    BOOST_TEST_MESSAGE("local time_val::to_ymd / from_gregorian_days = "
                   << std::setprecision(2) << std::fixed
                   << ((100.0 * elapsed1) / elapsed2) << '%');
     {
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE( test_time_val_perf )
             std::tie(y,m,d) = from_gregorian_time(now.sec());
         elapsed2 = t.elapsed();
     }
-    BOOST_MESSAGE("utc   time_val::to_ymd / from_gregorian_days = "
+    BOOST_TEST_MESSAGE("utc   time_val::to_ymd / from_gregorian_days = "
                   << std::setprecision(2) << std::fixed
                   << ((100.0 * elapsed1) / elapsed2) << '%');
 

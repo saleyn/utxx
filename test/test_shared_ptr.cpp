@@ -113,15 +113,15 @@ BOOST_AUTO_TEST_CASE( test_shared_ptr_perf )
         BOOST_CHECK_EQUAL(count2, ITERATIONS);
     }
 
-    BOOST_MESSAGE(" utxx::shared_ptr speed: "
+    BOOST_TEST_MESSAGE(" utxx::shared_ptr speed: "
                     << utxx::fixed(double(ITERATIONS)/elapsed1, 10, 0)
                     << " calls/s, latency: "
                     << utxx::fixed(latency1, 5, 3) << "us, use_count=" << count1
                     << ", sum=" << sum1);
-    BOOST_MESSAGE("  std::shared_ptr speed: "
+    BOOST_TEST_MESSAGE("  std::shared_ptr speed: "
                     << utxx::fixed(double(ITERATIONS)/elapsed2, 10, 0)
                     << " calls/s, latency: "
                     << utxx::fixed(latency2, 5, 3) << "us, use_count=" << count2
                     << ", sum=" << sum2);
-    BOOST_MESSAGE("    utxx / std: " << utxx::fixed(elapsed1/elapsed2, 6, 4) << " times");
+    BOOST_TEST_MESSAGE("    utxx / std: " << utxx::fixed(elapsed1/elapsed2, 6, 4) << " times");
 }

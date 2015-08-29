@@ -78,7 +78,7 @@ CREATE_INC_FUNC(32);
 // Confirms counts are accurate with competing threads
 BOOST_AUTO_TEST_CASE( test_thread_local_multi_threaded_cached ) {
     kNumInserts = 100000;
-    BOOST_MESSAGE("FLAGS_numThreads must evenly divide kNumInserts ("
+    BOOST_TEST_MESSAGE("FLAGS_numThreads must evenly divide kNumInserts ("
                   << kNumInserts << ").");
     BOOST_REQUIRE(0 == kNumInserts % numThreads);
     const int numPerThread = kNumInserts / numThreads;

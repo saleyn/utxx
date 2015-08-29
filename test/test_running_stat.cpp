@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_variance )
         sum.add(i);
         var.add(i);
         BOOST_CHECK_EQUAL(sum.mean(), var.mean());
-        BOOST_MESSAGE("Mean: " << sum.mean() << " Variance: " << var.variance());
+        BOOST_TEST_MESSAGE("Mean: " << sum.mean() << " Variance: " << var.variance());
     }
 }
 
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
     char buf[256];
 
     sprintf(buf, "== Add == (win) | std (us) | fast (us)| Ratio");
-    BOOST_MESSAGE(buf);
+    BOOST_TEST_MESSAGE(buf);
 
     for (auto i : windows) {
         double elapsed1, elapsed2;
@@ -284,11 +284,11 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
                 (elapsed1 / elapsed2),
                 dummy != 0 ? "ok" : "not ok"
                );
-        BOOST_MESSAGE(buf);
+        BOOST_TEST_MESSAGE(buf);
     }
 
     sprintf(buf, "== MinMax (win) | std (us) | fast (us)| Ratio");
-    BOOST_MESSAGE(buf);
+    BOOST_TEST_MESSAGE(buf);
 
     for (auto i : windows) {
         double elapsed1, elapsed2;
@@ -317,7 +317,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
                 (elapsed1 / elapsed2),
                 dummy != 0 ? "ok" : "not ok"
                );
-        BOOST_MESSAGE(buf);
+        BOOST_TEST_MESSAGE(buf);
     }
 }
 
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
     char buf[256];
 
     sprintf(buf, "== Match  (win) | Result");
-    BOOST_MESSAGE(buf);
+    BOOST_TEST_MESSAGE(buf);
 
     {
         std::vector<int> data(ITERATIONS);
@@ -346,7 +346,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
                 mf.add(v); auto rf = mf.minmax();
 
                 if (rs != rf) {
-                    BOOST_MESSAGE("Window " << i << " mismatch at " <<
+                    BOOST_TEST_MESSAGE("Window " << i << " mismatch at " <<
                                     j << " (value=" << v <<
                                     ") diff: " << (rs.first - rf.first));
                     int k = 0;
@@ -362,7 +362,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
 
                         if (k++ == j+5) break;
 
-                        BOOST_MESSAGE("[" << std::setw(8) << k << "]: "
+                        BOOST_TEST_MESSAGE("[" << std::setw(8) << k << "]: "
                                       << std::setw(15) << d
                                       << std::setw(25) << rrs
                                       << std::setw(25) << rrf);
@@ -371,7 +371,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
                 }
             }
             sprintf(buf, "  %13d | ok", i);
-            BOOST_MESSAGE(buf);
+            BOOST_TEST_MESSAGE(buf);
         }
     }
 
@@ -394,13 +394,13 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
                 static const double eps = 0.0000000001;
                 if (j++ > 0 && (rs.first - rf.first) > eps) {
                     if (rs != rf) {
-                        BOOST_MESSAGE("Window " << i << " mismatch at " <<
+                        BOOST_TEST_MESSAGE("Window " << i << " mismatch at " <<
                                       j << " (value=" << v <<
                                       ") diff: " << (rs.first - rf.first));
                         int k = 0;
 
                         for (auto d : data) {
-                            BOOST_MESSAGE("[" << std::setw(8) << k++ << "]: " << d);
+                            BOOST_TEST_MESSAGE("[" << std::setw(8) << k++ << "]: " << d);
                             if (k == j) break;
                         }
                     }
@@ -408,7 +408,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
                 }
             }
             sprintf(buf, "  %13d | ok", i);
-            BOOST_MESSAGE(buf);
+            BOOST_TEST_MESSAGE(buf);
         }
     }
 }

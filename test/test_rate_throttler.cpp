@@ -63,8 +63,8 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
     BOOST_CHECK_EQUAL(5,  n);
     BOOST_CHECK_EQUAL(4u, thr.available(now));
     next_time = time_val(2015,6,1, 12,0,0, 700000);
-//     BOOST_MESSAGE("Next = " << timestamp::to_string(thr.next_time(), utxx::TIME_WITH_USEC, true));
-//     BOOST_MESSAGE("Now  = " << timestamp::to_string(now, utxx::TIME_WITH_USEC, true));
+//     BOOST_TEST_MESSAGE("Next = " << timestamp::to_string(thr.next_time(), utxx::TIME_WITH_USEC, true));
+//     BOOST_TEST_MESSAGE("Now  = " << timestamp::to_string(now, utxx::TIME_WITH_USEC, true));
     BOOST_CHECK(next_time == thr.next_time());
 
     n       = thr.add(5,  now);

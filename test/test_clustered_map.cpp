@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
             sprintf(buf, "clustered_map speed=%.0f ins/s, latency=%.3fus, size=%lu",
                    (double)ITERATIONS/elapsed1, elapsed1 * 1000000 / ITERATIONS,
                    m.group_count());
-            BOOST_MESSAGE(buf);
+            BOOST_TEST_MESSAGE(buf);
         }
 
         {
@@ -180,10 +180,10 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
             char buf[80];
             sprintf(buf, "std::map      speed=%.0f ins/s, latency=%.3fus, l1size=%lu",
                    (double)ITERATIONS/elapsed2, elapsed2 * 1000000 / ITERATIONS, m.size());
-            BOOST_MESSAGE(buf);
+            BOOST_TEST_MESSAGE(buf);
         }
 
-        BOOST_MESSAGE("Performance(clustered_map / std::map) = " << elapsed2 / elapsed1);
+        BOOST_TEST_MESSAGE("Performance(clustered_map / std::map) = " << elapsed2 / elapsed1);
     }
 
 #ifdef UTXX_STANDALONE

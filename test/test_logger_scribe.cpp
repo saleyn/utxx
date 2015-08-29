@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe1 )
     } catch (utxx::runtime_error& e) {
         static const char s_err[] = "Failed to open connection";
         if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
-            BOOST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            BOOST_TEST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
             return;
         }
         throw;
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe2 )
     } catch (utxx::runtime_error& e) {
         static const char s_err[] = "Failed to open connection";
         if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
-            BOOST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            BOOST_TEST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
             return;
         }
         throw;

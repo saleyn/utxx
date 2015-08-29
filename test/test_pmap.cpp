@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #else
 #define BOOST_AUTO_TEST_CASE( X ) void X()
-#define BOOST_MESSAGE( X ) std::cout << X << std::endl;
+#define BOOST_TEST_MESSAGE( X ) std::cout << X << std::endl;
 #define BOOST_REQUIRE( X ) do { \
         if (!(X)) { std::cout << "Required !" << ##X << ":" << (X) << std::end; exit(1); } \
     } while(0)
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE( test_pmap )
 {
     long ITERATIONS = getenv("ITERATIONS") ? atol(getenv("ITERATIONS")) : 10000000;
 
-    BOOST_MESSAGE("Iterations: " << ITERATIONS);
+    BOOST_TEST_MESSAGE("Iterations: " << ITERATIONS);
 
     boost::function<int(bool, int)> tests[] = { &test1, &test2, &test3, &test4 };
 

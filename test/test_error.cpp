@@ -210,9 +210,9 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
 
         {
             auto& s = abc::d::A<int>::OnData<abc::d::EventType::b>(abc::d::A<int>::ChannelEvent<abc::d::EventType::b>());
-            //BOOST_MESSAGE(s.fun());
+            //BOOST_TEST_MESSAGE(s.fun());
             auto str = s.to_string("","",3);
-            //BOOST_MESSAGE(str);
+            //BOOST_TEST_MESSAGE(str);
             std::regex re("^test_error.cpp:\\d+ d::A::OnData$");
             if (!std::regex_search(str, re)) {
                 std::cout << '"' << str << '"' << std::endl;

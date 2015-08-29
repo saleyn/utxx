@@ -420,7 +420,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork ) {
         BOOST_CHECK(WIFEXITED(status));
         BOOST_CHECK_EQUAL(0, WEXITSTATUS(status));
     } else {
-        BOOST_MESSAGE("Fork failed");
+        BOOST_TEST_MESSAGE("Fork failed");
         BOOST_CHECK(false);
     }
 
@@ -462,7 +462,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork2 ) {
         BOOST_CHECK(WIFEXITED(status));
         BOOST_CHECK_EQUAL(0, WEXITSTATUS(status));
     } else {
-        BOOST_MESSAGE("Fork failed");
+        BOOST_TEST_MESSAGE("Fork failed");
         BOOST_CHECK(false);
     }
 }

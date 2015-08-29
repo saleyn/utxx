@@ -105,7 +105,7 @@ void test_map() {
         ref.insert(e);
         BOOST_CHECK_EQUAL(ref.size(), arr->size());
         if (ret.first == arr->end()) {
-            BOOST_MESSAGE("AHA should not have run out of space.");
+            BOOST_TEST_MESSAGE("AHA should not have run out of space.");
             BOOST_CHECK(false);
             continue;
         }
@@ -133,7 +133,7 @@ void test_map() {
     for (const auto& e : ref) {
         auto ret = arr->find(e.first);
         if (ret == arr->end()) {
-            BOOST_MESSAGE("Key " << e.first << " was not in AHA");
+            BOOST_TEST_MESSAGE("Key " << e.first << " was not in AHA");
             BOOST_CHECK(false);
             continue;
         }

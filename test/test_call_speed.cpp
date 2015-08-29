@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE( test_call_speed )
         char buf[128];
         sprintf(buf, "  %-30s:  %.3fns (%d)",
             p.first.c_str(), 1000.0 * double(d.total_microseconds()) / iterations_count, i);
-        BOOST_MESSAGE(buf);
+        BOOST_TEST_MESSAGE(buf);
     }
 
     BOOST_CHECK(true);
