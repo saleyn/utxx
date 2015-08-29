@@ -59,12 +59,12 @@ namespace utxx {
     /// Indication of use of absolute time
     struct abs_time {
         long nsec;
-        abs_time(long s=0, long us=0) : nsec(s*1000000000L + us) {}
+        abs_time(long s=0, long us=0) : nsec(s*1000000000L + us*1000L) {}
     };
     /// Indication of use of relative time
     struct rel_time {
         long nsec;
-        rel_time(long s=0, long us=0) : nsec(s*1000000000L + us) {}
+        rel_time(long s=0, long us=0) : nsec(s*1000000000L + us*1000L) {}
     };
 
     struct usecs {
@@ -111,10 +111,10 @@ namespace utxx {
         explicit time_val(struct tm& a_tm)          : m_tv(long(mktime(&a_tm))*N10e9)       {}
 
         /// Set time to abosolute time given by \a a
-        explicit time_val(abs_time a)      : m_tv(a.nsec) {}
+        explicit time_val(abs_time a) : m_tv(a.nsec) {}
 
         /// Set time to relative offset from now given by \a a time.
-        explicit time_val(rel_time a)      : m_tv(now(0, a.nsec).m_tv) {}
+        explicit time_val(rel_time a) : m_tv(universal_time().m_tv + a.nsec) {}
 
         time_val(int y, unsigned m, unsigned d, bool a_utc = true) {
             if (a_utc)
@@ -200,7 +200,7 @@ namespace utxx {
         }
         struct timespec         timespec() const {
             auto pair = split();
-            return (struct timespec){pair.first, pair.second*1000};
+            return (struct timespec){pair.first, pair.second};
         }
         time_t   sec()                     const { return m_tv / N10e9; }
         long     usec()                    const { long x=m_tv/1000;  return x-(x/N10e6)*N10e6;}
@@ -247,8 +247,8 @@ namespace utxx {
         int64_t diff_usec(time_val t) const { return (m_tv - t.m_tv) / 1000;        }
         int64_t diff_msec(time_val t) const { return (m_tv - t.m_tv) / N10e6;       }
 
-        time_val& add(long _s, long _us)    { m_tv += _s*N10e9 + _us*1000; return *this; }
-        time_val  add(long _s, long _us) const { return time_val(*this, _s, _us);   }
+        time_val& add(long s, long us)      { m_tv += s*N10e9 + us*1000; return *this; }
+        time_val  add(long s, long us)const { return time_val(*this, s, us);        }
 
         void add(double interval)           { m_tv += long(round(interval * 1e9));  }
 
@@ -326,15 +326,15 @@ namespace utxx {
         static long now_diff_usec(time_val start)  { return (universal_time().m_tv - start.m_tv)/1000;}
         static long now_diff_msec(time_val start)  { return now_diff_usec(start)/N10e6; }
 
-        time_val operator- (time_val tv)     const { return usecs(m_tv - tv.m_tv);     }
-        time_val operator+ (time_val tv)     const { return usecs(m_tv + tv.m_tv);     }
+        time_val operator- (time_val tv)     const { return nsecs(m_tv - tv.m_tv);     }
+        time_val operator+ (time_val tv)     const { return nsecs(m_tv + tv.m_tv);     }
 
-        time_val operator- (nsecs us)        const { return usecs(m_tv - us.value);    }
-        time_val operator+ (nsecs us)        const { return usecs(m_tv + us.value);    }
-        time_val operator- (usecs us)        const { return usecs(m_tv - us.nsec);     }
-        time_val operator+ (usecs us)        const { return usecs(m_tv + us.nsec);     }
-        time_val operator- (secs  s)         const { return usecs(m_tv - s.nsec);      }
-        time_val operator+ (secs  s)         const { return usecs(m_tv + s.nsec);      }
+        time_val operator- (nsecs us)        const { return nsecs(m_tv - us.value);    }
+        time_val operator+ (nsecs us)        const { return nsecs(m_tv + us.value);    }
+        time_val operator- (usecs us)        const { return nsecs(m_tv - us.nsec);     }
+        time_val operator+ (usecs us)        const { return nsecs(m_tv + us.nsec);     }
+        time_val operator- (secs  s)         const { return nsecs(m_tv - s.nsec);      }
+        time_val operator+ (secs  s)         const { return nsecs(m_tv + s.nsec);      }
 
         time_val operator- (double interval) const { return operator-(secs(interval)); }
         time_val operator+ (double interval) const { return operator+(secs(interval)); }

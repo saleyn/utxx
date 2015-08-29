@@ -71,20 +71,19 @@ size_t high_res_timer::calibrate(uint32_t usec, uint32_t iterations) {
 
     boost::lock_guard<boost::mutex> guard(m);
 
-    const time_val sleep_time(0, usec);
+    const auto sleep_time = time_val(0, usec).microseconds();
     unsigned long long delta_hrtime  = 0;
     unsigned long long actual_sleeps = 0;
 
-    for (size_t i = 0; i < iterations; ++i) {
-        time_val t1;
-        t1.now();
-        int cpu1 = detail::apic_id();
-        const hrtime_t start = detail::get_tick_count();
-        ::usleep(sleep_time.microseconds());
-        const hrtime_t stop  = detail::get_tick_count();
-        time_val actual_delta(rel_time(-t1.sec(), -t1.usec()));
-        int cpu2 = detail::apic_id();
-        if (cpu1 != cpu2) {
+    for (size_t  i = 0; i < iterations; ++i) {
+        auto t1    = now_utc();
+        auto cpu1  = detail::apic_id();
+        auto start = detail::get_tick_count();
+        ::usleep(sleep_time);
+        auto stop  = detail::get_tick_count();
+        auto actual_delta = now_utc() - t1;
+        auto cpu2  = detail::apic_id();
+        if (cpu1  != cpu2) {
             i--; continue;
         }
 

@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     time_val now  = now_utc();
     time_val now1 = time_val::universal_time();
 
-    while(now == time_val::universal_time());
+    while (now.microseconds() == time_val::universal_time().microseconds());
 
     BOOST_CHECK((now1 - now).milliseconds() <= 1);
 
@@ -192,6 +192,20 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_CHECK_EQUAL(time_val(45, 1005), now.add_sec(5));
         BOOST_CHECK_EQUAL(tv.sec(), 40);
         BOOST_CHECK_EQUAL(time_val(45, 3005), now.add(5, 2000));
+
+        auto tv1 = time_val(abs_time(1, 100000));
+        BOOST_CHECK_EQUAL(1,      tv1.sec());
+        BOOST_CHECK_EQUAL(100000, tv1.usec());
+        time_val tv0, tv2;
+        int count = 0;
+        do {
+            tv0 = now_utc();
+            tv2 = time_val(rel_time(1, 100000));
+        } while (tv2.milliseconds() != tv0.milliseconds() && count++ < 10);
+
+        auto tv3 = tv0 + tv1;
+        BOOST_CHECK_EQUAL(tv2.sec(),  tv3.sec());
+        BOOST_CHECK_EQUAL(tv2.msec(), tv3.msec());
     }
 }
 

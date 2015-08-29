@@ -63,12 +63,16 @@ stamp_type  parse_stamp_type(const std::string& a_line);
 /// Convert stamp_type to string.
 const char* to_string(stamp_type a_type);
 
+/// Timestamp caching and formating functions
+///
+/// Initially this class was created to speed up overhead of gettimeofday()
+/// calls. However on modern CPUs supporting constant_tsc, this is no longer
+/// necessary, so the caching logic is deprecated.
 class timestamp {
 protected:
     static const long DAY_NSEC = 86400L * 1000000000L;
 
     static boost::mutex             s_mutex;
-    static thread_local hrtime_t    s_last_hrtime;
     static thread_local long        s_last_time;  // In nanoseconds
     static thread_local long        s_next_utc_midnight_nseconds;
     static thread_local long        s_next_local_midnight_nseconds;
@@ -145,10 +149,14 @@ public:
     }
 
     /// Update internal timestamp by calling gettimeofday().
-    static time_val now();
+    static time_val now() {
+        auto x = time_val::universal_time();
+        s_last_time = x.nanoseconds();
+        return x;
+    }
 
     /// Return last timestamp obtained by calling update() or now().
-    static time_val last_time() { return nsecs(s_last_time); }
+    static time_val last_time()     { return nsecs(s_last_time); }
 
     /// Equivalent to calling update() and last_time()
     static time_val cached_time()   { update(); return last_time(); }
@@ -192,7 +200,7 @@ public:
 
     /// Convert a timestamp to the number of microseconds
     /// since midnight in UTC.
-    static uint64_t utc_usec_since_midnight(time_val a_now_utc) {
+    static int64_t utc_usec_since_midnight(time_val a_now_utc) {
         check_midnight_seconds();
         long diff = a_now_utc.diff_nsec(utc_midnight_nseconds());
         if (unlikely(diff < 0)) diff = -diff % DAY_NSEC;
@@ -208,20 +216,13 @@ public:
     /// time clock functions by cacheing old results and using high-resolution
     /// timer to determine a need for gettimeofday call.
     static void update() {
-        hrtime_t l_hr_now = high_res_timer::gettime();
-        hrtime_t l_hrtime_diff = l_hr_now - s_last_hrtime;
+        now();
 
-        // We allow up to N usec to rely on HR timer readings between
-        // successive calls to gettimeofday.
-        if ((l_hrtime_diff <= (high_res_timer::global_scale_factor() << 2)) &&
-            (l_hr_now      >= s_last_hrtime)) {
-            #ifdef DEBUG_TIMESTAMP
-            atomic::inc(&s_hrcalls);
-            #endif
-        } else {
-            //std::cout << l_hrtime_diff << std::endl;
-            update_slow();
-        }
+        // FIXME: the method below will produce incorrect time stamps during
+        // switch to/from daylight savings time because of the unaccounted
+        // utc_offset change.
+        if (unlikely(s_last_time >= s_next_utc_midnight_nseconds))
+            update_midnight_nseconds(last_time());
     }
 
     inline static int update_and_write(stamp_type a_tp,
@@ -288,7 +289,6 @@ struct test_timestamp : public timestamp {
 
         if (unlikely(a_now.nanoseconds() >= s_next_utc_midnight_nseconds))
             update_midnight_nseconds(a_now);
-        s_last_hrtime = a_hrnow;
     }
 
     /// The function will reset midnight seconds

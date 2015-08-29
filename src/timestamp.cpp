@@ -41,7 +41,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 boost::mutex            timestamp::s_mutex;
-thread_local hrtime_t   timestamp::s_last_hrtime;
 thread_local long       timestamp::s_last_time                    = 0;
 thread_local long       timestamp::s_next_local_midnight_nseconds = 0;
 thread_local long       timestamp::s_next_utc_midnight_nseconds   = 0;
@@ -180,28 +179,6 @@ void timestamp::update_midnight_nseconds(time_val a_now)
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
     internal_write_date(s_local_timestamp, a_now.sec(), false, 9, '\0');
     internal_write_date(s_utc_timestamp, a_now.sec(), true, 9, '\0');
-}
-
-time_val timestamp::now() {
-    // thread safe - we use TLV storage
-    auto tv       = time_val::universal_time();
-    s_last_time   = tv.nanoseconds();
-    s_last_hrtime = high_res_timer::gettime();
-    return tv;
-}
-
-void timestamp::update_slow()
-{
-    now();
-    #ifdef DEBUG_TIMESTAMP
-    atomic::inc(&s_syscalls);
-    #endif
-
-    // FIXME: the method below will produce incorrect time stamps during
-    // switch to/from daylight savings time because of the unaccounted
-    // utc_offset change.
-    if (unlikely(s_last_time >= s_next_utc_midnight_nseconds))
-        update_midnight_nseconds(last_time());
 }
 
 size_t timestamp::format_size(stamp_type a_tp)
