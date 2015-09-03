@@ -18,7 +18,8 @@ utxx - an open-source collection of C++ miscelaneous components
     - BOOST wait_timeout, repeating timer
     - Buffer for I/O handling
     - Concurrent array/fifo/priority_queue/stack/hashmap
-    - Conversion routines
+    - Fast delegates
+    - Type conversion routines
     - Endian-handling
     - Exception error classes with dynamic number of arguments
     - Hashmap abstraction
@@ -27,6 +28,7 @@ utxx - an open-source collection of C++ miscelaneous components
     - Math functions
     - Metaprogramming functions
     - Persistent blob and array
+    - Futex signaling
     - PCAP format reader
     - Throttling components
     - PID file manager
