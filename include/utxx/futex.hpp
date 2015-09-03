@@ -263,6 +263,9 @@ public:
             futex_wake_slow(reinterpret_cast<int*>(&m_count), 1);
         }
     }
+
+    /// Returns true if mutex is locked
+    bool locked() const { return m_count.load(std::memory_order_relaxed) > 0; }
 private:
     std::atomic<int> m_count;
 };
