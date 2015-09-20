@@ -66,7 +66,11 @@ inline bool get_test_argv(const std::string& a_opt,
     if (a_opt.empty() && a_long_opt.empty()) return false;
 
     auto same = [=](const std::string& a, int i) {
-        return !a.empty() && a == argv[i];
+        size_t n = strlen(argv[i]);
+        return !a.empty() &&
+               (a == argv[i] || (a.size()+1 <= n &&
+                                 strncmp(a.c_str(), argv[i], a.size()) == 0 &&
+                                 argv[i][a.size()] == '='));
     };
 
     for (int i=1; i < argc; i++) {
@@ -85,14 +89,21 @@ inline bool get_test_argv(const std::string& a_opt,
 
     if (a_opt.empty() && a_long_opt.empty()) return false;
 
-    auto same = [=](const std::string& a, int i) {
-        return !a.empty() && a == argv[i] &&
-               (i < argc-1 && argv[i+1][i] != '-');
+    auto check = [=, &a_value](const std::string& a, int& i) {
+        if (a.empty()) return false;
+        if (a == argv[i]) { a_value = argv[++i]; return true; }
+        size_t n = strlen(argv[i]);
+        if (a.size()+1 <= n && strncmp(a.c_str(), argv[i], a.size()) == 0 &&
+                               argv[i][a.size()] == '=') {
+            a_value = argv[i] + a.size()+1;
+            return true;
+        }
+        return false;
     };
 
     for (int i=1; i < argc; i++) {
-        if (same(a_opt,      i)) { a_value = argv[++i]; return true; }
-        if (same(a_long_opt, i)) { a_value = argv[++i]; return true; }
+        if (check(a_opt,      i)) return true;
+        if (check(a_long_opt, i)) return true;
     }
 
     return false;
@@ -115,7 +126,7 @@ inline bool get_test_argv(const std::string& a_opt,
     if (!get_test_argv(a_opt, a_long_opt, s))
         return false;
     a_value = s == "true" || s == "1" ||
-             (s.length() > 0 && (s[0] == 'y' || s[0] == 'Y'));
+             (s.length() > 0 && (s[0] == 'y' || s[0] == 'Y' || s[0] == 'T'));
     return true;
 }
 
