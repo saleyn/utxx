@@ -98,6 +98,27 @@ inline bool get_test_argv(const std::string& a_opt,
     return false;
 }
 
+inline bool get_test_argv(const std::string& a_opt,
+                          const std::string& a_long_opt,
+                          int& a_value) {
+    std::string s;
+    if (!get_test_argv(a_opt, a_long_opt, s))
+        return false;
+    a_value = std::stoi(s);
+    return true;
+}
+
+inline bool get_test_argv(const std::string& a_opt,
+                          const std::string& a_long_opt,
+                          bool& a_value) {
+    std::string s;
+    if (!get_test_argv(a_opt, a_long_opt, s))
+        return false;
+    a_value = s == "true" || s == "1" ||
+             (s.length() > 0 && (s[0] == 'y' || s[0] == 'Y'));
+    return true;
+}
+
 /// Prevent variable optimization by the compiler
 #ifdef _MSC_VER
 #pragma optimize("", off)
