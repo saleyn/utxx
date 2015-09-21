@@ -77,12 +77,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                 ))                                                          \
             };                                                              \
             return s_names;                                                 \
-        };                                                                  \
+        }                                                                   \
                                                                             \
         static const std::string& name(size_t n) {                          \
             assert(n < s_size);                                             \
             return names()[n];                                              \
-        };                                                                  \
+        }                                                                   \
                                                                             \
         etype  m_val;                                                       \
                                                                             \
