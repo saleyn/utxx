@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cstring>
 #include <time.h>
 #include <ostream>
+#include <sstream>
 #include <iomanip>
 #include <boost/concept_check.hpp>
 
@@ -155,16 +156,18 @@ public:
     }
 
     /// Dump a latency report to stdout
-    void dump(std::ostream& out, int a_filter = -1) {
+    void dump(std::ostream& out, int a_filter = -1) const {
         if (m_count == 0) {
             out << "  No data samples" << std::endl;
             return;
         }
 
-        out << m_header.c_str() << std::endl << std::fixed << std::setprecision(6)
-            << "  MinTime = " << m_min_time << std::endl
-            << "  MaxTime = " << m_max_time << std::endl
-            << "  AvgTime = " << m_sum_time / m_count << std::endl;
+        out << m_header.c_str() << std::endl
+            << "  Time (min/avg/max) = "
+            << long(m_min_time*1000000+0.5) << ' '
+            << long(m_sum_time / m_count * 1000000 + 0.5) << ' '
+            << long(m_max_time*1000000+0.5)
+            << " us" << std::endl;
 
         double tot = 0;
         for (int i = 0; i < BUCKETS; i++)
@@ -183,6 +186,13 @@ public:
                     << std::string(s_gwidth-gauge, ' ')
                     << '|' << std::endl;
             }
+    }
+
+    /// Return historgram printed to string
+    std::string to_string(int a_filter = -1) const {
+        std::stringstream s;
+        dump(s, a_filter);
+        return s.str();
     }
 };
 
