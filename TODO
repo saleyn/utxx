@@ -7,3 +7,5 @@
         node attribute:  regexp=String
         node attribute:  regexp-type=Type
         <type regexp=Type value=Value/>
+7. rate_throttler.hpp: in time-spacing throttle replace time resolution from us to ns,
+   since time_val's internal time representation was changed to ns.
