@@ -98,7 +98,7 @@ public:
     time_val next_time()   const { return m_next_time;        }
 
     /// Return the number of available samples given \a a_now current time.
-    T        available(time_val a_now = now_utc()) const{
+    T        available(time_val a_now = now_utc()) const      {
         auto   diff = (a_now - m_next_time).microseconds();
         return diff >= 0 ? m_rate : T(m_window_us + diff) / m_step_us;
     }
