@@ -199,8 +199,10 @@ public:
     double              to_float()  const { return boost::get<double>(*this); }
     double              to_double() const { return boost::get<double>(*this); }
     const std::string&  to_str()    const { return boost::get<std::string>(*this); }
-    const char*         c_str()     const { return boost::get<std::string>(
-                                                    *this).c_str(); }
+    const char*         c_str()     const { return boost::get<std::string>
+                                                    (*this).c_str(); }
+    /// Convert variant to given type T
+    template <typename T> T to() const;
 
     /// Returns true if the variant doesn't contain a value or it's an empty string
     bool empty(bool a_check_empty_string = true) const {
@@ -306,6 +308,15 @@ private:
         bool operator() (T v)    const { return false; }
     };
 };
+
+// Specializations of 'to' template function
+template<> double       variant::to<double>()       const;
+template<> int          variant::to<int>()          const;
+template<> int64_t      variant::to<int64_t>()      const;
+template<> uint64_t     variant::to<uint64_t>()     const;
+template<> uint32_t     variant::to<uint32_t>()     const;
+template<> bool         variant::to<bool>()         const;
+template<> std::string  variant::to<std::string>()  const;
 
 static inline std::ostream& operator<< (std::ostream& out, const variant& a) {
     return out << a.to_string();

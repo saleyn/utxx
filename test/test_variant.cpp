@@ -177,6 +177,46 @@ BOOST_AUTO_TEST_CASE( test_variant )
         BOOST_REQUIRE_EQUAL(variant::TYPE_STRING, v.type());
         BOOST_REQUIRE_EQUAL("xyz", v.to_str());
     }
+
+    {
+        auto v = variant(true);
+        BOOST_CHECK_EQUAL(true,   v.to<bool>());
+        BOOST_CHECK_EQUAL(1.0,    v.to<double>());
+        BOOST_CHECK_EQUAL(1,      v.to<int>());
+        BOOST_CHECK_EQUAL(1L,     v.to<int64_t>());
+        BOOST_CHECK_EQUAL(1ul,    v.to<uint64_t>());
+        BOOST_CHECK_EQUAL("true", v.to<std::string>());
+    }
+
+    {
+        auto v = variant(123);
+        BOOST_CHECK_EQUAL(true,   v.to<bool>());
+        BOOST_CHECK_EQUAL(123.0,  v.to<double>());
+        BOOST_CHECK_EQUAL(123,    v.to<int>());
+        BOOST_CHECK_EQUAL(123L,   v.to<int64_t>());
+        BOOST_CHECK_EQUAL(123ul,  v.to<uint64_t>());
+        BOOST_CHECK_EQUAL("123",  v.to<std::string>());
+    }
+
+    {
+        auto v = variant(456.789);
+        BOOST_CHECK_EQUAL(true,   v.to<bool>());
+        BOOST_CHECK_EQUAL(456.789,v.to<double>());
+        BOOST_CHECK_EQUAL(456,    v.to<int>());
+        BOOST_CHECK_EQUAL(456L,   v.to<int64_t>());
+        BOOST_CHECK_EQUAL(456ul,  v.to<uint64_t>());
+        BOOST_CHECK_EQUAL("456.789000", v.to<std::string>());
+    }
+
+    {
+        auto v = variant("1234");
+        BOOST_CHECK_EQUAL(true,   v.to<bool>());
+        BOOST_CHECK_EQUAL(1234.0, v.to<double>());
+        BOOST_CHECK_EQUAL(1234,   v.to<int>());
+        BOOST_CHECK_EQUAL(1234L,  v.to<int64_t>());
+        BOOST_CHECK_EQUAL(1234ul, v.to<uint64_t>());
+        BOOST_CHECK_EQUAL("1234", v.to<std::string>());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree )

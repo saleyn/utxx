@@ -22,6 +22,7 @@ UTXX_SRCS = \
     string.cpp \
     timestamp.cpp \
     url.cpp \
+    variant.cpp \
     verbosity.cpp
 
 THRIFT 				= 
