@@ -104,15 +104,11 @@ bool get_opt(int argc, Char** argv, T* a_value,
     return false;
 }
 
+/// Parser command-line options
 class opts_parser {
     int          m_argc;
     const char** m_argv;
     int          m_idx;
-
-    static void store(int&    a_val, const char* s) { a_val = std::stoi(s); }
-    static void store(long&   a_val, const char* s) { a_val = std::stol(s); }
-    static void store(double& a_val, const char* s) { a_val = std::stod(s); }
-    static void store(std::string& a,const char* s) { a     = s;            }
 
 public:
     template <typename Char = const char>
@@ -173,6 +169,7 @@ public:
     int             argc()   const { return m_argc; }
     const char**    argv()   const { return m_argv; }
 
+    /// Return current option
     const char* operator()() const { return m_idx < m_argc ? m_argv[m_idx]:""; }
 };
 
