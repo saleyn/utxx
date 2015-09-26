@@ -25,6 +25,7 @@ utxx - an open-source collection of C++ miscelaneous components
     - Hashmap abstraction
     - UDP receiver
     - Logging framework
+    - Ultra-low latency async logger
     - Math functions
     - Metaprogramming functions
     - Persistent blob and array
