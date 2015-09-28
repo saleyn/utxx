@@ -93,10 +93,10 @@ namespace utxx
         using Size  = size_impl<Self, AtomicSize>;
         using SizeT = typename Size::type;
 
-        /// Total number of entries inserted since last clear (with overwrites).
+        /// Total number of entries inserted since last clear (with overwrites)
         SizeT    m_size;
-        uint32_t m_capacity; ///< Max capacity of the buffer in number of slots
-                             ///<  rounded to the nearest power of 2.
+        /// Max capacity of the buffer in number of slots rounded up to pow of 2
+        uint32_t m_capacity;
         uint32_t m_mask;     ///< Capacity minus one.
 
         /// Array holding the data, of "m_capacity" total length.
