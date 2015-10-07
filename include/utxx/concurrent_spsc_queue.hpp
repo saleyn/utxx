@@ -40,6 +40,7 @@
 #define _UTXX_CONCURRENT_SPSC_QUEUE_HPP_
 
 #include <utxx/math.hpp>
+#include <utxx/error.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <boost/noncopyable.hpp>
 #include <atomic>
@@ -102,9 +103,7 @@ private:
         {
             assert((m_capacity & (m_capacity-1)) == 0);  // Power of 2 indeed
             if (m_capacity < 2)
-                throw std::runtime_error
-                    ("utxx::concurrent_spsc_queue: invalid capacity=" +
-                     std::to_string(m_capacity));
+                UTXX_THROW_BADARG_ERROR("Invalid capacity=", m_capacity);
         }
     };
 
@@ -163,13 +162,11 @@ public:
         // "a_size" was computed by "memory_size" above):
         if (a_size <= sizeof(header) ||
            (a_size  - sizeof(header)) % sizeof(T) != 0)
-            throw std::invalid_argument
-                  ("utxx::concurrent_spsc_queue::Ctor: Invalid storage size");
+            UTXX_THROW_BADARG_ERROR("Invalid storage size: ", a_size);
 
         if (unlikely(StaticCapacity != 0))
-            throw std::logic_error
-                  ("utxx::concurrent_spsc_queue::Ctor: both static and dynamic "
-                   "capacity are specified");
+            UTXX_THROW_RUNTIME_ERROR("Cannot specify both static and dynamic "
+                                     "capacity!");
     }
 
     /// Non-Default Ctor with automatic memory allocation on the heap;
@@ -191,9 +188,8 @@ public:
         , m_mask       (m_header.m_capacity-1)
     {
         if (unlikely(StaticCapacity != 0))
-            throw std::logic_error
-                  ("utxx::concurrent_spsc_queue::Ctor: both static and dynamic "
-                   "capacity are specified");
+            UTXX_THROW_RUNTIME_ERROR("Cannot specify both static and dynamic "
+                                     "capacity!");
     }
 
     /// Default Ctor which uses the "StaticCapacity" template parameter. If
@@ -450,7 +446,7 @@ private:
             //
             uint32_t h = m_queue->head().load(std::memory_order_consume);
             uint32_t t = m_queue->tail().load(std::memory_order_consume);
-            assert(h < m_queue->capacity() && t < m_queue->capacity());
+            assert  (h < m_queue->capacity() && t < m_queue->capacity());
 
             // The following is OK:
             // h <= m_ind < t ||
@@ -464,10 +460,9 @@ private:
             if ((h == t)                               ||
                ((h  < t) && (m_ind < h || t <= m_ind)) ||
                ((t  < h) && (t <= m_ind) && (m_ind < h)))
-                throw std::runtime_error
-                      (to_string("concurrent_spsc_queue::iterator_gen::verify "
-                                 "FAILED: ", where, ": head=", h, ", tail=", t,
-                                 ", ind=", m_ind));
+                UTXX_THROW_RUNTIME_ERROR("Verification failed: ", where,
+                                         ": head=", h, ", tail=", t,
+                                         ", ind=", m_ind);
 #       endif
         }
 
@@ -704,8 +699,7 @@ private:
         it.verify("erase");
         assert(m_side != side_t::producer);
         if (utxx::unlikely(it.m_queue != this))
-            throw std::invalid_argument
-                  ("concurrent_spsc_queue::erase: Invalid Iterator");
+            UTXX_THROW_BADARG_ERROR("Invalid iterator!");
 
         // But if we are on the right side, can use the "relaxed" memory order:
         uint32_t h = head().load(std::memory_order_relaxed);
@@ -731,16 +725,12 @@ private:
     void set_side(side_t side)
     {
         if (utxx::unlikely(!m_shared_data || side == side_t::invalid))
-            throw std::logic_error
-                  ("concurrent_spsc_queue::set_side: Side must be valid, and "
-                   "only allowed with Shared Data");
+            UTXX_THROW_BADARG_ERROR("Side must be valid, and "
+                                    "only allowed with shared data");
         m_side = side;
     }
 
 private:
-    //=======================================================================//
-    // Data Flds:                                                            //
-    //=======================================================================//
     header          m_header;
     header*  const  m_header_ptr;   // Ptr to the actual hdr  (mb to m_header)
     T*       const  m_rec_ptr;      // Ptr to the actual data (mb to m_records)
