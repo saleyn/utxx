@@ -36,6 +36,7 @@ TEST_UTXX_SRCS = \
 	test_futex.cpp \
 	test_function.cpp \
 	test_get_option.cpp \
+	test_gzstream.cpp \
 	test_hashmap.cpp \
 	test_high_res_timer.cpp \
 	test_iovec.cpp \

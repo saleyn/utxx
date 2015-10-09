@@ -9,6 +9,7 @@ UTXX_SRCS = \
     config_validator.cpp \
     error.cpp \
     futex.cpp \
+    gzstream.cpp \
     high_res_timer.cpp \
     logger.cpp \
     logger_crash_handler.cpp \
