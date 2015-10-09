@@ -78,6 +78,9 @@ BOOST_AUTO_TEST_CASE( test_gzstream_gzip )
     std::ifstream in(ss);
     BOOST_REQUIRE(in.good());
 
+    auto res = gzsetparams(out.rdbuf()->native_handle(), 9, Z_DEFAULT_STRATEGY);
+    BOOST_REQUIRE_EQUAL(0, res);
+
     char c;
     while (in.get(c))
         out << c;

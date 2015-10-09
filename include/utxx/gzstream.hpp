@@ -32,6 +32,7 @@
 #include <iostream>
 #include <fstream>
 #include <zlib.h>
+#include <assert.h>
 
 namespace utxx {
 
@@ -41,8 +42,7 @@ namespace utxx {
 
 class gzstreambuf : public std::streambuf {
 private:
-    static const int bufferSize = 47+256;    // size of data buff
-    // totals 512 bytes under g++ for igzstream at the end.
+    static const int bufferSize = 1024*8;// size of data buff
 
     gzFile           file;               // file handle for compressed file
     char             buffer[bufferSize]; // data buffer
@@ -59,24 +59,26 @@ public:
         // ASSERT: both input & output capabilities will not be used together
     }
     int is_open() { return opened; }
-    gzstreambuf* open( const char* name, int mode);
+    gzstreambuf* open(const char* name, int mode);
     gzstreambuf* open(const std::string& name, int mode) {
         return open(name.c_str(), mode);
     }
     gzstreambuf* close();
     ~gzstreambuf() { close(); }
 
-    virtual int     overflow( int c = EOF);
-    virtual int     underflow();
-    virtual int     sync();
+    virtual int  overflow(int c = EOF);
+    virtual int  underflow();
+    virtual int  sync();
+
+    gzFile native_handle() { return file; }
 };
 
 class gzstreambase : virtual public std::ios {
 protected:
-    gzstreambuf buf;
+    gzstreambuf  buf;
 public:
     gzstreambase() { init(&buf); }
-    gzstreambase( const char* name, int mode);
+    gzstreambase(const char* name, int mode);
     gzstreambase(const std::string& name, int mode)
         : gzstreambase(name.c_str(), mode) {}
     ~gzstreambase();
@@ -111,7 +113,7 @@ public:
 class ogzstream : public gzstreambase, public std::ostream {
 public:
     ogzstream() : std::ostream( &buf) {}
-    ogzstream( const char* name, int mode = std::ios::out)
+    ogzstream(const char* name, int mode = std::ios::out)
         : gzstreambase(name, mode), std::ostream( &buf) {}
     ogzstream(const std::string& name, int mode = std::ios::out)
         : gzstreambase(name, mode), std::ostream(&buf) {}

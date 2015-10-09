@@ -117,7 +117,7 @@ test_utxx_LDFLAGS  = $(BOOST_LDFLAGS) \
                       -rpath $(abspath $(prefix)/gcc/lib) \
                       $(if $(THRIFT_LIBDIR),-rpath $(THRIFT_LIBDIR))
 
-test_utxx_LDADD    = -lutxx \
+test_utxx_LDADD    = -lutxx -lz \
                           $(BOOST_SYSTEM_LIB) $(BOOST_THREAD_LIB) \
                           $(BOOST_DATE_TIME_LIB) \
                           $(BOOST_TIMER_LIB) \
