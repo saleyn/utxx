@@ -376,6 +376,45 @@ namespace utxx
             return new ((void*)p) Self(a_capacity);
         }
 
+        //----------------------------------------------------------------------
+        /// Iterate backwards and apply \a Visitor
+        ///
+        /// The lambda \a Visitor returns "true" to continue, "false" to stop.
+        /// <tt>bool Visitor(const E&);</tt>
+        //----------------------------------------------------------------------
+        template<typename Visitor>
+        void reverse_visit(Visitor&& a_visitor) const
+        {
+            auto sz = Size::get(this);
+            if  (sz == 0)
+                return;
+
+            /// Return the most-recently-inserted item:
+
+            // Generic Case:
+            // First, run down to 0:
+            auto last = (sz - 1) & m_mask;
+            for (long i = last; i >= 0; --i) {
+                assert(0 <= i && i < long(m_capacity));
+                E const* curr = m_entries + i;
+                // Apply the "action" and check exit status:
+                if (unlikely(!(a_visitor(*curr))))
+                    return;
+            }
+
+            // Then possibly wrap around the buffer end:
+            if (unlikely(last <= m_capacity))
+                return;
+
+            for (long i = long(m_mask); i > last; --i) {
+                assert(0 <= i && i < long(m_capacity));
+                E const* curr = m_entries + i;
+                // Apply the "action" and check exit status:
+                if (unlikely(!(a_visitor(*curr))))
+                    return;
+            }
+        }
+
 #ifdef UTXX_GENERATION_BUFFER_SHMEM
         //----------------------------------------------------------------------
         /// Factory function for allocating the buffer in shared memory
@@ -465,6 +504,25 @@ namespace utxx
             // "long double"s with 16-byte alignment. Do same for de-allocation:
             assert(a_segment);
             a_segment->destroy_ptr((long double*)(a_obj));
+        }
+
+        //----------------------------------------------------------------------
+        /// Find named generation_buffer in a shared memory segment
+        /// @return a non-NULL ptr if the buffer is found, or else throws exc.
+        //----------------------------------------------------------------------
+        static generation_buffer<E, StaticCapacity, WithSync> const&
+        locate(BIPC::fixed_managed_shared_memory* a_seg, char const* a_obj_name)
+        {
+            assert(obj_name != NULL && *obj_name != '\0');
+            std::pair<char*, size_t> fres = a_seg->find<char>(a_obj_name);
+
+            auto res = (generation_buffer<E, StaticCapacity, WithSync> const*)
+                       fres.first;
+
+            if (unlikely(!res))
+                throw runtime_error
+                    ("Generation buffer ", a_obj_name, " not found!");
+            return *res;
         }
 #endif // UTXX_GENERATION_BUFFER_SHMEM
     };
