@@ -154,7 +154,7 @@ namespace utxx
             , m_capacity  (sizeof(m_entries) / sizeof(T)) // Capacity in bytes
             , m_mask      (m_capacity - 1)
         {
-            static_assert((m_capacity & m_mask) == 0, "Capacity must be pow of 2");
+            assert((m_capacity & m_mask) == 0); // Capacity must be pow of 2
         }
 
         ~generation_buffer() = default;
