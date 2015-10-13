@@ -122,6 +122,8 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     UTXX_LOG(ERROR)     << "This is an error #" << 10 << " and bool "
                         << true << ' ' << std::endl;
 
+    UTXX_LOG(INFO)      << std::endl;
+
     log.finalize();
 
     BOOST_REQUIRE(true); // to remove run-time warning

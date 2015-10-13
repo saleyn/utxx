@@ -323,11 +323,7 @@ struct logger : boost::noncopyable {
                 if (!m_last)
                     return;
                 m_ms->data.chop('\n');
-                logger::instance().dolog
-                    (m_ms->level,       m_ms->category,
-                     m_ms->data.c_str(),m_ms->data.size(),
-                     m_ms->src_loc,     m_ms->src_loc_len,
-                     m_ms->src_fun,     m_ms->src_fun_len);
+                m_ms->flush();
             }
 
             template <typename T>
@@ -351,6 +347,18 @@ struct logger : boost::noncopyable {
         template <class T>
         helper operator<< (T&& a) {
             return helper(this) << a;
+        }
+
+        msg_streamer& operator<<(msg_streamer& (*Manipulator)(msg_streamer&)) {
+            return Manipulator(*this);
+        }
+
+        void flush() {
+            logger::instance().dolog
+                (level,       category,
+                 data.c_str(),data.size(),
+                 src_loc,     src_loc_len,
+                 src_fun,     src_fun_len);
         }
     };
 
@@ -694,6 +702,14 @@ protected:
 } // namespace utxx
 
 namespace std {
+
+    /// Write a newline to the buffered_print object
+    inline utxx::logger::msg_streamer&
+    endl(utxx::logger::msg_streamer& a_out) {
+        a_out.data.print('\n');
+        a_out.flush();
+        return a_out;
+    }
 
     /// Write a newline to the buffered_print object
     inline utxx::logger::msg_streamer::helper&
