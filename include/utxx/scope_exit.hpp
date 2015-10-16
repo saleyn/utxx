@@ -61,7 +61,7 @@ public:
     }
 
     /// If disabled the lambda won't be called at scope exit
-    void disable(bool a_disable) { m_disable = a_disable; }
+    void disable(bool a_disable = true) { m_disable = a_disable; }
 
     ~on_scope_exit() {
         if (!m_disable)
