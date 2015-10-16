@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <list>
 #include <fstream>
 #include <utxx/error.hpp>
+#include <utxx/meta.hpp>
 #include <utxx/time_val.hpp>
 #include <unistd.h>
 
@@ -167,7 +168,13 @@ inline std::string join(std::string const& a_dir, std::string const& a_file) {
 }
 
 /// Join a vector of directory components \a a_dirs into a director name string
-inline std::string join(std::vector<std::string> const& a_dirs) {
+/// @param a_dirs can be passed either as lvalue or rvalue vector of strings
+template <class Vector>
+inline typename std::enable_if<
+    is_same_decayed<Vector, std::vector<std::string>>::value,
+    std::string
+>::type
+join(Vector&& a_dirs) {
     if (a_dirs.empty()) return "";
     size_t n = 0;
     for (auto& s : a_dirs) n += s.size()+1;
@@ -177,6 +184,10 @@ inline std::string join(std::vector<std::string> const& a_dirs) {
     for (auto it = a_dirs.begin(), e = a_dirs.end(); it != e; p += it->size()+1, ++it)
         memcpy(p, it->c_str(), it->size());
     return res;
+}
+
+inline std::string join(std::vector<std::string>&& a_dirs) {
+    return join(a_dirs);
 }
 
 /// List files in a directory

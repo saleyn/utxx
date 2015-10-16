@@ -220,7 +220,14 @@ BOOST_AUTO_TEST_CASE( test_path_split_join )
     BOOST_CHECK_EQUAL(exp, s);
     BOOST_CHECK_EQUAL("abc.txt", path::join("", "abc.txt"));
 
+    // Pass as rvalue
     s   = path::join(std::vector<std::string>{"a", "b", "c"});
+    exp = std::string("a") + path::slash_str() + "b" + path::slash_str() + "c";
+    BOOST_CHECK_EQUAL(exp, s);
+
+    // Pass as lvalue
+    std::vector<std::string> v = std::vector<std::string>{"a", "b", "c"};
+    s   = path::join(v);
     exp = std::string("a") + path::slash_str() + "b" + path::slash_str() + "c";
     BOOST_CHECK_EQUAL(exp, s);
 }

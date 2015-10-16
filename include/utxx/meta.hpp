@@ -35,11 +35,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <cstddef>
 
-#if __cplusplus >= 201103L
-#  include <type_traits>
-#  include <tuple>
-#  include <utility>
-#endif
+#include <type_traits>
+#include <tuple>
+#include <utility>
 
 namespace utxx {
 
@@ -92,7 +90,21 @@ public:
     static const int padding    = size - Size;
 };
 
-#if __cplusplus >= 201103L
+/// Check if \a T and \a U are the same types by stripping T's ref and cv-qualifiers
+/// \code
+/// // All following expressions return true:
+/// std::cout << std::boolalpha
+///           << is_same_decayed<int,        int>::value  << '\n'
+///           << is_same_decayed<int&,       int>::value  << '\n'
+///           << is_same_decayed<int&&,      int>::value  << '\n'
+///           << is_same_decayed<const int&, int>::value  << '\n'
+///           << is_same_decayed<int[2],     int*>::value << '\n'
+///           << is_same_decayed<int(int),   int(*)(int)>::value << '\n';
+/// \endcode
+template <typename T, typename U>
+struct is_same_decayed : std::is_same<typename std::decay<T>::type, U>::type
+{};
+
 /// Convert strongly typed enum to underlying type
 /// \code
 /// enum class B { B1 = 1, B2 = 2 };
@@ -196,8 +208,6 @@ auto eval(R(C::*m), C& c) -> R&
 {
     return c.*m;
 }
-
-#endif
 
 } // namespace utxx
 
