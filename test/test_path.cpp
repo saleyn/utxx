@@ -219,6 +219,10 @@ BOOST_AUTO_TEST_CASE( test_path_split_join )
     auto exp = temp_path() + path::slash_str() + "abc.txt";
     BOOST_CHECK_EQUAL(exp, s);
     BOOST_CHECK_EQUAL("abc.txt", path::join("", "abc.txt"));
+
+    s   = path::join(std::vector<std::string>{"a", "b", "c"});
+    exp = std::string("a") + path::slash_str() + "b" + path::slash_str() + "c";
+    BOOST_CHECK_EQUAL(exp, s);
 }
 
 BOOST_AUTO_TEST_CASE( test_path_list_files )

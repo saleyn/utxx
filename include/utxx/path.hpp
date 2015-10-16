@@ -166,6 +166,19 @@ inline std::string join(std::string const& a_dir, std::string const& a_file) {
          : a_dir + slash_str() + a_file;
 }
 
+/// Join a vector of directory components \a a_dirs into a director name string
+inline std::string join(std::vector<std::string> const& a_dirs) {
+    if (a_dirs.empty()) return "";
+    size_t n = 0;
+    for (auto& s : a_dirs) n += s.size()+1;
+    // Don't count leading slash
+    std::string res(n-1, slash());
+    char* p = const_cast<char*>(res.c_str());
+    for (auto it = a_dirs.begin(), e = a_dirs.end(); it != e; p += it->size()+1, ++it)
+        memcpy(p, it->c_str(), it->size());
+    return res;
+}
+
 /// List files in a directory
 /// @param a_dir directory to check
 /// @param a_filter is a regular expression/prefix/wildcard used to match filename
