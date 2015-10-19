@@ -58,7 +58,7 @@ namespace {
                  strcmp    (a, "0")     == 0);
     }
 
-    template <typename T, typename Char = const char>
+    template <typename T, typename Char = char>
     bool match_opt(int argc, Char** argv, T* a_value, const std::string& a, int& i) {
         if (a.empty() || argv[i][0] != '-') return false;
         if (a == argv[i]) {
