@@ -137,7 +137,7 @@ public:
     /// This function is to be used in the loop:
     /// \code
     /// opts_parser opts(argc, argv);
-    /// while (!opts.next()) {
+    /// while (opts.next()) {
     ///     if (opts.match("-a", "", &a)) continue;
     ///     ...
     /// }
