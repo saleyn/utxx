@@ -55,13 +55,13 @@ BOOST_AUTO_TEST_CASE( test_get_option )
     opts_parser opts(argc, argv);
 
     while (opts.next()) {
-        if (opts.match("-a", &a)) {
+        if (opts.match("-a", "", &a)) {
             BOOST_CHECK_EQUAL(10, a); continue;
         }
         if (opts.match("", "--out", &out)) {
             BOOST_CHECK_EQUAL("file", out); continue;
         }
-        if (opts.match("-t", &t)) {
+        if (opts.match("-t", "", &t)) {
             BOOST_CHECK(t); continue;
         }
         BOOST_CHECK(false);

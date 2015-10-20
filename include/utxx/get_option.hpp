@@ -122,11 +122,6 @@ public:
         return strcmp(m_argv[m_idx], a_opt) == 0;
     }
 
-    template <typename T>
-    bool match(const std::string& a_opt, T* a_value) {
-        return match_opt(m_argc, m_argv, a_value, a_opt, m_idx);
-    }
-
     bool match(const std::string& a_short, const std::string& a_long) {
         return match_opt(m_argc, m_argv, (int*)nullptr, a_short, m_idx)
             || match_opt(m_argc, m_argv, (int*)nullptr, a_long,  m_idx);
