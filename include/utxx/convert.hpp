@@ -1090,6 +1090,17 @@ type itoa_hex(T a, char*& s, size_t sz) {
     return detail::itoa_hex<U>(a, s, sz);
 }
 
+//--------------------------------------------------------------------------------
+/// Convert an integer to hex string
+//--------------------------------------------------------------------------------
+template <typename T>
+inline std::string itoa_hex(T a) {
+    char buf[80];
+    auto p = buf;
+    itoa_hex(a, p, sizeof(buf));
+    return buf;
+}
+
 } // namespace utxx
 
 #endif // _UTXX_ATOI_HPP_
