@@ -85,9 +85,11 @@ inline uint64_t decode_uleb128(const char* p) {
 
 inline uint64_t decode_uleb128(const char* p, int& sz) {
     auto         q = p;
+    auto         e = sz < 0 ? p + 20 : p + sz;
     uint64_t value = 0;
     int      shift = 0;
     do {
+        if (p >= e) { sz = -1; return 0; }
         value += uint64_t(*(uint8_t*)p & 0x7f) << shift;
         shift += 7;
     } while (*(uint8_t*)p++ >= 128);
@@ -112,10 +114,12 @@ inline int64_t decode_sleb128(const char* p) {
 /// Decode a signed LEB128-encoded value.
 inline int64_t decode_sleb128(const char* p, int& sz) {
     auto         q = p;
+    auto         e = sz < 0 ? p + 20 : p + sz;
     uint64_t value = 0;
     int      shift = 0;
     uint8_t  byte;
     do {
+        if (p >= e) { sz = -1; return 0; }
         byte = *(uint8_t*)p++;
         value |= ((byte & 0x7f) << shift);
         shift += 7;
