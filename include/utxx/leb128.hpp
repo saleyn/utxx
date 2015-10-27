@@ -73,30 +73,26 @@ inline int encode_sleb128(int64_t a_value, char* p) {
 }
 
 /// Decode an unsigned LEB128-encoded value.
-inline uint64_t decode_uleb128(const char* p) {
-    uint64_t   value = 0;
-    unsigned   shift = 0;
-    do {
-        value += uint64_t(*(uint8_t*)p & 0x7f) << shift;
-        shift += 7;
-    } while (*(uint8_t*)p++ >= 128);
-    return value;
-}
-
-inline uint64_t decode_uleb128(const char* p, int& sz) {
-    auto         q = p;
+inline uint64_t decode_uleb128(const char*& p) {
     uint64_t value = 0;
     int      shift = 0;
     do {
         value += uint64_t(*(uint8_t*)p & 0x7f) << shift;
         shift += 7;
     } while (*(uint8_t*)p++ >= 128);
-    sz = p - q;
     return value;
 }
 
+/// Decode an unsigned LEB128-encoded value.
+inline uint64_t decode_uleb128(const char* p, int& sz) {
+    auto begin = p;
+    auto res   = decode_uleb128(p);
+    sz = p - begin;
+    return res;
+}
+
 /// Decode a signed LEB128-encoded value.
-inline int64_t decode_sleb128(const char* p) {
+inline int64_t decode_sleb128(const char*& p) {
     uint64_t value = 0;
     int      shift = 0;
     uint8_t  byte;
@@ -111,18 +107,10 @@ inline int64_t decode_sleb128(const char* p) {
 
 /// Decode a signed LEB128-encoded value.
 inline int64_t decode_sleb128(const char* p, int& sz) {
-    auto         q = p;
-    uint64_t value = 0;
-    int      shift = 0;
-    uint8_t  byte;
-    do {
-        byte = *(uint8_t*)p++;
-        value |= ((byte & 0x7f) << shift);
-        shift += 7;
-    } while (byte >= 128);
-    sz = p - q;
-    // Sign extend negative numbers.
-    return (byte & 0x40) ? (value |= (-1ull) << shift) : value;
+    auto begin = p;
+    auto res   = decode_sleb128(p);
+    sz = p - begin;
+    return res;
 }
 
 /// Get the size of the ULEB128-encoded value.

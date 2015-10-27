@@ -99,8 +99,10 @@ BOOST_AUTO_TEST_CASE( test_leb128_decode_unsigned )
 {
     #define EXPECT_DECODE_ULEB128_EQ(EXPECTED, VALUE) \
     do { \
-        int ActualSize = 0; \
-        auto Actual = decode_uleb128(VALUE,  ActualSize); \
+        auto p          = VALUE; \
+        auto begin      = p; \
+        auto Actual     = decode_uleb128(p); \
+        int  ActualSize = p - begin; \
         BOOST_CHECK_EQUAL(sizeof(VALUE) - 1, size_t(ActualSize)); \
         BOOST_CHECK_EQUAL(EXPECTED, Actual); \
     } while (0)
@@ -134,8 +136,10 @@ BOOST_AUTO_TEST_CASE( test_leb128_decode_signed )
 {
     #define EXPECT_DECODE_SLEB128_EQ(EXPECTED, VALUE) \
     do { \
-        int  ActualSize = 0; \
-        auto Actual = decode_sleb128(VALUE, ActualSize); \
+        auto p          = VALUE; \
+        auto begin      = p; \
+        auto Actual     = decode_sleb128(p); \
+        int  ActualSize = p - begin; \
         BOOST_CHECK_EQUAL(sizeof(VALUE) - 1, size_t(ActualSize)); \
         BOOST_CHECK_EQUAL(EXPECTED, Actual); \
     } while (0)
