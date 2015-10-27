@@ -212,17 +212,18 @@ namespace utxx {
         long     milliseconds()            const { return m_tv / N10e6; }
         long     nanoseconds()             const { return m_tv; }
 
-        void sec (long s)               { m_tv = s * N10e9 + nsec(); }
-        void usec(long us)              { m_tv = sec() * N10e6 + us; }
-        void microseconds(int64_t us)   { m_tv = us*1000; }
-        void milliseconds(size_t  ms)   { m_tv = ms*N10e6; }
-        void nanoseconds (int64_t ns)   { m_tv = ns; }
-        void nanosec     (int64_t ns)   { m_tv = ns; }
-        bool empty()              const { return m_tv == 0; }
+        void sec (long s)                { m_tv = s * N10e9 + nsec(); }
+        void usec(long us)               { m_tv = sec() * N10e9 + us*1000; }
+        void microseconds(int64_t us)    { m_tv = us*1000; }
+        void milliseconds(size_t  ms)    { m_tv = ms*N10e6; }
+        void nanoseconds (int64_t ns)    { m_tv = ns; }
+        void nanosec     (int64_t ns)    { m_tv = ns; }
+        bool empty()               const { return m_tv == 0; }
 
-        void clear()                    { m_tv = 0; }
+        void clear()                     { m_tv = 0; }
 
-        void set(time_t a_sec)          { m_tv = a_sec * N10e9; }
+        void set(time_t a_sec)           { m_tv = a_sec * N10e9; }
+        void set(time_t a_sec, long a_us){ m_tv = a_sec * N10e9 + a_us * 1000; }
 
         void set(time_val tv, long _s=0, long _us=0) { m_tv = tv.add(_s, _us).m_tv; }
 
