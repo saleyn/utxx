@@ -174,7 +174,7 @@ private:
     int                                             m_last_version;
     double                                          m_reconnect_sec;
     err_handler                                     m_err_handler;
-
+    bool                                            m_use_sched_yield;
 #ifdef PERF_STATS
     std::atomic<size_t>                             m_stats_enque_spins;
     std::atomic<size_t>                             m_stats_deque_spins;
@@ -311,19 +311,21 @@ public:
         int                 a_fd = -1
     );
 
-    /// This callback will be called from within the logger's thread
-    /// to format a message prior to writing it to a log file. The formatting
-    /// function can modify the content of \a a_data and if needed can reallocate
-    /// and rewrite \a a_data and \a a_size to point to some other memory. Use
+    /// Set the callback to be used for formatting output data.
+    /// It is invoked from within the logger's thread to format a message
+    /// prior to writing it to a log file. The formatting function can modify
+    /// the content of \a a_data and if needed can reallocate and
+    /// rewrite \a a_data and \a a_size to point to some other memory. Use
     /// the allocate() and deallocate() functions for this purpose. You should
     /// call this function immediately after calling open_file() and before
     /// writing any messages to it.
     void set_formatter(file_id& a_id, msg_formatter a_formatter);
 
-    /// This callback will be called from within the logger's thread
-    /// to write an array of iovec structures to a log file. You should
-    /// call this function immediately after calling open_file() and before
-    /// writing any messages to it.
+    /// Set the callback to be used to write data to file.
+    /// The callback is invoked from within the logger's thread.
+    /// It writes an array of iovec structures to a log file. It
+    /// should be called by user immediately after calling open_file() and
+    /// before writing any messages to it.
     void set_writer(file_id& a_id, msg_writer a_writer);
 
     /// This callback will be called from within the logger's thread
@@ -340,6 +342,11 @@ public:
 
     /// Set a callback for reconnecting to stream
     void set_reconnect(file_id& a_id, stream_reconnecter a_reconnector);
+
+    /// Enable usage of sched_yield() instead of usleep() in the logging thread.
+    /// Occasionally when running processing thread on max priority the use of
+    /// sched_yield() can cause system resource starvation.
+    void use_sched_yield(bool a_enable) { m_use_sched_yield = a_enable; }
 
     /// Close one log file
     /// @param a_id identifier of the file to be closed. After return the value
@@ -731,6 +738,7 @@ basic_multi_file_async_logger(
     , m_files(a_max_files, nullptr)
     , m_last_version(0)
     , m_reconnect_sec((double)a_reconnect_msec / 1000)
+    , m_use_sched_yield(true)
 #ifdef PERF_STATS
     , m_stats_enque_spins(0)
     , m_stats_deque_spins(0)
@@ -819,7 +827,13 @@ run() {
                 goto DONE;
             if (now_utc() > deadline)
                 break;
-            sched_yield();
+            // When running with maximum priority, occasionally excessive use of
+            // sched_yield may use to system slowdown, so this option is
+            // configurable:
+            if (m_use_sched_yield)
+                sched_yield();
+            else
+                usleep(50);
         }
     }
 
