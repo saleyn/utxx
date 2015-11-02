@@ -186,7 +186,8 @@ private:
 
     template <typename U>
     void do_write(U a, char*) const {
-        UTXX_THROW_RUNTIME_ERROR("Writing of ", a, " not supported!");
+        UTXX_THROW_RUNTIME_ERROR
+            ("Writing of ", type_to_string<U>(), ' ', a, " not supported!");
     }
 };
 
