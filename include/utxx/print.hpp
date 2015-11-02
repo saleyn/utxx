@@ -125,23 +125,23 @@ private:
 
     void padit(char* p, const char* end) const { while (p < end) *p++ = m_pad; }
 
+    void int_write(T a_value, char* a_buf) const {
+        if (Align == RIGHT)
+            itoa_right<T, Width>(a_buf, a_value, m_pad);
+        else
+            itoa_left<T,  Width>(a_buf, a_value, m_pad);
+    }
+
     void do_write(bool a_value, char* a_buf) const {
         do_write(a_value ? "true" : "false", a_buf);
     }
 
-    void do_write(long a_value, char* a_buf) const {
-        if (Align == RIGHT)
-            itoa_right<T, Width>(a_buf, a_value, m_pad);
-        else
-            itoa_left<T,  Width>(a_buf, a_value, m_pad);
-    }
-
-    void do_write(int a_value, char* a_buf) const {
-        if (Align == RIGHT)
-            itoa_right<T, Width>(a_buf, a_value, m_pad);
-        else
-            itoa_left<T,  Width>(a_buf, a_value, m_pad);
-    }
+    void do_write(long     a_val, char* a_buf) const { int_write(a_val, a_buf); }
+    void do_write(ulong    a_val, char* a_buf) const { int_write(a_val, a_buf); }
+    void do_write(int      a_val, char* a_buf) const { int_write(a_val, a_buf); }
+    void do_write(uint     a_val, char* a_buf) const { int_write(a_val, a_buf); }
+    void do_write(int16_t  a_val, char* a_buf) const { int_write(a_val, a_buf); }
+    void do_write(uint16_t a_val, char* a_buf) const { int_write(a_val, a_buf); }
 
     void do_write(const char* a_value, size_t a_len, char* a_buf) const {
         int len = std::min<int>(Width, a_len);
