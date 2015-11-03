@@ -51,21 +51,34 @@ typedef boost::property_tree::file_parser_error variant_tree_parser_error;
  * Example use:
  *   <tt>throw variant_tree_error(a_path, "Test ") << 1 << " result:" << 2;</tt>
  */
-class variant_tree_error : public detail::streamed_exception {
+class variant_tree_error : public runtime_error {
     std::string m_path;
-#if __cplusplus >= 201103L
     void stream() {}
 
     template <class T, class... Args>
     void stream(const T& a, Args... args) { *this << a; stream(args...); }
-#endif
 public:
+    variant_tree_error(src_info&& a_si, const std::string& a_path)
+        : runtime_error(std::move(a_si)), m_path(a_path) {}
     variant_tree_error(const std::string& a_path) : m_path(a_path) {}
 
-#if __cplusplus >= 201103L
+    template <class... Args>
+    variant_tree_error(src_info&& a_si, const std::string& a_path, Args... args)
+        : variant_tree_error(std::move(a_si), a_path)
+    {
+        stream(args...);
+    }
+
     template <class... Args>
     variant_tree_error(const std::string& a_path, Args... args)
         : variant_tree_error(a_path)
+    {
+        stream(args...);
+    }
+
+    template <class... Args>
+    variant_tree_error(src_info&& a_si, const tree_path& a_path, Args... args)
+        : variant_tree_error(std::move(a_si), a_path.dump())
     {
         stream(args...);
     }
@@ -76,57 +89,6 @@ public:
     {
         stream(args...);
     }
-#else
-    template <class T>
-    variant_tree_error(const std::string& a_path, T a) : m_path(a_path) {
-        *this << a;
-    }
-
-    template <class T1, class T2>
-    variant_tree_error(const std::string& a_path, T1 a1, T2 a2) : m_path(a_path) {
-        *this << a1 << a2;
-    }
-
-    template <class T1, class T2, class T3>
-    variant_tree_error(const std::string& a_path, T1 a1, T2 a2, T3 a3) : m_path(a_path) {
-        *this << a1 << a2 << a3;
-    }
-
-    variant_tree_error(const tree_path& a_path) : m_path(a_path.dump()) {}
-
-    template <class T>
-    variant_tree_error(const tree_path& a_path, T a) : m_path(a_path.dump()) {
-        *this << a;
-    }
-
-    template <class T1, class T2>
-    variant_tree_error(const tree_path& a_path, T1 a1, T2 a2) : m_path(a_path.dump()) {
-        *this << a1 << a2;
-    }
-
-    template <class T1, class T2, class T3>
-    variant_tree_error(const tree_path& a_path, T1 a1, T2 a2, T3 a3) : m_path(a_path.dump()) {
-        *this << a1 << a2 << a3;
-    }
-
-    template <class T1, class T2, class T3, class T4>
-    variant_tree_error(const tree_path& a_path, T1 a1, T2 a2, T3 a3, T4 a4)
-        : m_path(a_path.dump()) {
-        *this << a1 << a2 << a3 << a4;
-    }
-
-    template <class T1, class T2, class T3, class T4, class T5>
-    variant_tree_error(const tree_path& a_path, T1 a1, T2 a2, T3 a3, T4 a4, T5 a5)
-        : m_path(a_path.dump()) {
-        *this << a1 << a2 << a3 << a4 << a5;
-    }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6>
-    variant_tree_error(const tree_path& a_path, T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6)
-        : m_path(a_path.dump()) {
-        *this << a1 << a2 << a3 << a4 << a5 << a6;
-    }
-#endif
 
     virtual ~variant_tree_error() throw() {}
 
@@ -142,4 +104,3 @@ public:
 } // namespace utxx
 
 #endif // _UTXX_VARIANT_TREE_ERROR_HPP_
-
