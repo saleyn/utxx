@@ -32,22 +32,25 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_CONFIG_TREE_HPP_
-#define _UTXX_CONFIG_TREE_HPP_
+#pragma once
 
 #include <utxx/variant_tree.hpp>
+
+/// Throw utxx::config_error exception with current source location information
+#define UTXX_THROW_CONFIG_ERROR(...) \
+    UTXX_SRC_THROW(utxx::config_error, UTXX_SRC, ##__VA_ARGS__)
+/// Throw utxx::config_error exception with current source location and cached fun name
+#define UTXX_THROWX_CONFIG_ERROR(...) \
+    UTXX_SRC_THROW(utxx::config_error, UTXX_SRCX, ##__VA_ARGS__)
 
 namespace utxx {
 
     /// Container for storing configuration data.
-    typedef variant_tree            config_tree;
-    typedef tree_path               config_path;
+    using config_tree       = variant_tree;
+    using config_path       = tree_path;
 
-    typedef variant_tree_error      config_error;
-    typedef variant_tree_bad_data   config_bad_data;
-    typedef variant_tree_bad_path   config_bad_path;
+    using config_error      = variant_tree_error;
+    using config_bad_data   = variant_tree_bad_data;
+    using config_bad_path   = variant_tree_bad_path;
 
 } // namespace utxx
-
-#endif // _UTXX_CONFIG_TREE_HPP_
-
