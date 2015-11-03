@@ -107,7 +107,7 @@ inline bool logger::logfmt(
     return m_queue.emplace(a_level, a_cat, sbuf, a_src_loc, N-1, a_src_fun, M-1);
 }
 
-template <int N, int M, typename... Args>
+template <typename... Args>
 inline bool logger::logs(
     log_level           a_level,
     const std::string&  a_cat,
@@ -155,12 +155,11 @@ inline bool logger::log(
     return m_queue.emplace(a_level, a_cat, a_msg, a_src_loc, N-1, a_src_fun, M-1);
 }
 
-template <int N, int M>
 inline bool logger::log(
     log_level           a_level,
     const std::string&  a_cat,
     const std::string&  a_msg,
-    const src_info&     a_si)
+    src_info&&          a_si)
 {
     if (!is_enabled(a_level))
         return false;

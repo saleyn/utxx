@@ -597,7 +597,7 @@ public:
     /// @param a_cat   is a category of the message (use NULL if undefined).
     /// @param a_si    identifies the source location of the event
     /// @param args    is the list of optional arguments passed to <args>
-    template<int N, int M, typename... Args>
+    template<typename... Args>
     bool logs(log_level  a_level, const std::string& a_cat,
               src_info&& a_si,    Args&&... a_args);
 
@@ -620,9 +620,8 @@ public:
     /// @param a_cat   is a category of the message (use NULL if undefined).
     /// @param a_msg   is the message to be logged
     /// @param a_src   identifies the source location of the error
-    template <int N, int M>
     bool log(utxx::log_level  a_level, const std::string& a_cat,
-             const std::string& a_msg, const src_info&    a_src);
+             const std::string& a_msg, src_info&&         a_src);
 
     /// Log a message of given log level to registered implementations.
     /// Invocation of \a a_fun happens in the context different from the caller's.
