@@ -111,6 +111,23 @@ template <int N, int M, typename... Args>
 inline bool logger::logs(
     log_level           a_level,
     const std::string&  a_cat,
+    src_info&&          a_si,
+    Args&&...           a_args)
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    detail::basic_buffered_print<1024> buf;
+    buf.print(std::forward<Args>(a_args)...);
+    return m_queue.emplace(a_level, a_cat,
+                           a_si.srcloc(), a_si.srcloc_len(),
+                           a_si.fun(), a_si.fun_len(), buf.to_string());
+}
+
+template <int N, int M, typename... Args>
+inline bool logger::logs(
+    log_level           a_level,
+    const std::string&  a_cat,
     const char        (&a_src_loc)[N],
     const char        (&a_src_fun)[M],
     Args&&...           a_args)
@@ -136,6 +153,20 @@ inline bool logger::log(
         return false;
 
     return m_queue.emplace(a_level, a_cat, a_msg, a_src_loc, N-1, a_src_fun, M-1);
+}
+
+template <int N, int M>
+inline bool logger::log(
+    log_level           a_level,
+    const std::string&  a_cat,
+    const std::string&  a_msg,
+    const src_info&     a_si)
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    return m_queue.emplace(a_level, a_cat, a_msg, a_si.srcloc(), a_si.srcloc_len(),
+                           a_si.fun(), a_si.fun_len());
 }
 
 template <int N, int M, typename... Args>
