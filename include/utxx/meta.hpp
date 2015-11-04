@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_META_HPP_
-#define _UTXX_META_HPP_
+#pragma once
 
 #include <cstddef>
 
@@ -210,6 +209,3 @@ auto eval(R(C::*m), C& c) -> R&
 }
 
 } // namespace utxx
-
-#endif // _UTXX_META_HPP_
-

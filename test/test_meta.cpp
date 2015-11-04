@@ -75,7 +75,6 @@ BOOST_AUTO_TEST_CASE( test_meta )
     BOOST_STATIC_ASSERT(16 == upper_power<15, 2>::value);
     BOOST_STATIC_ASSERT(32 == upper_power<32, 2>::value);
 
-#if __cplusplus >= 201103L
     {
         auto  lambda = [](int i, int j) { return long(i*10 + j); };
         using traits = function_traits<decltype(lambda)>;
@@ -104,7 +103,5 @@ BOOST_AUTO_TEST_CASE( test_meta )
         //eval(&eval_tester::a, &ttt)++; // increment a by reference
         BOOST_CHECK_EQUAL(10, eval(&eval_tester::a, ttt));
     }
-#endif
-
 }
 

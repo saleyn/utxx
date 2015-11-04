@@ -3,7 +3,7 @@
 //----------------------------------------------------------------------------
 /// \brief Short name (up to 10 characters) encoded in an 8 bytes integer.
 /// The characters in the name are limited to:
-/// 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-_+={}[]|:;<>'?
+/// 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%'()*-./;:=?[]^_{|}~&amp;&lt;&gt;
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2010-09-30
@@ -31,8 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_BASIC_SHORT_NAME_HPP_
-#define _UTXX_BASIC_SHORT_NAME_HPP_
+#pragma once
 
 #include <boost/cstdint.hpp>
 #include <boost/assert.hpp>
@@ -134,7 +133,7 @@ namespace utxx {
         {
             int rc = set(a_buf, a_size, a_no_case);
             if (rc)
-                throw badarg_error("Invalid character at position ",
+                UTXX_THROW_BADARG_ERROR("Invalid character at position ",
                     -rc, " in '",
                     std::string(a_buf, a_size && !*(a_buf+a_size-1) ? a_size-1 : a_size),
                     "'");
@@ -242,6 +241,7 @@ namespace utxx {
             size_t l1 = length(), l2 = a_rhs.length();
             return l1 == l2 && masked_value(l1) == a_rhs.masked_value(l2);
         }
+        bool operator!=(const self_type& a_rhs) const { return !operator==(a_rhs); }
         bool operator< (const self_type& a_rhs) const {
             return (m_value & s_val_mask) < (a_rhs.m_value & s_val_mask);
         }
@@ -295,5 +295,3 @@ namespace std {
         { return std::hash<size_t>()(a.to_int()); }
     };
 }
-
-#endif // _UTXX_BASIC_SHORT_NAME_HPP_
