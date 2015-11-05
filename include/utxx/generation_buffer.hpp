@@ -396,7 +396,7 @@ namespace utxx
             auto last = (sz - 1) & m_mask;
             for (long i = last; i >= 0; --i) {
                 assert(0 <= i && i < long(m_capacity));
-                E const* curr = m_entries + i;
+                auto curr = m_entries + i;
                 // Apply the "action" and check exit status:
                 if (unlikely(!(a_visitor(*curr))))
                     return;
@@ -408,7 +408,7 @@ namespace utxx
 
             for (long i = long(m_mask); i > last; --i) {
                 assert(0 <= i && i < long(m_capacity));
-                E const* curr = m_entries + i;
+                auto curr = m_entries + i;
                 // Apply the "action" and check exit status:
                 if (unlikely(!(a_visitor(*curr))))
                     return;
