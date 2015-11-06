@@ -71,7 +71,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                     UTXX_INTERNAL_FLAGS_INIT, _,                            \
                     BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)                   \
             )),                                                             \
-            _END_ = 1 << BOOST_PP_VARIADIC_SIZE(__VA_ARGS__)                \
+            _END_ =  1 << BOOST_PP_VARIADIC_SIZE(__VA_ARGS__),              \
+            _ALL_ = size_t(_END_) - 1                                       \
         };                                                                  \
                                                                             \
     private:                                                                \
