@@ -108,6 +108,10 @@ namespace utxx {
 #define UTXX_THROWX_IO_ERROR(Errno, ...) \
     UTXX_SRC_THROW(utxx::io_error, UTXX_SRCX, (Errno), ##__VA_ARGS__)
 
+/// Throw utxx::runtime_error exeception indicating that a method is not implemented
+#define UTXX_THROW_NOT_IMPLEMENTED() \
+    UTXX_SRC_THROW(utxx::runtime_error, UTXX_SRC, "Method not implemented!")
+
 namespace utxx {
 
 /// Thread-safe function returning error string.
