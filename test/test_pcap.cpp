@@ -84,8 +84,8 @@ BOOST_AUTO_TEST_CASE( test_pcap_reader )
     pcap reader;
 
     const char* p = reinterpret_cast<const char*>(s_buffer);
-    BOOST_REQUIRE_EQUAL(0,   reader.read_file_header(p, sizeof(s_buffer)));
-    BOOST_REQUIRE_EQUAL(77,  reader.read_packet_header(p, sizeof(s_buffer)));
+    BOOST_REQUIRE_EQUAL(24,     reader.read_file_header(p, sizeof(s_buffer)));
+    BOOST_REQUIRE_EQUAL(77,     reader.read_packet_header(p, sizeof(s_buffer)));
 
     BOOST_REQUIRE_EQUAL(2u,     reader.header().version_major);
     BOOST_REQUIRE_EQUAL(4u,     reader.header().version_minor);
