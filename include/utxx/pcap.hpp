@@ -201,10 +201,10 @@ struct pcap {
         return sizeof(file_header);
     }
 
-    udp_frame*  init_udp_frame() { init_udp_frame(m_frame.u); return &m_frame.u; }
-    tcp_frame*  init_tcp_frame() { init_tcp_frame(m_frame.t); return &m_frame.t; }
+    udp_frame* init_udp_frame(size_t a_data_sz) { return init_udp_frame(m_frame.u, a_data_sz); }
+    tcp_frame* init_tcp_frame(size_t a_data_sz) { return init_tcp_frame(m_frame.t, a_data_sz); }
 
-    static void init_udp_frame(udp_frame& frame)
+    static udp_frame* init_udp_frame(udp_frame& frame, size_t a_data_sz)
     {
         memset(&frame, 0, sizeof(udp_frame));
         frame.eth.h_proto = htons(ETH_P_IP);
@@ -217,9 +217,17 @@ struct pcap {
         frame.ip.ttl      = 64;   // Linux default time-to-live
         //frame.ip.check    = 0;    // Zero the checksum
         //frame.udp.check   = 0;    // Zero the checksum
+
+        static_assert(sizeof(frame.eth) == 14, "Invalid eth frame size");
+        static_assert(sizeof(frame.ip)  == 20, "Invalid ip  frame size");
+        static_assert(sizeof(frame.udp) ==  8, "Invalid udp frame size");
+
+        frame.ip.tot_len = htons(a_data_sz + sizeof(frame.ip) + sizeof(frame.udp));
+        frame.udp.len    = htons(a_data_sz + sizeof(frame.udp));
+        return &frame;
     }
 
-    static void init_tcp_frame(tcp_frame& frame)
+    static tcp_frame* init_tcp_frame(tcp_frame& frame, size_t a_data_sz)
     {
         memset(&frame, 0, sizeof(tcp_frame));
         frame.eth.h_proto = htons(ETH_P_IP);
@@ -231,7 +239,14 @@ struct pcap {
         //frame.ip.id       = 0;    // No flow id (since no frags)
         frame.ip.ttl      = 64;   // Linux default time-to-live
         //frame.ip.check    = 0;    // Zero the checksum
-        //frame.udp.check   = 0;    // Zero the checksum
+        //frame.tcp.check   = 0;    // Zero the checksum
+
+        static_assert(sizeof(frame.eth) == 14, "Invalid eth frame size");
+        static_assert(sizeof(frame.ip)  == 20, "Invalid ip  frame size");
+        static_assert(sizeof(frame.tcp) == 20, "Invalid tcp frame size");
+
+        frame.ip.tot_len = htons(a_data_sz + sizeof(frame.ip) + sizeof(frame.tcp));
+        return &frame;
     }
 
     template <size_t N>
@@ -346,6 +361,13 @@ struct pcap {
         memcpy(&m_frame.t, buf, sizeof(tcp_frame)); buf += sizeof(tcp_frame);
 
         return m_frame.t.ip.protocol != IPPROTO_TCP ? -1 : sizeof(tcp_frame);
+    }
+
+    void set_addr(uint a_src_ip, uint16_t a_sport, uint a_dst_ip, uint16_t a_dport) {
+      m_frame.u.ip.saddr   = a_src_ip;
+      m_frame.u.ip.daddr   = a_dst_ip;
+      m_frame.u.udp.source = a_sport;
+      m_frame.u.udp.dest   = a_dport;
     }
 
     /// @param a_mask is an IP address mask in network byte order.
