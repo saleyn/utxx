@@ -201,6 +201,9 @@ struct pcap {
         return sizeof(file_header);
     }
 
+    udp_frame*  init_udp_frame() { init_udp_frame(m_frame.u); return &m_frame.u; }
+    tcp_frame*  init_tcp_frame() { init_tcp_frame(m_frame.t); return &m_frame.t; }
+
     static void init_udp_frame(udp_frame& frame)
     {
         memset(&frame, 0, sizeof(udp_frame));
