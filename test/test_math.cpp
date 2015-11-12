@@ -79,3 +79,11 @@ BOOST_AUTO_TEST_CASE( test_math_upper_power )
     BOOST_REQUIRE_EQUAL(4,      math::upper_power(3,  2));
 }
 
+BOOST_AUTO_TEST_CASE( test_math_gcd_lcm )
+{
+    BOOST_REQUIRE_EQUAL(2,      math::gcd(18, 4));
+    BOOST_REQUIRE_EQUAL(36,     math::lcm(18, 4));
+    BOOST_REQUIRE_EQUAL(4,      math::gcd(0,  4));
+    BOOST_REQUIRE_EQUAL(4,      math::gcd(4,  0));
+    BOOST_REQUIRE_EQUAL(0,      math::lcm(4,  0));
+}

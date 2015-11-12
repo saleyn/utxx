@@ -87,6 +87,24 @@ T inline upper_power(T n, size_t base) {
     return r == n ? n : r*base;
 }
 
+/// Calculate greatest common denominator of x and y.
+/// E.g. gcd(18, 4) = 2
+inline long gcd(long x, long y) {
+    if (x == 0)
+        return y;
+
+    while (y != 0) {
+        if (x > y) x = x - y;
+        else       y = y - x;
+    }
+
+    return x;
+}
+
+/// Calculate least common multiple of x and y.
+/// E.g. gcd(18, 4) = 36
+inline long lcm(long x, long y) { return (x*y)/gcd(x, y); }
+
 } // namespace math
 } // namespace utxx
 
