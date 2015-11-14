@@ -73,7 +73,6 @@ protected:
     static const long DAY_NSEC = 86400L * 1000000000L;
 
     static boost::mutex             s_mutex;
-    static thread_local long        s_last_time;  // In nanoseconds
     static thread_local long        s_next_utc_midnight_nseconds;
     static thread_local long        s_next_local_midnight_nseconds;
     static thread_local long        s_utc_nsec_offset;
@@ -149,17 +148,26 @@ public:
     }
 
     /// Update internal timestamp by calling gettimeofday().
-    static time_val now() {
-        auto x = time_val::universal_time();
-        s_last_time = x.nanoseconds();
-        return x;
+    /// This function is a syntactic sugar for update().
+    static time_val now() { return update(); }
+
+    /// Implementation of this function tries to reduce the overhead of calling
+    /// time clock functions by cacheing old results and using high-resolution
+    /// timer to determine a need for gettimeofday call.
+    static time_val update() {
+        auto now = now_utc();
+
+        check_day_change(now);
+        return now;
     }
 
-    /// Return last timestamp obtained by calling update() or now().
-    static time_val last_time()     { return nsecs(s_last_time); }
-
-    /// Equivalent to calling update() and last_time()
-    static time_val cached_time()   { update(); return last_time(); }
+    static void check_day_change(time_val a_now) {
+        // FIXME: the method below will produce incorrect time stamps during
+        // switch to/from daylight savings time because of the unaccounted
+        // utc_offset change.
+        if (unlikely(a_now.nanoseconds() >= s_next_utc_midnight_nseconds))
+            update_midnight_nseconds(a_now);
+    }
 
     /// Return the number of seconds from epoch to midnight in UTC.
     static time_t utc_midnight_seconds()   { return utc_midnight_nseconds().sec();  }
@@ -212,23 +220,9 @@ public:
     static long syscalls() { return s_syscalls; }
     #endif
 
-    /// Implementation of this function tries to reduce the overhead of calling
-    /// time clock functions by cacheing old results and using high-resolution
-    /// timer to determine a need for gettimeofday call.
-    static void update() {
-        now();
-
-        // FIXME: the method below will produce incorrect time stamps during
-        // switch to/from daylight savings time because of the unaccounted
-        // utc_offset change.
-        if (unlikely(s_last_time >= s_next_utc_midnight_nseconds))
-            update_midnight_nseconds(last_time());
-    }
-
     inline static int update_and_write(stamp_type a_tp,
             char* a_buf, size_t a_sz, bool a_utc=false) {
-        update();
-        return format(a_tp, last_time(), a_buf, a_sz, a_utc);
+        return format(a_tp, update(), a_buf, a_sz, a_utc, false);
     }
 
     /// Write formatted timestamp string to the given \a a_buf buffer.
@@ -237,20 +231,26 @@ public:
     /// @param a_sz is the size of a_buf buffer and must be greater than 25.
     /// @return number of bytes written or -1 if \a a_tp is not known.
     inline static int write(stamp_type a_tp, char* a_buf, size_t a_sz, bool a_utc=false) {
-        return format(a_tp, last_time(), a_buf, a_sz, a_utc);
+        return format(a_tp, update(), a_buf, a_sz, a_utc, false);
     }
 
     template <int N>
     inline static int write(stamp_type a_tp, char (&a_buf)[N], bool a_utc=false) {
-        return format(a_tp, last_time(), a_buf, N, a_utc);
+        return format(a_tp, update(), a_buf, N, a_utc, false);
     }
 
     /// Number of bytes needed to hold the string representation of \a a_tp.
     static size_t format_size(stamp_type a_tp);
 
-    /// Write a timeval structure to \a a_buf.
+    /// Write a time_val to \a a_buf.
+    /// @param tv current time
+    /// @param a_buf output buffer
+    /// @param a_sz  output buffer size
+    /// @param a_utc write UTC time
+    /// @param a_day_chk check for day change since last call
+    /// @return number of written bytes
     static int format(stamp_type a_tp,
-        time_val tv, char* a_buf, size_t a_sz, bool a_utc=false);
+        time_val tv, char* a_buf, size_t a_sz, bool a_utc=false, bool a_day_chk=true);
 
     template <int N>
     inline static int format(stamp_type a_tp, time_val tv,
@@ -259,7 +259,7 @@ public:
     }
 
     inline static std::string to_string(stamp_type a_tp = TIME_WITH_USEC, bool a_utc=false) {
-        return to_string(cached_time(), a_tp, a_utc);
+        return to_string(now_utc(), a_tp, a_utc);
     }
 
     inline static std::string to_string(
@@ -284,9 +284,7 @@ struct test_timestamp : public timestamp {
     /// Use this function for testing when you need to set current time
     /// to times different from now.  Otherwise in production code
     /// always use timestamp::update() instead.
-    void update(time_val a_now, hrtime_t a_hrnow) {
-        s_last_time = a_now.nanoseconds();
-
+    void update(time_val a_now) {
         if (unlikely(a_now.nanoseconds() >= s_next_utc_midnight_nseconds))
             update_midnight_nseconds(a_now);
     }
@@ -305,7 +303,7 @@ struct test_timestamp : public timestamp {
     void now() {}
 private:
     void update();
-    int update_and_write(stamp_type a_tp, char* a_buf, size_t a_sz);
+    int  update_and_write(stamp_type a_tp, char* a_buf, size_t a_sz);
 };
 
 } // namespace utxx

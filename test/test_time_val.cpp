@@ -88,9 +88,10 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     BOOST_REQUIRE_EQUAL(4003, rel.usec());
 
     {
-        time_t t;     time(&t);
-        struct tm tm; localtime_r(&t, &tm);
         time_val gmt = time_val::universal_time(2014, 7, 10, 0,0,0, 0);
+        time_t     t = gmt.sec();
+        struct tm tm;  localtime_r(&t, &tm);
+        struct tm tm0; gmtime_r(&t, &tm0);
         time_val loc = time_val::local_time    (2014, 7, 10, 0,0,0, 0);
         BOOST_TEST_MESSAGE("TZ  offset: " << tm.tm_gmtoff);
         BOOST_TEST_MESSAGE("GMT   time: " << gmt.sec());

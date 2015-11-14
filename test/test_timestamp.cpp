@@ -79,7 +79,7 @@ struct test1 {
             int n = timestamp::update_and_write(
                 DATE_TIME_WITH_USEC, buf[0], sizeof(buf[0]));
             hr.stop_incr();
-            time_val t1 = timestamp::last_time();
+            time_val t1 = now_utc();
             if (n != 24 || strlen(buf[0]) != 24) {
                 std::cerr << "Wrong buffer length: " << buf[0] << std::endl;
                 BOOST_REQUIRE_EQUAL(24, n);
@@ -88,7 +88,7 @@ struct test1 {
             timestamp::update_and_write(
                 DATE_TIME_WITH_USEC, buf[1], sizeof(buf[1]));
             hr.stop_incr();
-            time_val t2 = timestamp::last_time();
+            time_val t2 = now_utc();
             if (strcmp(buf[0], buf[1]) > 0) {
                 std::cerr << "Backward time jump detected: "
                     << buf[0] << ' ' << buf[1]
@@ -162,10 +162,9 @@ struct test2 {
             barrier->wait();
 
         timer tmr;
-        const time_val& last = timestamp::last_time();
+        time_val last = now_utc();
         for (int i=0; i < iterations; i++) {
-            timestamp::now();
-            if (last > timestamp::last_time()) {
+            if (last > timestamp::now()) {
                 std::cerr << "Backward time jump detected in test2: "
                     << timestamp::to_string(last) << ' '
                     << timestamp::to_string() << std::endl;
@@ -240,10 +239,6 @@ struct test2 {
             }
         }
         // Testing gettimeofday speed
-        {
-            caller test(id, "timestamp::cached_time()", iterations);
-            test(&timestamp::cached_time);
-        }
         {
             caller test(id, "timestamp::update()", iterations);
             test(&timestamp::update);
@@ -367,8 +362,6 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     tv = utxx::now_utc().timeval();
     std::string str = timestamp::to_string(tt, DATE_TIME);
     BOOST_REQUIRE_EQUAL(expected, str);
-    str = timestamp::to_string(timestamp::cached_time(), DATE_TIME);
-    BOOST_REQUIRE_EQUAL(expected, str);
 
     const char* p;
     p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME, true);
@@ -431,7 +424,7 @@ BOOST_AUTO_TEST_CASE( test_time_latency )
     BOOST_REQUIRE(true);
 }
 
-BOOST_AUTO_TEST_CASE( test_timestamp_cached_time )
+BOOST_AUTO_TEST_CASE( test_timestamp_time )
 {
     enum { ITER = 10 };
 
@@ -456,9 +449,9 @@ BOOST_AUTO_TEST_CASE( test_timestamp_cached_time )
 
     timestamp t;
     for (int i = 0; i < ITER; i++) {
-        time_val tv1 = t.cached_time();
-        while (tv1 == t.cached_time()) m++;
-        time_val tv2 = t.last_time();
+        time_val tv1 = now_utc();
+        while (tv1 == t.update()) m++;
+        time_val tv2 = now_utc();
 
         n += (tv2 - tv1).microseconds();
     }
@@ -477,9 +470,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_cached_time )
 
 BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
 {
-    timestamp::update();
-
-    const time_val& now = timestamp::last_time();
+    time_val now = timestamp::update();
 
     uint64_t expect_utc_sec_since_midnight =
         1000000ll * (now.sec() % 86400) + now.usec();
