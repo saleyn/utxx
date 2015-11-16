@@ -279,11 +279,6 @@ namespace utxx {
         return std::hash<size_t>()(v.to_int());
     }
 
-    template <size_t Size>
-    static inline bool equal_to(basic_short_name<Size> a_lhs, basic_short_name<Size> a_rhs) {
-        return a_lhs.operator==(a_rhs);
-    }
-
 } // namespace utxx
 
 namespace std {
@@ -293,5 +288,19 @@ namespace std {
     {
         size_t operator()(utxx::basic_short_name<Size> a) const noexcept
         { return std::hash<size_t>()(a.to_int()); }
+    };
+
+    template <size_t Size>
+    struct less<utxx::basic_short_name<Size>> {
+        bool operator()(utxx::basic_short_name<Size> a,
+                        utxx::basic_short_name<Size> b) const noexcept
+        { return a < b; }
+    };
+
+    template <size_t Size>
+    struct equal_to<utxx::basic_short_name<Size>> {
+        bool operator()(utxx::basic_short_name<Size> a,
+                        utxx::basic_short_name<Size> b) const noexcept
+        { return a.operator==(b); }
     };
 }
