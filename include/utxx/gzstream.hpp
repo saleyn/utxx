@@ -28,6 +28,10 @@
 
 #pragma once
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_LIBZ
+
 // standard C++ with new header file names and std:: namespace
 #include <iostream>
 #include <fstream>
@@ -127,3 +131,5 @@ public:
 };
 
 } // namespace utxx
+
+#endif // UTXX_HAVE_LIBZ

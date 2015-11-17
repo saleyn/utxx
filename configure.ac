@@ -104,6 +104,8 @@ AX_BOOST_DATE_TIME
 AX_BOOST_FILESYSTEM
 AX_BOOST_UNIT_TEST_FRAMEWORK
 
+AX_CHECK_ZLIB
+
 # workaround unexpected extra dependency on boost_system library (at least in 1.49)
 LDFLAGS+=" $BOOST_LDFLAGS $BOOST_SYSTEM_LIB"
 AX_BOOST_THREAD

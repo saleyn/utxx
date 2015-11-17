@@ -52,6 +52,8 @@ static std::string temp_path(const std::string& a_add_str = "") {
     return (a_add_str.empty()) ? r : r + path::slash_str() + a_add_str;
 }
 
+#ifdef UTXX_HAVE_LIBZ
+
 BOOST_AUTO_TEST_CASE( test_gzstream_gzip )
 {
     auto ss = temp_path("xxxx");
@@ -106,3 +108,5 @@ BOOST_AUTO_TEST_CASE( test_gzstream_gzip )
         }
     }
 }
+
+#endif // UTXX_HAVE_LIBZ
