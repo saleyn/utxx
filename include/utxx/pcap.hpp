@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_PCAP_HPP_
-#define _UTXX_PCAP_HPP_
+#pragma once
 
 #include <utxx/error.hpp>
 #include <utxx/endian.hpp>
@@ -40,15 +39,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/static_assert.hpp>
 #include <stdio.h>
 #include <arpa/inet.h>
-
-namespace utxx {
-
-namespace detail {
 #include <netinet/ip.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
 #include <netinet/if_ether.h>
-}
+
+namespace utxx {
 
 /**
  * PCAP file reader/writer
@@ -80,8 +76,8 @@ struct pcap {
 
     /// IP packet frame
     struct ip_frame {
-        detail::ethhdr eth;
-        detail::iphdr  ip;
+        ethhdr eth;
+        iphdr  ip;
 
         uint8_t  protocol() const { return ip.protocol;       }
         uint32_t src_ip()   const { return ntohl(ip.saddr);   }
@@ -106,7 +102,7 @@ struct pcap {
 
     /// UDP packet frame
     struct udp_frame : public ip_frame {
-        detail::udphdr udp;
+        udphdr udp;
 
         uint16_t src_port() const { return ntohs(udp.source); }
         uint16_t dst_port() const { return ntohs(udp.dest);   }
@@ -129,7 +125,7 @@ struct pcap {
 
     /// TCP packet frame
     struct tcp_frame : public ip_frame {
-        detail::tcphdr tcp;
+        tcphdr tcp;
 
         uint16_t src_port() const { return ntohs(tcp.source); }
         uint16_t dst_port() const { return ntohs(tcp.dest);   }
@@ -149,10 +145,10 @@ struct pcap {
         }
     } __attribute__ ((packed));
 
-    BOOST_STATIC_ASSERT(sizeof(detail::ethhdr) == 14);
-    BOOST_STATIC_ASSERT(sizeof(detail::iphdr)  == 20);
-    BOOST_STATIC_ASSERT(sizeof(detail::udphdr) ==  8);
-    BOOST_STATIC_ASSERT(sizeof(detail::tcphdr) == 20);
+    BOOST_STATIC_ASSERT(sizeof(ethhdr) == 14);
+    BOOST_STATIC_ASSERT(sizeof(iphdr)  == 20);
+    BOOST_STATIC_ASSERT(sizeof(udphdr) ==  8);
+    BOOST_STATIC_ASSERT(sizeof(tcphdr) == 20);
     BOOST_STATIC_ASSERT(sizeof(udp_frame)      == 42);
     BOOST_STATIC_ASSERT(sizeof(tcp_frame)      == 54);
 
@@ -486,6 +482,3 @@ private:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_PCAP_HPP_
-
