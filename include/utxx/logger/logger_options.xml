@@ -47,6 +47,9 @@
         <option name="silent-finish" val-type="bool" default="false"
                 desc="When true logger doesn't write completion status to log at termination"/>
 
+        <option name="use-sched-yield" val-type="bool" default="true"
+                desc="Use sched_yield() calls for more prompt detection of pending unwritten data"/>
+
         <option name="file" required="false"
                 desc="Logger's backend for writing data synchronously to file">
             <option name="filename" val-type="string"

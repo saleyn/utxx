@@ -376,22 +376,23 @@ private:
 
     std::unique_ptr<std::thread>    m_thread;
     concurrent_queue                m_queue;
-    bool                            m_abort;
-    bool                            m_initialized;
+    bool                            m_abort                 = false;
+    bool                            m_initialized           = false;
     futex                           m_event;
     std::mutex                      m_mutex;
     struct timespec                 m_wait_timeout;
 
     signal_delegate                 m_sig_slot[NLEVELS];
-    unsigned int                    m_level_filter;
+    unsigned int                    m_level_filter          = LEVEL_NO_DEBUG;
     implementations_vector          m_implementations;
-    stamp_type                      m_timestamp_type;
+    stamp_type                      m_timestamp_type        = TIME;
     char                            m_src_location[256];
-    bool                            m_show_location;
-    int                             m_show_fun_namespaces;
-    bool                            m_show_ident;
+    bool                            m_show_location         = true;
+    int                             m_show_fun_namespaces   = 3;
+    bool                            m_show_ident            = false;
     std::string                     m_ident;
-    bool                            m_silent_finish;
+    bool                            m_silent_finish         = false;
+    bool                            m_use_sched_yield       = true;
     macro_var_map                   m_macro_var_map;
 
 
@@ -445,12 +446,7 @@ public:
         return s_logger;
     }
 
-    logger()
-        : m_abort(false), m_initialized(false)
-        , m_level_filter(LEVEL_NO_DEBUG), m_timestamp_type(TIME)
-        , m_show_location(true), m_show_fun_namespaces(3)
-        , m_show_ident(false), m_silent_finish(false)
-    {}
+    logger()  {}
     ~logger() { finalize(); }
 
     /// @return vector of active back-end logging implementations
@@ -490,6 +486,11 @@ public:
     /// instead of throwing run-time exceptions.  Note that the handler
     /// may be called from different threads so it has to be thread-safe.
     void set_error_handler(std::function<void (const char*)>& eh) { m_error = eh; }
+
+    /// Enable usage of sched_yield() instead of usleep() in the logging thread.
+    /// Occasionally when running processing thread on max priority the use of
+    /// sched_yield() can cause system resource starvation.
+    void use_sched_yield(bool a_enable) { m_use_sched_yield = a_enable; }
 
     /// Set a callback to be called on start of the logger's async thread
     void set_on_before_run(std::function<void()> a_cb) { m_on_before_run = a_cb; }
