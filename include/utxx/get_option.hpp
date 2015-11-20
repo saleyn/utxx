@@ -58,26 +58,51 @@ namespace {
                  strcmp    (a, "0")     == 0);
     }
 
-    template <typename T, typename Char = const char>
-    bool match_opt(int argc, Char** argv, T* a_value, const std::string& a, int& i) {
+    template <typename Char = const char>
+    bool match_opt(int argc, Char** argv,
+                   const std::function<void(const char*)>& a_fun,
+                   const std::string& a,  int& i) {
         if (a.empty() || argv[i][0] != '-') return false;
         if (a == argv[i]) {
-            if (!a_value && i < argc-1 && argv[i+1][0] != '-')
+            if (!a_fun && i < argc-1 && argv[i+1][0] != '-')
                 return false;
-            else if (a_value)
-                *a_value = convert<T>
-                    ((i+1 >= argc || argv[i+1][0] == '-') ? "" : argv[++i]);
+            else
+                a_fun(((i+1 >= argc || argv[i+1][0] == '-') ? "" : argv[++i]));
             return true;
         }
         size_t n = strlen(argv[i]);
         if (a.size()+1 <= n && strncmp(a.c_str(), argv[i], a.size()) == 0 &&
                                argv[i][a.size()] == '=') {
-            if (a_value)
-                *a_value = convert<T>(argv[i] + a.size()+1);
+            if (a_fun)
+                a_fun(argv[i] + a.size()+1);
             return true;
         }
         return false;
     };
+}
+
+/// Get command line option given its short name \a a_opt and optional long name
+///
+/// @param argc         argument passed to main()
+/// @param argv         argument passed to main()
+/// @param a_fun        value handling function "void(const char* a_value)"
+/// @param a_opt        option short name (e.g. "-o")
+/// @param a_long_opt   option long name (e.g. "--output")
+/// @return true if given option is found in the \a argv list, in which case the
+///         \a a_value is set to the value of the option (e.g. "-o filename",
+///         "--output=filename").
+template <typename Setter, typename Char = const char>
+bool get_opt(int argc, Char** argv, const Setter& a_fun,
+             const std::string& a_opt, const std::string& a_long_opt = "")
+{
+    if (a_opt.empty() && a_long_opt.empty()) return false;
+
+    for (int i=1; i < argc; i++) {
+        if (match_opt<Char>(argc, argv, a_fun, a_opt,      i)) return true;
+        if (match_opt<Char>(argc, argv, a_fun, a_long_opt, i)) return true;
+    }
+
+    return false;
 }
 
 /// Get command line option given its short name \a a_opt and optional long name
@@ -94,21 +119,15 @@ template <typename T, typename Char = const char>
 bool get_opt(int argc, Char** argv, T* a_value,
              const std::string& a_opt, const std::string& a_long_opt = "")
 {
-    if (a_opt.empty() && a_long_opt.empty()) return false;
-
-    for (int i=1; i < argc; i++) {
-        if (match_opt(argc, argv, a_value, a_opt,      i)) return true;
-        if (match_opt(argc, argv, a_value, a_long_opt, i)) return true;
-    }
-
-    return false;
+    auto setter = [=](const char* a) { if (a_value) *a_value = convert<T>(a); };
+    return get_opt(argc, argv, setter, a_opt, a_long_opt);
 }
 
 /// Parser command-line options
 class opts_parser {
-    int          m_argc;
-    const char** m_argv;
-    int          m_idx;
+    int           m_argc;
+    const char**  m_argv;
+    int           m_idx;
 
 public:
     template <typename Char = const char>
@@ -123,8 +142,8 @@ public:
     }
 
     bool match(const std::string& a_short, const std::string& a_long) {
-        return match_opt(m_argc, m_argv, (int*)nullptr, a_short, m_idx)
-            || match_opt(m_argc, m_argv, (int*)nullptr, a_long,  m_idx);
+        return match_opt(m_argc, m_argv, nullptr, a_short, m_idx)
+            || match_opt(m_argc, m_argv, nullptr, a_long,  m_idx);
     }
 
     /// Match current option against \a a_short name or \a a_long name
@@ -137,10 +156,16 @@ public:
     ///     ...
     /// }
     /// \endcode
+    template <typename Setter>
+    bool match(const std::string& a_short, const std::string& a_long, const Setter& a_fun) {
+        return match_opt(m_argc, m_argv, a_fun, a_short, m_idx)
+            || match_opt(m_argc, m_argv, a_fun, a_long,  m_idx);
+    }
+
     template <typename T>
     bool match(const std::string& a_short, const std::string& a_long, T* a_val) {
-        return match_opt(m_argc, m_argv, a_val, a_short, m_idx)
-            || match_opt(m_argc, m_argv, a_val, a_long,  m_idx);
+        auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
+        return match(a_short, a_long, setter);
     }
 
     /// Find an option identified either by \a a_short name or \a a_long name
@@ -148,9 +173,10 @@ public:
     /// Current fundtion doesn't change internal state variables of this class
     template <typename T>
     bool find(const std::string& a_short, const std::string& a_long, T* a_val) const {
+        auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
         for (int i=1; i < m_argc; ++i)
-            if (match_opt(m_argc, m_argv, a_val, a_short, i)
-            ||  match_opt(m_argc, m_argv, a_val, a_long,  i))
+            if (match_opt(m_argc, m_argv, setter, a_short, i)
+            ||  match_opt(m_argc, m_argv, setter, a_long,  i))
                 return true;
         return false;
     }
