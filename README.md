@@ -77,15 +77,27 @@ Longer description (wrap at 72 characters)
   * `Change default timeout to 123`
 * No period
 
-#### Description ####
+#### Longer Description ####
 * Wrap at 72 characters
 * Why, explain intention and implementation approach
-* Present tense
+* Present tense (fix, add, change)
 
-#### Atomicity ####
+#### Commit Atomicity ####
 * Break up logical changes
 * Make whitespace changes separately
 
+#### Code Formatting ####
+* Wrap at 80 characters
+* Use 4-space indentation
+* Expand tabs with spaces in indentations (for vi use settings: `ts=4:sw=4:et`)
+* Use the following braces style:
+```
+if (...) {
+   ...
+} else {
+   ...
+}
+```
 ## Author ##
 * Serge Aleynikov `<saleyn at gmail dot com>`
 
