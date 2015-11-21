@@ -52,10 +52,10 @@ std::string to_bin_string(const char* buf, size_t sz,
         out << (p == begin || printable ? "" : ",");
         if (printable)
             switch (*p) {
-                case '\n': out << "\\n";
-                case '\r': out << "\\r";
-                case '\t': out << "\\t";
-                default:   out << *p;
+                case '\n': out << "\\n"; break;
+                case '\r': out << "\\r"; break;
+                case '\t': out << "\\t"; break;
+                default:   out << *p;    break;
             }
         else {
             if (hex) out << std::hex;
