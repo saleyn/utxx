@@ -42,7 +42,8 @@ std::string to_bin_string(const char* buf, size_t sz,
     bool printable = readable;
     if (!hex && readable)
         for(const char* p = begin; p != end; ++p)
-            if (*p < ' ' || *p == 127 || *p > 254) {
+            if ((*p < ' ' && *p != '\n' && *p != '\r' && *p != '\t') ||
+                *p == 127 || *p == 255) {
                 printable = false;
                 break;
             }
@@ -50,10 +51,15 @@ std::string to_bin_string(const char* buf, size_t sz,
     for(const char* p = begin; p != end; ++p) {
         out << (p == begin || printable ? "" : ",");
         if (printable)
-            out << *p;
+            switch (*p) {
+                case '\n': out << "\\n";
+                case '\r': out << "\\r";
+                case '\t': out << "\\t";
+                default:   out << *p;
+            }
         else {
             if (hex) out << std::hex;
-            out << (int)*(unsigned char*)p;
+            out << (int)*(uint8_t*)p;
         }
     }
     out << (printable ? "\"" : "") << ">>";

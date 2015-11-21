@@ -66,8 +66,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         };                                                                  \
                                                                             \
         explicit  ENUM(size_t v) : m_val(type(v)) { assert(v < s_size); }   \
-        constexpr ENUM()         : m_val(UNDEFINED) {}                      \
+        constexpr ENUM() noexcept: m_val(UNDEFINED) {}                      \
         constexpr ENUM(type v)  : m_val(v) {}                               \
+                                                                            \
+        ENUM(ENUM&&)                 = default;                             \
+        ENUM(ENUM const&)            = default;                             \
+                                                                            \
+        ENUM& operator=(ENUM const&) = default;                             \
+        ENUM& operator=(ENUM&&)      = default;                             \
                                                                             \
         constexpr operator type()      const { return m_val; }              \
         constexpr bool     empty()     const { return m_val == UNDEFINED; } \
@@ -178,6 +184,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         explicit  ENUM(size_t v) : m_val(etype(v)) { assert(v < s_size); }  \
         constexpr ENUM()         : m_val(UNDEFINED) {}                      \
         constexpr ENUM(etype v)  : m_val(v) {}                              \
+                                                                            \
+        ENUM(ENUM&&)                 = default;                             \
+        ENUM(ENUM const&)            = default;                             \
+                                                                            \
+        ENUM& operator=(ENUM const&) = default;                             \
+        ENUM& operator=(ENUM&&)      = default;                             \
                                                                             \
         constexpr operator etype()     const { return m_val; }              \
         constexpr bool     empty()     const { return m_val == UNDEFINED; } \

@@ -108,8 +108,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename... Args>                                         \
         constexpr ENUM(type a, Args... args) : m_val(bor(a, args...)) {}    \
                                                                             \
+        ENUM(ENUM&&)                 = default;                             \
+        ENUM(ENUM const&)            = default;                             \
+                                                                            \
+        ENUM& operator=(ENUM const&) = default;                             \
+        ENUM& operator=(ENUM&&)      = default;                             \
+                                                                            \
         void               clear()             { m_val = 0;     }           \
         void               clear(type  a)      { m_val &= ~size_t(a); }     \
+        void               clear(ENUM  a)      { m_val &= ~a.m_val;   }     \
         void               clear(size_t a)     { m_val &= ~a;   }           \
         constexpr operator size_t()      const { return m_val;  }           \
         constexpr operator uint()        const { return m_val;  }           \
@@ -236,6 +243,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         explicit constexpr ENUM(etype v)  : m_val(size_t(v))  {}            \
         template <typename... Args>                                         \
         constexpr ENUM(etype a, Args... args) : m_val(bor(a, args...)) {}   \
+                                                                            \
+        ENUM(ENUM&&)                 = default;                             \
+        ENUM(ENUM const&)            = default;                             \
+                                                                            \
+        ENUM& operator=(ENUM const&) = default;                             \
+        ENUM& operator=(ENUM&&)      = default;                             \
                                                                             \
         void               clear()             { m_val = 0;     }           \
         void               clear(etype  a)     { m_val &= ~size_t(a); }     \
