@@ -303,4 +303,24 @@ namespace std {
                         utxx::basic_short_name<Size> b) const noexcept
         { return a.operator==(b); }
     };
+
+    template <>
+    struct hash<utxx::name_t>
+        : public __hash_base<size_t, utxx::name_t>
+    {
+        size_t operator()(utxx::name_t a) const noexcept
+        { return std::hash<size_t>()(a.to_int()); }
+    };
+
+    template <>
+    struct less<utxx::name_t> {
+        bool operator()(utxx::name_t a, utxx::name_t b) const noexcept
+        { return a < b; }
+    };
+
+    template <>
+    struct equal_to<utxx::name_t> {
+        bool operator()(utxx::name_t a, utxx::name_t b) const noexcept
+        { return a.operator==(b); }
+    };
 }
