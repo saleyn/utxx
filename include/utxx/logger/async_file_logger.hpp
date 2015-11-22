@@ -49,9 +49,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 #ifdef DEBUG_ASYNC_LOGGER
-#   define ASYNC_TRACE(...) printf(__VA_ARGS__);
+#   define UTXX_ASYNC_TRACE(...) printf(__VA_ARGS__);
 #else
-#   define ASYNC_TRACE(...)
+#   define UTXX_ASYNC_TRACE(...)
 #endif
 
 //-----------------------------------------------------------------------------
@@ -355,7 +355,7 @@ void basic_async_logger<traits>::stop()
         return;
 
     m_cancel = true;
-    ASYNC_TRACE("Stopping async logger (head %p)\n", m_head);
+    UTXX_ASYNC_TRACE("Stopping async logger (head %p)\n", m_head);
     m_event.signal();
     if (m_thread) {
         m_thread->join();
@@ -370,7 +370,7 @@ void basic_async_logger<traits>::run(std::condition_variable* a_cv)
     // Notify the caller this thread is ready
     a_cv->notify_one();
 
-    ASYNC_TRACE("Started async logging thread (cancel=%s)\n",
+    UTXX_ASYNC_TRACE("Started async logging thread (cancel=%s)\n",
         m_cancel ? "true" : "false");
 
     static const timespec ts{
@@ -381,7 +381,7 @@ void basic_async_logger<traits>::run(std::condition_variable* a_cv)
     while (true) {
         int n = commit(&ts);
 
-        ASYNC_TRACE("Async thread result: %d (head=%p, cancel=%s)\n",
+        UTXX_ASYNC_TRACE("Async thread result: %d (head=%p, cancel=%s)\n",
             n, m_head, m_cancel ? "true" : "false" );
 
         if (n || (!m_head && m_cancel))
@@ -397,7 +397,7 @@ void basic_async_logger<traits>::run(std::condition_variable* a_cv)
 template<typename traits>
 int basic_async_logger<traits>::commit(const struct timespec* tsp)
 {
-    ASYNC_TRACE("Committing head: %p\n", m_head);
+    UTXX_ASYNC_TRACE("Committing head: %p\n", m_head);
 
     int old_val = m_event.value();
 
@@ -417,7 +417,7 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
                                            std::memory_order_relaxed));
     m_queue_size.store(0, std::memory_order_relaxed);
 
-    ASYNC_TRACE(" --> cur head: %p, new head: %p\n", cur_head, m_head);
+    UTXX_ASYNC_TRACE(" --> cur head: %p, new head: %p\n", cur_head, m_head);
 
     assert(cur_head);
 
@@ -427,14 +427,14 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
 
     // Reverse the section of this list
     for (auto p = cur_head; next; count++, p = next) {
-        ASYNC_TRACE("Set last[%p] -> next[%p]\n", next, last);
+        UTXX_ASYNC_TRACE("Set last[%p] -> next[%p]\n", next, last);
         next = p->next();
         p->next(last);
         last = p;
     }
 
     assert(last);
-    ASYNC_TRACE("Total (%d). Sublist's head: %p (%s)\n",
+    UTXX_ASYNC_TRACE("Total (%d). Sublist's head: %p (%s)\n",
                 count, last, last->c_str());
 
     if (m_max_queue_size < count)
@@ -447,7 +447,7 @@ int basic_async_logger<traits>::commit(const struct timespec* tsp)
             return -1;
         next = p->next();
         p->next(nullptr);
-        ASYNC_TRACE("Wrote (%ld bytes): %p (next: %p): %s\n",
+        UTXX_ASYNC_TRACE("Wrote (%ld bytes): %p (next: %p): %s\n",
                     p->size(), p, next, p->c_str());
         deallocate(p);
     }
@@ -513,7 +513,7 @@ inline int basic_async_logger<traits>::write(log_msg_type* msg)
        (m_notify_immediate || queue_size() > m_commit_queue_limit))
         m_event.signal();
 
-    ASYNC_TRACE("write - cur head: %p, prev head: %p, qsize: %ld\n",
+    UTXX_ASYNC_TRACE("write - cur head: %p, prev head: %p, qsize: %ld\n",
                 m_head, last_head, queue_size());
     return n;
 }
@@ -531,3 +531,7 @@ print_error(int a_errno, const char* a_what, int a_line) {
 }
 
 } // namespace utxx
+
+#ifndef UTXX_DONT_UNDEF_ASYNC_TRACE
+#   undef UTXX_ASYNC_TRACE
+#endif

@@ -34,9 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_ASYNC_FILE_LOGGER_HPP_
-#define _UTXX_ASYNC_FILE_LOGGER_HPP_
+#pragma once
 
 #include <utxx/config.h>
 
@@ -70,14 +68,14 @@ namespace utxx {
 
 #if DEBUG_ASYNC_LOGGER == 2
 #   include <utxx/timestamp.hpp>
-#   define ASYNC_DEBUG_TRACE(x) do { printf x; fflush(stdout); } while(0)
-#   define ASYNC_TRACE(x)
+#   define UTXX_ASYNC_DEBUG_TRACE(x) do { printf x; fflush(stdout); } while(0)
+#   define UTXX_ASYNC_TRACE(x)
 #elif defined(DEBUG_ASYNC_LOGGER)
-#   define ASYNC_TRACE(x) do { printf x; fflush(stdout); } while(0)
-#   define ASYNC_DEBUG_TRACE(x) ASYNC_TRACE(x)
+#   define UTXX_ASYNC_TRACE(x) do { printf x; fflush(stdout); } while(0)
+#   define UTXX_ASYNC_DEBUG_TRACE(x) UTXX_ASYNC_TRACE(x)
 #else
-#   define ASYNC_TRACE(x)
-#   define ASYNC_DEBUG_TRACE(x)
+#   define UTXX_ASYNC_TRACE(x)
+#   define UTXX_ASYNC_DEBUG_TRACE(x)
 #endif
 
 /// Traits of asynchronous logger
@@ -210,7 +208,7 @@ private:
                                 const char* a_data, size_t a_size)
     {
         command_t* p = m_cmd_allocator.allocate(1);
-        ASYNC_TRACE(("Allocated message (category=%s, size=%lu): %p\n",
+        UTXX_ASYNC_TRACE(("Allocated message (category=%s, size=%lu): %p\n",
                      a_category.c_str(), a_size, p));
         new (p) command_t(a_si, a_category, a_data, a_size);
         return p;
@@ -218,7 +216,7 @@ private:
 
     command_t* allocate_command(typename command_t::type_t a_tp, const stream_info* a_si) {
         command_t* p = m_cmd_allocator.allocate(1);
-        ASYNC_TRACE(("Allocated command (type=%d): %p\n", a_tp, p));
+        UTXX_ASYNC_TRACE(("Allocated command (type=%d): %p\n", a_tp, p));
         new (p) command_t(a_tp, a_si);
         return p;
     }
@@ -369,7 +367,7 @@ public:
     template <class T>
     T* allocate() {
         T* p = reinterpret_cast<T*>(m_msg_allocator.allocate(sizeof(T)));
-        ASYNC_TRACE(("+allocate<T>(%lu) -> %p\n", sizeof(T), p));
+        UTXX_ASYNC_TRACE(("+allocate<T>(%lu) -> %p\n", sizeof(T), p));
         return p;
     }
 
@@ -377,13 +375,13 @@ public:
     /// as its \a a_data argument
     char* allocate(size_t a_sz) {
         char* p = m_msg_allocator.allocate(a_sz);
-        ASYNC_TRACE(("+allocate(%lu) -> %p\n", a_sz, p));
+        UTXX_ASYNC_TRACE(("+allocate(%lu) -> %p\n", a_sz, p));
         return p;
     }
 
     /// Deallocate a message previously allocated by the call to allocate()
     void deallocate(char* a_data, size_t a_size) {
-        ASYNC_TRACE(("-Deallocating msg(%p, %lu)\n", a_data, a_size));
+        UTXX_ASYNC_TRACE(("-Deallocating msg(%p, %lu)\n", a_data, a_size));
         m_msg_allocator.deallocate(a_data, a_size);
     }
 
@@ -616,7 +614,7 @@ stream_info::stream_info(
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 stream_info::reset(int a_errno) {
-    ASYNC_TRACE(("Resetting stream %p (fd=%d)\n", this, fd));
+    UTXX_ASYNC_TRACE(("Resetting stream %p (fd=%d)\n", this, fd));
     state = NULL;
 
     if (a_errno >= 0)
@@ -670,7 +668,7 @@ stream_info::push(const command_t*& a_cmd) {
         last    = p;
         p       = p->prev; // Former p->next
 
-        ASYNC_TRACE(("  FD[%d]: caching cmd (tp=%s) %p (prev=%p, next=%p)\n",
+        UTXX_ASYNC_TRACE(("  FD[%d]: caching cmd (tp=%s) %p (prev=%p, next=%p)\n",
                         fd, last->type_str(), last, last->prev, last->next));
     }
 
@@ -687,7 +685,7 @@ stream_info::push(const command_t*& a_cmd) {
 
     m_pending_writes_tail = const_cast<command_t*>(a_cmd);
 
-    ASYNC_TRACE(("  FD=%d cache head=%p tail=%p\n", fd,
+    UTXX_ASYNC_TRACE(("  FD=%d cache head=%p tail=%p\n", fd,
                     m_pending_writes_head, m_pending_writes_tail));
 
     a_cmd = p;
@@ -710,7 +708,7 @@ stream_info::erase(command_t* item) {
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 stream_info::erase(command_t* first, const command_t* end) {
-    ASYNC_TRACE(("xxx stream_info(%p)::erase: purging items [%p .. %p) from queue\n",
+    UTXX_ASYNC_TRACE(("xxx stream_info(%p)::erase: purging items [%p .. %p) from queue\n",
                  this, first, end));
     for (command_t* p = first, *next; p != end; p = next) {
         next = p->next;
@@ -783,7 +781,7 @@ stop() {
     if (!running())
         return;
 
-    ASYNC_TRACE((">>> Stopping async logger (head %p)\n", m_head.load()));
+    UTXX_ASYNC_TRACE((">>> Stopping async logger (head %p)\n", m_head.load()));
 
     std::shared_ptr<std::thread> t = m_thread;
     if (t) {
@@ -803,7 +801,7 @@ run() {
         m_cond_var.notify_all();
     }
 
-    ASYNC_TRACE(("Started async logging thread (cancel=%s)\n",
+    UTXX_ASYNC_TRACE(("Started async logging thread (cancel=%s)\n",
         m_cancel ? "true" : "false"));
 
     static const timespec ts =
@@ -817,7 +815,7 @@ run() {
         #endif
         commit(&ts);
 
-        ASYNC_TRACE(( "Async thread commit result: %d (head: %p, cancel=%s)\n",
+        UTXX_ASYNC_TRACE(( "Async thread commit result: %d (head: %p, cancel=%s)\n",
             rc, m_head.load(), m_cancel ? "true" : "false" ));
 
         // CPU-friendly spin for 250us
@@ -838,9 +836,9 @@ run() {
     }
 
 DONE:
-    ASYNC_TRACE(("Logger loop finished - calling close()\n"));
+    UTXX_ASYNC_TRACE(("Logger loop finished - calling close()\n"));
     internal_close();
-    ASYNC_DEBUG_TRACE(("Logger notifying all of exiting (%d) active_files=%d\n",
+    UTXX_ASYNC_DEBUG_TRACE(("Logger notifying all of exiting (%d) active_files=%d\n",
                        m_thread.use_count(), open_files_count()));
 
     m_thread.reset();
@@ -849,7 +847,7 @@ DONE:
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
 internal_close() {
-    ASYNC_TRACE(("Logger is closing\n"));
+    UTXX_ASYNC_TRACE(("Logger is closing\n"));
     std::unique_lock<std::mutex> lock(m_mutex);
     for (auto* si : m_files)
         internal_close(si, 0);
@@ -874,7 +872,7 @@ internal_close(stream_info* a_si, int a_errno) {
     }
 
     close_event_type_ptr on_close = a_si->on_close;
-    ASYNC_TRACE(("----> close(%p, %d) (fd=%d) %s event_val=%d, "
+    UTXX_ASYNC_TRACE(("----> close(%p, %d) (fd=%d) %s event_val=%d, "
                  "use_count=%ld, active=%ld\n",
             a_si, a_si->error, fd,
             on_close ? "notifying caller" : "will NOT notify caller",
@@ -1056,7 +1054,7 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
     int n = internal_enqueue(l_cmd, a_id.stream());
 
     if (!n && ev) {
-        ASYNC_TRACE(("----> close_file(%d) is waiting for ack secs=%d (event_val={%ld,%d})\n",
+        UTXX_ASYNC_TRACE(("----> close_file(%d) is waiting for ack secs=%d (event_val={%ld,%d})\n",
                      fd, a_wait_secs, event_val, ev->value()));
         if (m_thread) {
             if (a_wait_secs < 0)
@@ -1066,11 +1064,11 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
                 auto wait_until = duration + std::chrono::seconds(a_wait_secs);
                 n = ev->wait(wait_until, &event_val);
             }
-            ASYNC_TRACE(( "====> close_file(%d) ack received (res=%d, val=%ld) (err=%d)\n",
+            UTXX_ASYNC_TRACE(( "====> close_file(%d) ack received (res=%d, val=%ld) (err=%d)\n",
                     fd, n, event_val, si->error));
         }
     } else {
-        ASYNC_TRACE(( "====> close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
+        UTXX_ASYNC_TRACE(( "====> close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
                 fd, n, (ev ? "true" : "false")));
     }
     a_id.reset();
@@ -1107,7 +1105,7 @@ internal_enqueue(command_t* a_cmd, const stream_info* a_si) {
     if (i > 1) m_stats_enque_spins.fetch_add(i, std::memory_order_relaxed);
 #endif
 
-    ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%s) - "
+    UTXX_ASYNC_TRACE(("--> internal_enqueue cmd %p (type=%s) - "
                  "cur head: %p, prev head: %p%s\n",
         a_cmd, a_cmd->type_str(), m_head.load(),
         old_head, !old_head ? " (signaled)" : ""));
@@ -1127,7 +1125,7 @@ internal_write(const file_id& a_id, const std::string& a_category,
     }
 
     command_t* p = allocate_message(a_id.stream(), a_category, a_data, a_sz);
-    ASYNC_TRACE(("->write(%p, %lu) - %s\n", a_data, a_sz, copied ? "allocated" : "no copy"));
+    UTXX_ASYNC_TRACE(("->write(%p, %lu) - %s\n", a_data, a_sz, copied ? "allocated" : "no copy"));
     return internal_enqueue(p, a_id.stream());
 }
 
@@ -1153,7 +1151,7 @@ do_writev_and_free(stream_info* a_si, command_t* a_end,
                    const char** a_categories, const iovec* a_vec, size_t a_sz)
 {
     int n = a_sz ? a_si->on_write(*a_si, a_categories, a_vec, a_sz) : 0;
-    ASYNC_TRACE(("Written %d bytes to stream %s\n", n, a_si->name.c_str()));
+    UTXX_ASYNC_TRACE(("Written %d bytes to stream %s\n", n, a_si->name.c_str()));
 
     if (likely(n >= 0)) {
         // Data was successfully written to stream - adjust internal queue's head/tail
@@ -1185,7 +1183,7 @@ deallocate_command(command_t* a_cmd) {
         default:
             break;
     }
-    ASYNC_TRACE(("FD=%d, deallocating command %p (type=%s)\n",
+    UTXX_ASYNC_TRACE(("FD=%d, deallocating command %p (type=%s)\n",
                 a_cmd->fd(), a_cmd, a_cmd->type_str()));
     a_cmd->~command_t();
     m_cmd_allocator.deallocate(a_cmd, 1);
@@ -1195,7 +1193,7 @@ template<typename traits>
 int basic_multi_file_async_logger<traits>::
 commit(const struct timespec* tsp)
 {
-    ASYNC_TRACE(("Committing head: %p\n", m_head.load()));
+    UTXX_ASYNC_TRACE(("Committing head: %p\n", m_head.load()));
 
     int event_val = m_event.value();
 
@@ -1206,7 +1204,7 @@ commit(const struct timespec* tsp)
         #endif
         m_event.wait(tsp, &event_val);
 
-        ASYNC_DEBUG_TRACE(
+        UTXX_ASYNC_DEBUG_TRACE(
             ("  %s COMMIT awakened (res=%s, val=%d, futex=%d), cancel=%d, head=%p\n",
              timestamp::to_string().c_str(), to_string(n), event_val, m_event.value(),
              m_cancel.load(std::memory_order_relaxed), m_head.load())
@@ -1234,7 +1232,7 @@ commit(const struct timespec* tsp)
 #ifdef PERF_STATS
     if (i > 1) m_stats_deque_spins.fetch_add(i, std::memory_order_relaxed);
 #endif
-    ASYNC_TRACE((" --> cur head: %p, new head: %p\n", cur_head, m_head.load()));
+    UTXX_ASYNC_TRACE((" --> cur head: %p, new head: %p\n", cur_head, m_head.load()));
 
     BOOST_ASSERT(cur_head);
 
@@ -1254,7 +1252,7 @@ commit(const struct timespec* tsp)
         n = si->push(p);
         // Update the index of fds that have pending data
         m_pending_data_streams.insert(si);
-        ASYNC_TRACE(("Set stream %p fd[%d].pending_writes(%p) -> %d, head(%p), next(%p)\n",
+        UTXX_ASYNC_TRACE(("Set stream %p fd[%d].pending_writes(%p) -> %d, head(%p), next(%p)\n",
                      si, si->fd, last, n, si->pending_writes_head(), p));
     }
 
@@ -1264,7 +1262,7 @@ commit(const struct timespec* tsp)
 
     m_total_msgs_processed.fetch_add(count, std::memory_order_relaxed);
 
-    ASYNC_DEBUG_TRACE(("Processed count: %d / %ld. (MaxQsz = %d)\n",
+    UTXX_ASYNC_DEBUG_TRACE(("Processed count: %d / %ld. (MaxQsz = %d)\n",
                        count, m_total_msgs_processed.load(), m_max_queue_size));
 
     for(typename pending_data_streams_set::iterator
@@ -1280,13 +1278,13 @@ commit(const struct timespec* tsp)
             double time_diff = now.diff(si->last_reconnect_attempt());
 
             if (time_diff > m_reconnect_sec) {
-                ASYNC_TRACE(("===> Trying to reconnect stream %p "
+                UTXX_ASYNC_TRACE(("===> Trying to reconnect stream %p "
                              "(prev reconnect %.3fs ago)\n",
                              si, si->last_reconnect_attempt() ? time_diff : 0.0));
 
                 int fd = si->on_reconnect(*si);
 
-                ASYNC_TRACE(("     Stream %p %s\n",
+                UTXX_ASYNC_TRACE(("     Stream %p %s\n",
                              si, fd < 0 ? "not reconnected!"
                                         : "reconnected successfully!"));
 
@@ -1304,7 +1302,7 @@ commit(const struct timespec* tsp)
             }
         }
 
-        ASYNC_TRACE(("Processing commands for stream %p (fd=%d)\n", si, si->fd));
+        UTXX_ASYNC_TRACE(("Processing commands for stream %p (fd=%d)\n", si, si->fd));
 
         struct iovec iov [si->max_batch_sz];  // Contains pointers to write
         const  char* cats[si->max_batch_sz];  // List of message categories
@@ -1328,7 +1326,7 @@ commit(const struct timespec* tsp)
                 iov[n]  = ffmt(p->args.msg.category, p->args.msg.data);
                 cats[n] = p->args.msg.category.c_str();
                 sz     += iov[n].iov_len;
-                ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) next(%p), "
+                UTXX_ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) next(%p), "
                              "write(%p, %lu) free(%p, %lu)\n",
                              si->fd, si, p, n, p->next, iov[n].iov_base, iov[n].iov_len,
                              p->args.msg.data.iov_base, p->args.msg.data.iov_len));
@@ -1341,13 +1339,13 @@ commit(const struct timespec* tsp)
                 }
             } else if (p->type == command_t::close) {
                 status |= p->args.close.immediate ? SI_CLOSE : SI_CLOSE_SCHEDULED;
-                ASYNC_TRACE(("FD=%d, Command %lu address %p (close)\n", si->fd, n, p));
+                UTXX_ASYNC_TRACE(("FD=%d, Command %lu address %p (close)\n", si->fd, n, p));
                 si->erase(const_cast<command_t*>(p));
             } else if (p->type == command_t::destroy_stream) {
                 status |= SI_DESTROY;
                 si->erase(const_cast<command_t*>(p));
             } else {
-                ASYNC_TRACE(("Command %p has invalid message type: %s "
+                UTXX_ASYNC_TRACE(("Command %p has invalid message type: %s "
                              "(stream=%p, prev=%p, next=%p)\n",
                              p, p->type_str(), p->stream, p->prev, p->next));
                 si->erase(const_cast<command_t*>(p));
@@ -1356,13 +1354,13 @@ commit(const struct timespec* tsp)
         }
 
         if (si->error) {
-            ASYNC_TRACE(("Written total %lu bytes to %p (fd=%d) %s with error: %s\n",
+            UTXX_ASYNC_TRACE(("Written total %lu bytes to %p (fd=%d) %s with error: %s\n",
                          sz, si, si->fd, si->name.c_str(), si->error_msg.c_str()));
         } else {
             if (n > 0)
                 do_writev_and_free(si, end, cats, iov, n);
 
-            ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n",
+            UTXX_ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n",
                          sz, si->fd, si->name.c_str()));
         }
 
@@ -1371,14 +1369,14 @@ commit(const struct timespec* tsp)
             bool destroy_si = (status & SI_DESTROY);
 
             if (destroy_si || si->fd < 0) {
-                ASYNC_DEBUG_TRACE(("Removing %p stream from list of pending data streams\n", si));
+                UTXX_ASYNC_DEBUG_TRACE(("Removing %p stream from list of pending data streams\n", si));
                 m_pending_data_streams.erase(si);
             }
 
             internal_close(si, si->error);
 
             if (destroy_si) {
-                ASYNC_TRACE(("<<< Destroying %p stream\n", si));
+                UTXX_ASYNC_TRACE(("<<< Destroying %p stream\n", si));
                 delete si;
             }
         }
@@ -1388,4 +1386,7 @@ commit(const struct timespec* tsp)
 
 } // namespace utxx
 
-#endif // _UTXX_ASYNC_FILE_LOGGER_HPP_
+#ifndef UTXX_DONT_UNDEF_ASYNC_TRACE
+#   undef UTXX_ASYNC_TRACE
+#   undef UTXX_ASYNC_DEBUG_TRACE
+#endif

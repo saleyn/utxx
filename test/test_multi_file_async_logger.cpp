@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #elif defined(USE_NO_ALLOC) || defined(USE_CACHED_ALLOC)
 #include <utxx/alloc_cached.hpp>
 #endif
+#define UTXX_DONT_UNDEF_ASYNC_TRACE
 #include <utxx/multi_file_async_logger.hpp>
 #include <utxx/perf_histogram.hpp>
 #include <utxx/verbosity.hpp>
@@ -306,8 +307,8 @@ namespace {
             memcpy(p, m_prefix.c_str(), m_prefix.size());
             memcpy(p + m_prefix.size(), a_msg.iov_base, a_msg.iov_len);
             m_logger.deallocate(static_cast<char*>(a_msg.iov_base), a_msg.iov_len);
-            ASYNC_TRACE(("  rewritten msg(%p, %lu) -> msg(%p, %lu)\n",
-                    a_msg.iov_base, a_msg.iov_len, p, n));
+            UTXX_ASYNC_TRACE(("  rewritten msg(%p, %lu) -> msg(%p, %lu)\n",
+                             a_msg.iov_base, a_msg.iov_len, p, n));
             a_msg.iov_base = p;
             a_msg.iov_len  = n;
             // In this case we instructuct the caller to write the same
