@@ -42,9 +42,9 @@ The components include:
 
 ## Building ##
 Make sure that you have autoconf-archive package installed:
-	http://www.gnu.org/software/autoconf-archive
+http://www.gnu.org/software/autoconf-archive
 
-    Run:
+Run:
 ```
 $ ./bootstrap
 $ ./configure --with-boost="/path/to/boost" \
@@ -69,7 +69,6 @@ Longer description (wrap at 72 characters)
 </pre>
 
 #### Summary ####
-
 * Less than 50 characters
 * What was changed
 * Imperative present tense (fix, add, change)
@@ -78,25 +77,34 @@ Longer description (wrap at 72 characters)
   * `Change default timeout to 123`
 * No period
 
-#### Description ####
-
+#### Longer Description ####
 * Wrap at 72 characters
 * Why, explain intention and implementation approach
-* Present tense
+* Present tense (fix, add, change)
 
-#### Atomicity ####
-
+#### Commit Atomicity ####
 * Break up logical changes
 * Make whitespace changes separately
 
+#### Code Formatting ####
+* Wrap at 80 characters
+* Use 4-space indentation
+* Expand tabs with spaces in indentations (for vi use settings: `ts=4:sw=4:et`)
+* Use the following braces style:
+```
+if (...) {
+   ...
+} else {
+   ...
+}
+```
 ## Author ##
-Serge Aleynikov <saleyn at gmail dot com>
+* Serge Aleynikov `<saleyn at gmail dot com>`
 
 ## Contributors ##
-	Dmitriy Kargapolov <dmitriy.kargapolov at gmail dot com>
-	Leonid Timochouk   <l.timochouk at gmail dot com>
+* Dmitriy Kargapolov `<dmitriy.kargapolov at gmail dot com>`
+* Leonid Timochouk   `<l.timochouk at gmail dot com>`
 
 ## LICENSE ##
-Non-commercial: GNU Lesser General Public License 2.1
-
-Commercial:     (contact the author for details)
+* Non-commercial: GNU Lesser General Public License 2.1
+* Commercial:     (contact the author for details)
