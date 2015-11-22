@@ -155,7 +155,7 @@ class ConfigGenerator(object):
                 return et.parse(filename).getroot()
             raise Exception("File '%s' not found in:\n%s\n" % (filename, "\n".join(self.dirs)))
         except Exception as e:
-            print >> sys.stderr, e.message
+            print >> sys.stderr, "Error in %s: %s" % (self.filename, e.message)
             exit(10)
 
     def check_valid_attribs(self, attribs, valid_attr_names, name, node):
