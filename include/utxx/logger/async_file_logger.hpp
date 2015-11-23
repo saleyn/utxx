@@ -478,7 +478,7 @@ template<typename traits>
 inline void basic_async_logger<traits>::
 deallocate(log_msg_type* a_msg)
 {
-    auto   size  = sizeof(log_msg_type) + a_msg->size();
+    auto size = sizeof(log_msg_type) + a_msg->size();
     a_msg->~log_msg_type();
     m_allocator.deallocate(reinterpret_cast<char*>(a_msg), size);
 }

@@ -391,6 +391,24 @@ public:
     /// will have the deallocation responsibility.
     int write(const file_id& a_id, const std::string& a_category, void* a_data, size_t a_sz);
 
+    /// Allocate a memory block of size \a a_sz and call the writer.
+    /// @param a_id  destination file identifier
+    /// @param a_cat message category
+    /// @param a_fun writing function: <void(char* buf, size_t a_sz)>
+    /// @param a_sz  size of the message to be written
+    template <typename writer>
+    typename std::enable_if<
+        !std::is_same<writer, char*>::value       &&
+        !std::is_same<writer, std::string>::value
+        , int>::
+    type write(const file_id& a_id, const std::string& a_cat, const writer& a_fun, size_t a_sz)
+    {
+        char* q = allocate(a_sz);
+        try   { a_fun(q,a_sz); }
+        catch (std::exception& ) { deallocate(q, a_sz); throw; }
+        return write(a_id, a_cat, q, a_sz);
+    }
+
     /// Write a copy of the string a_data to a file.
     int write(const file_id& a_id, const std::string& a_category, const std::string& a_msg);
 
