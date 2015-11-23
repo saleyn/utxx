@@ -214,6 +214,7 @@ public:
     int                 notify_immediate()   const { return m_notify_immediate; }
     /// Commit interval in milliseconds
     int                 commit_msec()        const { return m_commit_msec;      }
+    void                commit_msec(int a_ms)      { m_commit_msec = a_ms;      }
 
     /// Max size of the queue forcing a commit prior to elapsing of commit_msec()
     int                 commit_queue_limit() const { return m_commit_queue_limit;}
