@@ -64,9 +64,11 @@ namespace {
                    const std::string& a,  int& i) {
         if (a.empty() || argv[i][0] != '-') return false;
         if (a == argv[i]) {
-            if (!a_fun && i < argc-1 && argv[i+1][0] != '-')
-                return false;
-            else
+            if (!a_fun) {
+                // Fail if this option has argument, while it's not supposed to.
+                if (i < argc-1 && argv[i+1][0] != '-')
+                    return false;
+            } else
                 a_fun(((i+1 >= argc || argv[i+1][0] == '-') ? "" : argv[++i]));
             return true;
         }
