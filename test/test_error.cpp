@@ -76,6 +76,14 @@ namespace abc {
         return &s_src;
     }
 
+    static src_info lambda(utxx::src_info&& a_src) {
+        return a_src;
+    }
+
+    static src_info do_lambda() {
+        auto fun = [](){ return lambda(UTXX_SRC); };
+        return fun();
+    }
 } // namespace abc
 
 BOOST_AUTO_TEST_CASE( test_error )
@@ -225,6 +233,27 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
                 std::cout << '"' << str << '"' << std::endl;
                 BOOST_CHECK(false);
             }
+
+            auto sii = abc::do_lambda();
+            str = sii.to_string("", "", 3);
+            re  = std::regex("^test_error.cpp:\\d+ abc::do_lambda$");
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
+
+            src_info ci
+            (
+                UTXX_FILE_SRC_LOCATION,
+                "auto mqt::(anonymous class)::operator()(const std::string &) const"
+            );
+            str = ci.to_string("", "", 3);
+            re  = std::regex("^test_error.cpp:\\d+ mqt::\\(anonymous class\\)::operator\\(\\)$");
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
+
         }
 
         {

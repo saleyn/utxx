@@ -332,6 +332,7 @@ public:
             auto inside = 0;  // > 0 when we are inside "<...>"
             if (strncmp(begin, "static ",   7)==0) begin += 7;
             if (strncmp(begin, "typename ", 9)==0) begin += 9;
+            //
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
             for (q = begin, e = q + a_sf_len; q < e; ++q) {
@@ -339,6 +340,20 @@ public:
                     case '(':
                         if (inside)
                             continue;
+                        // This is a rare lambda case, e.g.:
+                        //      xxx::(anonymous class)::yyy()
+                        // replace with "<lambda>" scope
+                        if (strncmp(q+1, "anonymous class)", 16) == 0 && scope<N) {
+                            q += 16;
+                            continue;
+                        }
+                        // This is an operator() case, e.g.:
+                        //      xxx::operator()(const char*)
+                        // Preserve first set of "()"
+                        if (strncmp(scopes[scope-1], "operator", 8) == 0 && *(q+1) == ')') {
+                            q++;
+                            continue;
+                        }
                         e = q;
                         break;
                     case ' ':
