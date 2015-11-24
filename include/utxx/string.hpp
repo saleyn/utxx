@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdexcept>
 #include <sstream>
 #include <array>
+#include <type_traits>
 #include <utxx/print.hpp>
 
 //-----------------------------------------------------------------------------
@@ -53,21 +54,19 @@ namespace utxx {
 
     /// Return the static length of an array of type T
     template <typename T, int N>
-    #if __cplusplus >= 201103L
-    constexpr
-    #endif
-    size_t length(const T (&a)[N]) {
-        return N;
-    }
+    constexpr size_t length(const T (&a)[N])    { return N; }
 
     /// Return the static length of a character string
     template <int N>
-    #if __cplusplus >= 201103L
-    constexpr
-    #endif
-    size_t length(const char (&a)[N]) {
-        return N-1;
-    }
+    constexpr size_t length(const char (&a)[N]) { return N-1; }
+
+    /// Return the static length of any given type.
+    /// Example:
+    /// \code
+    /// size_t b[3]; cout << length<decltype(b)>() << endl;
+    /// \endcode
+    template <typename T>
+    constexpr size_t length() { return std::extent<T>::value; }
 
     /// Convert boolean to string
     inline constexpr const char* to_string(bool a_value) {
