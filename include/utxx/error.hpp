@@ -344,7 +344,8 @@ public:
                     case ' ':
                         if (inside)
                             continue;
-                        begin    = q+1;
+                        while (*(++q) == '*' || *q == '&');
+                        begin    = q;
                         scope    = 1;
                         tribrcnt = 0;
                         break;
