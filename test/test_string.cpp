@@ -64,6 +64,9 @@ BOOST_AUTO_TEST_CASE( test_string_length )
 
     const t arr[] = { t(1), t(2) };
     BOOST_REQUIRE_EQUAL(2u, length(arr));
+
+    size_t b[3];
+    BOOST_REQUIRE_EQUAL(3u, length<decltype(b)>());
 }
 
 enum op_type {OP_UNDEFINED = -1, OP_ADD, OP_REMOVE, OP_REPLACE, OP_UPDATE};
