@@ -121,7 +121,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename Visitor>                                          \
         static void for_each(const Visitor& a_fun) {                         \
             for (auto it = ++names().begin(), e = names().end(); it!=e; ++it)\
-                if (!a_fun(it->first))                                       \
+                if (!a_fun(it->first, it->second))                           \
                     break;                                                   \
         }                                                                    \
                                                                              \
