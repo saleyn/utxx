@@ -49,6 +49,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/xpressive/xpressive.hpp>
 #include <boost/thread/locks.hpp>
 #include <stdio.h>
+#include <stdlib.h>
 
 #if DEBUG_ASYNC_LOGGER == 2
 #   define ASYNC_DEBUG_TRACE(x) do { printf x; fflush(stdout); } while(0)
@@ -185,6 +186,7 @@ log_level logger::signal_slot_to_level(int slot) noexcept
 }
 
 const char* logger::default_log_levels = "INFO|NOTICE|WARNING|ERROR|ALERT|FATAL";
+std::atomic<sigset_t*> logger::m_crash_sigset;
 
 void logger::add_macro(const std::string& a_macro, const std::string& a_value)
 {
@@ -223,7 +225,9 @@ void logger::init(const config_tree& a_cfg)
         m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
         m_show_fun_namespaces = a_cfg.get<int>   ("logger.show-fun-namespaces",
                                                   m_show_fun_namespaces);
+        m_show_category  = a_cfg.get<bool>       ("logger.show-category", m_show_category);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
+        m_show_thread    = a_cfg.get<bool>       ("logger.show-thread",   m_show_thread);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
         m_timestamp_type = parse_stamp_type(ts);
@@ -243,7 +247,11 @@ void logger::init(const config_tree& a_cfg)
             sigset_t sset =
               sig_members_parse(a_cfg.get("logger.handle-crash-signals.signals",""), UTXX_SRC);
 
-            install_sighandler(true, &sset);
+            if (install_sighandler(true, &sset)) {
+                auto old = m_crash_sigset.exchange(new sigset_t(sset));
+                if (!old)
+                    delete old;
+            }
         }
 
         //logger_impl::msg_info info(NULL, 0);
@@ -304,6 +312,9 @@ void logger::run()
 {
     if (m_on_before_run)
         m_on_before_run();
+
+    if (!m_ident.empty())
+        pthread_setname_np(pthread_self(), m_ident.c_str());
 
     int event_val = 1;
     while (!m_abort)
@@ -394,6 +405,9 @@ DONE:
 
 void logger::finalize()
 {
+    if (!m_initialized)
+        return;
+
     std::lock_guard<std::mutex> g(m_mutex);
     m_abort = true;
     if (m_thread)
@@ -411,6 +425,10 @@ void logger::do_finalize()
     for(auto& impl : m_implementations)
         impl.reset();
     m_implementations.clear();
+
+    auto sset = m_crash_sigset.exchange(nullptr);
+    if  (sset)
+        delete sset;
 }
 
 char* logger::
@@ -432,9 +450,20 @@ format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
         p = stpncpy(p, ident().c_str(), ident().size());
         *p++ = '|';
     }
-    if (!a_msg.m_category.empty())
-        p = stpncpy(p, a_msg.m_category.c_str(), a_msg.m_category.size());
-    *p++ = '|';
+    if (show_thread()) {
+        char thread_name[33];
+        if (pthread_getname_np(a_msg.m_thread_id, thread_name, sizeof(thread_name)) < 0) {
+            char* p = thread_name;
+            itoa(a_msg.m_thread_id, p, 10);
+        }
+        p = stpcpy(p, thread_name);
+        *p++ = '|';
+    }
+    if (show_category()) {
+        if (!a_msg.m_category.empty())
+            p = stpncpy(p, a_msg.m_category.c_str(), a_msg.m_category.size());
+        *p++ = '|';
+    }
     return p;
 }
 
@@ -448,12 +477,14 @@ format_footer(const logger::msg& a_msg, char* a_buf, const char* a_end)
     // Timestamp|Level|Ident|Category|Message|File:Line FunName\n
     if (a_msg.src_loc_len() && show_location() && likely(a_buf + n < a_end)) {
         if (*(p-1) == '\n') p--;
-        *p++ =  '|';
+        *p++ = ' ';
+        *p++ = '[';
 
         p = src_info::to_string(p, a_end - p,
                 a_msg.src_location(), a_msg.src_loc_len(),
                 a_msg.src_fun_name(), a_msg.src_fun_len(),
                 show_fun_namespaces());
+        *p++ = ']';
     }
 
     // We reached the end of the streaming sequence:
@@ -590,14 +621,16 @@ void logger::remove(log_level a_lvl, int a_id)
 
 std::ostream& logger::dump(std::ostream& out) const
 {
+    auto val = [](bool a) { return a ? "true" : "false"; };
     std::stringstream s;
     s   << "Logger settings:\n"
         << "    level-filter        = " << log_levels_to_str(m_level_filter) << '\n'
-        << "    show-location       = " << (m_show_location ? "true" : "false") << '\n'
-        << "    show-fun-namespaces = " << m_show_fun_namespaces << '\n'
-        << "    show-ident          = " << (m_show_ident    ? "true" : "false") << '\n'
-        << "    ident               = " << m_ident << '\n'
-        << "    timestamp-type      = " << to_string(m_timestamp_type) << '\n';
+        << "    show-location       = " << val(m_show_location)         << '\n'
+        << "    show-fun-namespaces = " << m_show_fun_namespaces        << '\n'
+        << "    show-ident          = " << val(m_show_ident)            << '\n'
+        << "    show-thread         = " << val(m_show_thread)           << '\n'
+        << "    ident               = " << m_ident                      << '\n'
+        << "    timestamp-type      = " << to_string(m_timestamp_type)  << '\n';
 
     // Check the list of registered implementations. If corresponding
     // configuration section is found, initialize the implementation.

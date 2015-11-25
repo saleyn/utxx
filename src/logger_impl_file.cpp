@@ -106,11 +106,17 @@ bool logger_impl_file::init(const variant_tree& a_config)
                 this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
                 p += snprintf(p, p - end, "Timestamp|");
             p += snprintf(p, p - end, "Level|");
-            if (this->m_log_mgr && this->m_log_mgr->show_ident())
-                p += snprintf(p, p - end, "Ident|");
-            p += snprintf(p, p - end, "Category|Message");
+            if (this->m_log_mgr) {
+                if (this->m_log_mgr->show_ident())
+                    p += snprintf(p, p - end, "Ident|");
+                if (this->m_log_mgr->show_thread())
+                    p += snprintf(p, p - end, "Thread|");
+                if (this->m_log_mgr->show_category())
+                p += snprintf(p, p - end, "Category|");
+            }
+            p += snprintf(p, p - end, "Message");
             if (this->m_log_mgr && this->m_log_mgr->show_location())
-                p += snprintf(p, p - end, "File:Line%s",
+                p += snprintf(p, p - end, " [File:Line%s]",
                               this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
             *p++ = '\n';
 

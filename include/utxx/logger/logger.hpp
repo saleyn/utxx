@@ -196,6 +196,7 @@ struct logger : boost::noncopyable {
         std::size_t   m_src_fun_len;
         const char*   m_src_fun;
         payload_t     m_type;
+        pthread_t     m_thread_id;
 
         union U {
             char_function  cf;
@@ -223,6 +224,7 @@ struct logger : boost::noncopyable {
             , m_src_fun_len (a_sfun_len)
             , m_src_fun     (a_src_fun)
             , m_type        (a_type)
+            , m_thread_id   (pthread_self())
             , m_fun         (a_fun)
         {}
 
@@ -377,7 +379,7 @@ private:
     std::unique_ptr<std::thread>    m_thread;
     concurrent_queue                m_queue;
     bool                            m_abort                 = false;
-    bool                            m_initialized           = false;
+    std::atomic<bool>               m_initialized;
     futex                           m_event;
     std::mutex                      m_mutex;
     struct timespec                 m_wait_timeout;
@@ -389,12 +391,16 @@ private:
     char                            m_src_location[256];
     bool                            m_show_location         = true;
     int                             m_show_fun_namespaces   = 3;
+    bool                            m_show_category         = false;
     bool                            m_show_ident            = false;
+    bool                            m_show_thread           = false;
     std::string                     m_ident;
     bool                            m_silent_finish         = false;
     bool                            m_use_sched_yield       = true;
     macro_var_map                   m_macro_var_map;
 
+    /// Signal set handled by the installed crash signal handler
+    static std::atomic<sigset_t*>   m_crash_sigset;
 
     /// Callback executed on error (e.g. problem writing to logger's back-end)
     std::function<void (const char* a_reason)> m_error;
@@ -515,8 +521,12 @@ public:
     /// @return format type of timestamp written to log
     stamp_type  timestamp_type() const { return m_timestamp_type; }
 
-    /// @return true if ident display is enabled by default.
+    /// @return true if category logging is enabled by default.
+    bool        show_category()  const { return m_show_category; }
+    /// @return true if ident logging is enabled by default.
     bool        show_ident()     const { return m_show_ident; }
+    /// @return true if thread name logging is enabled.
+    bool        show_thread()    const { return m_show_ident; }
     /// @return true if source location display is enabled by default.
     bool        show_location()  const { return m_show_location; }
     /// @return Max depth of function name scope being printed (e.g.
@@ -536,6 +546,11 @@ public:
     /// String representation of log levels enabled by default.  Used in config
     /// parsing.
     static const char* default_log_levels;
+
+    /// If the crash handler is installed, return the handled signal set
+    static sigset_t* crash_handler_sigset() {
+        return m_crash_sigset.load(std::memory_order_relaxed);
+    }
 
     /// Dump internal settings
     std::ostream& dump(std::ostream& out) const;

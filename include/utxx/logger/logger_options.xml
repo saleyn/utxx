@@ -6,8 +6,12 @@
                 desc="Max number of namespaces included in printing function names.\n
                       0 - no function name is printed. 1 - function name is printed\n
                       without namespaces."/>
+        <option name="show-category" val-type="bool" default="true"
+                desc="When true message category is added to output lines"/>
         <option name="show-ident" val-type="bool" default="false"
                 desc="When true logger's ident property is added to output lines"/>
+        <option name="show-thread" val-type="bool" default="false"
+                desc="When true logging thread identifier of a message is added to output lines"/>
         <option name="ident" val-type="string" default=""
                 desc="Process's identifier (can use env variables in the name)"/>
         <option name="timestamp" val-type="string" default="time-usec"

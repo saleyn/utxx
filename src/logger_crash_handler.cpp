@@ -39,7 +39,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger.hpp>
 #include <utxx/logger/logger_crash_handler.hpp>
 #include <utxx/signal_block.hpp>
-
+#include <sys/syscall.h>
 #include <csignal>
 #include <cstring>
 
@@ -84,7 +84,8 @@ namespace {
         char** msg  = backtrace_symbols(dump, size); // overwrite sigaction with caller's address
 
         oss << "Received fatal signal: " << sig_name(a_signo)
-            << " (" << a_signo << ")\n"  << "\tPID: " << getpid() << std::endl;
+            << " (" << a_signo << ")\n"  << "\tPID: " << getpid()
+            << "\tTID: "       << syscall(SYS_gettid) << std::endl;
 
         // dump stack: skip first frame, since that is here
         for(size_t idx = 1; idx < size && msg != nullptr; ++idx)
@@ -177,13 +178,13 @@ namespace detail {
 } // namespace detail
 
 
-void install_sighandler(bool a_install, const sigset_t* a_signals)
+bool install_sighandler(bool a_install, const sigset_t* a_signals)
 {
     static std::atomic<bool> s_installed;
 
     // Don't install anything if the handlers are already installed
     if (!a_install || s_installed.exchange(true))
-        return;
+        return false;
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__)
     if (SIG_ERR == signal(SIGABRT, crash_handler)) perror("signal - SIGABRT");
@@ -207,9 +208,14 @@ void install_sighandler(bool a_install, const sigset_t* a_signals)
     if (!a_signals)
         a_signals = &s_default;
 
+    if (sigisemptyset(a_signals))
+        return false;
+
     for (uint i=1; i < sig_names_count(); ++i)
         if (sigismember(a_signals, i) && sigaction(i, &action, nullptr) < 0)
             UTXX_THROW_IO_ERROR(errno, "Error in sigaction - ", sig_name(i));
+
+    return true;
 #endif
 }
 

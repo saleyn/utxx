@@ -56,6 +56,6 @@ namespace detail {
 /// * SIGILL  - ILlegal instruction (ANSI)
 /// * SIGSEGV - Segmentation violation i.e. illegal memory reference
 /// * SIGTERM - TERMINATION (ANSI)
-void install_sighandler(bool a_install, const sigset_t* a_signals = nullptr);
+bool install_sighandler(bool a_install, const sigset_t* a_signals = nullptr);
 
 } // namespace utxx::logger
