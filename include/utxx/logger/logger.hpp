@@ -461,10 +461,16 @@ public:
     /// \brief Call to initialize the logger by reading configuration from file.
     /// Supported file formats: {scon, info, xml}. The file format is determined
     /// by the extension (".config|.conf" - SCON; ".info" - INFO; ".xml" - XML).
-    void init(const char* filename);
+    /// @param a_file           configuration filename
+    /// @param a_ignore_signals optional set of externally handled signals that
+    ///                         should be ignored by global signal crash handler.
+    void init(const char* a_file, const sigset_t* a_ignore_signals = nullptr);
 
     /// Call to initialize the logger from a configuration container.
-    void init(const config_tree& a_cfg);
+    /// @param a_file           configuration filename
+    /// @param a_ignore_signals optional set of externally handled signals that
+    ///                         should be ignored by global signal crash handler.
+    void init(const config_tree& a_cfg, const sigset_t* a_ignore_signals = nullptr);
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();

@@ -206,14 +206,14 @@ std::string logger::replace_macros(const std::string& a_value) const
     return regex_replace(a_value, re, replace);
 }
 
-void logger::init(const char* filename)
+void logger::init(const char* filename, const sigset_t* a_ignore_signals)
 {
     config_tree pt;
     read_config(filename, pt);
     init(pt);
 }
 
-void logger::init(const config_tree& a_cfg)
+void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
 {
     if (m_initialized)
         throw std::runtime_error("Logger already initialized!");
@@ -246,6 +246,12 @@ void logger::init(const config_tree& a_cfg)
         if (a_cfg.get("logger.handle-crash-signals", true)) {
             sigset_t sset =
               sig_members_parse(a_cfg.get("logger.handle-crash-signals.signals",""), UTXX_SRC);
+
+            // Remove signals from the sset that are handled externally
+            if (a_ignore_signals)
+                for (uint i=1; i < sig_names_count(); ++i)
+                    if (sigismember(a_ignore_signals, i))
+                        sigdelset(&sset, i);
 
             if (install_sighandler(true, &sset)) {
                 auto old = m_crash_sigset.exchange(new sigset_t(sset));
