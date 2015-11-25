@@ -97,11 +97,11 @@ bool logger_impl_file::init(const variant_tree& a_config)
             tzset();
 
             int  tz = -timezone;
-            int  hh = tz / 3600;
-            int  mm = tz % 60;
-            p += snprintf(p, p - end, "# Logging started at: %s %s%02d:%02d\n#",
+            int  hh = abs(tz / 3600);
+            int  mm = abs(tz % 60);
+            p += snprintf(p, p - end, "# Logging started at: %s %c%02d:%02d\n#",
                           timestamp::to_string(DATE_TIME).c_str(),
-                          tz > 0 ? "+" : "", hh, mm);
+                          tz > 0 ? '+' : '-', hh, mm);
             if (!this->m_log_mgr ||
                 this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
                 p += snprintf(p, p - end, "Timestamp|");

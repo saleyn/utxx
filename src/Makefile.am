@@ -20,6 +20,7 @@ UTXX_SRCS = \
     logger_impl_syslog.cpp \
     path.cpp \
     stream64.cpp \
+    signal_block.cpp \
     string.cpp \
     timestamp.cpp \
     url.cpp \

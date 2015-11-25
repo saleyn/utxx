@@ -213,7 +213,8 @@ public:
     /// automatically crunched by the read() call without releasing allocated memory.
     void wr_lwm(size_t a_lwm) {
         if (a_lwm > max_size())
-            throw std::runtime_error("io_buffer: low watermark too large!");
+            UTXX_THROW_RUNTIME_ERROR
+                ("Low watermark ", a_lwm, " too large (max=", max_size(), ")!");
         m_wr_lwm = a_lwm;
     }
 

@@ -1,17 +1,19 @@
 //----------------------------------------------------------------------------
 /// \file   signal_block.hpp
-/// \author Peter Simons <simons@cryp.to>
+/// \author Serge ALeynikov <saleyn@gmail.com>
+/// \author Peter Simons <simons@cryp.to> (signal_block/unblock)
 //----------------------------------------------------------------------------
 /// \brief Signal blocking class.
 //----------------------------------------------------------------------------
-// Copyright (c) 2010 Peter Simons <simons@cryp.to>
+// Copyright (c) 2014 Serge Aleynikov <saleyn@gmail.com>
+// Copyright (c) 2010 Peter Simons <simons@cryp.to> (signal_block/unblock)
 //----------------------------------------------------------------------------
 /*
 ***** BEGIN LICENSE BLOCK *****
 
 This file is part of the utxx open-source project.
 
-Copyright (c) 2010 Peter Simons <simons@cryp.to>
+Copyright (c) 2014 Serge Aleynikov
 
 This library is free software; you can redistribute it and/or
 modify it under the terms of the GNU Lesser General Public
@@ -29,9 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_SIGNALS_HPP_
-#define _UTXX_SIGNALS_HPP_
+#pragma once
 
 #include <boost/noncopyable.hpp>
 #include <utxx/error.hpp>
@@ -40,11 +40,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx
 {
 
-/**
- * Block all POSIX signals in the current scope.
- *
- * \sa signal_unblock
- */
+/// Block all POSIX signals in the current scope.
+/// \sa signal_unblock
 class signal_block : private boost::noncopyable {
     sigset_t m_orig_mask;
 public:
@@ -62,11 +59,8 @@ public:
     }
 };
 
-/**
- * Unblock all POSIX signals in the current scope.
- *
- * \sa signal_block
- */
+/// Unblock all POSIX signals in the current scope.
+/// \sa signal_block
 class signal_unblock : private boost::noncopyable {
     sigset_t m_orig_mask;
 public:
@@ -84,6 +78,19 @@ public:
     }
 };
 
-} // namespace utxx
+/// Get a list of all known signal names.
+/// @return list of char strings that can be iterated until NULL.
+const char** sig_names();
 
-#endif // _UTXX_SIGNALS_HPP_
+/// Get the name of an OS signal number.
+/// @return signal name or "<UNDEFINED>" if the name is not defined.
+const char* sig_name(int a_signum);
+
+/// Convert signal set to string
+std::string sig_members(const sigset_t& a_set);
+
+/// Parse a string containing pipe/comma/column/space delimited signal names.
+/// The signal names are case insensitive and not required to begin with "SIG".
+sigset_t sig_members_parse(const std::string& a_signals, src_info&& a_si);
+
+} // namespace utxx

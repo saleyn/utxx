@@ -64,6 +64,7 @@ TEST_UTXX_SRCS = \
 	test_scope_exit.cpp \
 	test_shared_queue.cpp \
 	test_shared_ptr.cpp \
+	test_signal_block.cpp \
 	test_static_polymorphism.cpp \
 	test_stream64.cpp \
 	test_string.cpp \
