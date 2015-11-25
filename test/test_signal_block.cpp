@@ -50,4 +50,8 @@ BOOST_AUTO_TEST_CASE( test_signal_block )
     BOOST_CHECK(sigismember(&sset, SIGINT));
 
     BOOST_CHECK_EQUAL("SIGINT|SIGTERM", sig_members(sset));
+
+    sset = sig_init_set(SIGKILL, SIGTERM);
+
+    BOOST_CHECK_EQUAL("SIGKILL|SIGTERM", sig_members(sset));
 }

@@ -49,12 +49,13 @@ namespace detail {
 } // namespace detail
 
 
-/// Install signal handler that catches FATAL C-runtime or OS signals
-/// SIGABRT  ABORT (ANSI), abnormal termination
-/// SIGFPE   Floating point exception (ANSI): http://en.wikipedia.org/wiki/SIGFPE
-/// SIGILL   ILlegal instruction (ANSI)
-/// SIGSEGV  Segmentation violation i.e. illegal memory reference
-/// SIGTERM  TERMINATION (ANSI)
-void install_sighandler(bool a_install);
+/// Install signal handler that catches FATAL C-runtime or OS signals.
+/// The signals handled by default (if \a a_signals is NULL):
+/// * SIGABRT - ABORT (ANSI), abnormal termination
+/// * SIGFPE  - Floating point exception (ANSI): http://en.wikipedia.org/wiki/SIGFPE
+/// * SIGILL  - ILlegal instruction (ANSI)
+/// * SIGSEGV - Segmentation violation i.e. illegal memory reference
+/// * SIGTERM - TERMINATION (ANSI)
+void install_sighandler(bool a_install, const sigset_t* a_signals = nullptr);
 
 } // namespace utxx::logger

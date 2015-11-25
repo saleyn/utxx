@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/algorithm/string/constants.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <string.h>
 
 using namespace std;
 
@@ -99,9 +100,7 @@ const char** sig_names() {
 
 //------------------------------------------------------------------------------
 const char* sig_name(int i) {
-  if (utxx::unlikely(i < 0 || i > 64))
-    return "<UNDEFINED>";
-  return sig_names()[i];
+  return utxx::unlikely(i < 0 || i > 64) ? strsignal(i) : sig_names()[i];
 }
 
 //------------------------------------------------------------------------------
@@ -119,7 +118,7 @@ sigset_t sig_members_parse(const string& a_signals, utxx::src_info&& a_si)
 {
   vector<string> signals;
   auto s = boost::to_lower_copy(a_signals);
-  boost::split(signals, s, boost::is_any_of(":,| "), boost::token_compress_on);
+  boost::split(signals, s, boost::is_any_of(":;,| "), boost::token_compress_on);
   sigset_t res;
   sigemptyset(&res);
 

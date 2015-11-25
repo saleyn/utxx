@@ -41,8 +41,11 @@
         </option>
 
         <option name="handle-crash-signals" val-type="bool" default="true"
-                desc="When true logger installs signal handlers for \n
-                      SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM"/>
+                desc="When true logger installs signal handlers">
+            <option name="signals" val-type="string"
+                    default="SIGABRT|SIGFPE|SIGILL|SIGSEGV|SIGTERM"
+                    desc="Pipe/comma-delimitted list of signal handlers"/>
+        </option>
 
         <option name="silent-finish" val-type="bool" default="false"
                 desc="When true logger doesn't write completion status to log at termination"/>

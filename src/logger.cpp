@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger/logger.hpp>
 #include <utxx/logger/logger_crash_handler.hpp>
 #include <utxx/logger/logger_impl.hpp>
+#include <utxx/signal_block.hpp>
 #include <utxx/variant_tree_parser.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/xpressive/xpressive.hpp>
@@ -238,8 +239,12 @@ void logger::init(const config_tree& a_cfg)
 
         // Install crash signal handlers
         // (SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM)
-        if (a_cfg.get("logger.handle-crash-signals", true))
-            install_sighandler(true);
+        if (a_cfg.get("logger.handle-crash-signals", true)) {
+            sigset_t sset =
+              sig_members_parse(a_cfg.get("logger.handle-crash-signals.signals",""), UTXX_SRC);
+
+            install_sighandler(true, &sset);
+        }
 
         //logger_impl::msg_info info(NULL, 0);
         //query_timestamp(info);

@@ -48,14 +48,14 @@ public:
     signal_block() {
         sigset_t block_all;
         if (::sigfillset(&block_all) < 0)
-            throw sys_error(errno, "sigfillset(3)", __FILE__, __LINE__);
+            UTXX_THROW_IO_ERROR(errno, "sigfillset(3)");
         if (::sigprocmask(SIG_SETMASK, &block_all, &m_orig_mask))
-            throw sys_error(errno, "sigprocmask(2)", __FILE__, __LINE__);
+            UTXX_THROW_IO_ERROR(errno, "sigprocmask(2)");
     }
 
     ~signal_block() {
         if (::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0)))
-            throw sys_error(errno, "sigprocmask(2)", __FILE__, __LINE__);
+            UTXX_THROW_IO_ERROR(errno, "sigprocmask(2)");
     }
 };
 
@@ -67,14 +67,14 @@ public:
     signal_unblock() {
         sigset_t l_unblock_all;
         if (::sigemptyset(&l_unblock_all) < 0)
-            throw sys_error(errno, "sigfillset(3)", __FILE__, __LINE__);
+            UTXX_THROW_IO_ERROR(errno, "sigfillset(3)");
         if (::sigprocmask(SIG_SETMASK, &l_unblock_all, &m_orig_mask))
-            throw sys_error(errno, "sigprocmask(2)", __FILE__, __LINE__);
+            UTXX_THROW_IO_ERROR(errno, "sigprocmask(2)");
     }
 
     ~signal_unblock() {
         if (::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0)))
-            throw sys_error(errno, "sigprocmask(2)", __FILE__, __LINE__);
+            UTXX_THROW_IO_ERROR(errno, "sigprocmask(2)");
     }
 };
 
@@ -82,12 +82,27 @@ public:
 /// @return list of char strings that can be iterated until NULL.
 const char** sig_names();
 
+/// Total number of "well-known" signal names in the sig_names() array
+static constexpr size_t sig_names_count() { return 64; }
+
 /// Get the name of an OS signal number.
 /// @return signal name or "<UNDEFINED>" if the name is not defined.
 const char* sig_name(int a_signum);
 
 /// Convert signal set to string
 std::string sig_members(const sigset_t& a_set);
+
+/// Initialize a signal set from an argument list
+template <class... Signals>
+sigset_t sig_init_set(Signals&&... args) {
+    sigset_t sset;
+    sigemptyset(&sset);
+    int sigs[] = { args... };
+    for (uint i=0; i < sizeof...(Signals); ++i)
+        if (sigaddset(&sset, sigs[i]) < 0)
+            UTXX_THROW_IO_ERROR(errno, "Error in sigaddset[", sigs[i], ']');
+    return sset;
+}
 
 /// Parse a string containing pipe/comma/column/space delimited signal names.
 /// The signal names are case insensitive and not required to begin with "SIG".

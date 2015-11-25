@@ -55,18 +55,7 @@ AC_ARG_ENABLE(warnings,
      ],
 )
 
-AC_LANG_PUSH(C++)
-AC_ARG_ENABLE(cxx11,
-    AC_HELP_STRING([--disable-cxx11],[disable c++11 standard [default=no]]),
-    [ if test "x${enable_cxx11}" != "xno" -a -z "${disable_cxx11}"; then
-         AX_CXX_COMPILE_STDCXX_11([noext], [optional])
-      fi
-    ],
-    [
-        AX_CXX_COMPILE_STDCXX_11([noext], [optional])
-    ]
-)
-AC_LANG_POP([C++])
+AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
 
 # libtool
 LT_INIT([disable-static])
