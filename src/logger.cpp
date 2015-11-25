@@ -194,7 +194,7 @@ std::string logger::replace_macros(const std::string& a_value) const
 {
     using namespace boost::posix_time;
     using namespace boost::xpressive;
-    sregex re = "$(" >> (s1 = +_w) >> ')';
+    sregex re = "{{" >> (s1 = +_w) >> "}}";
     auto replace = [this](const smatch& what) {
         auto it = this->m_macro_var_map.find(what[1].str());
         return it == this->m_macro_var_map.end()

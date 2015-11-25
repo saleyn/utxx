@@ -53,6 +53,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // The difference between enum.hpp and enumx.hpp is that UTXX_ENUMX
 // allows to assign specific values to the enumerated constants.
 //
+// Note: Make sure that UndefValue is distinct from other values in this enum!
+//
 // Enum declaration:
 //  #include <utxx/enumx.hpp>
 //
