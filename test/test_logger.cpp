@@ -72,7 +72,9 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     pt.put("logger.timestamp",             variant("time-usec"));
     pt.put("logger.min-level-filter",      variant("debug"));
     pt.put("logger.console.stdout-levels", variant("debug|info|notice|warning|error|fatal|alert"));
+    pt.put("logger.show-thread",           true);
     pt.put("logger.show-ident",            true);
+    pt.put("logger.ident",                 variant("my-logger"));
 
     if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
         pt.dump(std::cout, 2, false, true, ' ', 2);
@@ -99,6 +101,8 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 
     if (verbosity::level() > VERBOSE_NONE)
         log.dump(std::cout);
+
+    pthread_setname_np(pthread_self(), "log_tester");
 
     for (int i = 0; i < 2; i++) {
         LOG_ERROR  ("This is a %d %s #%d", i, "error", 123);

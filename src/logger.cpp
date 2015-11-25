@@ -236,7 +236,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 2000);
         m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
-        m_use_sched_yield= a_cfg.get<bool>       ("logger.use-sched-yield", true);
+        m_use_sched_yield= a_cfg.get<bool>       ("logger.use-sched-yield",false);
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
@@ -536,7 +536,11 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                 auto qs = q - sfx;
                 buf.reserve(a_msg.m_fun.str.size() + ps + qs + 1);
                 buf.sprint(pfx, ps);
-                buf.print(a_msg.m_fun.str);
+                auto& s = a_msg.m_fun.str;
+                // Remove trailing new lines
+                auto sz = s.size();
+                while (sz && s[sz-1] == '\n') --sz;
+                buf.sprint(s.c_str(), sz);
                 buf.sprint(sfx, qs);
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, buf.str(), buf.size()));

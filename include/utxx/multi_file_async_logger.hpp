@@ -1307,13 +1307,14 @@ commit(const struct timespec* tsp)
                                         : "reconnected successfully!"));
 
                 if (fd >= 0 && !internal_update_stream(si, fd)) {
-                    std::string s = to_string("Logger '", si->name.c_str(),
-                                              " failed to register file descriptor ",
-                                              si->fd, '!');
+                    char buf[256];
+                    snprintf(buf, sizeof(buf),
+                             "Logger %s failed to register file descriptor %d!",
+                             si->name.c_str(), si->fd);
                     if (m_err_handler)
-                        m_err_handler(*si, si->error, s);
+                        m_err_handler(*si, si->error, buf);
                     else
-                        LOG_ERROR((s.c_str()));
+                        LOG_ERROR((buf));
                 }
 
                 si->m_last_reconnect_attempt = now;
