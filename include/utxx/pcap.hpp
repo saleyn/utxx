@@ -416,7 +416,8 @@ struct pcap {
     const    udp_frame&     uframe() const { return m_frame.u;      }
     const    tcp_frame&     tframe() const { return m_frame.t;      }
 
-    size_t   frame_offset()          const { return m_frame_offset; }
+    size_t          frame_offset()   const { return m_frame_offset; }
+    link_type       get_link_type()  const { return link_type(m_file_header.network); }
 
     void set_handle(FILE* a_handle) {
         close();
