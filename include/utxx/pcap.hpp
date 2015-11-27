@@ -76,7 +76,6 @@ struct pcap {
 
     /// IP packet frame
     struct ip_frame {
-        ethhdr eth;
         iphdr  ip;
 
         uint8_t  protocol() const { return ip.protocol;       }
@@ -98,7 +97,7 @@ struct pcap {
                 ip >> 24 & 0xFF, ip >> 16 & 0xFF, ip >> 8 & 0xFF, ip & 0xFF);
             return p + n;
         }
-    } __attribute__ ((packed));
+    };
 
     /// UDP packet frame
     struct udp_frame : public ip_frame {
@@ -120,7 +119,7 @@ struct pcap {
         static char* fmt(char* buf, uint16_t port) {
             return buf + sprintf(buf, ":%d", port);
         }
-    } __attribute__ ((packed));
+    };
 
 
     /// TCP packet frame
@@ -145,14 +144,25 @@ struct pcap {
         }
     } __attribute__ ((packed));
 
-    BOOST_STATIC_ASSERT(sizeof(ethhdr) == 14);
-    BOOST_STATIC_ASSERT(sizeof(iphdr)  == 20);
-    BOOST_STATIC_ASSERT(sizeof(udphdr) ==  8);
-    BOOST_STATIC_ASSERT(sizeof(tcphdr) == 20);
-    BOOST_STATIC_ASSERT(sizeof(udp_frame)      == 42);
-    BOOST_STATIC_ASSERT(sizeof(tcp_frame)      == 54);
+    BOOST_STATIC_ASSERT(sizeof(ethhdr)         == 14);
+    BOOST_STATIC_ASSERT(sizeof(iphdr)          == 20);
+    BOOST_STATIC_ASSERT(sizeof(udphdr)         ==  8);
+    BOOST_STATIC_ASSERT(sizeof(tcphdr)         == 20);
+    BOOST_STATIC_ASSERT(sizeof(udp_frame::udp) ==  8);
+    BOOST_STATIC_ASSERT(sizeof(tcp_frame::tcp) == 20);
+    BOOST_STATIC_ASSERT(sizeof(udp_frame)      == 28);
+    BOOST_STATIC_ASSERT(sizeof(tcp_frame)      == 40);
 
-    pcap() : m_big_endian(true), m_file(NULL), m_own_handle(false) {}
+    pcap()
+        : m_big_endian(true),  m_file(NULL)
+        , m_own_handle(false), m_frame_offset(0)
+        , m_eth_header{{0}}
+        , m_tcp_seqnos{0,0}
+    {
+        m_eth_header.h_proto = htons(ETH_P_IP);
+    }
+
+    ~pcap() { close(); }
 
     long open_read(const std::string& a_filename, bool a_is_pipe = false) {
         return open(a_filename.c_str(), a_is_pipe ? "r" : "rb", a_is_pipe);
@@ -174,17 +184,25 @@ struct pcap {
         return open(a_filename, a_mode, false);
     }
 
-    ~pcap() {
-        close();
-    }
-
     static bool is_pcap_header(const char* buf, size_t sz) {
         return sz >= 4 &&
              ( *reinterpret_cast<const uint32_t*>(buf) == 0xa1b2c3d4
             || *reinterpret_cast<const uint32_t*>(buf) == 0xd4c3b2a1);
     }
 
-    static int set_file_header(char* buf, size_t sz) {
+    // See: http://www.tcpdump.org/linktypes.html
+    enum class link_type {
+        ethernet = 1,       // Record ETHR,IP,TCP headers
+        raw_tcp   = 12       // Record IP,TCP headers (no ETHR)
+    };
+
+    void init_file_header(link_type a_tp = link_type::ethernet) {
+        encode_file_header(reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp);
+        m_frame_offset = a_tp == link_type::raw_tcp ? 0 : sizeof(ethhdr);
+        memset(&m_tcp_seqnos, 0, sizeof(m_tcp_seqnos));
+    }
+
+    static int encode_file_header(char* buf, size_t sz, link_type a_tp = link_type::ethernet) {
         BOOST_ASSERT(sz >= sizeof(file_header));
         file_header* p = reinterpret_cast<file_header*>(buf);
         p->magic_number     = 0xa1b2c3d4;
@@ -193,66 +211,19 @@ struct pcap {
         p->thiszone         = 0;
         p->sigfigs          = 0;
         p->snaplen          = 65535;
-        p->network          = 1;
+        p->network          = int(a_tp);
         return sizeof(file_header);
     }
 
-    udp_frame* init_udp_frame(size_t a_data_sz) { return init_udp_frame(m_frame.u, a_data_sz); }
-    tcp_frame* init_tcp_frame(size_t a_data_sz) { return init_tcp_frame(m_frame.t, a_data_sz); }
-
-    static udp_frame* init_udp_frame(udp_frame& frame, size_t a_data_sz)
-    {
-        memset(&frame, 0, sizeof(udp_frame));
-        frame.eth.h_proto = htons(ETH_P_IP);
-        frame.ip.version  = IPVERSION;
-        frame.ip.protocol = IPPROTO_UDP;
-        frame.ip.ihl      = 5;    // 32-bit words
-        //frame.ip.frag_off = 0;
-        //frame.ip.tos      = 0;    // No special type-of-service
-        //frame.ip.id       = 0;    // No flow id (since no frags)
-        frame.ip.ttl      = 64;   // Linux default time-to-live
-        //frame.ip.check    = 0;    // Zero the checksum
-        //frame.udp.check   = 0;    // Zero the checksum
-
-        static_assert(sizeof(frame.eth) == 14, "Invalid eth frame size");
-        static_assert(sizeof(frame.ip)  == 20, "Invalid ip  frame size");
-        static_assert(sizeof(frame.udp) ==  8, "Invalid udp frame size");
-
-        frame.ip.tot_len = htons(a_data_sz + sizeof(frame.ip) + sizeof(frame.udp));
-        frame.udp.len    = htons(a_data_sz + sizeof(frame.udp));
-        return &frame;
-    }
-
-    static tcp_frame* init_tcp_frame(tcp_frame& frame, size_t a_data_sz)
-    {
-        memset(&frame, 0, sizeof(tcp_frame));
-        frame.eth.h_proto = htons(ETH_P_IP);
-        frame.ip.version  = IPVERSION;
-        frame.ip.protocol = IPPROTO_TCP;
-        frame.ip.ihl      = 5;    // 32-bit words
-        //frame.ip.frag_off = 0;
-        //frame.ip.tos      = 0;    // No special type-of-service
-        //frame.ip.id       = 0;    // No flow id (since no frags)
-        frame.ip.ttl      = 64;   // Linux default time-to-live
-        //frame.ip.check    = 0;    // Zero the checksum
-        //frame.tcp.check   = 0;    // Zero the checksum
-
-        static_assert(sizeof(frame.eth) == 14, "Invalid eth frame size");
-        static_assert(sizeof(frame.ip)  == 20, "Invalid ip  frame size");
-        static_assert(sizeof(frame.tcp) == 20, "Invalid tcp frame size");
-
-        frame.ip.tot_len = htons(a_data_sz + sizeof(frame.ip) + sizeof(frame.tcp));
-        return &frame;
-    }
-
     template <size_t N>
-    static int set_packet_header(char (&buf)[N], const struct timeval& tv,
-                                 proto a_proto, size_t len) {
-        return set_packet_header(buf, N, tv, a_proto, len);
+    static int encode_packet_header(char (&buf)[N], const struct timeval& tv,
+                                    proto a_proto, size_t len) {
+        return encode_packet_header(buf, N, tv, a_proto, len);
     }
 
-    static int set_packet_header(char* a_buf, size_t a_size,
-                                 const struct timeval& tv, proto a_proto, size_t len)
+    static int encode_packet_header(char* a_buf, size_t a_size,
+                                    const struct timeval& tv,
+                                    proto a_proto, size_t len)
     {
         assert(a_size >= sizeof(packet_header));
         packet_header* p = reinterpret_cast<packet_header*>(a_buf);
@@ -297,11 +268,14 @@ struct pcap {
             file.m_file_header.snaplen       = get32be(buf);
             file.m_file_header.network       = get32be(buf);
         }
+        file.m_frame_offset = link_type(file.m_file_header.network) == link_type::raw_tcp
+                            ? 0 : sizeof(ethhdr);
         return buf - begin;
     }
 
     int read_file_header(const char*& buf, size_t sz) {
-        return read_file_header(*this, buf, sz);
+        int rc = read_file_header(*this, buf, sz);
+        return rc;
     }
 
     // For use with externally open files
@@ -328,10 +302,12 @@ struct pcap {
         return read_packet_header(*this, buf, sz);
     }
 
-    static proto parse_protocol_type(const char* buf, size_t sz) {
-        if (sz < sizeof(ip_frame))
+    static proto parse_protocol_type(const char* buf, size_t sz,
+                                     link_type a_tp = link_type::ethernet) {
+        size_t offset = a_tp == link_type::raw_tcp ? 0 : sizeof(ethhdr);
+        if (sz < offset + sizeof(ip_frame))
             return proto::undefined;
-        auto  p = (ip_frame*)buf;
+        auto  p = (ip_frame*)(buf + offset);
         proto res;
         switch (p->ip.protocol) {
             case IPPROTO_TCP: res = proto::tcp; break;
@@ -341,29 +317,73 @@ struct pcap {
         return res;
     }
 
-    int parse_udp_frame(const char*& buf, size_t sz) {
-        if (sz < sizeof(udp_frame))
-            return -2;
-
-        memcpy(&m_frame.u, buf, sizeof(udp_frame)); buf += sizeof(udp_frame);
-
-        return m_frame.u.ip.protocol != IPPROTO_UDP ? -1 : sizeof(udp_frame);
+    template <typename Frame>
+    typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
+                            std::is_same<Frame, tcp_frame>::value, int>::
+    type parse_frame(const char*& buf, size_t sz) {
+        return parse_frame
+            (buf, sz,
+             std::is_same<Frame, udp_frame>::value ? IPPROTO_UDP : IPPROTO_TCP,
+             sizeof(Frame));
     }
 
-    int parse_tcp_frame(const char*& buf, size_t sz) {
-        if (sz < sizeof(tcp_frame))
-            return -2;
+    size_t read(char* buf, size_t sz) { return fread(buf, 1, sz, m_file); }
 
-        memcpy(&m_frame.t, buf, sizeof(tcp_frame)); buf += sizeof(tcp_frame);
-
-        return m_frame.t.ip.protocol != IPPROTO_TCP ? -1 : sizeof(tcp_frame);
+    int write_file_header(link_type a_tp = link_type::ethernet) {
+        char buf[sizeof(file_header)];
+        int n = encode_file_header(buf, sizeof(buf), a_tp);
+        return fwrite(buf, 1, n, m_file);
     }
 
-    void set_addr(uint a_src_ip, uint16_t a_sport, uint a_dst_ip, uint16_t a_dport) {
-      m_frame.u.ip.saddr   = a_src_ip;
-      m_frame.u.ip.daddr   = a_dst_ip;
-      m_frame.u.udp.source = a_sport;
-      m_frame.u.udp.dest   = a_dport;
+    int write_packet_header(
+        const struct timeval& a_timestamp, proto a_proto, size_t a_packet_size)
+    {
+        char buf[sizeof(packet_header)];
+        int n = encode_packet_header(buf, a_timestamp, a_proto, a_packet_size);
+        return fwrite(buf, 1, n, m_file);
+    }
+
+    int write_packet_header(const packet_header& a_header) {
+        return fwrite(&a_header, 1, sizeof(packet_header), m_file);
+    }
+
+    template <typename Frame>
+    typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
+                            std::is_same<Frame, tcp_frame>::value, size_t>::
+    type frame_size(size_t a_pkt_sz) {
+      return sizeof(packet_header) + m_frame_offset + sizeof(Frame) + a_pkt_sz;
+    }
+
+    template <typename Frame>
+    typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
+                            std::is_same<Frame, tcp_frame>::value, int>::
+    type encode_frame(bool a_inbound, char* buf, size_t sz,
+                      uint32_t a_src_ip, uint16_t a_src_port,
+                      uint32_t a_dst_ip, uint16_t a_dst_port,
+                      const char* a_data,  size_t a_data_sz)
+    {
+        return write_frame<Frame, true, true>
+            (a_inbound, buf, sz, a_src_ip, a_src_port, a_dst_ip, a_dst_port,
+             a_data, a_data_sz);
+    }
+
+    template <typename Frame>
+    typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
+                            std::is_same<Frame, tcp_frame>::value, int>::
+    type write_frame(bool a_inbound,
+                     uint32_t a_src_ip, uint16_t a_src_port,
+                     uint32_t a_dst_ip, uint16_t a_dst_port,
+                     size_t a_data_sz)
+    {
+        static_assert(sizeof(Frame) <= sizeof(m_frame), "Invalid size");
+        auto buf = reinterpret_cast<char*>(&m_frame);
+        return write_frame<Frame, false, false>
+            (a_inbound, buf, sizeof(Frame), a_src_ip, a_src_port, a_dst_ip, a_dst_port,
+             nullptr, a_data_sz);
+    }
+
+    int write(const char* buf, size_t sz) {
+        return fwrite(buf, 1, sz, m_file);
     }
 
     /// @param a_mask is an IP address mask in network byte order.
@@ -388,45 +408,15 @@ struct pcap {
         return true;
     }
 
-    size_t read(char* buf, size_t sz) { return fread(buf, 1, sz, m_file); }
+    bool     is_open()               const { return m_file != NULL; }
+    uint64_t tell()                  const { return m_file ? ftell(m_file) : 0; }
 
-    int write_file_header() {
-        char buf[sizeof(file_header)];
-        int n = set_file_header(buf, sizeof(buf));
-        return fwrite(buf, 1, n, m_file);
-    }
+    const    file_header&   header() const { return m_file_header;  }
+    const    packet_header& packet() const { return m_pkt_header;   }
+    const    udp_frame&     uframe() const { return m_frame.u;      }
+    const    tcp_frame&     tframe() const { return m_frame.t;      }
 
-    int write_packet_header(
-        const struct timeval& a_timestamp, proto a_proto, size_t a_packet_size)
-    {
-        char buf[sizeof(packet_header)];
-        int n = set_packet_header(buf, a_timestamp, a_proto, a_packet_size);
-        return fwrite(buf, 1, n, m_file);
-    }
-
-    int write_packet_header(const packet_header& a_header) {
-        return fwrite(&a_header, 1, sizeof(packet_header), m_file);
-    }
-
-    int write_udp_frame(const udp_frame& a_frame) {
-        return fwrite(&a_frame, 1, sizeof(udp_frame), m_file);
-    }
-
-    int write_tcp_frame(const tcp_frame& a_frame) {
-        return fwrite(&a_frame, 1, sizeof(tcp_frame), m_file);
-    }
-
-    int write(const char* buf, size_t sz) {
-        return fwrite(buf, 1, sz, m_file);
-    }
-
-    bool     is_open()              const { return m_file != NULL; }
-    uint64_t tell()                 const { return m_file ? ftell(m_file) : 0; }
-
-    const file_header&   header()   const { return m_file_header; }
-    const packet_header& packet()   const { return m_pkt_header;  }
-    const udp_frame&     uframe()   const { return m_frame.u;     }
-    const tcp_frame&     tframe()   const { return m_frame.t;     }
+    size_t   frame_offset()          const { return m_frame_offset; }
 
     void set_handle(FILE* a_handle) {
         close();
@@ -435,6 +425,20 @@ struct pcap {
     }
 
 private:
+    bool          m_big_endian;
+    FILE*         m_file;
+    bool          m_own_handle;
+    size_t        m_frame_offset;
+    ethhdr        m_eth_header;
+    uint          m_tcp_seqnos[2];
+    union uframe {
+        udp_frame u;
+        tcp_frame t;
+    }             m_frame;
+    file_header   m_file_header;
+    packet_header m_pkt_header;
+    bool          m_is_pipe;
+
     void close() {
         if (m_file && m_own_handle) {
             m_is_pipe ? pclose(m_file) : fclose(m_file);
@@ -469,16 +473,87 @@ private:
         return (m_file == NULL) ? -1 : sz;
     }
 
-    union {
-        udp_frame u;
-        tcp_frame t;
-    }             m_frame;
-    file_header   m_file_header;
-    packet_header m_pkt_header;
-    bool          m_big_endian;
-    FILE*         m_file;
-    bool          m_own_handle;
-    bool          m_is_pipe;
+    int parse_frame(const char*& buf, size_t sz, int a_proto, size_t a_frame_sz) {
+        auto frame_sz = sizeof(ethhdr) + a_frame_sz - m_frame_offset;
+        if (sz < frame_sz)
+            return -2;
+
+        memcpy(&m_frame.u, buf+m_frame_offset, frame_sz); buf += frame_sz;
+
+        return m_frame.u.ip.protocol != a_proto ? -1 : frame_sz;
+    }
+
+    template <typename Frame, bool WithEthr, bool WithData>
+    typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
+                            std::is_same<Frame, tcp_frame>::value, int>::
+    type write_frame(bool a_inbound, char* buf, size_t sz,
+                     uint32_t a_src_ip, uint16_t a_src_port,
+                     uint32_t a_dst_ip, uint16_t a_dst_port,
+                     const char* a_data,  size_t a_data_sz)
+    {
+        auto ethrsz = WithEthr ? m_frame_offset : 0;
+        auto expsz  = ethrsz + sizeof(Frame) + (WithData ? a_data_sz : 0);
+        auto frame  = reinterpret_cast<Frame*>(buf + ethrsz);
+        if (sz < expsz)
+            return -1;
+        if (WithEthr)
+            memcpy(buf, &m_eth_header, m_frame_offset);
+        auto& p    = frame->ip;
+        p.version  = IPVERSION;
+        p.ihl      = 5;    // 32-bit words
+        p.tos      = 0;
+        p.tot_len  = htons(a_data_sz + sizeof(Frame));
+        p.id       = 0;
+        p.frag_off = 0;
+        p.ttl      = 64;   // Linux default time-to-live
+        p.check    = 0;
+
+        do_init_frame_proto(a_inbound, *frame, a_src_ip, a_src_port, a_dst_ip, a_dst_port, a_data_sz);
+
+        if (WithData) {
+            assert(a_data);
+            memcpy(reinterpret_cast<char*>(frame)+sizeof(Frame), a_data, a_data_sz);
+        }
+
+        return expsz;
+    }
+
+    void do_init_frame_proto(bool a_inbound, tcp_frame& frame,
+                             uint32_t a_src_ip, uint16_t a_src_port,
+                             uint32_t a_dst_ip, uint16_t a_dst_port,
+                             size_t   a_data_sz)
+    {
+        auto& seqno = m_tcp_seqnos[a_inbound];
+        frame.ip.protocol = IPPROTO_TCP;
+        frame.ip.saddr    = a_src_ip;
+        frame.ip.daddr    = a_dst_ip;
+        frame.tcp.source  = a_src_port;
+        frame.tcp.dest    = a_dst_port;
+        frame.tcp.seq     = htonl(seqno);
+        frame.tcp.ack_seq = 0;
+        frame.tcp.th_flags= 0;
+        frame.tcp.syn     = !seqno;
+        frame.tcp.ack     = 1;
+        frame.tcp.doff    = 5;    // the size of TCP header in 32-bit words
+        frame.tcp.window  = htons(32*1024);
+        frame.tcp.check   = 0;
+        frame.tcp.urg_ptr = 0;
+        seqno += a_data_sz;
+    }
+    void do_init_frame_proto(bool, udp_frame& frame,
+                             uint32_t a_src_ip, uint16_t a_src_port,
+                             uint32_t a_dst_ip, uint16_t a_dst_port,
+                             size_t   a_data_sz)
+    {
+        frame.ip.protocol = IPPROTO_UDP;
+        frame.ip.saddr    = a_src_ip;
+        frame.ip.daddr    = a_dst_ip;
+        frame.udp.source  = a_src_port;
+        frame.udp.dest    = a_dst_port;
+        frame.udp.len     = htons(a_data_sz + sizeof(frame.udp));
+        frame.udp.check   = 0;
+    }
+
 };
 
 } // namespace utxx

@@ -22,17 +22,14 @@
 *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 *  See the License for the specific language governing permissions and
 *  limitations under the License.
-*  
-*  
+*
 *  KNOWN ISSUES
 *   - If the signature and name match, but the function is private, compilation
 *     will fail, complaining about how the function is private.
 *
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_TYPE_TRAITS_HPP_
-#define _UTXX_TYPE_TRAITS_HPP_
+#pragma once
 
 #include <type_traits>
 
@@ -43,13 +40,13 @@ namespace detail {
     struct has_member_impl {
         typedef char matched_return_type;
         typedef long unmatched_return_type;
-        
+
         template <typename C>
         static matched_return_type f(typename NameGetter::template get<C>*);
-        
+
         template <typename C>
         static unmatched_return_type f(...);
-        
+
     public:
         static const bool value = (sizeof(f<T>(0)) == sizeof(matched_return_type));
     };
@@ -62,5 +59,3 @@ struct has_member:
 {};
 
 } // namespace utxx
-
-#endif  // _UTXX_TYPE_TRAITS_HPP_

@@ -97,7 +97,7 @@ namespace utxx {
         int64_t             m_tv;
 
     public:
-        time_val() : m_tv(0) {}
+        time_val() noexcept         : m_tv(0)                  {}
         time_val(secs   s)          : m_tv(s.nsec)             {}
         time_val(usecs us)          : m_tv(us.nsec)            {}
         time_val(nsecs ns)          : m_tv(ns.value)           {}
