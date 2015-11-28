@@ -503,9 +503,16 @@ namespace detail {
                 node.get(str_t("root"), str_t());
 
             // Locate the include file
-            bool found = boost::filesystem::exists(inc_name);
-            if (!found && resolver)
-                found = resolver(inc_name);
+            bool found = path::file_exists(inc_name);
+            if (!found) {
+                auto dir   = path::dirname(filename);
+                auto fname = path::join(dir, inc_name);
+                found = path::file_exists(fname);
+                if (found)
+                    inc_name = fname;
+                else if (resolver)
+                    found = resolver(inc_name);
+            }
 
             std::basic_ifstream<Ch> inc_stream(inc_name.c_str());
             if (!inc_stream.good())
