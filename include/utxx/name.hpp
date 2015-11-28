@@ -233,9 +233,10 @@ namespace utxx {
             return std::string(buf, len);
         }
 
+        bool     empty()    const { return m_value == 0u;          }
         size_t   length()   const { return m_value >> s_len_shift; }
-        operator uint64_t() const { return m_value; }
-        uint64_t to_int()   const { return m_value; }
+        operator uint64_t() const { return m_value;                }
+        uint64_t to_int()   const { return m_value;                }
 
         bool operator==(const self_type& a_rhs) const {
             size_t l1 = length(), l2 = a_rhs.length();

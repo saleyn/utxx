@@ -246,36 +246,31 @@ struct pcap {
 
     // For use with externally open files
     /// @return size of consumed file reader
-    static int read_file_header(pcap& file, const char*& buf, size_t sz) {
+    int read_file_header(const char*& buf, size_t sz) {
         auto begin = buf;
         if (sz < sizeof(file_header) || !is_pcap_header(buf, sz))
             return -1;
 
         const uint8_t* p = (const uint8_t*)buf;
-        file.m_big_endian = *p++ == 0xa1
-                         && *p++ == 0xb2
-                         && *p++ == 0xc3
-                         && *p++ == 0xd4;
-        if (!file.m_big_endian) {
-            file.m_file_header = *reinterpret_cast<const file_header*>(buf);
+        m_big_endian = *p++ == 0xa1
+                    && *p++ == 0xb2
+                    && *p++ == 0xc3
+                    && *p++ == 0xd4;
+        if (!m_big_endian) {
+            m_file_header = *reinterpret_cast<const file_header*>(buf);
             buf += sizeof(file_header);
         } else {
-            file.m_file_header.magic_number  = get32be(buf);
-            file.m_file_header.version_major = get16be(buf);
-            file.m_file_header.version_minor = get16be(buf);
-            file.m_file_header.thiszone      = (int32_t)get32be(buf);
-            file.m_file_header.sigfigs       = get32be(buf);
-            file.m_file_header.snaplen       = get32be(buf);
-            file.m_file_header.network       = get32be(buf);
+            m_file_header.magic_number  = get32be(buf);
+            m_file_header.version_major = get16be(buf);
+            m_file_header.version_minor = get16be(buf);
+            m_file_header.thiszone      = (int32_t)get32be(buf);
+            m_file_header.sigfigs       = get32be(buf);
+            m_file_header.snaplen       = get32be(buf);
+            m_file_header.network       = get32be(buf);
         }
-        file.m_frame_offset = link_type(file.m_file_header.network) == link_type::raw_tcp
-                            ? 0 : sizeof(ethhdr);
+        m_frame_offset = get_link_type() == link_type::raw_tcp
+                       ? 0 : sizeof(ethhdr);
         return buf - begin;
-    }
-
-    int read_file_header(const char*& buf, size_t sz) {
-        int rc = read_file_header(*this, buf, sz);
-        return rc;
     }
 
     // For use with externally open files
@@ -283,28 +278,50 @@ struct pcap {
     /// @param buf  holds the PCAP data to be read
     /// @param sz   is the size of the data in \a buf
     /// @return size of next packet
-    static int read_packet_header(pcap& file, const char*& buf, size_t sz) {
+    int read_packet_header(const char*& buf, size_t sz) {
         if (sz < sizeof(packet_header))
             return -1;
-        if (!file.m_big_endian) {
-            file.m_pkt_header = *reinterpret_cast<const packet_header*>(buf);
-            buf += sizeof(packet_header);
+        if (!m_big_endian) {
+            m_pkt_header = *reinterpret_cast<const packet_header*>(buf);
         } else {
-            file.m_pkt_header.ts_sec   = get32be(buf);
-            file.m_pkt_header.ts_usec  = get32be(buf);
-            file.m_pkt_header.incl_len = get32be(buf);
-            file.m_pkt_header.orig_len = get32be(buf);
+            m_pkt_header.ts_sec   = get32be(buf);
+            m_pkt_header.ts_usec  = get32be(buf);
+            m_pkt_header.incl_len = get32be(buf);
+            m_pkt_header.orig_len = get32be(buf);
         }
-        return file.m_pkt_header.incl_len;
+        buf += sizeof(packet_header);
+        return m_pkt_header.incl_len;
     }
 
-    int read_packet_header(const char*& buf, size_t sz) {
-        return read_packet_header(*this, buf, sz);
+    /// Parse header and frame of the next packet.
+    /// @return Tuple {FrameSz, DataSz, Protocol}, where FrameSz is the size of
+    /// the frame (including packet_header, optional ethernet header, and
+    /// tcp/udp frame), up to the data payload. If it is less then 0, there's not
+    /// enough data in the buffer to read the frame.  DataSz is the total size
+    /// of the data payload in this packet including the FrameSz.
+    /// Protocol corresponds to the transport protocol of this packet.
+    std::tuple<int, int, proto>
+    read_packet_hdr_and_frame(const char* buf, size_t sz) {
+        auto p = buf;
+        int  n = read_packet_header(p, sz);
+        if  (n < 0)
+            return std::make_tuple(-1, -1, proto::undefined);
+
+        static const auto s_pkt_hdr = sizeof(packet_header);
+        sz -= s_pkt_hdr;
+        auto protocol = read_protocol_type(p, sz);
+        int  data_len;
+        std::tie(n, data_len) = protocol == proto::tcp
+          ?  std::make_pair(read_frame<tcp_frame>(p,sz), n)
+          :  std::make_pair(read_frame<udp_frame>(p,sz), n);
+        if (n < 0)
+            return std::make_tuple(n, data_len, protocol);
+
+        return std::make_tuple(n + s_pkt_hdr, data_len + s_pkt_hdr, protocol);
     }
 
-    static proto parse_protocol_type(const char* buf, size_t sz,
-                                     link_type a_tp = link_type::ethernet) {
-        size_t offset = a_tp == link_type::raw_tcp ? 0 : sizeof(ethhdr);
+    proto read_protocol_type(const char* buf, size_t sz) const {
+        size_t offset = get_link_type() == link_type::raw_tcp ? 0 : sizeof(ethhdr);
         if (sz < offset + sizeof(ip_frame))
             return proto::undefined;
         auto  p = (ip_frame*)(buf + offset);
@@ -320,8 +337,8 @@ struct pcap {
     template <typename Frame>
     typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
                             std::is_same<Frame, tcp_frame>::value, int>::
-    type parse_frame(const char*& buf, size_t sz) {
-        return parse_frame
+    type read_frame(const char*& buf, size_t sz) {
+        return read_frame
             (buf, sz,
              std::is_same<Frame, udp_frame>::value ? IPPROTO_UDP : IPPROTO_TCP,
              sizeof(Frame));
@@ -413,6 +430,7 @@ struct pcap {
 
     const    file_header&   header() const { return m_file_header;  }
     const    packet_header& packet() const { return m_pkt_header;   }
+    const    ethhdr&        eframe() const { return m_eth_header;   }
     const    udp_frame&     uframe() const { return m_frame.u;      }
     const    tcp_frame&     tframe() const { return m_frame.t;      }
 
@@ -432,7 +450,7 @@ private:
     size_t        m_frame_offset;
     ethhdr        m_eth_header;
     uint          m_tcp_seqnos[2];
-    union uframe {
+    union {
         udp_frame u;
         tcp_frame t;
     }             m_frame;
@@ -474,12 +492,15 @@ private:
         return (m_file == NULL) ? -1 : sz;
     }
 
-    int parse_frame(const char*& buf, size_t sz, int a_proto, size_t a_frame_sz) {
-        auto frame_sz = sizeof(ethhdr) + a_frame_sz - m_frame_offset;
+    int read_frame(const char*& buf, size_t sz, int a_proto, size_t a_frame_sz) {
+        auto frame_sz = a_frame_sz + m_frame_offset;
         if (sz < frame_sz)
             return -2;
-
-        memcpy(&m_frame.u, buf+m_frame_offset, frame_sz); buf += frame_sz;
+        // Read the ethhdr if it's present
+        if (m_frame_offset)
+            memcpy(&m_eth_header, buf, sizeof(ethhdr));
+        // Read the frame without ethhdr
+        memcpy(&m_frame.u, buf+m_frame_offset, a_frame_sz); buf += frame_sz;
 
         return m_frame.u.ip.protocol != a_proto ? -1 : frame_sz;
     }

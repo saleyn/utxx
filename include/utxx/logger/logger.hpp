@@ -396,7 +396,7 @@ private:
     bool                            m_show_thread           = false;
     std::string                     m_ident;
     bool                            m_silent_finish         = false;
-    bool                            m_use_sched_yield       = true;
+    long                            m_sched_yield_us        = 250;
     macro_var_map                   m_macro_var_map;
 
     /// Signal set handled by the installed crash signal handler
@@ -502,7 +502,8 @@ public:
     /// Enable usage of sched_yield() instead of usleep() in the logging thread.
     /// Occasionally when running processing thread on max priority the use of
     /// sched_yield() can cause system resource starvation.
-    void use_sched_yield(bool a_enable) { m_use_sched_yield = a_enable; }
+    /// @param a_interval_us interval in microseconds (use -1 to disable)
+    void sched_yield_us(long a_interval_us) { m_sched_yield_us = a_interval_us; }
 
     /// Set a callback to be called on start of the logger's async thread
     void set_on_before_run(std::function<void()> a_cb) { m_on_before_run = a_cb; }

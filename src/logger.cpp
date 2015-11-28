@@ -233,10 +233,10 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         m_timestamp_type = parse_stamp_type(ts);
         std::string ls   = a_cfg.get<std::string>("logger.min-level-filter", "info");
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
-        long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 2000);
-        m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
+        long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 1000);
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
-        m_use_sched_yield= a_cfg.get<bool>       ("logger.use-sched-yield",false);
+        m_sched_yield_us = a_cfg.get<long>       ("logger.sched-yield-us", -1);
+        m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
@@ -341,9 +341,9 @@ void logger::run()
 
         // When running with maximum priority, occasionally excessive use of
         // sched_yield may use to system slowdown, so this option is
-        // configurable by m_use_sched_yield:
-        if (m_queue.empty() && m_use_sched_yield) {
-            time_val deadline(rel_time(0, 250));
+        // configurable by m_sched_yield_us:
+        if (m_queue.empty() && m_sched_yield_us >= 0) {
+            time_val deadline(rel_time(0, m_sched_yield_us));
             while (m_queue.empty()) {
                 if (m_abort)
                     goto DONE;

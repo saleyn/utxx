@@ -44,18 +44,23 @@
             <value val="alert"/>
         </option>
 
+        <option name="wait-timeout-ms" val-type="int" default="1000"
+                desc="Wait for this number of milliseconds before checking queue of\n
+                      pending log messages (def: 1000)"/>
+
+        <option name="sched-yield-us" val-type="int" default="100"
+                desc="Use sched_yield() call in a loop for this number of microseconds\n
+                      before sleeping for wait-timeout-ms (def: 100)"/>
+
+        <option name="silent-finish" val-type="bool" default="false"
+                desc="When true logger doesn't write completion status to log at termination"/>
+
         <option name="handle-crash-signals" val-type="bool" default="true"
                 desc="When true logger installs signal handlers">
             <option name="signals" val-type="string"
                     default="SIGABRT|SIGFPE|SIGILL|SIGSEGV|SIGTERM"
                     desc="Pipe/comma-delimitted list of signal handlers"/>
         </option>
-
-        <option name="silent-finish" val-type="bool" default="false"
-                desc="When true logger doesn't write completion status to log at termination"/>
-
-        <option name="use-sched-yield" val-type="bool" default="true"
-                desc="Use sched_yield() calls for more prompt detection of pending unwritten data"/>
 
         <option name="file" required="false"
                 desc="Logger's backend for writing data synchronously to file">

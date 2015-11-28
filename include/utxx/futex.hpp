@@ -116,15 +116,6 @@ class futex {
         return res == val ? wakeup_result::SIGNALED : wakeup_result::CHANGED;
     }
 
-    /// Atomic inc
-    /// @return Old value of the counter. If it is 0, it means that
-    ///         the consumer likely is waiting.
-    int signal_fast() {
-        // r = ++m_count >= 1 ? 1 : 0;
-        // Note: fetch_add returns old value
-        return m_count.fetch_add(1, std::memory_order_relaxed);
-    }
-
     void commit(int n) {
         m_count.store(n, std::memory_order_relaxed);
     }
@@ -143,6 +134,15 @@ public:
     unsigned long wait_fast_count()      const { return m_wait_fast_count;     }
     unsigned long wait_spin_count()      const { return m_wait_spin_count;     }
     #endif
+
+    /// Atomic inc without making a futex call
+    /// @return Old value of the counter. If it is 0, it means that
+    ///         the consumer likely is waiting.
+    int signal_fast() {
+        // r = ++m_count >= 1 ? 1 : 0;
+        // Note: fetch_add returns old value
+        return m_count.fetch_add(1, std::memory_order_relaxed);
+    }
 
     /// Signal the futex by incrementing the internal
     /// variable and optionally making a system call.

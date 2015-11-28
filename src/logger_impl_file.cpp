@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <fcntl.h>
 #include <utxx/logger/logger_impl_file.hpp>
 #include <utxx/logger/logger_impl.hpp>
+#include <utxx/path.hpp>
 #include <boost/thread.hpp>
 
 namespace utxx {
@@ -83,6 +84,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
         a_config.get<std::string>("logger.file.levels", logger::default_log_levels));
 
     if (m_levels != NOLOGGING) {
+        bool exists = path::file_exists(m_filename);
         m_fd = open(m_filename.c_str(),
                     O_CREAT|O_WRONLY|O_LARGEFILE | (m_append ? O_APPEND : 0),
                     m_mode);
@@ -102,22 +104,24 @@ bool logger_impl_file::init(const variant_tree& a_config)
             p += snprintf(p, p - end, "# Logging started at: %s %c%02d:%02d\n#",
                           timestamp::to_string(DATE_TIME).c_str(),
                           tz > 0 ? '+' : '-', hh, mm);
-            if (!this->m_log_mgr ||
-                this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
-                p += snprintf(p, p - end, "Timestamp|");
-            p += snprintf(p, p - end, "Level|");
-            if (this->m_log_mgr) {
-                if (this->m_log_mgr->show_ident())
-                    p += snprintf(p, p - end, "Ident|");
-                if (this->m_log_mgr->show_thread())
-                    p += snprintf(p, p - end, "Thread|");
-                if (this->m_log_mgr->show_category())
-                p += snprintf(p, p - end, "Category|");
+            if (!exists) {
+                if (!this->m_log_mgr ||
+                    this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
+                    p += snprintf(p, p - end, "Timestamp|");
+                p += snprintf(p, p - end, "Level|");
+                if (this->m_log_mgr) {
+                    if (this->m_log_mgr->show_ident())
+                        p += snprintf(p, p - end, "Ident|");
+                    if (this->m_log_mgr->show_thread())
+                        p += snprintf(p, p - end, "Thread|");
+                    if (this->m_log_mgr->show_category())
+                    p += snprintf(p, p - end, "Category|");
+                }
+                p += snprintf(p, p - end, "Message");
+                if (this->m_log_mgr && this->m_log_mgr->show_location())
+                    p += snprintf(p, p - end, " [File:Line%s]",
+                                this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
             }
-            p += snprintf(p, p - end, "Message");
-            if (this->m_log_mgr && this->m_log_mgr->show_location())
-                p += snprintf(p, p - end, " [File:Line%s]",
-                              this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
             *p++ = '\n';
 
             if (write(m_fd, buf, p - buf) < 0)
