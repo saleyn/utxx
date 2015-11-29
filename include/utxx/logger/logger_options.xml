@@ -26,8 +26,11 @@
             <value val="date-time-usec" desc="YYYYmmdd-HH:MM:DD.ssssss"/>
         </option>
 
+        <option name="levels" val-type="string" default=""
+                desc="Mask (delimiter: ' |,;') that specifies minimum severity of messages to log (def: '')"/>
+
         <option name="min-level-filter" val-type="string" default="info"
-                desc="Mask (delimiter: ' |,;') that specifies minimum severity of messages to log">
+                desc="Minimum severity of messages to log (use ether this one or the 'levels' option)">
             <value val="false"/>
             <value val="none"/>
             <value val="trace"/>

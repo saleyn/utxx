@@ -547,9 +547,12 @@ public:
     /// Set program identifier to be used in the log output.
     void  ident(const std::string& a_ident) { m_ident = a_ident; }
 
-    /// Converts a string (e.g. "DEBUG | INFO | WARNING") sizeof(m_timestamp)-1to a bitmask of
-    /// corresponding levels.  This method is used for configuration parsing
+    /// Converts a delimited string to a bitmask of corresponding levels.
+    /// This method is used for configuration parsing.
+    /// @param a_levels delimited log levels (e.g. "DEBUG | INFO | WARNING").
     static int parse_log_levels(const std::string& levels) throw(std::runtime_error);
+    /// Converts a string (e.g. "INFO") to the corresponding log level.
+    static log_level parse_log_level(const std::string& a_level) throw(std::runtime_error);
     /// String representation of log levels enabled by default.  Used in config
     /// parsing.
     static const char* default_log_levels;

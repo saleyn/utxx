@@ -231,7 +231,13 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
         m_timestamp_type = parse_stamp_type(ts);
+        std::string levs = a_cfg.get<std::string>("logger.levels", "");
+        if (!levs.empty())
+            set_level_filter(static_cast<log_level>(parse_log_levels(levs)));
         std::string ls   = a_cfg.get<std::string>("logger.min-level-filter", "info");
+        if (!levs.empty() && !ls.empty())
+            std::runtime_error
+                ("Either 'levels' or 'min-level-filter' option is permitted!");
         set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
         long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 1000);
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
@@ -584,30 +590,32 @@ int logger::parse_log_levels(const std::string& a_levels)
         boost::algorithm::token_compress_on);
     int result = LEVEL_NONE;
     for (std::vector<std::string>::iterator it=str_levels.begin();
-        it != str_levels.end(); ++it) {
-        boost::to_upper(*it);
-        if (*it == "WIRE")
-            *it = "DEBUG";  // Backward compatibility
-        if (*it == "NONE" || *it == "FALSE") {
-            result  = LEVEL_NONE;
-            break;
-        }
-        else if (*it == "TRACE")   result |= LEVEL_TRACE;
-        else if (*it == "TRACE1")  result |= LEVEL_TRACE | LEVEL_TRACE1;
-        else if (*it == "TRACE2")  result |= LEVEL_TRACE | LEVEL_TRACE2;
-        else if (*it == "TRACE3")  result |= LEVEL_TRACE | LEVEL_TRACE3;
-        else if (*it == "TRACE4")  result |= LEVEL_TRACE | LEVEL_TRACE4;
-        else if (*it == "TRACE5")  result |= LEVEL_TRACE | LEVEL_TRACE5;
-        else if (*it == "DEBUG")   result |= LEVEL_DEBUG;
-        else if (*it == "INFO")    result |= LEVEL_INFO;
-        else if (*it == "NOTICE")  result |= LEVEL_NOTICE;
-        else if (*it == "WARNING") result |= LEVEL_WARNING;
-        else if (*it == "ERROR")   result |= LEVEL_ERROR;
-        else if (*it == "FATAL")   result |= LEVEL_FATAL;
-        else if (*it == "ALERT")   result |= LEVEL_ALERT;
-        else throw std::runtime_error(std::string("Invalid log level: ") + *it);
-    }
+        it != str_levels.end(); ++it)
+        result |= parse_log_level(*it);
     return result;
+}
+
+log_level logger::parse_log_level(const std::string& a_level)
+    throw(std::runtime_error)
+{
+    auto s = boost::to_upper_copy(a_level);
+    if (s == "WIRE")    return LEVEL_DEBUG;  // Backward compatibility
+    if (s == "NONE" ||
+        s == "FALSE")   return LEVEL_NONE;
+    if (s == "TRACE")   return LEVEL_TRACE;
+    if (s == "TRACE1")  return log_level(LEVEL_TRACE | LEVEL_TRACE1);
+    if (s == "TRACE2")  return log_level(LEVEL_TRACE | LEVEL_TRACE2);
+    if (s == "TRACE3")  return log_level(LEVEL_TRACE | LEVEL_TRACE3);
+    if (s == "TRACE4")  return log_level(LEVEL_TRACE | LEVEL_TRACE4);
+    if (s == "TRACE5")  return log_level(LEVEL_TRACE | LEVEL_TRACE5);
+    if (s == "DEBUG")   return LEVEL_DEBUG;
+    if (s == "INFO")    return LEVEL_INFO;
+    if (s == "NOTICE")  return LEVEL_NOTICE;
+    if (s == "WARNING") return LEVEL_WARNING;
+    if (s == "ERROR")   return LEVEL_ERROR;
+    if (s == "FATAL")   return LEVEL_FATAL;
+    if (s == "ALERT")   return LEVEL_ALERT;
+    throw std::runtime_error(std::string("Invalid log level: ") + a_level);
 }
 
 void logger::set_level_filter(log_level a_level) {
