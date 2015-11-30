@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/error.hpp>
 #include <utxx/endian.hpp>
+#include <utxx/url.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
@@ -364,11 +365,20 @@ struct pcap {
         return fwrite(&a_header, 1, sizeof(packet_header), m_file);
     }
 
+    size_t frame_size(connection_type a_proto, size_t a_pkt_sz) const {
+        switch (a_proto) {
+            case TCP:
+            case UDS: return frame_size<tcp_frame>(a_pkt_sz);
+            case UDP: return frame_size<udp_frame>(a_pkt_sz);
+            default:  UTXX_THROW_RUNTIME_ERROR("Protocol not supported!");
+        }
+    }
+
     template <typename Frame>
     typename std::enable_if<std::is_same<Frame, udp_frame>::value ||
                             std::is_same<Frame, tcp_frame>::value, size_t>::
-    type frame_size(size_t a_pkt_sz) {
-      return sizeof(packet_header) + m_frame_offset + sizeof(Frame) + a_pkt_sz;
+    type frame_size(size_t a_pkt_sz) const {
+        return sizeof(packet_header) + m_frame_offset + sizeof(Frame) + a_pkt_sz;
     }
 
     template <typename Frame>
@@ -399,7 +409,7 @@ struct pcap {
              nullptr, a_data_sz);
     }
 
-    int write(const char* buf, size_t sz) {
+    int write(const char* buf, size_t sz) const {
         return fwrite(buf, 1, sz, m_file);
     }
 
