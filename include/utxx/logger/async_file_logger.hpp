@@ -157,11 +157,13 @@ protected:
     int                          m_commit_msec;
     int                          m_commit_queue_limit;
     bool                         m_close_on_exit;
+    std::mutex                   m_starter_mtx;
+    std::condition_variable      m_starter_cv;
 
     // Invoked by the async thread to flush messages from queue to file
     int  commit(const struct timespec* tsp = NULL);
     // Invoked by the async thread
-    void run(std::condition_variable* a_cv);
+    void run();
     // Print error message
     void print_error(int, const char* what, int line);
 
@@ -338,13 +340,11 @@ start(typename traits::file_type a_file,
     m_notify_immediate  = a_notify_immediate;
     m_close_on_exit     = a_close_on_exit;
 
-    std::condition_variable      cv;
-    std::mutex                   mtx;
-    std::unique_lock<std::mutex> guard(mtx);
+    std::unique_lock<std::mutex> guard(m_starter_mtx);
 
-    m_thread.reset(new std::thread([this, &cv]() { run(&cv); }));
+    m_thread.reset(new std::thread([this]() { run(); }));
 
-    cv.wait(guard);
+    m_starter_cv.wait(guard);
     return 0;
 }
 
@@ -366,10 +366,13 @@ void basic_async_logger<traits>::stop()
 
 //-----------------------------------------------------------------------------
 template<typename traits>
-void basic_async_logger<traits>::run(std::condition_variable* a_cv)
+void basic_async_logger<traits>::run()
 {
     // Notify the caller this thread is ready
-    a_cv->notify_one();
+    {
+        std::unique_lock<std::mutex> guard(m_starter_mtx);
+        m_starter_cv.notify_all();
+    }
 
     UTXX_ASYNC_TRACE("Started async logging thread (cancel=%s)\n",
         m_cancel ? "true" : "false");

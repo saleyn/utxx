@@ -250,8 +250,8 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         // Install crash signal handlers
         // (SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM)
         if (a_cfg.get("logger.handle-crash-signals", true)) {
-            sigset_t sset =
-              sig_members_parse(a_cfg.get("logger.handle-crash-signals.signals",""), UTXX_SRC);
+            sigset_t sset = sig_members_parse
+                (a_cfg.get("logger.handle-crash-signals.signals",""), UTXX_SRC);
 
             // Remove signals from the sset that are handled externally
             if (a_ignore_signals)
