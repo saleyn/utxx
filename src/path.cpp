@@ -65,6 +65,17 @@ std::string home() {
     #endif
 }
 
+std::string temp_path(std::string const& a_filename) {
+    #if defined(__windows__) || defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER)
+    auto    p = getenv("TEMP");
+    if (!p) p = "";
+    #else
+    auto    p = P_tmpdir;
+    #endif
+    auto r = std::string(p);
+    return (a_filename.empty()) ? r : r + slash_str() + a_filename;
+}
+
 std::string basename(const std::string& a_file, const std::string& a_strip_ext) {
     auto e = a_file.c_str() + a_file.size();
     auto p = basename(a_file.c_str(), e);

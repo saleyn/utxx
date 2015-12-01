@@ -38,17 +38,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
-static std::string temp_path(const std::string& a_add_str = "") {
-    #if defined(__windows__) || defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER)
-    auto    p = getenv("TEMP");
-    if (!p) p = "";
-    #else
-    auto    p = P_tmpdir;
-    #endif
-    auto r = std::string(p);
-    return (a_add_str.empty()) ? r : r + path::slash_str() + a_add_str;
-}
-
 BOOST_AUTO_TEST_CASE( test_path_slash )
 {
 #if defined(__windows__) || defined(_WIN32) || defined(_WIN64) || defined(_MSC_VER)
@@ -71,15 +60,15 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
     s = path::replace_env_vars("${HOME}/path$HOME/exe");
     BOOST_REQUIRE_EQUAL(home+"/path"+home+"/exe", s);
 
-    s = path::replace_env_vars(temp_path() + "$HOME/path/to/exe");
+    s = path::replace_env_vars(path::temp_path() + "$HOME/path/to/exe");
     BOOST_REQUIRE_EQUAL(
-        temp_path() + home + "/path/to/exe", s);
+        path::temp_path() + home + "/path/to/exe", s);
 
     s = path::replace_env_vars("~/path/to/exe");
     BOOST_REQUIRE_EQUAL(home+"/path/to/exe", s);
 
-    s = path::replace_env_vars(temp_path() + "/file%Y-%m-%d::%T.txt");
-    BOOST_REQUIRE_EQUAL(temp_path() + "/file%Y-%m-%d::%T.txt", s);
+    s = path::replace_env_vars(path::temp_path() + "/file%Y-%m-%d::%T.txt");
+    BOOST_REQUIRE_EQUAL(path::temp_path() + "/file%Y-%m-%d::%T.txt", s);
 
     struct tm tm;
     tm.tm_year = 100;
@@ -88,8 +77,8 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
     tm.tm_hour = 5;
     tm.tm_min  = 4;
     tm.tm_sec  = 3;
-    s = path::replace_env_vars(temp_path() + "/file%Y-%m-%d::%T.txt", &tm);
-    BOOST_REQUIRE_EQUAL(temp_path() + "/file2000-01-02::05:04:03.txt", s);
+    s = path::replace_env_vars(path::temp_path() + "/file%Y-%m-%d::%T.txt", &tm);
+    BOOST_REQUIRE_EQUAL(path::temp_path() + "/file2000-01-02::05:04:03.txt", s);
 
     std::string str = "${env}/${instance}";
     std::map<std::string, std::string> bindings
@@ -107,12 +96,12 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
 
 BOOST_AUTO_TEST_CASE( test_path_symlink )
 {
-    auto tp = temp_path();
+    auto tp = path::temp_path();
     BOOST_CHECK(path::is_dir(tp));
 
     auto fn = "xxx-file-name.test.txt";
-    auto p  = temp_path(fn);
-    auto s  = temp_path("xxx-file-link.test.link");
+    auto p  = path::temp_path(fn);
+    auto s  = path::temp_path("xxx-file-link.test.link");
     if (path::file_exists(p))
         BOOST_CHECK(path::file_unlink(p));
     if (path::file_exists(s))
@@ -188,7 +177,7 @@ BOOST_AUTO_TEST_CASE( test_path_program )
 
 BOOST_AUTO_TEST_CASE( test_path_file_exists )
 {
-    auto s_filename = temp_path() + "/test_file_123.qqq";
+    auto s_filename = path::temp_path() + "/test_file_123.qqq";
 
     BOOST_REQUIRE(!path::file_exists(s_filename));
 
@@ -208,15 +197,15 @@ BOOST_AUTO_TEST_CASE( test_path_file_exists )
 
 BOOST_AUTO_TEST_CASE( test_path_split_join )
 {
-    auto res = path::split(temp_path() + path::slash_str() + "abc.txt");
-    BOOST_CHECK_EQUAL(temp_path(), res.first);
+    auto res = path::split(path::temp_path() + path::slash_str() + "abc.txt");
+    BOOST_CHECK_EQUAL(path::temp_path(), res.first);
     BOOST_CHECK_EQUAL("abc.txt",   res.second);
     res = path::split("abc.txt");
     BOOST_CHECK_EQUAL("",          res.first);
     BOOST_CHECK_EQUAL("abc.txt",   res.second);
 
-    auto s   = path::join(temp_path(), "abc.txt");
-    auto exp = temp_path() + path::slash_str() + "abc.txt";
+    auto s   = path::join(path::temp_path(), "abc.txt");
+    auto exp = path::temp_path() + path::slash_str() + "abc.txt";
     BOOST_CHECK_EQUAL(exp, s);
     BOOST_CHECK_EQUAL("abc.txt", path::join("", "abc.txt"));
 
@@ -235,7 +224,7 @@ BOOST_AUTO_TEST_CASE( test_path_split_join )
 BOOST_AUTO_TEST_CASE( test_path_list_files )
 {
     auto create_file = [](const char* name) {
-        auto file = temp_path() + path::slash_str() + name;
+        auto file = path::temp_path() + path::slash_str() + name;
 
         std::ofstream f(file, std::ios::trunc);
         BOOST_REQUIRE(f.is_open());
@@ -245,35 +234,35 @@ BOOST_AUTO_TEST_CASE( test_path_list_files )
     create_file("test_file_2.bin");
     create_file("test_file_3.bin");
 
-    auto res = path::list_files(temp_path(), "test_file_[1-3]\\.bin", FileMatchT::REGEX);
+    auto res = path::list_files(path::temp_path(), "test_file_[1-3]\\.bin", FileMatchT::REGEX);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path(), "test_file_?.bin");
+    res = path::list_files(path::temp_path(), "test_file_?.bin");
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path(), "test_file_?.b*", FileMatchT::WILDCARD);
+    res = path::list_files(path::temp_path(), "test_file_?.b*", FileMatchT::WILDCARD);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path() + path::slash_str() + "test_file_?.b*", FileMatchT::WILDCARD);
+    res = path::list_files(path::temp_path() + path::slash_str() + "test_file_?.b*", FileMatchT::WILDCARD);
     BOOST_CHECK(res.first);
     BOOST_CHECK_EQUAL(3u, res.second.size());
 
-    res = path::list_files(temp_path(), "test_file_", FileMatchT::PREFIX, true);
+    res = path::list_files(path::temp_path(), "test_file_", FileMatchT::PREFIX, true);
     BOOST_CHECK(res.first);
     BOOST_REQUIRE_EQUAL(3u, res.second.size());
-    auto fn = path::join(temp_path(), "test_file_3.bin");
+    auto fn = path::join(path::temp_path(), "test_file_3.bin");
     BOOST_CHECK_EQUAL(fn, *res.second.begin());
 
-    res = path::list_files(temp_path(), "test_file_", FileMatchT::PREFIX);
+    res = path::list_files(path::temp_path(), "test_file_", FileMatchT::PREFIX);
     BOOST_CHECK(res.first);
     BOOST_REQUIRE_EQUAL(3u, res.second.size());
     BOOST_CHECK_EQUAL("test_file_3.bin", *res.second.begin());
 
     for (auto& f : res.second) {
-        path::file_unlink(temp_path() + f);
+        path::file_unlink(path::temp_path() + f);
     }
 
     BOOST_CHECK(!path::file_exists("test_file_1.bin"));

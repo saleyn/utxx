@@ -208,6 +208,10 @@ inline list_files(std::string const& a_dir_with_file_mask,
 /// Return portable value of the home path
 std::string home();
 
+/// Location of the temp directory (e.g. "/tmp")
+/// @param a_filename file name to append to temp directory name
+std::string temp_path(std::string const& a_filename = "");
+
 /// @brief Substitute all environment variables and day-time
 /// formatting symbols (see strptime(3)) in a given filename.
 /// The variables can be represented by "%VARNAME%" notation
