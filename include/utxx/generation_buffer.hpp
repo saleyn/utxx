@@ -223,10 +223,14 @@ namespace utxx
         //----------------------------------------------------------------------
         template <typename Lambda>
         int add(const Lambda& a_fun) {
-            T*       p;
-            uint32_t idx;
-            std::tie(p, idx) = reserve();
-            return a_fun(*p, idx) ? idx : -1;
+            uint32_t front = Size::get(this) & m_mask;
+            assert(front < m_capacity);
+
+            T*  at = m_entries + front;
+            if (unlikely(!a_fun(*at, front)))
+                return -1;
+            Size::inc(this);
+            return front;
         }
 
         //----------------------------------------------------------------------

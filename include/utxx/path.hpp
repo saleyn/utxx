@@ -29,8 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_PATH_HPP_
-#define _UTXX_PATH_HPP_
+#pragma once
 
 #include <string>
 #include <list>
@@ -85,8 +84,9 @@ std::string basename(const std::string& a_file, const std::string& a_strip_ext =
 std::string dirname(const std::string& a_filename);
 
 /// Checks if a file exists
-bool        file_exists(const char* a_path);
-inline bool file_exists(const std::string& a) { return file_exists(a.c_str()); }
+/// @return 0 if file doesn't exist, or file's stat.st_mode otherwise
+int         file_exists(const char* a_path);
+inline int  file_exists(const std::string& a) { return file_exists(a.c_str()); }
 
 /// Check if given path is a symlink
 bool        is_symlink (const char* a_path);
@@ -123,6 +123,9 @@ inline bool file_unlink(const std::string& a_path) { return file_unlink(a_path.c
 inline bool file_rename(const std::string& a_from, const std::string& a_to) {
     return ::rename(a_from.c_str(), a_to.c_str()) == 0;
 }
+
+/// Create nested directories (similar to mkdir -p)
+bool        create_directories(const std::string& a_path, int a_access = 0750);
 
 /// Get current working directory
 inline std::string curdir() { char buf[512]; getcwd(buf,sizeof(buf)); return buf; }
@@ -305,4 +308,3 @@ public:
 } // namespace utxx
 
 #include <utxx/path.ipp>
-#endif // _UTXX_PATH_HPP_

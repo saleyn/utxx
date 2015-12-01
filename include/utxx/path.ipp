@@ -102,6 +102,47 @@ inline long file_size(int fd) {
     return rc == 0 ? stat_buf.st_size : -1;
 }
 
+inline int file_exists(const char* a_path) {
+    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+    std::ifstream l_stream;
+    l_stream.open(a_path, std::ios_base::in);
+    if(l_stream.is_open()) {
+        l_stream.close();
+        return true;
+    }
+    return false;
+    #else
+    struct stat buf;
+    return ::lstat(a_path, &buf) < 0 ? 0 : buf.st_mode;
+    #endif
+}
+
+inline bool create_directories(const std::string& a_path, int a_access) {
+    if (a_path.empty())
+        return false;
+
+    std::string s(a_path);
+    if (s[s.size()-1] == '/')
+        s.erase(s.size()-1);
+
+    size_t n = 0, i;
+    while ((i = s.find('/', n)) != std::string::npos) {
+        n = i+1;
+        if (i == 0)
+            continue;
+        auto dir  = s.substr(0, i);
+        auto mode = file_exists(dir.c_str());
+        if (S_ISDIR(mode))
+            continue;
+        else if (S_ISREG(mode))
+            return false;
+        else if (!mode && mkdir(dir.c_str(), a_access) < 0)
+            return false;
+    }
+
+    return file_exists(s) || mkdir(s.c_str(), a_access) >= 0;
+}
+
 } // namespace path
 } // namespace utxx
 

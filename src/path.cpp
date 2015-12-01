@@ -87,22 +87,6 @@ std::string basename(const std::string& a_file, const std::string& a_strip_ext) 
     return std::string(p, e - p);
 }
 
-bool file_exists(const char* a_path) {
-    #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-    std::ifstream l_stream;
-    l_stream.open(a_path, std::ios_base::in);
-    if(l_stream.is_open()) {
-        l_stream.close();
-        return true;
-    }
-    #else
-    struct stat buf;
-    if (::lstat(a_path, &buf) != -1)
-        return true;
-    #endif
-    return false;
-}
-
 inline std::string
 replace_env_vars(const std::string& a_path, const struct tm* a_now,
                  const std::map<std::string, std::string>*   a_bindings)

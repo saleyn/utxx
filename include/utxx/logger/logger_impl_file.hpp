@@ -68,7 +68,7 @@ class logger_impl_file: public logger_impl {
     bool         m_append;
     bool         m_use_mutex;
     bool         m_timestamp;
-    int          m_levels;
+    uint32_t     m_levels;
     mode_t       m_mode;
     int          m_fd;
     boost::mutex m_mutex;
