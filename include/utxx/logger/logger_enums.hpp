@@ -82,7 +82,7 @@ constexpr int as_int() {
 /// Function to map log_level into range [1 ... 10].
 /// Same as the static version above, but usable at run-time
 inline int as_int(log_level L) {
-    int level = ffs(L);
+    int level = __builtin_ffs(L);
     return 11 - (level > 10 ? 10 : level);
 };
 

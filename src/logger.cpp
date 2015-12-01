@@ -64,16 +64,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-std::string logger::log_levels_to_str(int a_levels) noexcept
+std::string logger::log_levels_to_str(uint32_t a_levels) noexcept
 {
     std::stringstream s;
     bool l_empty = true;
-    for (int i = LEVEL_TRACE; i <= LEVEL_LOG; i <<= 1)
-        if (i & a_levels) {
+    for (uint32_t i = 1; i <= LEVEL_LOG; i <<= 1) {
+        auto level = i < LEVEL_TRACE ? (i | LEVEL_TRACE) : i;
+        if  ((level & a_levels) == level) {
             s << (l_empty ? "" : "|")
-              << log_level_to_str(static_cast<log_level>(i));
+              << log_level_to_string(static_cast<log_level>(level), false);
             l_empty = false;
         }
+    }
     return s.str();
 }
 
@@ -242,7 +244,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         if (!levs.empty() && !ls.empty())
             std::runtime_error
                 ("Either 'levels' or 'min-level-filter' option is permitted!");
-        set_min_level_filter(static_cast<log_level>(parse_log_levels(ls)));
+        set_min_level_filter(parse_log_level(ls));
         long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 1000);
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
         m_sched_yield_us = a_cfg.get<long>       ("logger.sched-yield-us", -1);
@@ -627,7 +629,7 @@ void logger::set_level_filter(log_level a_level) {
 }
 
 void logger::set_min_level_filter(log_level a_level) {
-    uint32_t n = (uint32_t)a_level ? (1u << bits::bit_scan_forward(a_level)) - 1 : 0u;
+    uint32_t n = (uint32_t)a_level ? (1u << __builtin_ffs(a_level)) - 1 : 0u;
     m_level_filter = static_cast<uint32_t>(~n);
 }
 
@@ -646,7 +648,8 @@ std::ostream& logger::dump(std::ostream& out) const
     auto val = [](bool a) { return a ? "true" : "false"; };
     std::stringstream s;
     s   << "Logger settings:\n"
-        << "    level-filter        = " << log_levels_to_str(m_level_filter) << '\n'
+        << "    level-filter        = " << boost::to_upper_copy
+                                    (log_levels_to_str(m_level_filter)) << '\n'
         << "    show-location       = " << val(m_show_location)         << '\n'
         << "    show-fun-namespaces = " << m_show_fun_namespaces        << '\n'
         << "    show-ident          = " << val(m_show_ident)            << '\n'

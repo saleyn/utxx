@@ -66,8 +66,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
     try {
         m_filename = a_config.get<std::string>("logger.file.filename");
-        if (m_log_mgr)
-            m_filename = m_log_mgr->replace_macros(m_filename);
+        m_filename = m_log_mgr->replace_macros(m_filename);
     } catch (boost::property_tree::ptree_bad_data&) {
         throw badarg_error("logger.file.filename not specified");
     }
@@ -80,8 +79,16 @@ bool logger_impl_file::init(const variant_tree& a_config)
     m_use_mutex     = m_append ? false : a_config.get("logger.file.use-mutex", true);
     m_no_header     = a_config.get("logger.file.no-header", false);
     m_mode          = a_config.get("logger.file.mode", 0644);
-    m_levels        = logger::parse_log_levels(
-        a_config.get<std::string>("logger.file.levels", logger::default_log_levels));
+    auto levels     = a_config.get("logger.file.levels", "");
+
+    m_levels = levels.empty()
+             ? m_log_mgr->level_filter()
+             : logger::parse_log_levels(levels);
+
+    if (__builtin_ffs(m_levels) < __builtin_ffs(m_log_mgr->level_filter()))
+        UTXX_THROW_RUNTIME_ERROR("File logger's levels filter '", levels,
+                                 "' is less granular that logger's default '",
+                                 logger::log_levels_to_str(m_log_mgr->min_level_filter()));
 
     if (m_levels != NOLOGGING) {
         bool exists = path::file_exists(m_filename);
@@ -100,7 +107,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
             auto ll = m_log_mgr->log_level_to_string
                         (m_log_mgr->level_filter()
-                            ? as_log_level(bits::bit_scan_forward(m_log_mgr->level_filter()))
+                            ? as_log_level(__builtin_ffs(m_log_mgr->level_filter()))
                             : log_level::LEVEL_NONE,
                          false);
             int  tz = -timezone;

@@ -69,6 +69,37 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK(LEVEL_TRACE4  == as_log_level(9 ));
     BOOST_CHECK(LEVEL_TRACE5  == as_log_level(10));
 
+    BOOST_CHECK_EQUAL("TRACE5", logger::log_level_to_string(utxx::LEVEL_TRACE5, false));
+    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE5));
+    BOOST_CHECK_EQUAL("TRACE1", logger::log_level_to_string(utxx::LEVEL_TRACE1, false));
+    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE1));
+    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE, false));
+    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE));
+    BOOST_CHECK_EQUAL("DEBUG",  logger::log_level_to_string(utxx::LEVEL_DEBUG, false));
+    BOOST_CHECK_EQUAL("DEBUG",  logger::log_level_to_string(utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("FATAL",  logger::log_level_to_string(utxx::LEVEL_FATAL));
+    BOOST_CHECK_EQUAL("ALERT",  logger::log_level_to_string(utxx::LEVEL_ALERT));
+    BOOST_CHECK_EQUAL("LOG",    logger::log_level_to_string(utxx::LEVEL_LOG));
+
+    BOOST_CHECK_EQUAL("TRACE5|TRACE|DEBUG", logger::log_levels_to_str(utxx::LEVEL_TRACE5 | utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("TRACE|DEBUG",        logger::log_levels_to_str(utxx::LEVEL_TRACE  | utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("DEBUG|INFO",         logger::log_levels_to_str(utxx::LEVEL_INFO   | utxx::LEVEL_DEBUG));
+
+    BOOST_CHECK_EQUAL("T",                  logger::log_level_to_abbrev(utxx::LEVEL_TRACE1));
+    BOOST_CHECK_EQUAL("T",                  logger::log_level_to_abbrev(utxx::LEVEL_TRACE5));
+    BOOST_CHECK_EQUAL("T",                  logger::log_level_to_abbrev(utxx::LEVEL_TRACE));
+    BOOST_CHECK_EQUAL("D",                  logger::log_level_to_abbrev(utxx::LEVEL_DEBUG));
+
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_TRACE1));
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_TRACE5));
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_TRACE));
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_ERROR));
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_FATAL));
+    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_ALERT));
+    BOOST_CHECK_EQUAL(7u,                   logger::log_level_size(utxx::LEVEL_WARNING));
+    BOOST_CHECK_EQUAL(3u,                   logger::log_level_size(utxx::LEVEL_LOG));
+
     pt.put("logger.timestamp",             variant("time-usec"));
     pt.put("logger.min-level-filter",      variant("debug"));
     pt.put("logger.console.stdout-levels", variant("debug|info|notice|warning|error|fatal|alert"));
