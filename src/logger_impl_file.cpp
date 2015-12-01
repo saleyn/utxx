@@ -98,12 +98,17 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
             tzset();
 
+            int mlf = bits::bit_scan_forward(m_log_mgr->level_filter());
+            auto ll = m_log_mgr->log_level_to_string
+                        (m_log_mgr->level_filter()
+                            ? log_level(1u << mlf) : log_level::LEVEL_NONE,
+                         false);
             int  tz = -timezone;
             int  hh = abs(tz / 3600);
             int  mm = abs(tz % 60);
-            p += snprintf(p, p - end, "# Logging started at: %s %c%02d:%02d\n#",
+            p += snprintf(p, p - end, "# Logging started at: %s %c%02d:%02d (MinLevel: %s)\n#",
                           timestamp::to_string(DATE_TIME).c_str(),
-                          tz > 0 ? '+' : '-', hh, mm);
+                          tz > 0 ? '+' : '-', hh, mm, ll.c_str());
             if (!exists) {
                 if (!this->m_log_mgr ||
                     this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)

@@ -168,7 +168,12 @@ struct logger : boost::noncopyable {
 
     /// Return log level as a 1-char string
     static const std::string& log_level_to_abbrev(log_level level)  noexcept;
-    static const std::string& log_level_to_string(log_level level)  noexcept;
+
+    /// Convert a log_level to string
+    /// @param level level to convert
+    /// @param merge_trace when true all TRACE1-5 levels are returned as "TRACE"
+    static const std::string& log_level_to_string(log_level level,
+                                                  bool merge_trace=true)  noexcept;
     static const char*        log_level_to_str(log_level level)     noexcept
                               { return log_level_to_string(level).c_str(); }
     static size_t             log_level_size  (log_level level)     noexcept;
@@ -556,6 +561,8 @@ public:
     /// String representation of log levels enabled by default.  Used in config
     /// parsing.
     static const char* default_log_levels;
+    /// Filter mask of levels that need to be logged
+    int        level_filter() const { return m_level_filter; }
 
     /// If the crash handler is installed, return the handled signal set
     static sigset_t* crash_handler_sigset() {

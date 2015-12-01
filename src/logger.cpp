@@ -102,19 +102,23 @@ const std::string& logger::log_level_to_abbrev(log_level level) noexcept
     }
 }
 
-const std::string& logger::log_level_to_string(log_level level) noexcept
+const std::string& logger::log_level_to_string(log_level lvl, bool merge_trace) noexcept
 {
+    static const std::string s_traces[] = {
+        "TRACE1", "TRACE2", "TRACE3", "TRACE4", "TRACE5"
+    };
+
     static const std::string s_levels[] = {
         "TRACE",   "DEBUG", "INFO",  "NOTICE",
         "WARNING", "ERROR", "FATAL", "ALERT", "LOG"
     };
 
-    switch (level) {
-        case LEVEL_TRACE5   :
-        case LEVEL_TRACE4   :
-        case LEVEL_TRACE3   :
-        case LEVEL_TRACE2   :
-        case LEVEL_TRACE1   :
+    switch (lvl) {
+        case LEVEL_TRACE5   : return merge_trace ? s_levels[0] : s_traces[4];
+        case LEVEL_TRACE4   : return merge_trace ? s_levels[0] : s_traces[3];
+        case LEVEL_TRACE3   : return merge_trace ? s_levels[0] : s_traces[2];
+        case LEVEL_TRACE2   : return merge_trace ? s_levels[0] : s_traces[1];
+        case LEVEL_TRACE1   : return merge_trace ? s_levels[0] : s_traces[0];
         case LEVEL_TRACE    : return s_levels[0];
         case LEVEL_DEBUG    : return s_levels[1];
         case LEVEL_INFO     : return s_levels[2];
