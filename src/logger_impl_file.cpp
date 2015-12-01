@@ -98,10 +98,10 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
             tzset();
 
-            int mlf = bits::bit_scan_forward(m_log_mgr->level_filter());
             auto ll = m_log_mgr->log_level_to_string
                         (m_log_mgr->level_filter()
-                            ? log_level(1u << mlf) : log_level::LEVEL_NONE,
+                            ? as_log_level(bits::bit_scan_forward(m_log_mgr->level_filter()))
+                            : log_level::LEVEL_NONE,
                          false);
             int  tz = -timezone;
             int  hh = abs(tz / 3600);
