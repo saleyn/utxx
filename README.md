@@ -1,4 +1,4 @@
-# utxx - an open-source collection of C++ miscelaneous components #
+# utxx - an open-source collection of C++ utility components #
 
 This dual-licensed library provides a set of classes that
 complement C++ and boost with functionality needed by many
