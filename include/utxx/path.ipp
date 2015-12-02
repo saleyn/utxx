@@ -29,8 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_PATH_IPP_
-#define _UTXX_PATH_IPP_
+#pragma once
 
 #include <utxx/path.hpp>
 #include <sys/stat.h>
@@ -143,7 +142,10 @@ inline bool create_directories(const std::string& a_path, int a_access) {
     return file_exists(s) || mkdir(s.c_str(), a_access) >= 0;
 }
 
+inline std::string username() {
+    char buf[L_cuserid];
+    return unlikely(cuserid(buf) == nullptr) ? buf : "";
+}
+
 } // namespace path
 } // namespace utxx
-
-#endif // _UTXX_PATH_IPP_

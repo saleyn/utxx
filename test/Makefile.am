@@ -49,6 +49,7 @@ TEST_UTXX_SRCS = \
 	test_meta.cpp \
 	test_multi_file_async_logger.cpp \
 	test_nchar.cpp \
+	test_os.cpp \
 	test_path.cpp \
 	test_pcap.cpp \
 	test_pmap.cpp \
