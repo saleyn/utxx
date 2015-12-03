@@ -55,7 +55,9 @@ AC_ARG_ENABLE(warnings,
      ],
 )
 
-AX_CXX_COMPILE_STDCXX_11([noext], [mandatory])
+# this macro is not present in the autoconf-archive yet:
+# AX_CXX_COMPILE_STDCXX_14(noext, mandatory)
+CXXFLAGS+=" -std=c++14"
 
 # libtool
 LT_INIT([disable-static])

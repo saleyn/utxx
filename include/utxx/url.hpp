@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdlib.h>     /* atoi */
 #include <string>
+#include <stdexcept>
 
 namespace utxx {
 
@@ -81,11 +82,29 @@ namespace utxx {
     bool is_ipv4_addr(const std::string& a_addr);
 
     /// URL Parsing
-    /// @param a_url string in the form <tt>tcp://host:port</tt>
+    /// @param a_url string in the form <tt>tcp://host:port/path</tt>
     inline bool parse_url(const std::string& a_url, addr_info& a_info) {
         return a_info.parse(a_url);
     }
 
+    /// Split a string containing <tt>ADDRESS:PORT</tt> into a pair.
+    /// @param a_addr address string to parse
+    /// @param a_throw_err throw errors when port value is invalid or not present
+    /// @return {Addr, Port}, where port is -1 when it's not present in the
+    ///         \a a_addr string or its value exceeds short integer.
+    inline std::pair<std::string,int>
+    split_addr(const std::string& a_addr, bool a_throw_err = false) {
+        auto n = a_addr.find(':');
+        if (n == std::string::npos)
+            return a_throw_err ? throw std::runtime_error("Invalid address " + a_addr)
+                               : std::make_pair(a_addr, -1);
+        unsigned int port = std::stoi(a_addr.substr(n+1));
+        if (port > (unsigned short)-1)
+            return a_throw_err
+                ? throw std::runtime_error("Address " + a_addr + " has invalid port value")
+                : std::make_pair(a_addr.substr(0, n), -1);
+        return std::make_pair(a_addr.substr(0, n), port);
+    }
 } // namespace utxx
 
 #endif // _UTXX_URL_HPP_

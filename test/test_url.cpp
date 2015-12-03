@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/verbosity.hpp>
 #include <iostream>
 
+using namespace std;
 using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_url )
@@ -118,5 +119,11 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_REQUIRE_EQUAL("cmd://7z -so x temp.7z", l_url.url);
     BOOST_REQUIRE_EQUAL("7z -so x temp.7z",       l_url.path);
     BOOST_REQUIRE(!l_url.is_ipv4());
-}
 
+    string ip = "123.45.67.89";
+    BOOST_REQUIRE(make_pair(ip, 10) == split_addr("123.45.67.89:10"));
+    BOOST_REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89"));
+    BOOST_REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89:99999"));
+    BOOST_CHECK_THROW(split_addr(ip, true), runtime_error);
+    BOOST_CHECK_THROW(split_addr("123.45.67.89:99999", true), runtime_error);
+}
