@@ -255,6 +255,8 @@ long get_seqno(struct address* addr, const char* buf, int n, long last_seqno, in
     }
     case FORTS:
       return decode_forts_seqno(buf, n, last_seqno, seq_reset);
+    default:
+      break;
   }
   return 0;
 }
@@ -267,7 +269,7 @@ void inc_addrs() {
   }
 }
 
-void parse_addr(const char* s) {
+void parse_addr(char* s) {
   const char*       pif, *q;
   char              a[512];
   struct address*   paddr       = &addrs[addrs_count];
@@ -372,7 +374,7 @@ void parse_addr(const char* s) {
   }
 }
 
-void main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
   struct ip_mreq        group;
   struct ip_mreq_source group_s;
@@ -382,7 +384,6 @@ void main(int argc, char *argv[])
   int                   use_epoll = 1, efd = -1, tfd = -1;
   struct epoll_event    timer_event;
 
-  char*                 iaddr       = NULL;
   char*                 imcast_addr = NULL;
   char*                 isrc_addr   = NULL;
   int                   iport       = 0;
@@ -548,7 +549,7 @@ void main(int argc, char *argv[])
       printf(" Addr#%d opened fd = %d\n", i, addrs[i].fd);
     }
 
-    assert(addrs[i].fd < sizeof(addrs_idx)/sizeof(addrs_idx[0]));
+    assert(addrs[i].fd < (int)(sizeof(addrs_idx)/sizeof(addrs_idx[0])));
     addrs[i].event.data.fd = addrs[i].fd;
     addrs[i].event.events  = EPOLLIN | EPOLLET; // Edge-triggered
     addrs_idx[addrs[i].fd] = addrs + i;
@@ -665,7 +666,6 @@ void main(int argc, char *argv[])
 
     if (!quiet && verbose) {
       char iface[32], mcast[32], src[32];
-      struct in_addr in;
       snprintf(iface, sizeof(iface), "%s", inet_ntoa(*((struct in_addr*)&addrs[i].iface)));
       snprintf(mcast, sizeof(mcast), "%s", inet_ntoa(*((struct in_addr*)&addrs[i].mcast_addr)));
       snprintf(src,   sizeof(src),   "%s", inet_ntoa(*((struct in_addr*)&addrs[i].src_addr)));
@@ -727,9 +727,9 @@ void main(int argc, char *argv[])
       printf("Reporting timer setup in %ld seconds\n",
         timeout.it_value.tv_sec - now_time/1000000);
 
-    for (i=0; i < sizeof(sorted_addrs) / sizeof(sorted_addrs[0]); i++) {
+    for (i=0; i < (int)(sizeof(sorted_addrs) / sizeof(sorted_addrs[0])); i++) {
       int j, sz = addrs_count * sizeof(struct address*);
-      sorted_addrs[i] = malloc(sz);
+      sorted_addrs[i] = (address**)malloc(sz);
       for (j=0; j < addrs_count; j++)
         sorted_addrs[i][j] = &addrs[j];
     }
@@ -815,26 +815,26 @@ void main(int argc, char *argv[])
       tot_ooo_count, tot_gap_count);
   }
 
-  for (i=0; i < sizeof(sorted_addrs) / sizeof(sorted_addrs[0]); i++)
+  for (i=0; i < (int)(sizeof(sorted_addrs) / sizeof(sorted_addrs[0])); i++)
     if (sorted_addrs[i])
       free(sorted_addrs[i]);
 
   if (efd != -1) close(efd);
   if (wfd != -1) close(wfd);
 
-  exit(tot_pkts ? 0 : 1);
+  return tot_pkts ? 0 : 1;
 }
 
-inline int intcmpa(long a, long b) { return a < b ? -1 : a > b; }
-inline int intcmpd(long a, long b) { return a > b ? -1 : a < b; }
+static int intcmpa(long a, long b) { return a < b ? -1 : a > b; }
+static int intcmpd(long a, long b) { return a > b ? -1 : a < b; }
 
-inline int crep_ooo_count(const struct address* a) {
+static int crep_ooo_count(const struct address* a) {
   return a->ooo_count - a->last_crep_ooo_count;
 }
-inline int crep_gap_count(const struct address* a) {
+static int crep_gap_count(const struct address* a) {
   return a->gap_count - a->last_crep_gap_count;
 }
-inline int crep_pkt_count(const struct address* a) {
+static int crep_pkt_count(const struct address* a) {
   return a->pkt_count - a->last_crep_pkt_count;
 }
 
@@ -885,7 +885,7 @@ void report_socket_stats() {
                             "================================"
                             "================================"
                             "================================";
-  static const char BAR[] = "********************************";
+  //static const char BAR[] = "********************************";
   static const int seqno_width = 9;
   const        int pad_title   = max_title_width - 5;
 
@@ -900,7 +900,7 @@ void report_socket_stats() {
     if (p->gap_count > max_gap_count) max_gap_count = p->gap_count;
   }
 
-  for (i=0; i < sizeof(sort_funs)/sizeof(sort_funs[0]); i++)
+  for (i=0; i < (int)(sizeof(sort_funs)/sizeof(sort_funs[0])); i++)
     qsort(sorted_addrs[i], addrs_count, sizeof(struct address*), sort_funs[i]);
 
   printf("#C|%*.*sTitle|==MBytes|%*.*sLastSeqno|%*.*sTitle|==Packets|%*.*sLastSeqno|\n",
@@ -912,8 +912,8 @@ void report_socket_stats() {
     struct address* ppkts  = sorted_addrs[1][i];
     if (!pbytes->bytes_cnt && !ppkts->pkt_count)
       break;
-    int gbytes = max_bytes     ? (int)(seqno_width * pbytes->bytes_cnt / max_bytes) : 0;
-    int gpkts  = max_pkt_count ? (int)(seqno_width * ppkts->pkt_count / max_pkt_count) : 0;
+    //int gbytes = max_bytes     ? (int)(seqno_width * pbytes->bytes_cnt / max_bytes) : 0;
+    //int gpkts  = max_pkt_count ? (int)(seqno_width * ppkts->pkt_count / max_pkt_count) : 0;
 
     printf("#C|%*s|%8.1f|%*ld|%*s|%9d|%*ld|\n",
       max_title_width, pbytes->title, (double)pbytes->bytes_cnt/MEGABYTE,
@@ -934,8 +934,8 @@ void report_socket_stats() {
     int ooo_count = crep_ooo_count(pooo);
     int gap_count = crep_gap_count(pgaps);
     if (ooo_count || gap_count) {
-      int ggaps = max_gap_count ? (int)(seqno_width * gap_count / max_gap_count) : 0;
-      int gooos = max_ooo_count ? (int)(seqno_width * ooo_count / max_ooo_count) : 0; 
+      //int ggaps = max_gap_count ? (int)(seqno_width * gap_count / max_gap_count) : 0;
+      //int gooos = max_ooo_count ? (int)(seqno_width * ooo_count / max_ooo_count) : 0;
 
       printf("#c|%*s|%8d|%*ld|%*s|%9d|%*ld|\n",
         max_title_width,    gap_count ? pgaps ->title     : "", gap_count,
@@ -985,7 +985,7 @@ void report_socket_stats() {
 
 void print_report() {
   struct timeval tv;
-  int i, seqno;
+  int i;
 
   gettimeofday(&tv, NULL);
 
@@ -1065,7 +1065,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
   now_time = tv.tv_sec * 1000000 + tv.tv_usec;
 
   /* Get timestamp of the packet */
-  if (last_pkts < 1000 && pkts < 1000 || (rand() % 100) < 10) {
+  if ((last_pkts < 1000 && pkts < 1000) || (rand() % 100) < 10) {
     ioctl(addr->fd, SIOCGSTAMP, &tv);
     pkt_time = now_time - (tv.tv_sec * 1000000 + tv.tv_usec);
     sum_pkt_time += pkt_time;
@@ -1150,7 +1150,8 @@ void process_packet(struct address* addr, const char* buf, int n) {
     printf("Received %6d bytes, %ld packets (%s)\n", n, tot_pkts, addr->title);
 }
 
-static inline int u32_to_size (uint32_t n)
+/*
+static int u32_to_size (uint32_t n)
 {
   static const int s_table[] = {
     5, 5, 5, 5,
@@ -1162,8 +1163,9 @@ static inline int u32_to_size (uint32_t n)
   int first_bit = n ? 31 : __builtin_clz(n);
   return s_table[first_bit];
 }
+*/
 
-inline int find_stopbit_byte(const char* buff, const char* end) {
+static int find_stopbit_byte(const char* buff, const char* end) {
     const uint64_t s_mask = 0x8080808080808080ul;
     const uint64_t*     p = (const uint64_t*)buff;
 
@@ -1176,7 +1178,7 @@ inline int find_stopbit_byte(const char* buff, const char* end) {
         // In case the stop bit is not found in 64 bits,
         // we need to check next bytes
         unmasked = *(++p) & s_mask;
-        pos = 8 + __builtin_ffsl(unmasked) >> 3;
+        pos = 8 + (__builtin_ffsl(unmasked) >> 3);
     }
 
     if (buff + pos < end)
@@ -1187,7 +1189,6 @@ inline int find_stopbit_byte(const char* buff, const char* end) {
 
 
 int decode_uint_loop(const char** buff, const char* end, uint64_t* val) {
-  const char* rend = *buff - 1;
   const char* p = *buff;
   int e, i = 0;
   uint64_t n = 0;
@@ -1236,23 +1237,22 @@ int unmask_7bit_uint56(const char** buff, const char* end, uint64_t* value) {
 // for processing Sequences):
 //
 uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_reset) {
-    int res, len = 0;
     const char* q = buff;
     uint64_t  tid = 120, seq = 0, pmap;
 
     while (tid == 120) { // reset
-      res = decode_uint_loop(&q, q+5, &pmap); 
-      res = decode_uint_loop(&q, q+5, &tid);
+      decode_uint_loop(&q, q+5, &pmap);
+      decode_uint_loop(&q, q+5, &tid);
     }
 
     //printf("PMAP=%x, TID=%d, *p=0x%02x\n", pmap, tid, (uint8_t)*q);
-    res = decode_uint_loop(&q, q+5, &seq);
+    decode_uint_loop(&q, q+5, &seq);
 
     // If sequence reset, parse new seqno
     if (tid == 49) {
       *seq_reset = 1;
-      res = decode_uint_loop(&q, q+10, &tid); // SendingTime
-      res = decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
+      decode_uint_loop(&q, q+10, &tid); // SendingTime
+      decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
     }
 
     return seq;
@@ -1298,10 +1298,9 @@ void test_forts_decode() {
   const uint8_t* buffers[] = {buffers0, buffers1, buffers2, buffers3};
 
   int i;
-  for (i=0; i < sizeof(buffers)/sizeof(buffers[0]); i++) {
+  for (i=0; i < (int)(sizeof(buffers)/sizeof(buffers[0])); i++) {
     const char* q = (const char*)buffers[i];
-    uint64_t k;
-    long last;
+    long last = 0;
     int seq_reset;
     uint32_t res = decode_forts_seqno(q, 40, last, &seq_reset);
     printf("#%d res=%d\n", i, res);

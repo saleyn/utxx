@@ -1,0 +1,10 @@
+/* Level1 cacheline size */
+#cmakedefine UTXX_CL_SIZE @UTXX_CL_SIZE@
+
+/* Define to 1 if you have `z' library (-lz) */
+#cmakedefine UTXX_HAVE_LIBZ
+
+/* Define to 1 if Thrift library is available */
+#cmakedefine UTXX_HAVE_THRIFT_H
+
+#cmakedefine UTXX_HAVE_BOOST_TIMER_TIMER_HPP

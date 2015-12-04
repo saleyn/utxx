@@ -1,2 +1,0 @@
-Serge: The changes between this version of boost.m4 and standard distribution is in using
--isystem in place of -I compilation option
