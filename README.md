@@ -41,9 +41,6 @@ The components include:
 ``$ git clone git@github.com:saleyn/utxx.git``
 
 ## Building ##
-Make sure that you have autoconf-archive package installed:
-http://www.gnu.org/software/autoconf-archive
-
 To customize location of BOOST or installation prefix, create a file called
 `.cmake-args.${HOSTNAME}`. E.g.:
 
