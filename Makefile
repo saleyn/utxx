@@ -1,4 +1,4 @@
-PROJECT     := utxx
+PROJECT     := $(shell sed -n '/^project/{s/^project. *\([a-zA-Z0-9]\+\).*/\1/p; q}' CMakeLists.txt)
 
 # Function that replaces variables in a given entry in a file 
 # E.g.: $(call substitute,ENTRY,FILENAME)
@@ -64,6 +64,7 @@ $(DIR):
 	$(generator) -C $(DIR) -j$(shell nproc) $(VERBOSE) $@
 
 info:
+	@echo "PROJECT:  $(PROJECT)"
 	@echo "HOSTNAME: $(HOSTNAME)"
 	@echo "VERSION:  $(VERSION)"
 	@echo "OPT_FILE: $(OPT_FILE)"
