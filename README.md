@@ -44,13 +44,30 @@ The components include:
 Make sure that you have autoconf-archive package installed:
 http://www.gnu.org/software/autoconf-archive
 
+To customize location of BOOST or installation prefix, create a file called
+`.cmake-args.${HOSTNAME}`. E.g.:
+
+```
+$ cat > .cmake-args.${HOSTNAME}
+DIR_BUILD=/tmp/@PROJECT@/build
+DIR_INSTALL=/opt/pkt/@PROJECT@/@VERSION@
+BOOST_ROOT=/opt/pkg/boost/current
+BOOST_LIBRARYDIR=/opt/pkg/boost/current/gcc/lib
+PKG_ROOT_DIR=/opt/pkg
+```
+
+Two special variables can be used in this file, which may contain macros @PROJECT@ and
+@VERSION@ (which will be extracted from CMakeLists.txt):
+* DIR_BUILD   - build directory location
+* DIR_INSTALL - install directory (a.k.a. `prefix`)
+
+The remaining variables will be passed to `cmake` with a `-D` prefix.
+
 Run:
 ```
-$ ./bootstrap
-$ ./configure --with-boost="/path/to/boost" \
-	[--prefix="/target/install/path"]
+$ make bootstrap [toolchain=gcc|clang] [build=make|ninja]
 $ make
-$ make install      # Default install path is ./install
+$ make install      # Default install path is /usr/local
 ```
 
 ## Commit Notifications ##
