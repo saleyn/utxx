@@ -56,14 +56,15 @@ PKG_ROOT_DIR=/opt/pkg
 Two special variables can be used in this file, which may contain macros @PROJECT@ and
 @VERSION@ (which will be extracted from CMakeLists.txt):
 * DIR_BUILD   - build directory location
-* DIR_INSTALL - install directory (a.k.a. `prefix`)
+* DIR_INSTALL - install directory (a.k.a. `prefix`, default `/usr/local`)
 
 The remaining variables will be passed to `cmake` with a `-D` prefix.
 
 Run:
 ```
-$ make bootstrap [toolchain=gcc|clang] [build=make|ninja]
-$ make
+$ make bootstrap [toolchain=gcc|clang]  [build=Debug|Release] \
+                 [generator=make|ninja] [prefix=/usr/local]
+$ make [verbose=true]
 $ make install      # Default install path is /usr/local
 ```
 
