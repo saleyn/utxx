@@ -243,6 +243,10 @@ install(
   FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.ipp" PATTERN "*.x??"
 )
 install(
+  FILES       ${CMAKE_CURRENT_BINARY_DIR}/include/${PROJECT_NAME}/config.h
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
+)
+install(
 	PROGRAMS    ${CMAKE_SOURCE_DIR}/bin/config_validator_codegen.py
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
