@@ -12,23 +12,25 @@ ifeq "$(wildcard $(OPT_FILE))" ""
     endif
 endif
 
-BUILD       ?= Debug
-build       := $(shell echo $(BUILD) | tr '[:upper:]' '[:lower:]')
 toolchain   ?= gcc
+build       ?= Debug
+BUILD       := $(shell echo $(build) | tr 'A-Z' 'a-z')
 
 # Function that replaces variables in a given entry in a file 
 # E.g.: $(call substitute,ENTRY,FILENAME)
 substitute   = $(shell sed -n '/^$(1)=/{s!$(1)=!!; s!/\+$$!!;   \
                                        s!@PROJECT@!$(PROJECT)!; \
+                                       s!@project@!$(PROJECT)!; \
                                        s!@VERSION@!$(VERSION)!; \
-                                       s!@BUILD@!$(build)!; \
+                                       s!@version@!$(VERSION)!; \
+                                       s!@BUILD@!$(BUILD)!;     \
+                                       s!@build@!$(BUILD)!;     \
                                        p; q}' $(2) 2>/dev/null)
 BLD_DIR     := $(call substitute,DIR_BUILD,$(OPT_FILE))
 ROOT_DIR    := $(dir $(abspath include))
 DEF_BLD_DIR := $(ROOT_DIR:%/=%)/build
 DIR         := $(if $(BLD_DIR),$(BLD_DIR),$(DEF_BLD_DIR))
 generator   ?= make
-VERBOSE     := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),ninja),-v,VERBOSE=1))
 
 all:
 	@echo
@@ -50,7 +52,7 @@ bootstrap: $(DIR)
 	@echo "Options file.....: $(OPT_FILE)"
 	@echo "Build directory..: $(DIR)"
 	@echo "Install directory: $(prefix)"
-	@echo "Build type.......: $(build)"
+	@echo "Build type.......: $(BUILD)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
 	cmake -H. -B$(DIR) $(if $(verbose),-DCMAKE_VERBOSE_MAKEFILE=true) \
         $(if $(findstring $(generator),ninja),-GNinja,-G"Unix Makefiles") \
@@ -66,7 +68,7 @@ bootstrap: $(DIR)
 	@ln -s $(prefix) install
 	@echo -e "PROJECT=$(PROJECT)\nVERSION=$(VERSION)" > $(DIR)/cache.mk
 	@echo -e "OPT_FILE=$(abspath $(OPT_FILE))"       >> $(DIR)/cache.mk
-	@echo -e "generator=$(generator)\nbuild=$(build)\nDIR=$(DIR)\nprefix=$(prefix)" >> $(DIR)/cache.mk
+	@echo -e "generator=$(generator)\nbuild=$(BUILD)\nDIR=$(DIR)\nprefix=$(prefix)" >> $(DIR)/cache.mk
 
 $(DIR):
 	@mkdir -p $@
@@ -77,6 +79,7 @@ info:
 	@echo "VERSION:   $(VERSION)"
 	@echo "OPT_FILE:  $(OPT_FILE)"
 	@echo "BLD_DIR:   $(BLD_DIR)"
+	@echo "build:     $(BUILD)"
 	@echo "PREFIX:    $(call substitute,DIR_INSTALL,$(OPT_FILE))"
 	@echo "generator: $(generator)"
 
