@@ -1,12 +1,7 @@
 gmon.out
 *.o
-*.la
-*.lo
 *.swp
-*.pyc
 *.iml
-.deps
-.libs
 log
 install
 build

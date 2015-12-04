@@ -1,0 +1,4 @@
+DIR_BUILD=/tmp/${USER}/@PROJECT@/build
+DIR_INSTALL=/opt/pkg/@PROJECT@/@VERSION@
+BOOST_ROOT=/opt/pkg/boost/current
+BOOST_LIBRARYDIR=/opt/pkg/boost/current/gcc/lib
