@@ -9,8 +9,8 @@ HOSTNAME    := $(shell hostname)
 OPT_FILE    := .cmake-args.$(HOSTNAME)
 VERSION     := $(shell sed -n '/^project/{s/^.\+VERSION \+//; s/[^\.0-9]\+//; p; q}' CMakeLists.txt)
 BLD_DIR     := $(call substitute,DIR_BUILD,$(OPT_FILE))
-DEF_BLD_DIR := $(dir $(abspath include))
-DEF_BLD_DIR := $(DEF_BLD_DIR:%/=%)/build
+ROOT_DIR    := $(dir $(abspath include))
+DEF_BLD_DIR := $(ROOT_DIR:%/=%)/build
 DIR         := $(if $(BLD_DIR),$(BLD_DIR),$(DEF_BLD_DIR))
 build       ?= Debug
 generator   ?= make
@@ -48,7 +48,7 @@ bootstrap: $(DIR)
         $(if $(findstring $(generator),ninja),-GNinja,-G"Unix Makefiles") \
         --no-warn-unused-cli \
         -DTOOLCHAIN=$(toolchain) \
-        -DCMAKE_USER_MAKE_RULES_OVERRIDE=$(DIR)/CMakeInit.txt \
+        -DCMAKE_USER_MAKE_RULES_OVERRIDE=$(ROOT_DIR)/build-aux/CMakeInit.txt \
         -DCMAKE_INSTALL_PREFIX=$(prefix) \
         -DCMAKE_BUILD_TYPE=$(build) \
         $(patsubst %,-D%,$(filter-out --,$(MAKEFLAGS))) \
@@ -59,7 +59,6 @@ distclean:
 
 $(DIR):
 	@mkdir -p $@
-	@cp build-aux/CMake*.txt $@
 
 %:
 	$(generator) -C $(DIR) -j$(shell nproc) $(VERBOSE) $@

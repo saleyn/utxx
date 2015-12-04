@@ -17,7 +17,7 @@ string(TOLOWER ${TOOLCHAIN} toolchain)
 string(TOUPPER "${PROJECT_NAME}-${TOOLCHAIN}" BUILD_TYPE)
 
 # Custom extensions
-include(${CMAKE_CURRENT_BINARY_DIR}/CMakeEx.txt)
+include(${CMAKE_CURRENT_SOURCE_DIR}/build-aux/CMakeEx.txt)
 
 #-------------------------------------------------------------------------------
 # Toolchain
@@ -264,9 +264,9 @@ set_directory_properties(
   PROPERTIES ADDITIONAL_MAKE_CLEAN_FILES "${AddCleanFiles}"
 )
 
-add_custom_target(
-  uninstall "${CMAKE_COMMAND}" -P "${CMAKE_MODULE_PATH}/uninstall.cmake"
-)
+#add_custom_target(
+#  uninstall "${CMAKE_COMMAND}" -P "${CMAKE_MODULE_PATH}/uninstall.cmake"
+#)
 
 #===============================================================================
 # CTEST options
@@ -292,13 +292,5 @@ if(DOXYGEN_FOUND)
   )
 endif()
 
-#===============================================================================
-# DEBUGging options
-#===============================================================================
-# Add easy way to view all cmake variables with -DDEBUG=vars option:
-if("${DEBUG}" MATCHES "vars")
-  get_cmake_property(_vars VARIABLES)
-  foreach (_var ${_vars})
-    message(STATUS "${_var}=${${_var}}")
-  endforeach()
-endif()
+# Post-install script alternative:
+install(SCRIPT ${CMAKE_SOURCE_DIR}/build-aux/install-symlinks.cmake)
