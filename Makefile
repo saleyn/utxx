@@ -1,6 +1,6 @@
-VERBOSE := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),ninja),-v,VERBOSE=1))
-
 -include build/cache.mk
+
+VERBOSE := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),ninja),-v,VERBOSE=1))
 
 all install uninstall help doc edit_cache:
 	@if [ -d build -a -f build/cache.mk ]; then \
