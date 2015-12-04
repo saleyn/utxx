@@ -42,7 +42,8 @@ The components include:
 
 ## Building ##
 To customize location of BOOST or installation prefix, create a file called
-`.cmake-args.${HOSTNAME}`. E.g.:
+`.cmake-args.${HOSTNAME}`. Alternatively if you are doing multi-host build with
+identical configuration, create a file call `.cmake-args`. E.g.:
 
 ```
 $ cat > .cmake-args.${HOSTNAME}

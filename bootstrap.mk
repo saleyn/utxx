@@ -27,12 +27,10 @@ BLD_DIR     := $(call substitute,DIR_BUILD,$(OPT_FILE))
 ROOT_DIR    := $(dir $(abspath include))
 DEF_BLD_DIR := $(ROOT_DIR:%/=%)/build
 DIR         := $(if $(BLD_DIR),$(BLD_DIR),$(DEF_BLD_DIR))
-GENTOOL     := $(shell cat $(DIR)/.bldtool 2>/dev/null)
 generator   ?= make
-generator   := $(if $(GENTOOL),$(GENTOOL),$(generator))
 VERBOSE     := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),ninja),-v,VERBOSE=1))
 
-options:
+all:
 	@echo
 	@echo "Run: make bootstrap [toolchain=gcc|clang|intel] [build=Debug|Release] \\"
 	@echo "                    [generator=ninja|make] [verbose=true]"
@@ -53,9 +51,7 @@ bootstrap: $(DIR)
 	@echo "Build directory..: $(DIR)"
 	@echo "Install directory: $(prefix)"
 	@echo "Build type.......: $(build)"
-	@echo "Generator........: $(generator)"
-	@echo $(generator) > $(DIR)/.bldtool
-	@echo -e "\n-- \e[1;37mUsing $$(cat $(DIR)/.bldtool) generator\e[0m\n"
+	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
 	cmake -H. -B$(DIR) $(if $(verbose),-DCMAKE_VERBOSE_MAKEFILE=true) \
         $(if $(findstring $(generator),ninja),-GNinja,-G"Unix Makefiles") \
         --no-warn-unused-cli \
@@ -76,13 +72,12 @@ $(DIR):
 	@mkdir -p $@
 
 info:
-	@echo "PROJECT:  $(PROJECT)"
-	@echo "HOSTNAME: $(HOSTNAME)"
-	@echo "VERSION:  $(VERSION)"
-	@echo "OPT_FILE: $(OPT_FILE)"
-	@echo "BLD_DIR:  $(BLD_DIR)"
-	@echo "PREFIX:   $(call substitute,DIR_INSTALL,$(OPT_FILE))"
-	@echo "GENTOOL:  $(GENTOOL)"
-	@echo "maketool: $(generator)"
+	@echo "PROJECT:   $(PROJECT)"
+	@echo "HOSTNAME:  $(HOSTNAME)"
+	@echo "VERSION:   $(VERSION)"
+	@echo "OPT_FILE:  $(OPT_FILE)"
+	@echo "BLD_DIR:   $(BLD_DIR)"
+	@echo "PREFIX:    $(call substitute,DIR_INSTALL,$(OPT_FILE))"
+	@echo "generator: $(generator)"
 
-.PHONY: bootstrap info options
+.PHONY: bootstrap info all

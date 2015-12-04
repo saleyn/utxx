@@ -2,11 +2,11 @@ VERBOSE := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),n
 
 -include build/cache.mk
 
-all install uninstall test help doc:
+all install uninstall help doc edit_cache:
 	@if [ -d build -a -f build/cache.mk ]; then \
-        CTEST_OUTPUT_ON_FAILURE=TRUE $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@; \
+	    $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@; \
     else \
-        $(MAKE) -f bootstrap.mk options; \
+        $(MAKE) -sf bootstrap.mk; \
     fi
 
 distclean:
@@ -16,11 +16,9 @@ bootstrap:
 	$(MAKE) -sf bootstrap.mk $@ $(MAKEFLAGS)
 
 info:
-	@$(MAKE) -s -f bootstrap.mk $@
+	@$(MAKE) -sf bootstrap.mk $@
 
-%:
-	@[ -n "$(generator)" ] && $(generator) -C $(DIR) -j$(shell nproc) $(VERBOSE) $@ || \
-        echo "Not bootstrapped!" && false
-    
+test:
+	CTEST_OUTPUT_ON_FAILURE=TRUE $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@
 
 .PHONY: bootstrap distclean clean all install uninstall test help doc
