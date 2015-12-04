@@ -53,10 +53,10 @@ BOOST_LIBRARYDIR=/opt/pkg/boost/current/gcc/lib
 PKG_ROOT_DIR=/opt/pkg
 ```
 
-Two special variables can be used in this file, which may contain macros @PROJECT@ and
-@VERSION@ (which will be extracted from CMakeLists.txt):
-* DIR_BUILD   - build directory location
-* DIR_INSTALL - install directory (a.k.a. `prefix`, default `/usr/local`)
+Two special variables can be used in this file, which may contain macros `@PROJECT@` and
+`@VERSION@` (automatically extracted from `CMakeLists.txt`):
+* `DIR_BUILD`   - build directory location
+* `DIR_INSTALL` - install directory (a.k.a. `prefix`, default `/usr/local`)
 
 The remaining variables will be passed to `cmake` with a `-D` prefix.
 
