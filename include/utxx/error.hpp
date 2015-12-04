@@ -112,6 +112,12 @@ namespace utxx {
 #define UTXX_THROW_NOT_IMPLEMENTED() \
     UTXX_SRC_THROW(utxx::runtime_error, UTXX_SRC, "Method not implemented!")
 
+/// Guard expression with a try/catch, and throw utxx::runtime_error on exception
+#define UTXX_RETHROW(Expr) \
+    try { (Expr); } \
+    catch (utxx::runtime_error const& e) { throw; } \
+    catch (std::exception      const& e) { UTXX_THROW_RUNTIME_ERROR(e.what()); }
+
 namespace utxx {
 
 /// Thread-safe function returning error string.

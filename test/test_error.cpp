@@ -137,6 +137,12 @@ BOOST_AUTO_TEST_CASE( test_error )
         BOOST_REQUIRE(std::regex_search(std::string(e.what()), re));
         BOOST_REQUIRE(!e.src().empty());
     }
+
+    try {
+        UTXX_RETHROW(throw std::runtime_error("Test"));
+    } catch (utxx::runtime_error const& e) {
+        BOOST_REQUIRE_EQUAL("Test", e.str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_error_srcloc )
