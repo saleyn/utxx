@@ -46,10 +46,14 @@ To customize location of BOOST or installation prefix, create a file called
 identical configuration, create a file call `.cmake-args`. E.g.:
 
 There are three sets of variables present in this file:
-1. `DIR:BUILD=...`   - Build directory
-   `DIR:INSTALL=...` - Install directory
+
+1. Build and install locations.
+
+   * `DIR:BUILD=...`   - Build directory
+   * `DIR:INSTALL=...` - Install directory
 
    They may contain macros:
+   
       * `@PROJECT@`   - name of current project (from CMakeList.txt)
       * `@VERSION@`   - project version number  (from CMakeList.txt)
       * `@BUILD@`     - build type (from command line)
