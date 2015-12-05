@@ -101,6 +101,7 @@ bootstrap: $(DIR)
 	@echo "Build type.......: $(BUILD)"
 	@echo "Command-line vars: $(variables)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
+	@rm -rf build install
 	$(envvars) cmake -H. -B$(DIR) \
         $(if $(findstring $(generator),ninja),-GNinja,-G"Unix Makefiles") \
         $(if $(findstring $(verbose),true on 1),-DCMAKE_VERBOSE_MAKEFILE=true) \
@@ -108,9 +109,9 @@ bootstrap: $(DIR)
         -DCMAKE_USER_MAKE_RULES_OVERRIDE=$(ROOT_DIR:%/=%)/build-aux/CMakeInit.txt \
         -DCMAKE_INSTALL_PREFIX=$(prefix) \
         -DCMAKE_BUILD_TYPE=$(build) $(makevars)
-	@rm -f build install
 	@ln -s $(DIR) build
 	@ln -s $(prefix) install
+	@echo "$(MAKEFLAGS)" > $(DIR)/.makeflags
 	@echo "PROJECT   := $(PROJECT)"             >  $(DIR)/cache.mk
 	@echo "VERSION   := $(VERSION)"             >> $(DIR)/cache.mk
 	@echo "OPT_FILE  := $(abspath $(OPT_FILE))" >> $(DIR)/cache.mk

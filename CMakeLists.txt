@@ -53,11 +53,12 @@ else()
   message(FATAL_ERROR "Invalid toolchain: ${TOOLCHAIN}")
 endif()
 
-# Note: using explicit c++14 definitions. Alternative is to set for each target:
+# Note: explicit c++14 definitions done in CMakeInit.txt.
+# Alternative is to set for each target:
 # target_compile_features(${PROJECT_NAME} PRIVATE cxx_lambda_init_captures)
 
 add_definitions(
-	-D_REENTRANT -std=c++14
+	-D_REENTRANT
 	-Wno-unused-local-typedefs
   -Wno-deprecated-declarations
 	-DBOOST_SYSTEM_NO_DEPRECATED
