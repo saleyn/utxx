@@ -13,7 +13,7 @@ distclean:
 	[ -n "$(DIR)" -a -d "$(DIR)" ] && rm -vfr $(DIR) || true
 
 bootstrap:
-	$(MAKE) -sf bootstrap.mk $@ $(MAKEFLAGS)
+	@$(MAKE) -sf bootstrap.mk $@ $(MAKEOVERRIDES)
 
 info:
 	@$(MAKE) -sf bootstrap.mk $@
