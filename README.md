@@ -45,26 +45,33 @@ To customize location of BOOST or installation prefix, create a file called
 `.cmake-args.${HOSTNAME}`. Alternatively if you are doing multi-host build with
 identical configuration, create a file call `.cmake-args`. E.g.:
 
+There are three sets of variables present in this file:
+1. `DIR:BUILD=...`   - Build directory
+   `DIR:INSTALL=...` - Install directory
+
+   They may contain macros:
+      * `@PROJECT@`   - name of current project (from CMakeList.txt)
+      * `@VERSION@`   - project version number  (from CMakeList.txt)
+      * `@BUILD@`     - build type (from command line)
+      * `${...}`      - environment variable
+
+2. `ENV:VAR=...`     - Environment var set before running cmake
+
+3. `VAR=...`         - Variable passed to cmake with -D prefix
+
+Example:
 ```
 $ cat > .cmake-args.${HOSTNAME}
-DIR_BUILD=/tmp/@PROJECT@/build
-DIR_INSTALL=/opt/pkt/@PROJECT@/@VERSION@
-BOOST_ROOT=/opt/pkg/boost/current
-BOOST_LIBRARYDIR=/opt/pkg/boost/current/gcc/lib
+DIR:BUILD=/tmp/@PROJECT@/build
+DIR:INSTALL=/opt/pkt/@PROJECT@/@VERSION@
+ENV:BOOST_ROOT=/opt/pkg/boost/current
+ENV:BOOST_LIBRARYDIR=/opt/pkg/boost/current/gcc/lib
 PKG_ROOT_DIR=/opt/pkg
 ```
-
-Two special variables can be used in this file, which may contain macros `@PROJECT@` and
-`@VERSION@` (automatically extracted from `CMakeLists.txt`):
-* `DIR_BUILD`   - build directory location
-* `DIR_INSTALL` - install directory (a.k.a. `prefix`, default `/usr/local`)
-
-The remaining variables will be passed to `cmake` with a `-D` prefix.
-
 Run:
 ```
 $ make bootstrap [toolchain=gcc|clang]  [build=Debug|Release] \
-                 [generator=make|ninja] [prefix=/usr/local]
+                 [generator=make|ninja] [prefix=/usr/local] [verbose=true]
 $ make [verbose=true]
 $ make install      # Default install path is /usr/local
 ```
