@@ -96,7 +96,7 @@ struct consumer_t : public producer_t {
         do {
             unsigned char buf[MAX_DATA_SZ];
             looped += data.get(i++ % MAX_SLOTS, buf, MAX_DATA_SZ);
-            uint32_t old_sum = *(uint32_t*)buf;
+            uint32_t old_sum = *(uint32_t*)&buf[0];
             uint32_t new_sum = array_t::checksum(buf+4, MAX_DATA_SZ-4);
             if (old_sum != new_sum) {
                 fprintf(stderr, "Consumer%d: old_sum[%u] != new_sum[%u]\n", id, old_sum, new_sum);

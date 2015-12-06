@@ -82,7 +82,7 @@ std::string logger::log_levels_to_str(uint32_t a_levels) noexcept
 const std::string& logger::log_level_to_abbrev(log_level level) noexcept
 {
     static const std::string s_levels[] = {
-        "T", "D", "I", "N", "W", "E", "F", "A", "L"
+        "T", "D", "I", "N", "W", "E", "F", "A", "L", " "
     };
 
     switch (level) {
@@ -100,8 +100,10 @@ const std::string& logger::log_level_to_abbrev(log_level level) noexcept
         case LEVEL_FATAL    : return s_levels[6];
         case LEVEL_ALERT    : return s_levels[7];
         case LEVEL_LOG      : return s_levels[8];
-        default             : assert(false);
+        default             : break;
     }
+    assert(false);
+    return s_levels[9];
 }
 
 const std::string& logger::log_level_to_string(log_level lvl, bool merge_trace) noexcept
@@ -112,7 +114,7 @@ const std::string& logger::log_level_to_string(log_level lvl, bool merge_trace) 
 
     static const std::string s_levels[] = {
         "TRACE",   "DEBUG", "INFO",  "NOTICE",
-        "WARNING", "ERROR", "FATAL", "ALERT", "LOG"
+        "WARNING", "ERROR", "FATAL", "ALERT", "LOG", "NONE"
     };
 
     switch (lvl) {
@@ -130,8 +132,10 @@ const std::string& logger::log_level_to_string(log_level lvl, bool merge_trace) 
         case LEVEL_FATAL    : return s_levels[6];
         case LEVEL_ALERT    : return s_levels[7];
         case LEVEL_LOG      : return s_levels[8];
-        default             : assert(false);
+        default             : break;
     }
+    assert(false);
+    return s_levels[9];
 }
 
 size_t logger::log_level_size(log_level level) noexcept
@@ -151,8 +155,10 @@ size_t logger::log_level_size(log_level level) noexcept
         case LEVEL_FATAL    :
         case LEVEL_ALERT    : return 5;
         case LEVEL_LOG      : return 3;
-        default             : assert(false);
+        default             : break;
     }
+    assert(false);
+    return 0;
 }
 
 int logger::level_to_signal_slot(log_level level) noexcept
@@ -172,8 +178,11 @@ int logger::level_to_signal_slot(log_level level) noexcept
         case LEVEL_FATAL    : return 6;
         case LEVEL_ALERT    : return 7;
         case LEVEL_LOG      : return 8;
-        default             : assert(false);
+        default             : break;
     }
+    assert(false);
+    return 0;
+
 }
 
 log_level logger::signal_slot_to_level(int slot) noexcept
@@ -187,8 +196,10 @@ log_level logger::signal_slot_to_level(int slot) noexcept
         case 5: return LEVEL_ERROR;
         case 6: return LEVEL_FATAL;
         case 7: return LEVEL_ALERT;
-        default: assert(false);
+        default: break;
     }
+    assert(false);
+    return LEVEL_NONE;
 }
 
 const char* logger::default_log_levels = "INFO|NOTICE|WARNING|ERROR|ALERT|FATAL";

@@ -31,9 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_STREAM64_HPP_
-#define _UTXX_STREAM64_HPP_
+#pragma once
 
 #include <fcntl.h>
 #include <fstream>
@@ -46,8 +44,8 @@ namespace io   {
 template <typename Char, typename Traits = std::char_traits<Char> >
 class basic_ifstream64 : public std::basic_ifstream<Char, Traits>
 {
-    typedef std::basic_ifstream<Char, Traits>       base;
-    typedef __gnu_cxx::stdio_filebuf<Char, Traits>  buffer;
+    using base   = std::basic_ifstream<Char, Traits>;
+    using buffer = __gnu_cxx::stdio_filebuf<Char, Traits>;
 
     void do_open(int a_fd, std::ios_base::openmode a_mode, int a_buf_sz) {
         /* FIXME: do same with wfilebuf? */
@@ -76,13 +74,15 @@ public:
         if (fd > -1)
             do_open(fd, a_mode, a_buf_sz);
     }
+
+    virtual ~basic_ifstream64() override {}
 };
 
 template <typename Char, typename Traits = std::char_traits<Char> >
 class basic_ofstream64 : public std::basic_ofstream<Char, Traits>
 {
-    typedef std::basic_ofstream<Char, Traits>       base;
-    typedef __gnu_cxx::stdio_filebuf<Char, Traits>  buffer;
+    using base   = std::basic_ofstream<Char, Traits>;
+    using buffer = __gnu_cxx::stdio_filebuf<Char, Traits>;
 
     void do_open(int a_fd, std::ios_base::openmode a_mode, int a_buf_sz) {
         /* FIXME: do same with wfilebuf? */
@@ -114,18 +114,15 @@ public:
         if (fd > -1)
             do_open(fd, a_mode, a_buf_sz);
     }
-};
 
-extern template class basic_ifstream64<char>;
-extern template class basic_ofstream64<char>;
+    virtual ~basic_ofstream64() override {}
+};
 
 } // namespace io
 } // namespace utxx
 
 namespace std
 {
-    typedef utxx::io::basic_ofstream64<char> ofstream64;
-    typedef utxx::io::basic_ifstream64<char> ifstream64;
+    using ofstream64 = utxx::io::basic_ofstream64<char>;
+    using ifstream64 = utxx::io::basic_ifstream64<char>;
 }
-
-#endif // _UTXX_STREAM64_HPP_

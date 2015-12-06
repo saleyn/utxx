@@ -12,7 +12,7 @@ VERBOSE := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),n
 .DEFAULT_GOAL := all
 
 distclean:
-	@[ -n "$(DIR)" -a -d "$(DIR)" ] && echo "Removing $(DIR)" && rm -fr $(DIR) build install || true
+	@[ -n "$(DIR)" -a -d "$(DIR)" ] && echo "Removing $(DIR)" && rm -fr $(DIR) build inst || true
 
 bootstrap:
 	@$(MAKE) -f bootstrap.mk --no-print-directory $@ $(MAKEOVERRIDES)

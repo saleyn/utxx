@@ -101,7 +101,7 @@ bootstrap: $(DIR)
 	@echo "Build type.......: $(BUILD)"
 	@echo "Command-line vars: $(variables)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
-	@rm -rf build install
+	@rm -rf build inst
 	$(envvars) cmake -H. -B$(DIR) \
         $(if $(findstring $(generator),ninja),-GNinja,-G"Unix Makefiles") \
         $(if $(findstring $(verbose),true on 1),-DCMAKE_VERBOSE_MAKEFILE=true) \
@@ -110,7 +110,7 @@ bootstrap: $(DIR)
         -DCMAKE_INSTALL_PREFIX=$(prefix) \
         -DCMAKE_BUILD_TYPE=$(build) $(makevars)
 	@ln -s $(DIR) build
-	@ln -s $(prefix) install
+	@ln -s $(prefix) inst
 	@echo "$(MAKEFLAGS)" > $(DIR)/.makeflags
 	@echo "PROJECT   := $(PROJECT)"             >  $(DIR)/cache.mk
 	@echo "VERSION   := $(VERSION)"             >> $(DIR)/cache.mk

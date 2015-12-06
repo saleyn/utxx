@@ -40,9 +40,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
-struct test {
-    char buf[44];
-};
+namespace {
+    struct test { char buf[44]; };
+}
 
 BOOST_AUTO_TEST_CASE( test_alloc_fixed_page )
 {

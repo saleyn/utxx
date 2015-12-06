@@ -15,14 +15,16 @@
 using namespace boost::property_tree;
 using namespace utxx;
 
-struct test {
-    struct inner {
-        static void log (int i) {
-            LOG_DEBUG("This is a %d debug",  i);
-        }
-        static void clog(int i) { CLOG_DEBUG("Cat5", "This is a %d debug", i); }
+namespace {
+    struct test {
+        struct inner {
+            static void log (int i) {
+                LOG_DEBUG("This is a %d debug",  i);
+            }
+            static void clog(int i) { CLOG_DEBUG("Cat5","This is a %d debug",i); }
+        };
     };
-};
+}
 
 #ifndef UTXX_STANDALONE
 BOOST_AUTO_TEST_CASE( test_logger1 )

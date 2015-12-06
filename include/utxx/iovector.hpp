@@ -147,7 +147,9 @@ public:
     int copy_to(char *a_buf, size_t a_size) const {
         if (a_size < m_length)
             return -1;
+#ifndef NDEBUG
         const char *l_begin = a_buf;
+#endif
         for (const_iterator it = begin(), e = end(); it != e; a_buf
                 += it->iov_len, ++it)
             memcpy(a_buf, it->iov_base, it->iov_len);

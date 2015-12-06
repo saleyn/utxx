@@ -128,7 +128,10 @@ internal_insert(const key_type& key, T&& value) {
             (prim_submap->m_capacity *
              std::pow(1.0+m_growth_frac, next_map_idx-1));
         size_t new_sz = (int)(alloc_num_cells * m_growth_frac);
-        SubMap*     p = m_submaps[next_map_idx].load(std::memory_order_relaxed);
+#ifndef NDEBUG
+        SubMap* p =
+#endif
+        m_submaps[next_map_idx].load(std::memory_order_relaxed);
         assert(p == s_locked_ptr);
         // create a new map using the settings stored in the first map
 

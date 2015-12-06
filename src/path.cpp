@@ -87,7 +87,7 @@ std::string basename(const std::string& a_file, const std::string& a_strip_ext) 
     return std::string(p, e - p);
 }
 
-inline std::string
+std::string
 replace_env_vars(const std::string& a_path, const struct tm* a_now,
                  const std::map<std::string, std::string>*   a_bindings)
 {

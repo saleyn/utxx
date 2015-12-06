@@ -191,9 +191,10 @@ size_t timestamp::format_size(stamp_type a_tp)
         case DATE_TIME:             return 17;
         case DATE_TIME_WITH_USEC:   return 24;
         case DATE_TIME_WITH_MSEC:   return 21;
-        default:
-            assert(false);
+        default:                    break;
     }
+    assert(false);  // should never get here
+    return 0;
 }
 
 int timestamp::format(stamp_type a_tp,

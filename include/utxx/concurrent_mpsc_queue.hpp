@@ -180,11 +180,11 @@ struct concurrent_mpsc_queue<char, Allocator> {
 
         template <class T>
         T&       to()
-        { assert(sizeof(T) == m_size); return *reinterpret_cast<T*>(m_data); }
+        { assert(sizeof(T) == m_size); return *(T*)m_data; }
 
         template <class T>
         const T& to() const
-        { assert(sizeof(T) == m_size); return *reinterpret_cast<const T*>(m_data); }
+        { assert(sizeof(T) == m_size); return *(const T*)m_data; }
     };
 
     explicit concurrent_mpsc_queue(const Allocator& a_alloc = Allocator())
