@@ -3,6 +3,6 @@ gmon.out
 *.swp
 *.iml
 log
-install
+inst
 build
 include/utxx/logger/logger_options.generated.hpp

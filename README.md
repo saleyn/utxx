@@ -79,6 +79,8 @@ $ make bootstrap [toolchain=gcc|clang]  [build=Debug|Release] \
 $ make [verbose=true]
 $ make install      # Default install path is /usr/local
 ```
+After running `make bootstrap` two local links are created `build` and `inst`
+pointing to build and installation directories.
 
 ## Commit Notifications ##
 The following news group was set up for commit notifications:
