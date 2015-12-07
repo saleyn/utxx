@@ -14,6 +14,7 @@
 
 using namespace boost::property_tree;
 using namespace utxx;
+using namespace std;
 
 namespace {
     struct test {
@@ -70,6 +71,20 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK(LEVEL_TRACE3  == as_log_level(8 ));
     BOOST_CHECK(LEVEL_TRACE4  == as_log_level(9 ));
     BOOST_CHECK(LEVEL_TRACE5  == as_log_level(10));
+
+    BOOST_CHECK(LEVEL_TRACE   == logger::parse_log_level("trace"));
+    BOOST_CHECK(LEVEL_TRACE5  == logger::parse_log_level("trace5"));
+    BOOST_CHECK(LEVEL_TRACE1  == logger::parse_log_level("trace1"));
+    BOOST_CHECK(LEVEL_INFO    == logger::parse_log_level("info"));
+    BOOST_CHECK(LEVEL_WARNING == logger::parse_log_level("warning"));
+    BOOST_CHECK(LEVEL_ERROR   == logger::parse_log_level("error"));
+    BOOST_CHECK(LEVEL_WARNING == logger::parse_log_level("1"));
+    BOOST_CHECK_EQUAL(int(LEVEL_INFO),  int(logger::parse_log_level("3")));
+    BOOST_CHECK_EQUAL(int(LEVEL_DEBUG), int(logger::parse_log_level("4")));
+    BOOST_CHECK_EQUAL(int(LEVEL_TRACE), int(logger::parse_log_level("5")));
+    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(logger::parse_log_level("11")));
+    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(logger::parse_log_level("110")));
+    BOOST_CHECK_THROW(logger::parse_log_level("trace6"), std::runtime_error);
 
     BOOST_CHECK_EQUAL("TRACE5", logger::log_level_to_string(utxx::LEVEL_TRACE5, false));
     BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE5));

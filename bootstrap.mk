@@ -86,6 +86,14 @@ makevars    := $(variables:%=-D%)
 envvars     += $(shell sed -n '/^ENV:/{s/^ENV://;p}' $(OPT_FILE) 2>/dev/null)
 makevars    += $(patsubst %,-D%,$(shell sed -n '/^...:/!p' $(OPT_FILE) 2>/dev/null))
 
+makecmd      = $(envvars) cmake -H. -B$(DIR) \
+               $(if $(findstring $(generator),ninja),-GNinja,-G'Unix Makefiles') \
+               $(if $(findstring $(verbose),true on 1),-DCMAKE_VERBOSE_MAKEFILE=true) \
+               -DTOOLCHAIN=$(toolchain) \
+               -DCMAKE_USER_MAKE_RULES_OVERRIDE=$(ROOT_DIR:%/=%)/build-aux/CMakeInit.txt \
+               -DCMAKE_INSTALL_PREFIX=$(prefix) \
+               -DCMAKE_BUILD_TYPE=$(build) $(makevars)
+
 #-------------------------------------------------------------------------------
 # bootstrap target
 #-------------------------------------------------------------------------------
@@ -101,14 +109,9 @@ bootstrap: $(DIR)
 	@echo "Build type.......: $(BUILD)"
 	@echo "Command-line vars: $(variables)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
-	@rm -rf build inst
-	$(envvars) cmake -H. -B$(DIR) \
-        $(if $(findstring $(generator),ninja),-GNinja,-G"Unix Makefiles") \
-        $(if $(findstring $(verbose),true on 1),-DCMAKE_VERBOSE_MAKEFILE=true) \
-        -DTOOLCHAIN=$(toolchain) \
-        -DCMAKE_USER_MAKE_RULES_OVERRIDE=$(ROOT_DIR:%/=%)/build-aux/CMakeInit.txt \
-        -DCMAKE_INSTALL_PREFIX=$(prefix) \
-        -DCMAKE_BUILD_TYPE=$(build) $(makevars)
+	@rm -f build inst
+	@echo $(call makecmd) > $(DIR)/.cmake
+	$(call makecmd)
 	@ln -s $(DIR) build
 	@ln -s $(prefix) inst
 	@echo "$(MAKEFLAGS)" > $(DIR)/.makeflags

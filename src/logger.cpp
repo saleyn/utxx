@@ -632,7 +632,9 @@ log_level logger::parse_log_level(const std::string& a_level)
     if (s == "ERROR")   return LEVEL_ERROR;
     if (s == "FATAL")   return LEVEL_FATAL;
     if (s == "ALERT")   return LEVEL_ALERT;
-    throw std::runtime_error(std::string("Invalid log level: ") + a_level);
+    try   { auto n = std::stoi(s); return as_log_level(n); }
+    catch (...) {}
+    throw std::runtime_error("Invalid log level: " + a_level);
 }
 
 void logger::set_level_filter(log_level a_level) {
