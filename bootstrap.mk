@@ -5,8 +5,10 @@
 # Date: 2014-08-12
 #-------------------------------------------------------------------------------
 
-PROJECT  := $(shell sed -n '/^project/{s/^project. *\([a-zA-Z0-9]\+\).*/\1/p; q}' CMakeLists.txt)
-VERSION  := $(shell sed -n '/^project/{s/^.\+VERSION \+//; s/[^\.0-9]\+//; p; q}' CMakeLists.txt)
+PROJECT  := $(shell sed -n '/^project/{s/^project. *\([a-zA-Z0-9]\+\).*/\1/p; q}'\
+                    CMakeLists.txt)
+VERSION  := $(shell sed -n '/^project/{s/^.\+VERSION \+//; s/[^\.0-9]\+//; p; q}'\
+                    CMakeLists.txt)
 
 HOSTNAME := $(shell hostname)
 
@@ -27,7 +29,7 @@ all:
 	@echo "Run: make bootstrap [toolchain=gcc|clang|intel] [verbose=true] \\"
 	@echo "                    [generator=ninja|make] [build=Debug|Release]"
 	@echo
-	@echo "To customize variables for cmake, create a local file with VAR=VALUE pairs:"
+	@echo "To customize cmake variables, create a file with VAR=VALUE pairs:"
 	@echo "  '.cmake-args.$(HOSTNAME)' or '.cmake-args'"
 	@echo ""
 	@echo "There are three sets of variables present there:"
@@ -51,13 +53,10 @@ BUILD       := $(shell echo $(build) | tr 'A-Z' 'a-z')
 
 # Function that replaces variables in a given entry in a file 
 # E.g.: $(call substitute,ENTRY,FILENAME)
-substitute   = $(shell sed -n '/^$(1)=/{s!$(1)=!!; s!/\+$$!!;   \
-                                       s!@PROJECT@!$(PROJECT)!; \
-                                       s!@project@!$(PROJECT)!; \
-                                       s!@VERSION@!$(VERSION)!; \
-                                       s!@version@!$(VERSION)!; \
-                                       s!@BUILD@!$(BUILD)!;     \
-                                       s!@build@!$(BUILD)!;     \
+substitute   = $(shell sed -n '/^$(1)=/{s!$(1)=!!; s!/\+$$!!;     \
+                                       s!@PROJECT@!$(PROJECT)!gI; \
+                                       s!@VERSION@!$(VERSION)!gI; \
+                                       s!@BUILD@!$(BUILD)!gI;     \
                                        p; q}' $(2) 2>/dev/null)
 BLD_DIR     := $(call substitute,DIR:BUILD,$(OPT_FILE))
 ROOT_DIR    := $(dir $(abspath include))
@@ -97,7 +96,7 @@ makecmd      = $(envvars) cmake -H. -B$(DIR) \
 #-------------------------------------------------------------------------------
 # bootstrap target
 #-------------------------------------------------------------------------------
-bootstrap: $(DIR)
+bootstrap: | $(DIR)
     ifeq "$(generator)" ""
 		@echo -e "\n\e[1;31mBuild tool not specified!\e[0m\n" && false
     else ifeq "$(shell which $(generator) 2>/dev/null)" ""
