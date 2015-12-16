@@ -24,6 +24,9 @@ info:
 test:
 	CTEST_OUTPUT_ON_FAILURE=TRUE $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@
 
+vars:
+	@cmake -H. -B$(DIR) -LA
+
 build/cache.mk:
 
 .DEFAULT:

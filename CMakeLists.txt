@@ -199,9 +199,9 @@ endmacro(XML_CFG)
 # MAKE options
 #-------------------------------------------------------------------------------
 
-add_custom_target(vars
-  COMMAND ${CMAKE_COMMAND} -H${CMAKE_SOURCE_DIR} -B${CMAKE_BINARY_DIR} -LA
-)
+#add_custom_target(vars
+#  COMMAND ${CMAKE_COMMAND} -H${CMAKE_SOURCE_DIR} -B${CMAKE_BINARY_DIR} -LA
+#)
 
 include_directories(
   SYSTEM

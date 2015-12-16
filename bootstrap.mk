@@ -47,6 +47,8 @@ all:
 	@echo
 	@echo "  3. VAR=...         - Variable passed to cmake with -D prefix"
 	@echo
+	@echo "  Lines beginning with '#' are considered to be comments"
+	@echo
 
 toolchain   ?= gcc
 build       ?= Debug
@@ -84,7 +86,8 @@ variables   := $(filter-out toolchain=% generator=% build=% verbose=%,$(MAKEOVER
 makevars    := $(variables:%=-D%)
 
 envvars     += $(shell sed -n '/^ENV:/{s/^ENV://;p}' $(OPT_FILE) 2>/dev/null)
-makevars    += $(patsubst %,-D%,$(shell sed -n '/^...:/!p' $(OPT_FILE) 2>/dev/null))
+makevars    += $(patsubst %,-D%,$(shell sed -n '/^...:/!{s/ *\#.*$$//; /^$$/!p}' \
+                                            $(OPT_FILE) 2>/dev/null))
 
 makecmd      = $(envvars) cmake -H. -B$(DIR) \
                $(if $(findstring $(generator),ninja),-GNinja,-G'Unix Makefiles') \
