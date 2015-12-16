@@ -46,6 +46,15 @@ BOOST_AUTO_TEST_CASE( test_string_conversion )
         std::stringstream s; s << fixed(10.123, 8, 4, '0');
         BOOST_CHECK_EQUAL("010.1230", s.str());
     }
+    {
+        std::vector<std::string> v{"a","b","c"};
+        auto s1 = join(v);
+        BOOST_CHECK_EQUAL("a,b,c", s1);
+        auto s2 = join(v.begin(), v.end());
+        BOOST_CHECK_EQUAL("a,b,c", s2);
+        auto s3 = join(v.begin(), v.end(), std::string(":"));
+        BOOST_CHECK_EQUAL("a:b:c", s3);
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_string_length )

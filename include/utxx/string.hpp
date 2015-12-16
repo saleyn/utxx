@@ -30,9 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_STRING_HPP_
-#define _UTXX_STRING_HPP_
+#pragma once
 
 #include <string>
 #include <iostream>
@@ -117,6 +115,34 @@ namespace utxx {
     inline char* copy(char (&a_dest)[N], const std::array<char, M>& a_src, char a_delim='\0') {
         return copy(a_dest, N, a_src.data(), M, a_delim);
     }
+
+	/// Join an iterator range to string delimited by \a a_delim
+	/// \code Example: std::string s=join(vec.begin(), vec.end());\endcode
+	template <class T = std::string, class A>
+	T join(const A& a_begin, const A& a_end, const T& a_delim = T(","))
+	{
+		T result;
+		for (auto it = a_begin; it != a_end; ++it) {
+			if (!result.empty())
+				result.append(a_delim);
+			result.append(*it);
+		}
+		return result;
+	}
+
+	/// Join strings from a given collection to string delimited by \a a_delim
+	/// \code Example: std::string s=join(vec);\endcode
+	template <class T = std::string, class Collection>
+	T join(const Collection& a_vec, const T& a_delim = T(","))
+	{
+		T result;
+		for (auto it = a_vec.begin(), end = a_vec.end(); it != end; ++it) {
+			if (!result.empty())
+				result.append(a_delim);
+			result.append(*it);
+		}
+		return result;
+	}
 
     /// Convert a string to an integer value
     /// \code
@@ -304,8 +330,6 @@ namespace utxx {
                               bool hex = false, bool readable = true,
                               bool eol = false);
 
-#if __cplusplus >= 201103L
-
     template <class... Args>
     inline std::string to_string(Args&&... args) {
         buffered_print buf;
@@ -313,71 +337,4 @@ namespace utxx {
         return buf.to_string();
     }
 
-#else
-
-    template <class T1>
-    inline std::string to_string(T1 a1) {
-        std::stringstream s; s << a1; return s.str();
-    }
-
-    template <class T1, class T2>
-    inline std::string to_string(T1 a1, T2 a2) {
-        std::stringstream s; s << a1 << a2; return s.str();
-    }
-
-    template <class T1, class T2, class T3>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3) {
-        std::stringstream s; s << a1 << a2 << a3; return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4) {
-        std::stringstream s; s << a1 << a2 << a3 << a4; return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4, class T5>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4, T5 a5) {
-        std::stringstream s; s << a1 << a2 << a3 << a4 << a5;
-        return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6) {
-        std::stringstream s; s << a1 << a2 << a3 << a4 << a5 << a6;
-        return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6, class T7>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6, T7 a7) {
-        std::stringstream s; s << a1 << a2 << a3 << a4 << a5 << a6 << a7;
-        return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4, T5 a5, T6 a6, T7 a7, T8 a8) {
-        std::stringstream s; s << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8;
-        return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4,
-              class T5, class T6, class T7, class T8, class T9>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4,
-                                 T5 a5, T6 a6, T7 a7, T8 a8, T9 a9) {
-        std::stringstream s; s << a1 << a2 << a3 << a4 << a5 << a6 << a7 << a8 << a9;
-        return s.str();
-    }
-
-    template <class T1, class T2, class T3, class T4,
-              class T5, class T6, class T7, class T8, class T9, class T10>
-    inline std::string to_string(T1 a1, T2 a2, T3 a3, T4 a4,
-                                 T5 a5, T6 a6, T7 a7, T8 a8, T9 a9, T10 a10) {
-        std::stringstream s; s << a1 << a2 << a3 << a4
-                               << a5 << a6 << a7 << a8 << a9 << a10;
-        return s.str();
-    }
-
-#endif
-
 } // namespace utxx
-
-#endif // _UTXX_STRING_HPP_
