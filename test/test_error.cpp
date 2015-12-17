@@ -259,7 +259,20 @@ BOOST_AUTO_TEST_CASE( test_error_srcloc )
                 std::cout << '"' << str << '"' << std::endl;
                 BOOST_CHECK(false);
             }
+        }
 
+        {
+            src_info ci
+            (
+                UTXX_FILE_SRC_LOCATION,
+                "auto main(int, char **)::(anonymous class)::operator()(io::FdInfo &, int, int) const"
+            );
+            auto str = ci.to_string("", "", 3);
+            auto re  = std::regex("^test_error.cpp:\\d+ main$");
+            if (!std::regex_search(str, re)) {
+                std::cout << '"' << str << '"' << std::endl;
+                BOOST_CHECK(false);
+            }
         }
 
         {

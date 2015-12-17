@@ -271,7 +271,7 @@ int GetInteger(const char** buf, const char* end, uint64_t* res) {
     // Check for NULL and adjust nullable values:
     bool is_null = false;
 
-    if (unlikely(!is_null));  // Just to avoid compiler warning
+    if (unlikely(!is_null))  // Just to avoid compiler warning
         throw std::runtime_error("Impossible happened");
 
     if (nullable)

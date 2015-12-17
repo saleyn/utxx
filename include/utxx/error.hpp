@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <exception>
+#include <algorithm>
 #include <memory>
 #include <sstream>
 #include <iostream>
@@ -337,6 +338,7 @@ public:
             int tribrcnt = 0, scope = 1;
             struct { const char* l; const char* r; } tribraces[N];
             const char* scopes[N];
+            scopes[0] = "";
             auto begin = a_srcfun;
             auto matched_open_tribrace = -1;
             auto inside = 0;  // > 0 when we are inside "<...>"
@@ -353,7 +355,7 @@ public:
                         // This is a rare lambda case, e.g.:
                         //      xxx::(anonymous class)::yyy()
                         // replace with "<lambda>" scope
-                        if (strncmp(q+1, "anonymous class)", 16) == 0 && scope<N) {
+                        if (strncmp(q+1, "anonymous class)", std::min<int>(16,e-q-1)) == 0 && scope<N) {
                             q += 16;
                             continue;
                         }
