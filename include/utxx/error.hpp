@@ -121,9 +121,13 @@ namespace utxx {
 namespace utxx {
 
 /// Thread-safe function returning error string.
-static inline std::string errno_string(int a_errno) {
-    return strerror(a_errno);
+inline std::string errno_string(int a_errno) {
+    char buf[128];
+    strerror_r(a_errno, buf, sizeof(buf));
+    return buf;
 }
+
+inline std::string errno_string() { return errno_string(errno); }
 
 class not_implemented : public std::exception {
 public:
