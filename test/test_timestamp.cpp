@@ -252,13 +252,11 @@ BOOST_AUTO_TEST_CASE( test_timestamp_threading )
     high_res_timer::calibrate(100000, 2);
 
     if (nthreads > 0) {
-        boost::shared_ptr<boost::thread> thread[nthreads];
+        std::vector<std::shared_ptr<boost::thread>> thread(nthreads);
         boost::barrier barrier(nthreads + 1);
 
-        for (int i=0; i < nthreads; ++i) {
-            thread[i] = boost::shared_ptr<boost::thread>(
-                new boost::thread(test1(i+1, iterations, &barrier)));
-        }
+        for (int i=0; i < nthreads; ++i)
+            thread[i].reset(new boost::thread(test1(i+1, iterations, &barrier)));
 
         barrier.wait();
 
@@ -405,13 +403,11 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 BOOST_AUTO_TEST_CASE( test_time_latency )
 {
     if (nthreads > 0) {
-        boost::shared_ptr<boost::thread> thread[nthreads];
+        std::vector<std::shared_ptr<boost::thread>> thread(nthreads);
         boost::barrier barrier(nthreads + 1);
 
-        for (int i=0; i < nthreads; ++i) {
-            thread[i] = boost::shared_ptr<boost::thread>(
-                new boost::thread(test2(i+1, iterations, &barrier)));
-        }
+        for (int i=0; i < nthreads; ++i)
+            thread[i].reset(new boost::thread(test2(i+1, iterations, &barrier)));
 
         barrier.wait();
 

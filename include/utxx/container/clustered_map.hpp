@@ -202,19 +202,7 @@ public:
     Data& operator[] (Key a_key) { return insert(a_key); }
 
     /// Erase entry pointed by the iterator \a a_it from the container
-    bool erase(iterator a_it) {
-        if (m_map.find(a_it.level1()->first) == m_map.end())
-            return false;
-        if (!a_it.level1()->second.index.is_set(a_it.item()))
-            return false;
-        a_it.level1()->second.index.clear(a_it.item());
-        if (a_it.level1()->second.index.empty()) {
-            m_map.erase(a_it.level1());
-            if (m_mru[1] == a_it.level1()) m_mru[1] = m_map.end();
-            if (m_mru[0] == a_it.level1()) m_mru[0] = m_mru[1];
-        }
-        return true;
-    }
+    bool erase(iterator a_it);
 
     /// Erase given key from the container
     bool erase(Key a_key) {
@@ -267,8 +255,9 @@ class clustered_map<Key, Data, LowBits, SortOrder>::iterator
 
     friend class clustered_map<Key, Data, LowBits, SortOrder>;
 public:
-    typedef Data* pointer;
-    typedef Data& reference;
+    using pointer         = Data*;
+    using reference       = Data&;
+    using const_reference = Data const&;
 
     iterator() : m_level2(s_level2_init_value) {}
 
@@ -310,7 +299,10 @@ public:
     const Data& data()              const   { return m_level1->second.data[m_level2]; }
 
     typename gross_map::iterator&       group()       { return m_level1; }
-    typename gross_map::const_iterator& group() const { return const_iterator(m_map, m_level1, m_level2); }
+    typename gross_map::const_iterator& group() const {
+        assert(m_owner);
+        return const_iterator(*m_owner, m_level1, m_level2);
+    }
 
     size_t      item_count()        const   { return m_level1->index.count(); }
     int         item()              const   { return m_level2; }
@@ -338,7 +330,7 @@ public:
 
     pointer         operator->() const  { return &m_level1->second.data[m_level2]; }
     reference       operator*()         { return  m_level1->second.data[m_level2]; }
-    const reference operator*()  const  { return  m_level1->second.data[m_level2]; }
+    const_reference operator*()  const  { return  m_level1->second.data[m_level2]; }
 
     bool find_first_key() {
         m_level1 = m_owner->begin();
@@ -361,9 +353,10 @@ public:
 };
 
 template <class Key, class Data, int LowBits, class SortOrder>
-struct clustered_map<Key, Data, LowBits, SortOrder>::const_iterator
+class clustered_map<Key, Data, LowBits, SortOrder>::const_iterator
     : public clustered_map<Key, Data, LowBits, SortOrder>::iterator
 {
+public:
     typedef typename clustered_map::iterator base;
 
     const_iterator() : base() {}
@@ -379,6 +372,22 @@ struct clustered_map<Key, Data, LowBits, SortOrder>::const_iterator
         : base(a_rhs)
     {}
 };
+
+template <class Key, class Data, int LowBits, class SortOrder>
+bool clustered_map<Key, Data, LowBits, SortOrder>::
+erase(iterator a_it) {
+    if (m_map.find(a_it.level1()->first) == m_map.end())
+        return false;
+    if (!a_it.level1()->second.index.is_set(a_it.item()))
+        return false;
+    a_it.level1()->second.index.clear(a_it.item());
+    if (a_it.level1()->second.index.empty()) {
+        m_map.erase(a_it.level1());
+        if (m_mru[1] == a_it.level1()) m_mru[1] = m_map.end();
+        if (m_mru[0] == a_it.level1()) m_mru[0] = m_mru[1];
+    }
+    return true;
+}
 
 } // namespace utxx
 

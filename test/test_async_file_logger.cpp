@@ -196,8 +196,8 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
     perf_histogram totals("Total async_file_logger performance");
 
     {
-        std::unique_ptr<std::thread> threads[nthreads];
-        perf_histogram               histograms[nthreads];
+        std::vector<std::unique_ptr<std::thread>> threads(nthreads);
+        std::vector<perf_histogram>               histograms(nthreads);
         for (int i=0; i < nthreads; i++)
             threads[i].reset
                 (new std::thread(producer(logger, i+1, ITERATIONS, &histograms[i])));

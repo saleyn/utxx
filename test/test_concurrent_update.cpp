@@ -119,21 +119,21 @@ BOOST_AUTO_TEST_CASE( test_concurrent_update )
 
     volatile long count = 0;
 
-    boost::shared_ptr<producer_t>     producers[producer_threads];
-    boost::shared_ptr<consumer_t>     consumers[consumer_threads];
-    boost::shared_ptr<boost::thread> thread[producer_threads + consumer_threads];
-    boost::barrier                   barrier(producer_threads+consumer_threads+1);
+    std::vector<std::shared_ptr<producer_t>>    producers(producer_threads);
+    std::vector<std::shared_ptr<consumer_t>>    consumers(consumer_threads);
+    std::vector<std::shared_ptr<boost::thread>> thread(producer_threads + consumer_threads);
+    boost::barrier                              barrier(producer_threads+consumer_threads+1);
 
     for (int i=0; i < producer_threads; ++i) {
-        producers[i] = boost::shared_ptr<producer_t>(
+        producers[i] = std::shared_ptr<producer_t>(
             new producer_t(i+1, iterations, count, barrier, data));
-        thread[i] = boost::shared_ptr<boost::thread>(
+        thread[i] = std::shared_ptr<boost::thread>(
             new boost::thread(boost::ref(*producers[i])));
     }
     for (int i=0; i < consumer_threads; ++i) {
-        consumers[i] = boost::shared_ptr<consumer_t>(
+        consumers[i] = std::shared_ptr<consumer_t>(
             new consumer_t(i+1, producer_threads*iterations, count, barrier, data));
-        thread[i+producer_threads] = boost::shared_ptr<boost::thread>(
+        thread[i+producer_threads] = std::shared_ptr<boost::thread>(
             new boost::thread(boost::ref(*consumers[i])));
     }
 

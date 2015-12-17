@@ -112,8 +112,8 @@ public:
                 m_length -= p->iov_len, a_bytes -= p->iov_len,
                         m_begin = ++p) {}
         if (a_bytes) {
-            m_begin->iov_len  -= a_bytes;
-            m_begin->iov_base += a_bytes;
+            m_begin->iov_len -= a_bytes;
+            m_begin->iov_base = (char*)m_begin->iov_base + a_bytes;
         }
     }
 

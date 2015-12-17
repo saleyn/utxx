@@ -68,7 +68,7 @@ stamp_type parse_stamp_type(const std::string& a_line) {
 }
 
 const char* to_string(stamp_type a_type) {
-    assert(a_type < length(s_values));
+    assert(size_t(a_type) < length(s_values));
     return s_values[a_type];
 }
 

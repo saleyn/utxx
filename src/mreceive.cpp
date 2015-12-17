@@ -56,7 +56,7 @@ typedef enum {
 } src_state_t;
 
 const int MEGABYTE = 1024*1024;
-const int MILLION  = 1000000;
+//const int MILLION  = 1000000;
 
 struct address {
   int                   id;             /* url order in the config */
@@ -582,7 +582,7 @@ int main(int argc, char *argv[])
     }
 
     /* Figure out which network interface to use */
-    if (!addrs[i].iface_name) {
+    if (addrs[i].iface_name[0] == '\0') {
       addrs[i].iface = INADDR_ANY;
       if (verbose > 2)
         printf("Using INADDR_ANY interface\n");
@@ -1098,7 +1098,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
     else {
       const char* p = buf, *end = p + e;
       for (; p != end; p++, i++) {
-        fprintf(stderr, "%c", *p > ' ' && *p < 255 ? *p : '.');
+        fprintf(stderr, "%c", *p > ' ' && *p != char(255) ? *p : '.');
         if (((i+1) % 80) == 0) fprintf(stderr, "\n   ");
       }
     }

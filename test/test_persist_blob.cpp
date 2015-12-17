@@ -195,8 +195,8 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
         {
             static const int s_prod = n, s_cons = m;
 
-            boost::shared_ptr<boost::thread> l_prod_th[s_prod];
-            boost::shared_ptr<boost::thread> l_cons_th[s_cons];
+            std::vector<std::shared_ptr<boost::thread>> l_prod_th(s_prod);
+            std::vector<std::shared_ptr<boost::thread>> l_cons_th(s_cons);
 
             for (int i = 0; i < s_prod; i++)
                 l_prod_th[i].reset(new boost::thread(producer(l_blob, i+1, ITERATIONS)));

@@ -1,9 +1,10 @@
 #include <boost/test/unit_test.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/barrier.hpp>
 #include <utxx/container/concurrent_stack.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/atomic.hpp>
 #include <vector>
+#include <thread>
 #include <stdio.h>
 
 using namespace utxx;
@@ -149,23 +150,19 @@ BOOST_AUTO_TEST_CASE( test_concurrent_stack )
 
     bzero(sums, sizeof(sums));
 
-    boost::shared_ptr<sproducer>     producers[producer_threads];
-    boost::shared_ptr<sconsumer>     consumers[consumer_threads];
-    boost::shared_ptr<boost::thread> thread[producer_threads + consumer_threads];
-    boost::barrier                   barrier(producer_threads+consumer_threads+1);
+    std::vector<std::shared_ptr<sproducer>>   producers(producer_threads);
+    std::vector<std::shared_ptr<sconsumer>>   consumers(consumer_threads);
+    std::vector<std::shared_ptr<std::thread>> thread(producer_threads + consumer_threads);
+    boost::barrier                            barrier(producer_threads+consumer_threads+1);
 
     for (int i=0; i < producer_threads; ++i) {
-        producers[i] = boost::shared_ptr<sproducer>(
-            new sproducer(i+1, iterations, prod_count, barrier, stack));
-        thread[i] = boost::shared_ptr<boost::thread>(
-            new boost::thread(boost::ref(*producers[i])));
+        producers[i].reset(new sproducer(i+1, iterations, prod_count, barrier, stack));
+        thread[i].reset(new std::thread(std::ref(*producers[i])));
     }
     for (int i=0; i < consumer_threads; ++i) {
-        consumers[i] = boost::shared_ptr<sconsumer>(
-            new sconsumer(i+1, producer_threads*iterations,
-                         prod_count, cons_count, sums[i], barrier, stack));
-        thread[i+producer_threads] = boost::shared_ptr<boost::thread>(
-            new boost::thread(boost::ref(*consumers[i])));
+        consumers[i].reset(new sconsumer(i+1, producer_threads*iterations,
+                           prod_count, cons_count, sums[i], barrier, stack));
+        thread[i+producer_threads].reset(new std::thread(std::ref(*consumers[i])));
     }
 
     barrier.wait();

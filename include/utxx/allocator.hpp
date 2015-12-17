@@ -229,11 +229,6 @@ protected:
             for (int i=0; i < MaxPow2Size; ++i)
                 new (&freelist[i]) stack(this);
         }
-
-        /// Start of usable memory pool
-        char* begin() const { return static_cast<char*>(m_header) + sizeof(header); }
-        /// End of usable memory pool
-        char* end()   const { return begin() + total_size; }
     };
 
     pow2_allocator() {}
@@ -290,9 +285,10 @@ public:
     static const size_t header_size() { return sizeof(header); }
 
     /// Beginning of addressable range managed by this allocator
-    const char* begin() const { return m_header->begin(); }
+    const char* begin() const { return static_cast<const char*>(m_header) + sizeof(header); }
+    char*       begin()       { return static_cast<char*>(m_header)       + sizeof(header); }
     /// End of addressable range managed by this allocator
-    const char* end() const { return m_header->end(); }
+    const char* end()   const { return begin() + m_header->total_size; }
 
     /// Reclaim all allocated memory blocks owned by process <pid> by
     /// marking them available and moving to the free list.  This method

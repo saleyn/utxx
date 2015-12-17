@@ -192,26 +192,25 @@ struct queue_test_runner
         typedef producer<Queue> prod_t;
         typedef consumer<Queue> cons_t;
 
-        boost::shared_ptr<prod_t>        producers[producer_threads];
-        boost::shared_ptr<cons_t>        consumers[consumer_threads];
-        boost::shared_ptr<boost::thread> thread[producer_threads + consumer_threads];
+        std::vector<std::shared_ptr<prod_t>>        producers(producer_threads);
+        std::vector<std::shared_ptr<cons_t>>        consumers(consumer_threads);
+        std::vector<std::shared_ptr<boost::thread>> thread(producer_threads + consumer_threads);
         boost::barrier barrier(producer_threads + consumer_threads + 1);
 
         bzero(sums, sizeof(sums));
         bzero(const_cast<long*>(prod_counts), sizeof(prod_counts));
 
         for (int i=0; i < producer_threads; ++i) {
-            producers[i] = boost::shared_ptr<prod_t>(
+            producers[i].reset(
                 new prod_t(i+1, iterations, prod_count, barrier, queue, terminate));
-            thread[i] = boost::shared_ptr<boost::thread>(
-                new boost::thread(boost::ref(*producers[i])));
+            thread[i].reset(new boost::thread(boost::ref(*producers[i])));
         }
         for (int i=0; i < consumer_threads; ++i) {
-            consumers[i] = boost::shared_ptr<cons_t>(
+            consumers[i].reset(
                 new cons_t(i+1, producer_threads*iterations,
                              prod_count, prod_counts,
                              cons_count, sums[i], barrier, queue, terminate));
-            thread[i+producer_threads] = boost::shared_ptr<boost::thread>(
+            thread[i+producer_threads].reset(
                 new boost::thread(boost::ref(*consumers[i])));
         }
 

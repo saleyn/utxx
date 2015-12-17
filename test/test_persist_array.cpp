@@ -224,10 +224,10 @@ BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
         {
             static const int s_prod = n;
 
-            boost::shared_ptr<boost::thread> l_prod_th[s_prod];
+            std::vector<std::shared_ptr<std::thread>> l_prod_th(s_prod);
 
             for (int i = 0; i < s_prod; i++)
-                l_prod_th[i].reset(new boost::thread(producer(l_storage, i+1, ITERATIONS)));
+                l_prod_th[i].reset(new std::thread(producer(l_storage, i+1, ITERATIONS)));
 
             for (int i = 0; i < s_prod; i++)
                 l_prod_th[i]->join();

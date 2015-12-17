@@ -111,9 +111,9 @@ void unlink() {
         ::unlink(s_filename[i]);
 }
 
-auto worker = [&](int id, int iterations, boost::barrier* barrier,
-                  logger_t* logger, logger_t::file_id* files,
-                  perf_histogram* histogram, double* elapsed)
+auto worker = [](int id, int iterations, boost::barrier* barrier,
+                 logger_t* logger, logger_t::file_id* files,
+                 perf_histogram* histogram, double* elapsed)
 {
     barrier->wait();
     histogram->reset();
@@ -173,10 +173,10 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 
     BOOST_REQUIRE_EQUAL(0, ok);
 
-    std::shared_ptr<std::thread> threads[THREADS];
-    boost::barrier               barrier(THREADS+1);
-    double                       elapsed[THREADS];
-    perf_histogram               histograms[THREADS];
+    std::vector<std::shared_ptr<std::thread>>   threads(THREADS);
+    boost::barrier                              barrier(THREADS+1);
+    double                                      elapsed[THREADS];
+    std::vector<perf_histogram>                 histograms(THREADS);
 
     for (int i=0; i < THREADS; i++) {
         new (&(histograms[i])) perf_histogram();

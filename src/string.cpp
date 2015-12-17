@@ -43,7 +43,7 @@ std::string to_bin_string(const char* buf, size_t sz,
     if (!hex && readable)
         for(const char* p = begin; p != end; ++p)
             if ((*p < ' ' && *p != '\n' && *p != '\r' && *p != '\t') ||
-                *p == 127 || *p == 255) {
+                *p == 127 || *p == char(255)) {
                 printable = false;
                 break;
             }
