@@ -122,9 +122,9 @@ namespace utxx {
 
 /// Thread-safe function returning error string.
 inline std::string errno_string(int a_errno) {
-    char buf[128];
-    strerror_r(a_errno, buf, sizeof(buf));
-    return buf;
+    // Note: GNU-specific implementation is thread-safe, and strerror_r doesn't
+    // really use the given char buffer, so we chose to call strerror():
+    return strerror(a_errno);
 }
 
 inline std::string errno_string() { return errno_string(errno); }
