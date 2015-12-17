@@ -107,7 +107,7 @@ public:
     /// @return pointer past the last written character
     static char* write_date(
         char* a_buf, time_t a_utc_seconds, bool a_utc=false,
-        size_t eos_pos=8, char a_sep = '\0');
+        size_t eos_pos=8, char a_sep = '\0', bool a_use_cached_date = true);
 
     /// Write time as string.
     /// Possible formats:
@@ -249,22 +249,23 @@ public:
     /// @param a_utc write UTC time
     /// @param a_day_chk check for day change since last call
     /// @return number of written bytes
-    static int format(stamp_type a_tp,
-        time_val tv, char* a_buf, size_t a_sz, bool a_utc=false, bool a_day_chk=true);
+    static int format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
+                      bool a_utc=false, bool a_day_chk=true, bool a_use_cached_date=true);
 
     template <int N>
     inline static int format(stamp_type a_tp, time_val tv,
-            char (&a_buf)[N], bool a_utc = false) {
-        return format(a_tp, tv, a_buf, N, a_utc);
+            char (&a_buf)[N], bool a_utc = false, bool a_use_cached_date=true) {
+        return format(a_tp, tv, a_buf, N, a_utc, a_use_cached_date);
     }
 
-    inline static std::string to_string(stamp_type a_tp = TIME_WITH_USEC, bool a_utc=false) {
-        return to_string(now_utc(), a_tp, a_utc);
+    inline static std::string to_string(stamp_type a_tp = TIME_WITH_USEC,
+                                        bool a_utc=false, bool a_use_cached_date=true) {
+        return to_string(now_utc(), a_tp, a_utc, a_use_cached_date);
     }
 
-    inline static std::string to_string(
-            time_val a_tv, stamp_type a_tp=TIME_WITH_USEC, bool a_utc=false) {
-        buf_type buf; format(a_tp, a_tv, buf, sizeof(buf), a_utc);
+    inline static std::string to_string(time_val a_tv, stamp_type a_tp=TIME_WITH_USEC,
+                                        bool a_utc=false, bool a_use_cached_date=true) {
+        buf_type buf; format(a_tp, a_tv, buf, sizeof(buf), a_utc, a_use_cached_date);
         return std::string(buf);
     }
 
