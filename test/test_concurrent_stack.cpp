@@ -21,7 +21,7 @@ public:
     int_t() : m_data(0), m_id(0) {}
 };
 
-BOOST_AUTO_TEST_CASE( test_versioned_stack )
+BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned )
 {
     versioned_stack stack;
 
@@ -39,7 +39,7 @@ BOOST_AUTO_TEST_CASE( test_versioned_stack )
     BOOST_REQUIRE(stack.empty());
 }
 
-BOOST_AUTO_TEST_CASE( test_versioned_stack_reset )
+BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned_reset )
 {
     versioned_stack stack;
 

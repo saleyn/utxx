@@ -302,7 +302,7 @@ start(const std::string& a_filename, bool a_notify_immediate, int a_perm)
         return -1;
 
     typename traits::file_type file;
-    if (!(file = traits::file_open(m_filename, a_perm))) {
+    if (!(file = traits::file_open(a_filename, a_perm))) {
         print_error(-1, strerror(errno), __LINE__);
         return -2;
     }
