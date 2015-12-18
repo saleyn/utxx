@@ -117,7 +117,7 @@ bootstrap: | $(DIR)
 	$(call makecmd)
 	@ln -s $(DIR) build
 	@ln -s $(prefix) inst
-	@echo "$(MAKEFLAGS)" > $(DIR)/.makeflags
+	@echo "make bootstrap $(MAKEOVERRIDES)" > $(DIR)/.bootstrap
 	@echo "PROJECT   := $(PROJECT)"             >  $(DIR)/cache.mk
 	@echo "VERSION   := $(VERSION)"             >> $(DIR)/cache.mk
 	@echo "OPT_FILE  := $(abspath $(OPT_FILE))" >> $(DIR)/cache.mk

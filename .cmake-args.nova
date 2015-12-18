@@ -2,3 +2,4 @@ DIR:BUILD=/tmp/${USER}/@PROJECT@/build
 DIR:INSTALL=/opt/pkg/@PROJECT@/@VERSION@
 BOOST_ROOT=/opt/pkg/boost/current
 BOOST_LIBRARYDIR=/opt/pkg/boost/current/lib
+WITH_ENUM_SERIALIZATION=ON

@@ -50,6 +50,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cassert>
 #include <map>
 
+#ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
+#include <boost/serialization/access.hpp>
+#define UTXX__ENUM_FRIEND_SERIALIZATION__ \
+    friend class boost::serialization::access
+#endif
+
 // The difference between enum.hpp and enumx.hpp is that UTXX_ENUMX
 // allows to assign specific values to the enumerated constants.
 //
@@ -146,6 +152,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return s_names;                                                  \
         }                                                                    \
                                                                              \
+        UTXX__ENUM_FRIEND_SERIALIZATION__;                                   \
+                                                                             \
         type m_val;                                                          \
     }
 
@@ -197,6 +205,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             };                                                               \
             return s_names;                                                  \
         }                                                                    \
+                                                                             \
+        UTXX__ENUM_FRIEND_SERIALIZATION__;                                   \
                                                                              \
         etype m_val;                                                         \
                                                                              \

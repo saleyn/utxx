@@ -41,7 +41,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/facilities/empty.hpp>
 #include <utxx/string.hpp>
+#include <utxx/config.h>
 #include <cassert>
+
+#ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
+#include <boost/serialization/access.hpp>
+
+#define UTXX__ENUM_FRIEND_SERIALIZATION__ \
+    friend class boost::serialization::access
+#endif
 
 /// Strongly typed reflectable enum declaration
 //  #include <utxx/enum.hpp>
@@ -132,6 +140,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return names()[n];                                              \
         }                                                                   \
                                                                             \
+        UTXX__ENUM_FRIEND_SERIALIZATION__;                                  \
+                                                                            \
         type m_val;                                                         \
     }
 
@@ -177,6 +187,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             assert(n < s_size);                                             \
             return names()[n];                                              \
         }                                                                   \
+                                                                            \
+        UTXX__ENUM_FRIEND_SERIALIZATION__;                                  \
                                                                             \
         etype  m_val;                                                       \
                                                                             \

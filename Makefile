@@ -18,6 +18,9 @@ distclean:
 bootstrap:
 	@$(MAKE) -f bootstrap.mk --no-print-directory $@ $(MAKEOVERRIDES)
 
+rebootstrap: build/.bootstrap
+	$(shell cat build/.bootstrap) --no-print-directory
+
 info:
 	@$(MAKE) -sf bootstrap.mk $@
 

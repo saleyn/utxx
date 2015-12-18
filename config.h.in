@@ -7,4 +7,7 @@
 /* Define to 1 if Thrift library is available */
 #cmakedefine UTXX_HAVE_THRIFT_H
 
+/* Define to 1 if enum.h and enumx.h should be friends of boost::serialization::access */
+#cmakedefine UTXX_ENUM_SUPPORT_SERIALIZATION
+
 #cmakedefine UTXX_HAVE_BOOST_TIMER_TIMER_HPP

@@ -46,6 +46,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cassert>
 #include <vector>
 
+#ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
+#include <boost/serialization/access.hpp>
+#define UTXX__ENUM_FRIEND_SERIALIZATION__ \
+    friend class boost::serialization::access
+#endif
+
 /// Strongly typed reflectable enum flags declaration
 //  #include <utxx/enum_flags.hpp>
 //
@@ -99,6 +105,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename... Args>                                         \
         static constexpr type bor(type a, Args... args)                     \
         { return type(size_t(a) | size_t(bor(args...))); }                  \
+                                                                            \
+        UTXX__ENUM_FRIEND_SERIALIZATION__;                                  \
                                                                             \
         size_t m_val;                                                       \
                                                                             \
@@ -235,6 +243,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename... Args>                                         \
         static constexpr etype bor(etype a, Args... args)                   \
         { return etype(size_t(a) | size_t(bor(args...))); }                 \
+                                                                            \
+        UTXX__ENUM_FRIEND_SERIALIZATION__;                                  \
                                                                             \
         size_t m_val;                                                       \
                                                                             \

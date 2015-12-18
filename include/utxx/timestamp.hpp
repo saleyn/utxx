@@ -243,13 +243,16 @@ public:
     static size_t format_size(stamp_type a_tp);
 
     /// Write a time_val to \a a_buf.
-    /// @param tv current time
-    /// @param a_buf output buffer
-    /// @param a_sz  output buffer size
-    /// @param a_utc write UTC time
-    /// @param a_day_chk check for day change since last call
+    /// @param a_tp              output time format
+    /// @param a_tv              current time
+    /// @param a_buf             output buffer
+    /// @param a_sz              output buffer size
+    /// @param a_utc             write UTC time
+    /// @param a_day_chk         check for day change since last call
+    /// @param a_use_cached_date attempt to use cached formatted date buffer if
+    ///                          current date matches the last cached date value
     /// @return number of written bytes
-    static int format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
+    static int format(stamp_type a_tp, time_val a_tv, char* a_buf, size_t a_sz,
                       bool a_utc=false, bool a_day_chk=true, bool a_use_cached_date=true);
 
     template <int N>
