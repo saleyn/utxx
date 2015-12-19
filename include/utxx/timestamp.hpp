@@ -43,17 +43,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-enum stamp_type {
-      NO_TIMESTAMP
-    , TIME
-    , TIME_WITH_MSEC
-    , TIME_WITH_USEC
-    , DATE
-    , DATE_TIME
-    , DATE_TIME_WITH_MSEC
-    , DATE_TIME_WITH_USEC
-};
-
 /// Parse a timestamp from string.
 /// Parsing is case-insensitive. The value is one of:
 /// "none|time|time-msec|time-usec|date-time|date-time-msec|date-time-usec".
@@ -85,7 +74,12 @@ protected:
     #endif
 
     static char* internal_write_date(
-        char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep);
+        char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep) {
+        assert(s_next_utc_midnight_nseconds);
+
+        if (!a_utc) a_utc_seconds += utc_offset();
+        return time_val(secs(a_utc_seconds)).write_date(a_buf, eos_pos, a_sep);
+    }
 
     static void update_midnight_nseconds(time_val a_now);
 
@@ -120,31 +114,10 @@ public:
     /// @param a_delim controls the ':' delimiter ('\0' means no delimiter)
     /// @param a_sep   defines the fractional second separating character ('\0' means - none)
     /// @return pointer past the last written character
-    static char* write_time(
-        char* a_buf, time_val a_time, stamp_type a_type, bool a_utc=false,
-        char  a_delim = '\0', char a_sep = '.');
-
-    inline static char* write_time(
-        char* a_buf, time_t seconds, size_t eos_pos = 8, char a_delim = ':')
-    {
-        unsigned hour,min,sec;
-        std::tie(hour,min,sec) = time_val::to_hms(seconds);
-        char* p = a_buf;
-        int n = hour / 10;
-        *p++  = '0' + n;    hour -= n*10;
-        *p++  = '0' + hour; n = min / 10;
-        if (a_delim) *p++  = a_delim;
-        *p++  = '0' + n;    min -= n*10;
-        *p++  = '0' + min;  n = sec / 10;
-        if (a_delim) *p++  = a_delim;
-        *p++  = '0' + n;    sec -= n*10;
-        *p++  = '0' + sec;
-        if (eos_pos) {
-            a_buf[eos_pos] = '\0';
-            char* end = a_buf + eos_pos;
-            return end < p ? end : p;
-        }
-        return p;
+    static char* write_time(char* a_buf, time_val a_time, stamp_type a_type,
+                            bool a_utc=false, char  a_delim = '\0', char a_sep = '.') {
+        auto   tsec = a_utc ? a_time : a_time.add_nsec(s_utc_nsec_offset);
+        return tsec.write_time(a_buf, a_type, a_delim, a_sep);
     }
 
     /// Update internal timestamp by calling gettimeofday().

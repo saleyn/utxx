@@ -54,8 +54,8 @@ volatile long timestamp::s_syscalls;
 
 namespace {
     static const char* s_values[] = {
-        "none", "time",      "time-msec",      "time-usec",
-        "date", "date-time", "date-time-msec", "date-time-usec"
+        "none", "date", "date-time", "date-time-msec", "date-time-usec"
+        "time", "time-msec", "time-usec",
     };
 }
 
@@ -70,80 +70,6 @@ stamp_type parse_stamp_type(const std::string& a_line) {
 const char* to_string(stamp_type a_type) {
     assert(size_t(a_type) < length(s_values));
     return s_values[a_type];
-}
-
-char* timestamp::write_time(
-    char* a_buf,  time_val a_time, stamp_type a_type, bool a_utc,
-    char  a_delim, char a_sep)
-{
-    auto     tsec   = a_utc ? a_time : a_time.add_nsec(s_utc_nsec_offset);
-    long     s, ns;
-    std::tie(s, ns) = tsec.split();
-    unsigned long n = s /   86400;
-                  n = s - n*86400;
-    int hour = n / 3600;    n -= hour*3600;
-    int min  = n / 60;
-    int sec  = n - min*60;  n = hour / 10;
-    char*  p = a_buf;
-    *p++ = '0' + n;     hour -= n*10;
-    *p++ = '0' + hour;  n = min / 10;
-    if (a_delim) *p++ = a_delim;
-    *p++ = '0' + n;     min  -= n*10;
-    *p++ = '0' + min;   n = sec / 10;
-    if (a_delim) *p++ = a_delim;
-    *p++ = '0' + n;     sec -= n*10;
-    *p++ = '0' + sec;
-    switch (a_type) {
-        case TIME:
-            break;
-        case TIME_WITH_MSEC: {
-            if (a_sep) *p++ = a_sep;
-            int msec = ns / 1000000;
-            (void)itoa_right<int, 3>(p, msec, '0');
-            p += 3;
-            break;
-        }
-        case TIME_WITH_USEC: {
-            if (a_sep) *p++ = a_sep;
-            int usec = ns / 1000;
-            (void)itoa_right<int, 6>(p, usec, '0');
-            p += 6;
-            break;
-        }
-        default:
-            throw logic_error("timestamp::write_time: invalid a_type value: ", a_type);
-    }
-    return p;
-}
-
-
-char* timestamp::internal_write_date(
-    char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep)
-{
-    assert(s_next_utc_midnight_nseconds);
-
-    if (!a_utc) a_utc_seconds += utc_offset();
-    int y; unsigned m,d;
-    std::tie(y,m,d) = from_gregorian_time(a_utc_seconds);
-    int   n = y / 1000;
-    char* p = a_buf;
-    *p++ = '0' + n; y -= n*1000; n = y/100;
-    *p++ = '0' + n; y -= n*100;  n = y/10;
-    *p++ = '0' + n; y -= n*10;
-    *p++ = '0' + y; n  = m / 10;
-    if (a_sep) *p++ = a_sep;
-    *p++ = '0' + n; m -= n*10;
-    *p++ = '0' + m; n  = d / 10;
-    if (a_sep) *p++ = a_sep;
-    *p++ = '0' + n; d -= n*10;
-    *p++ = '0' + d;
-    *p++ = '-';
-    if (eos_pos) {
-        a_buf[eos_pos] = '\0';
-        char*  end = a_buf + eos_pos;
-        return end < p ? end : p;
-    }
-    return p;
 }
 
 char* timestamp::write_date(char* a_buf, time_t a_utc_seconds, bool a_utc,
@@ -161,8 +87,8 @@ char* timestamp::write_date(char* a_buf, time_t a_utc_seconds, bool a_utc,
         return internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
     else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
-        if (eos_pos) a_buf[eos_pos] = '\0';
-        return a_buf + std::min<size_t>(9, eos_pos);
+        if (eos_pos) { a_buf[eos_pos] = '\0'; return a_buf + eos_pos; }
+        return a_buf + 9;
     }
 }
 
@@ -209,52 +135,38 @@ int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
         return 0;
     }
 
+    auto pair = tv.split();
+
     // If small time is given, it's a relative value.
-    bool rel = tv.microseconds() < (86400L * 1000000L);
-    auto now = a_day_chk || rel ? update() : tv;
+    bool rel = pair.first < 86400L;
+    auto now = a_day_chk || rel ? update().split() : pair;
 
     if (rel)
-        tv.add_nsec(now.nanoseconds());
-    if (!a_utc)
-        tv.add_nsec(s_utc_nsec_offset);
+        pair.first += now.first;
 
-    auto pair   = tv.split();
-    time_t sec  = pair.first;
-    long l_usec = pair.second / 1000;
+    char* p;
 
     switch (a_tp) {
         case TIME:
-            write_time(a_buf, sec, 8);
-            return 8;
         case TIME_WITH_USEC:
-            write_time(a_buf, sec, 15);
-            a_buf[8] = '.';
-            itoa_right(a_buf+9, 6, l_usec, '0');
-            return 15;
-        case TIME_WITH_MSEC:
-            write_time(a_buf, sec, 12);
-            a_buf[8] = '.';
-            itoa_right(a_buf+9, 3, l_usec / 1000, '0');
-            return 12;
+        case TIME_WITH_MSEC: {
+            auto sec = a_utc ? pair.first
+                             : (pair.first + s_utc_nsec_offset / 1000000000L);
+            p  = time_val::write_time(sec, pair.second, a_buf, a_tp);
+            return p - a_buf;
+        }
         case DATE:
-            write_date(a_buf, sec, a_utc, 8, '\0', a_use_cached_date);
+            p = write_date(a_buf, pair.first, a_utc, '\0', a_use_cached_date);
             return 8;
         case DATE_TIME:
-            write_date(a_buf, sec, a_utc, 9, '\0', a_use_cached_date);
-            write_time(a_buf+9, sec, 8);
-            return 17;
         case DATE_TIME_WITH_USEC:
-            write_date(a_buf, sec, a_utc, 9, '\0', a_use_cached_date);
-            write_time(a_buf+9, sec, 15);
-            a_buf[17] = '.';
-            itoa_right(a_buf+18, 6, l_usec, '0');
-            return 24;
-        case DATE_TIME_WITH_MSEC:
-            write_date(a_buf, sec, a_utc, 9, '\0', a_use_cached_date);
-            write_time(a_buf+9, sec, 12);
-            a_buf[17] = '.';
-            itoa_right(a_buf+18, 3, l_usec / 1000, '0');
-            return 21;
+        case DATE_TIME_WITH_MSEC: {
+            auto sec = a_utc ? pair.first
+                             : (pair.first + s_utc_nsec_offset / 1000000000L);
+            p = write_date(a_buf, pair.first, a_utc, 0, '\0', a_use_cached_date);
+            p = time_val::write_time(sec, pair.second, p, stamp_type(a_tp+3));
+            return p - a_buf;
+        }
         default:
             strcpy(a_buf, "UNDEFINED");
             return -1;

@@ -56,6 +56,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
     class time_val;
 
+    // See timestamp::parse_stamp_type()
+    enum stamp_type {
+          NO_TIMESTAMP              // Parsed from "none"
+        , DATE                      // Parsed from "date"
+        , DATE_TIME                 // Parsed from "date-time"
+        , DATE_TIME_WITH_MSEC       // Parsed from "date-time-msec"
+        , DATE_TIME_WITH_USEC       // Parsed from "date-time-usec"
+        , TIME                      // Parsed from "time"
+        , TIME_WITH_MSEC            // Parsed from "time-msec"
+        , TIME_WITH_USEC            // Parsed from "time-usec"
+    };
+
     /// Indication of use of absolute time
     struct abs_time {
         long nsec;
@@ -87,6 +99,15 @@ namespace utxx {
         explicit secs(int      s) : nsec(long(s) * 1000000000L){}
         explicit secs(double   s) : nsec(long(round(s*1e9)))   {}
     };
+
+    namespace detail {
+        inline char* itoar(char* a_buf, int a_sz, uint32_t a_val) {
+            auto e = a_buf+a_sz;
+            for(auto p = e-1; p >= a_buf; --p, a_val /= 10u)
+                *p = a_val ? ('0' + (a_val % 10u)) : '0';
+            return e;
+        }
+    }
 
     /// A helper class for dealing with 'struct timeval' structure. This class adds ability
     /// to perform arithmetic with the structure leaving the same footprint.
@@ -200,7 +221,7 @@ namespace utxx {
         }
         struct timespec         timespec() const {
             auto pair = split();
-            return (struct timespec){pair.first, pair.second};
+            return ::timespec{pair.first, pair.second};
         }
         time_t   sec()                     const { return m_tv / N10e9; }
         long     usec()                    const { long x=m_tv/1000;  return x-(x/N10e6)*N10e6;}
@@ -372,6 +393,114 @@ namespace utxx {
         /// This method is explicit to avoid accidental conversion of time_val type to bool
         /// in assignments such as \code time_t a = time_val() \endcode
         explicit operator bool() const { return m_tv; }
+
+        std::string to_string(stamp_type a_tp, char a_dsep = '\0',
+                              char a_tsep = ':', char a_ssep = '.') const {
+            char buf[64];
+            auto p = write(buf, a_tp);
+            return std::string(buf, p - buf);
+        }
+
+        char* write(char* a_buf, stamp_type a_tp,
+                    char a_dsep = '\0', char a_tsep = ':', char a_ssep = '.') const {
+            char buf[64];
+            auto p = write_date(buf, 0, '\0');
+            return write_time(p, a_tp);
+            return p;
+        }
+
+        /// Write seconds to buffer.
+        /// Time zone conversion to seconds must be done externally.
+        /// @param a_eos  when this end-of-string position is greater than 0,
+        ///               the buffer is terminated with new line at this position
+        /// @param a_sep  when other than '\0' this value is used as the delimiter
+        char* write_date(char* a_buf, size_t a_eos = 8, char a_sep = '\0') const {
+            return write_date(sec(), a_buf, a_eos, a_sep);
+        }
+
+        static char* write_date(time_t a_sec, char* a_buf, size_t a_eos = 8,
+                                char a_sep = '\0') {
+            int y; unsigned m,d;
+            std::tie(y,m,d) = from_gregorian_time(a_sec);
+            int   n = y / 1000;
+            char* p = a_buf;
+            *p++ = '0' + n; y -= n*1000; n = y/100;
+            *p++ = '0' + n; y -= n*100;  n = y/10;
+            *p++ = '0' + n; y -= n*10;
+            *p++ = '0' + y; n  = m / 10;
+            if (a_sep) *p++ = a_sep;
+            *p++ = '0' + n; m -= n*10;
+            *p++ = '0' + m; n  = d / 10;
+            if (a_sep) *p++ = a_sep;
+            *p++ = '0' + n; d -= n*10;
+            *p++ = '0' + d;
+            *p++ = '-';
+            if (a_eos) {
+                a_buf[a_eos] = '\0';
+                char*  end = a_buf + a_eos;
+                return end < p ? end : p;
+            }
+            return p;
+        }
+
+        /// Write time as string.
+        /// The string is NULL terminated.
+        /// Possible formats:
+        ///   HHMMSSsss, HHMMSSssssss, HHMMSS.sss, HHMMSS.ssssss, HH:MM:SS[.ssssss].
+        /// @param a_buf   the output buffer.
+        /// @param a_type  determines the time formatting.
+        ///                Valid values: TIME, TIME_WITH_MSEC, TIME_WITH_USEC.
+        /// @param a_delim controls the ':' delimiter ('\0' means no delimiter)
+        /// @param a_sep   defines the fractional second separating character ('\0' means - none)
+        /// @return pointer past the last written character
+        char* write_time(char* a_buf, stamp_type a_tp,
+                         char a_delim = ':', char a_sep = '.') const {
+            return write_time(split(), a_buf, a_tp, a_delim, a_sep);
+        }
+
+        static char* write_time(std::pair<long, long> a_tv, char* a_buf,
+                                stamp_type a_tp, char a_delim = ':', char a_sep = '.') {
+            return write_time(a_tv.first, a_tv.second, a_buf, a_tp, a_delim, a_sep);
+        }
+
+        static char* write_time(long a_sec, long a_ns, char* a_buf,
+                                stamp_type a_tp, char a_delim = ':', char a_sep = '.')
+        {
+            unsigned h,m,s;
+            std::tie(h,m,s) = to_hms(a_sec);
+
+            char* p = a_buf;
+            int n = h / 10;
+            *p++  = '0' + n; h -= n*10;
+            *p++  = '0' + h; n  = m / 10;
+            if (a_delim) *p++   = a_delim;
+            *p++  = '0' + n; m -= n*10;
+            *p++  = '0' + m; n  = s / 10;
+            if (a_delim) *p++   = a_delim;
+            *p++  = '0' + n; s -= n*10;
+            *p++  = '0' + s;
+            switch (a_tp) {
+                case TIME:
+                    break;
+                case TIME_WITH_MSEC: {
+                    if (a_sep) *p++ = a_sep;
+                    int msec = a_ns / 1000000;
+                    p = detail::itoar(p, 3, msec);
+                    break;
+                }
+                case TIME_WITH_USEC: {
+                    if (a_sep) *p++ = a_sep;
+                    int usec = a_ns / 1000;
+                    p = detail::itoar(p, 6, usec);
+                    break;
+                }
+                default:
+                    throw logic_error("time_val::write_time: invalid a_type value: ", a_tp);
+            }
+
+            *p = '\0';
+            return p;
+        }
     };
 
     /// Same as gettimeofday() call
@@ -386,7 +515,6 @@ namespace utxx {
              + boost::posix_time::microsec(ns / 1000);
     }
 
-#if __cplusplus >= 201103L
     /// Convert time_val to chrono::time_point
     inline std::chrono::time_point<std::chrono::system_clock>
     to_time_point(time_val a_tv) {
@@ -407,7 +535,6 @@ namespace utxx {
         auto nanosec  = duration_cast<nanoseconds>(duration - sec);
         return timespec{sec.count(), nanosec.count()}; 
     }
-#endif
 
     /// Simple timer for measuring interval of time
     ///
