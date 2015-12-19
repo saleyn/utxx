@@ -50,8 +50,14 @@ using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_time_val )
 {
+    time_val now0;
+
+    BOOST_REQUIRE(!now0);
+
     time_val now  = now_utc();
     time_val now1 = time_val::universal_time();
+
+    BOOST_REQUIRE(now);
 
     while (now.microseconds() == time_val::universal_time().microseconds());
 

@@ -367,6 +367,9 @@ namespace utxx {
         bool operator>= (time_val tv) const { return m_tv >= tv.m_tv; }
         bool operator<  (time_val tv) const { return m_tv <  tv.m_tv; }
         bool operator<= (time_val tv) const { return m_tv <= tv.m_tv; }
+
+        /// Returns true if current time_val has value
+        operator bool() const { return m_tv; }
     };
 
     /// Same as gettimeofday() call

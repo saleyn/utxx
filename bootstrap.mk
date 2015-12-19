@@ -114,7 +114,7 @@ bootstrap: | $(DIR)
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
 	@rm -f build inst
 	@echo $(call makecmd) > $(DIR)/.cmake
-	$(call makecmd)
+	$(call makecmd) 2>&1 | tee $(DIR)/.cmake.bootstrap.log
 	@ln -s $(DIR) build
 	@ln -s $(prefix) inst
 	@echo "make bootstrap $(MAKEOVERRIDES)" > $(DIR)/.bootstrap
