@@ -368,8 +368,10 @@ namespace utxx {
         bool operator<  (time_val tv) const { return m_tv <  tv.m_tv; }
         bool operator<= (time_val tv) const { return m_tv <= tv.m_tv; }
 
-        /// Returns true if current time_val has value
-        operator bool() const { return m_tv; }
+        /// Returns true if current time_val has value.
+        /// This method is explicit to avoid accidental conversion of time_val type to bool
+        /// in assignments such as \code time_t a = time_val() \endcode
+        explicit operator bool() const { return m_tv; }
     };
 
     /// Same as gettimeofday() call
