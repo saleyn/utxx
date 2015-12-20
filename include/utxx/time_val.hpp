@@ -33,22 +33,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-
-#ifndef _UTXX_TIME_VAL_HPP_
-#define _UTXX_TIME_VAL_HPP_
+#pragma once
 
 #include <boost/static_assert.hpp>
 #include <utxx/detail/gettimeofday.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/time.hpp>
-#include "time.hpp"
 #include <cstddef>
 #include <stdint.h>
-#if __cplusplus >= 201103L
+#include <type_traits>
 #include <chrono>
 #include <tuple>
-#endif
 #include <ctime>
 #include <sys/time.h>
 #include <math.h>
@@ -79,11 +74,18 @@ namespace utxx {
         rel_time(long s=0, long us=0) : nsec(s*1000000000L + us*1000L) {}
     };
 
+    struct msecs {
+        long nsec;
+        explicit msecs(long   ms) : nsec(ms*1000000L)          {}
+        explicit msecs(size_t ms) : nsec(long(ms)*1000000L)    {}
+        explicit msecs(int    ms) : nsec(long(ms)*1000000L)    {}
+    };
+
     struct usecs {
         long nsec;
         explicit usecs(long   us) : nsec(us*1000L)             {}
         explicit usecs(size_t us) : nsec(long(us)*1000L)       {}
-        explicit usecs(int    us) : nsec(us*1000L)             {}
+        explicit usecs(int    us) : nsec(long(us)*1000L)       {}
     };
 
     struct nsecs {
@@ -101,11 +103,17 @@ namespace utxx {
     };
 
     namespace detail {
-        inline char* itoar(char* a_buf, int a_sz, uint32_t a_val) {
+        /// Print right-aligned integer to string buffer with leading 0's
+        inline char* itoar(size_t a_val, char* a_buf, int a_sz) {
             auto e = a_buf+a_sz;
             for(auto p = e-1; p >= a_buf; --p, a_val /= 10u)
                 *p = a_val ? ('0' + (a_val % 10u)) : '0';
             return e;
+        }
+
+        inline std::string itoar(size_t a_val, int a_width) {
+            char buf[64]; auto p = itoar(a_val, buf, std::min<int>(sizeof(buf),a_width));
+            return std::string(buf, p-buf);
         }
     }
 
@@ -120,6 +128,7 @@ namespace utxx {
     public:
         time_val() noexcept         : m_tv(0)                  {}
         time_val(secs   s)          : m_tv(s.nsec)             {}
+        time_val(msecs ms)          : m_tv(ms.nsec)            {}
         time_val(usecs us)          : m_tv(us.nsec)            {}
         time_val(nsecs ns)          : m_tv(ns.value)           {}
         time_val(long s, long us)   : m_tv(s*N10e9 + us*1000)  {}
@@ -346,15 +355,17 @@ namespace utxx {
         }
         static long now_diff_nsec(time_val start)  { return (universal_time().m_tv - start.m_tv);}
         static long now_diff_usec(time_val start)  { return (universal_time().m_tv - start.m_tv)/1000;}
-        static long now_diff_msec(time_val start)  { return now_diff_usec(start)/N10e6; }
+        static long now_diff_msec(time_val start)  { return now_diff_usec(start)/N10e6;}
 
         time_val operator- (time_val tv)     const { return nsecs(m_tv - tv.m_tv);     }
         time_val operator+ (time_val tv)     const { return nsecs(m_tv + tv.m_tv);     }
 
-        time_val operator- (nsecs us)        const { return nsecs(m_tv - us.value);    }
-        time_val operator+ (nsecs us)        const { return nsecs(m_tv + us.value);    }
-        time_val operator- (usecs us)        const { return nsecs(m_tv - us.nsec);     }
-        time_val operator+ (usecs us)        const { return nsecs(m_tv + us.nsec);     }
+        time_val operator- (nsecs a)         const { return nsecs(m_tv - a.value);     }
+        time_val operator+ (nsecs a)         const { return nsecs(m_tv + a.value);     }
+        time_val operator- (usecs a)         const { return nsecs(m_tv - a.nsec);      }
+        time_val operator+ (usecs a)         const { return nsecs(m_tv + a.nsec);      }
+        time_val operator- (msecs a)         const { return nsecs(m_tv - a.nsec);      }
+        time_val operator+ (msecs a)         const { return nsecs(m_tv + a.nsec);      }
         time_val operator- (secs  s)         const { return nsecs(m_tv - s.nsec);      }
         time_val operator+ (secs  s)         const { return nsecs(m_tv + s.nsec);      }
 
@@ -366,10 +377,14 @@ namespace utxx {
 
         void     operator-= (const struct timeval& tv)      { m_tv -= time_val(tv).m_tv;}
         void     operator-= (time_val tv)                   { m_tv -= tv.m_tv;    }
+        void     operator-= (nsecs     v)                   { m_tv -= v.value;    }
         void     operator-= (usecs     v)                   { m_tv -= v.nsec;     }
+        void     operator-= (msecs     v)                   { m_tv -= v.nsec;     }
         void     operator-= (secs      v)                   { m_tv -= v.nsec;     }
         void     operator+= (time_val tv)                   { m_tv += tv.m_tv;    }
+        void     operator+= (nsecs     v)                   { m_tv += v.value;    }
         void     operator+= (usecs     v)                   { m_tv += v.nsec;     }
+        void     operator+= (msecs     v)                   { m_tv += v.nsec;     }
         void     operator+= (secs      v)                   { m_tv += v.nsec;     }
         void     operator+= (double interval)               { add(interval);      }
 
@@ -400,28 +415,29 @@ namespace utxx {
         //    return out << buf;
         //}
 
-        std::string to_string(stamp_type a_tp, char a_dsep = '\0',
-                              char a_tsep = ':', char a_ssep = '.') const {
+        std::string to_string(stamp_type a_tp, char a_ddelim = '\0',
+                              char a_tdelim = ':', char a_ssep = '.') const {
             char buf[64];
-            auto p = write(buf, a_tp);
+            auto p = write(buf, a_tp, a_ddelim, a_tdelim, a_ssep);
             return std::string(buf, p - buf);
         }
 
         char* write(char* a_buf, stamp_type a_tp,
-                    char a_dsep = '\0', char a_tsep = ':', char a_ssep = '.') const {
+                    char a_ddelim = '\0', char a_tdelim = ':', char a_ssep = '.') const {
             auto pair = split();
             auto p = ((a_tp > NO_TIMESTAMP) && (a_tp < TIME))
-                   ? write_date(pair.first, a_buf, 0, '\0') : a_buf;
-            return write_time(pair, p, a_tp);
+                   ? std::make_pair(write_date(pair.first, a_buf, 0, a_ddelim),stamp_type(a_tp+3))
+                   : std::make_pair(a_buf, a_tp);
+            return write_time(pair, p.first, p.second, a_tdelim, a_ssep);
         }
 
         /// Write seconds to buffer.
         /// Time zone conversion to seconds must be done externally.
-        /// @param a_eos  when this end-of-string position is greater than 0,
-        ///               the buffer is terminated with new line at this position
-        /// @param a_sep  when other than '\0' this value is used as the delimiter
-        char* write_date(char* a_buf, size_t a_eos = 8, char a_sep = '\0') const {
-            return write_date(sec(), a_buf, a_eos, a_sep);
+        /// @param a_eos   when this end-of-string position is greater than 0,
+        ///                the buffer is terminated with new line at this position
+        /// @param a_delim when other than '\0' this value is used as the delimiter
+        char* write_date(char* a_buf, size_t a_eos = 8, char a_delim = '\0') const {
+            return write_date(sec(), a_buf, a_eos, a_delim);
         }
 
         static char* write_date(time_t a_sec, char* a_buf, size_t a_eos = 8,
@@ -491,18 +507,19 @@ namespace utxx {
                         break;
                     case TIME_WITH_MSEC: {
                         if (a_sep) *p++ = a_sep;
-                        int msec = a_ns / 1000000;
-                        p = detail::itoar(p, 3, msec);
+                        size_t msec = a_ns / 1000000;
+                        p = detail::itoar(msec, p, 3);
                         break;
                     }
                     case TIME_WITH_USEC: {
                         if (a_sep) *p++ = a_sep;
-                        int usec = a_ns / 1000;
-                        p = detail::itoar(p, 6, usec);
+                        size_t usec = a_ns / 1000;
+                        p = detail::itoar(usec, p, 6);
                         break;
                     }
                     default:
-                        throw logic_error("time_val::write_time: invalid a_type value: ", a_tp);
+                        UTXX_THROW_RUNTIME_ERROR
+                            ("time_val::write_time: invalid a_type value: ", a_tp);
                 }
             }
             *p = '\0';
@@ -596,5 +613,3 @@ namespace utxx {
     };
 
 } // namespace utxx
-
-#endif // _UTXX_TIME_VAL_HPP_
