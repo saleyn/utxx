@@ -18,19 +18,22 @@ distclean:
 bootstrap:
 	@$(MAKE) -f bootstrap.mk --no-print-directory $@ $(MAKEOVERRIDES)
 
-rebootstrap: build/.bootstrap
-	$(shell cat build/.bootstrap) --no-print-directory
-
-info:
-	@$(MAKE) -sf bootstrap.mk $@
+rebootstrap: .build/.bootstrap
+	$(shell cat $<) --no-print-directory
 
 test:
 	CTEST_OUTPUT_ON_FAILURE=TRUE $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@
+
+info:
+	@$(MAKE) -sf bootstrap.mk $@
 
 vars:
 	@cmake -H. -B$(DIR) -LA
 
 build/cache.mk:
+
+.build/.bootstrap:
+	@echo "Rerun 'make bootstrap'!" && false
 
 .DEFAULT:
 	@if [ ! -f build/cache.mk ]; then \
@@ -41,4 +44,4 @@ build/cache.mk:
             -j$(shell nproc) $@;\
 	fi
 
-.PHONY: bootstrap distclean info test doc
+.PHONY: bootstrap rebootstrap distclean info test doc

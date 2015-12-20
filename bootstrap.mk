@@ -78,6 +78,7 @@ info:
 	@echo "VERSION:   $(VERSION)"
 	@echo "OPT_FILE:  $(OPT_FILE)"
 	@echo "BLD_DIR:   $(BLD_DIR)"
+	@echo "DIR:       $(DIR)"
 	@echo "build:     $(BUILD)"
 	@echo "prefix:    $(prefix)"
 	@echo "generator: $(generator)"
@@ -112,12 +113,15 @@ bootstrap: | $(DIR)
 	@echo "Build type.......: $(BUILD)"
 	@echo "Command-line vars: $(variables)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
-	@rm -f build inst
+	@mkdir -p .build
+	@rm -f inst
+	@[ -L build ] && rm -f build || true
 	@echo $(call makecmd) > $(DIR)/.cmake
 	$(call makecmd) 2>&1 | tee $(DIR)/.cmake.bootstrap.log
-	@ln -s $(DIR) build
+	@[ ! -d build ] && ln -s $(DIR) build || true
 	@ln -s $(prefix) inst
-	@echo "make bootstrap $(MAKEOVERRIDES)" > $(DIR)/.bootstrap
+	@echo "make bootstrap $(MAKEOVERRIDES)"     >  $(DIR)/.bootstrap
+	@cp $(DIR)/.bootstrap .build/
 	@echo "PROJECT   := $(PROJECT)"             >  $(DIR)/cache.mk
 	@echo "VERSION   := $(VERSION)"             >> $(DIR)/cache.mk
 	@echo "OPT_FILE  := $(abspath $(OPT_FILE))" >> $(DIR)/cache.mk

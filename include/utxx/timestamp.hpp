@@ -29,8 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_TIMESTAMP_HPP_
-#define _UTXX_TIMESTAMP_HPP_
+#pragma once
 
 #include <utxx/high_res_timer.hpp>
 #include <utxx/time_val.hpp>
@@ -249,8 +248,11 @@ public:
     static time_val from_string(const char* a_datetime, size_t n, bool a_utc = true);
 };
 
+//---------------------------------------------------------------------------
+/// Streaming support for time_val
+//---------------------------------------------------------------------------
 inline std::ostream& operator<< (std::ostream& out, time_val a) {
-    return out << timestamp::to_string(a, TIME_WITH_USEC, false);
+    return out << timestamp::to_string(a, DATE_TIME_WITH_USEC, false);
 }
 
 //---------------------------------------------------------------------------
@@ -288,5 +290,3 @@ private:
 #ifdef DEBUG_TIMESTAMP
 #include <utxx/../../src/timestamp.cpp>
 #endif
-
-#endif // _UTXX_TIMESTAMP_HPP_

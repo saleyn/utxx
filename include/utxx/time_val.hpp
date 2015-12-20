@@ -394,6 +394,12 @@ namespace utxx {
         /// in assignments such as \code time_t a = time_val() \endcode
         explicit operator bool() const { return m_tv; }
 
+        /// NOTE: Streaming support of time_val is provided by timestamp.hpp
+        //friend inline std::ostream& operator<< (std::ostream& out, time_val const& a) {
+        //    char buf[64]; a.write(buf, TIME_WITH_USEC);
+        //    return out << buf;
+        //}
+
         std::string to_string(stamp_type a_tp, char a_dsep = '\0',
                               char a_tsep = ':', char a_ssep = '.') const {
             char buf[64];
@@ -403,10 +409,10 @@ namespace utxx {
 
         char* write(char* a_buf, stamp_type a_tp,
                     char a_dsep = '\0', char a_tsep = ':', char a_ssep = '.') const {
-            char buf[64];
-            auto p = write_date(buf, 0, '\0');
-            return write_time(p, a_tp);
-            return p;
+            auto pair = split();
+            auto p = ((a_tp > NO_TIMESTAMP) && (a_tp < TIME))
+                   ? write_date(pair.first, a_buf, 0, '\0') : a_buf;
+            return write_time(pair, p, a_tp);
         }
 
         /// Write seconds to buffer.
@@ -466,38 +472,39 @@ namespace utxx {
         static char* write_time(long a_sec, long a_ns, char* a_buf,
                                 stamp_type a_tp, char a_delim = ':', char a_sep = '.')
         {
-            unsigned h,m,s;
-            std::tie(h,m,s) = to_hms(a_sec);
-
             char* p = a_buf;
-            int n = h / 10;
-            *p++  = '0' + n; h -= n*10;
-            *p++  = '0' + h; n  = m / 10;
-            if (a_delim) *p++   = a_delim;
-            *p++  = '0' + n; m -= n*10;
-            *p++  = '0' + m; n  = s / 10;
-            if (a_delim) *p++   = a_delim;
-            *p++  = '0' + n; s -= n*10;
-            *p++  = '0' + s;
-            switch (a_tp) {
-                case TIME:
-                    break;
-                case TIME_WITH_MSEC: {
-                    if (a_sep) *p++ = a_sep;
-                    int msec = a_ns / 1000000;
-                    p = detail::itoar(p, 3, msec);
-                    break;
-                }
-                case TIME_WITH_USEC: {
-                    if (a_sep) *p++ = a_sep;
-                    int usec = a_ns / 1000;
-                    p = detail::itoar(p, 6, usec);
-                    break;
-                }
-                default:
-                    throw logic_error("time_val::write_time: invalid a_type value: ", a_tp);
-            }
+            if (likely(a_tp != NO_TIMESTAMP)) {
+                unsigned h,m,s;
+                std::tie(h,m,s) = to_hms(a_sec);
 
+                int n = h / 10;
+                *p++  = '0' + n; h -= n*10;
+                *p++  = '0' + h; n  = m / 10;
+                if (a_delim) *p++   = a_delim;
+                *p++  = '0' + n; m -= n*10;
+                *p++  = '0' + m; n  = s / 10;
+                if (a_delim) *p++   = a_delim;
+                *p++  = '0' + n; s -= n*10;
+                *p++  = '0' + s;
+                switch (a_tp) {
+                    case TIME:
+                        break;
+                    case TIME_WITH_MSEC: {
+                        if (a_sep) *p++ = a_sep;
+                        int msec = a_ns / 1000000;
+                        p = detail::itoar(p, 3, msec);
+                        break;
+                    }
+                    case TIME_WITH_USEC: {
+                        if (a_sep) *p++ = a_sep;
+                        int usec = a_ns / 1000;
+                        p = detail::itoar(p, 6, usec);
+                        break;
+                    }
+                    default:
+                        throw logic_error("time_val::write_time: invalid a_type value: ", a_tp);
+                }
+            }
             *p = '\0';
             return p;
         }

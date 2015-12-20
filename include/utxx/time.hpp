@@ -140,8 +140,9 @@ namespace utxx {
     }
 
     /// Split seconds since epoch to y/m/d
-    inline std::tuple<int, unsigned, unsigned> from_gregorian_time(time_t a_days) noexcept {
-        return from_gregorian_days(a_days / 86400);
+    inline std::tuple<int, unsigned, unsigned>
+    from_gregorian_time(time_t a_secs) noexcept {
+        return from_gregorian_days(int(a_secs / 86400));
     }
 
     template <class To, class Rep, class Period>
