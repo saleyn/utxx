@@ -52,7 +52,12 @@ all:
 
 toolchain   ?= gcc
 build       ?= Debug
+# Convert build to lower case:
 BUILD       := $(shell echo $(build) | tr 'A-Z' 'a-z')
+
+ifeq (,$(findstring $(BUILD),debug release relwithdefinfo minsizerel))
+    $(error Invalid build type: $(build))
+endif
 
 # Function that replaces variables in a given entry in a file 
 # E.g.: $(call substitute,ENTRY,FILENAME)
@@ -107,11 +112,11 @@ bootstrap: | $(DIR)
     else ifeq "$(shell which $(generator) 2>/dev/null)" ""
 		@echo -e "\n\e[1;31mBuild tool $(generator) not found!\e[0m\n" && false
     endif
-	@echo "Options file.....: $(OPT_FILE)"
-	@echo "Build directory..: $(DIR)"
-	@echo "Install directory: $(prefix)"
-	@echo "Build type.......: $(BUILD)"
-	@echo "Command-line vars: $(variables)"
+	@echo -e "Options file.....: $(OPT_FILE)"
+	@echo -e "Build directory..: \e[0;36m$(DIR)\e[0m"
+	@echo -e "Install directory: \e[0;36m$(prefix)\e[0m"
+	@echo -e "Build type.......: \e[1;32m$(BUILD)\e[0m"
+	@echo -e "Command-line vars: $(variables)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
 	@mkdir -p .build
 	@rm -f inst

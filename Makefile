@@ -6,6 +6,11 @@
 # Date: 2014-08-12
 #-------------------------------------------------------------------------------
 
+build         ?= debug
+BUILD_ARG     := $(shell echo $(build) | tr 'A-Z' 'a-z')
+MAKEOVERRIDES := $(if $(build),\
+                    $(filter-out build=%,$(MAKEOVERRIDES)) build=$(BUILD_ARG),\
+                    $(MAKEOVERRIDES))
 -include build/cache.mk
 
 VERBOSE := $(if $(findstring $(verbose),true 1),$(if $(findstring $(generator),ninja),-v,VERBOSE=1))
@@ -19,13 +24,13 @@ bootstrap:
 	@$(MAKE) -f bootstrap.mk --no-print-directory $@ $(MAKEOVERRIDES)
 
 rebootstrap: .build/.bootstrap
-	$(shell cat $<) --no-print-directory
+	$(shell cat $<) --no-print-directory $(MAKEOVERRIDES)
 
 test:
 	CTEST_OUTPUT_ON_FAILURE=TRUE $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@
 
 info:
-	@$(MAKE) -sf bootstrap.mk $@
+	@$(MAKE) -sf bootstrap.mk --no-print-directory $@
 
 vars:
 	@cmake -H. -B$(DIR) -LA
