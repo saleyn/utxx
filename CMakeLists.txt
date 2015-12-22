@@ -68,7 +68,7 @@ add_definitions(
 	-DBOOST_SYSTEM_NO_DEPRECATED
 )
 
-message(STATUS "${ColorBold}Configuring for the ${TOOLCHAIN} toolchain${ColorReset}")
+message(STATUS "${ClrBold}Configuring for the ${TOOLCHAIN} toolchain${ClrReset}")
 
 #-------------------------------------------------------------------------------
 # Policies
@@ -191,13 +191,12 @@ macro(XML_CFG TargetSrcList File)
     # depending on a specific .xml file which "includes" the following file:
     DEPENDS           ${Deps}
     WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-    COMMENT           ">>> ${BoldBlue}Generating: ${FileName} -> ${GenFileName}${DepComment}${ColorReset}"
+    COMMENT           ">>> ${BoldBlue}Generating: ${FileName} -> ${GenFileName}${DepComment}${ClrReset}"
   )
   # TargetSrcList contains the list name and therefore ${TargetSrcList} is
   # the list itself, and ${${TargetSrcList}} is the expanded list
   set(${TargetSrcList} ${${TargetSrcList}} ${GenFileName})
 endmacro(XML_CFG)
-#XML_CFG(TEST_SRCS ${CMAKE_SOURCE_DIR}/test/test_config_validator.xml)
 
 #-------------------------------------------------------------------------------
 # MAKE options
@@ -300,7 +299,7 @@ if(DOXYGEN_FOUND)
   add_custom_target(doc
     ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    COMMENT "${ColorBold}Generating API documentation with Doxygen${ColorReset}"
+    COMMENT "${ClrBold}Generating API documentation with Doxygen${ClrReset}"
     VERBATIM
   )
 endif()

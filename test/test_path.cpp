@@ -132,6 +132,33 @@ BOOST_AUTO_TEST_CASE( test_path_symlink )
 
     BOOST_CHECK(path::file_unlink(p));
     BOOST_CHECK(path::file_unlink(s));
+
+    BOOST_CHECK(path::write_file(p, "test"));
+    BOOST_CHECK(path::write_file(p+"1", "test"));
+
+    // s -> "*test.txt1"
+    BOOST_CHECK(path::file_symlink(p+"1", s));
+    BOOST_CHECK_EQUAL(p+"1", path::file_readlink(s));
+    // s -> "*test.txt"
+    BOOST_CHECK(path::file_symlink(p, s, true));
+    BOOST_CHECK_EQUAL(p, path::file_readlink(s));
+    BOOST_CHECK(path::file_unlink(s));
+    BOOST_CHECK(path::file_unlink(p));
+    // create a conflicting file equal to the name of the link "*test.link"
+    path::file_unlink(s+".tmp");
+    BOOST_CHECK(!path::is_regular(s+".tmp"));
+    BOOST_CHECK(path::write_file(s, "test"));
+    BOOST_CHECK(path::write_file(p, "test"));
+    BOOST_CHECK(!path::is_regular(s+".tmp"));
+    BOOST_CHECK(path::file_symlink(p, s, true));
+    BOOST_CHECK_EQUAL(p, path::file_readlink(s));
+    BOOST_CHECK(path::is_regular(s+".tmp"));
+
+    BOOST_CHECK(path::file_unlink(p));
+    BOOST_CHECK(path::file_unlink(p+"1"));
+    BOOST_CHECK(path::file_unlink(s+".tmp"));
+    BOOST_CHECK(path::file_unlink(s));
+
 }
 
 BOOST_AUTO_TEST_CASE( test_path_filename_with_backup )

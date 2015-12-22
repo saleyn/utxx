@@ -111,9 +111,15 @@ inline long file_size(const std::string& a_filename) { return file_size(a_filena
 long        file_size(int fd);
 
 /// Create a symlink to file
-inline bool file_symlink(const std::string& a_file, const std::string& a_symlink) {
-    return ::symlink(a_file.c_str(), a_symlink.c_str()) == 0;
-}
+/// @param a_file    target file
+/// @param a_symlink link to create
+/// @param a_verify  when true, causes the function to ensure that given
+///                  \a a_symlink points to \a a_file. If the the given
+///                  symlink is actually an existing file, the file is renamed
+///                  to a_symlink+".tmp". If the given symlink exists, and points
+///                  to a file other than \a a_file, the symlink is replaced
+///                  with value pointing to \a a_file.
+bool file_symlink(const std::string& a_file, const std::string& a_symlink, bool a_verify=false);
 
 /// Removes a file
 bool        file_unlink(const char* a_path);

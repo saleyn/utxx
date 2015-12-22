@@ -89,6 +89,37 @@ inline std::string file_readlink(const std::string& a_symlink) {
     return std::string(buf, n < 0 ? 0 : n);
 }
 
+inline bool file_symlink(const std::string& a_file, const std::string& a_link, bool a_verify) {
+
+    if (a_verify) {
+        if (a_link.empty() || !path::file_exists(a_file))
+            return false;
+
+        if (a_link == a_file)
+            return true;
+
+        // Does a file by name a_link exist and it's not a symlink?
+        if (file_exists(a_link)) {
+            if (!is_symlink(a_link)) {
+                auto new_name = a_link + ".tmp";
+                if (file_exists(new_name) && !file_unlink(new_name))
+                    return false;
+                if (!file_rename(a_link, new_name))
+                    return false;
+            } else {
+                // Check if the symlink already points to existing file named a_file
+                auto s = file_readlink(a_link);
+                if (s == a_file)
+                    return true;
+                utxx::path::file_unlink(a_link);
+            }
+        }
+
+    }
+
+    return ::symlink(a_file.c_str(), a_link.c_str()) == 0;
+}
+
 inline long file_size(const char* a_filename) {
     struct stat stat_buf;
     int rc = stat(a_filename, &stat_buf);
