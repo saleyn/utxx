@@ -116,7 +116,7 @@ Longer description (wrap at 72 characters)
 * Make whitespace changes separately
 
 #### Code Formatting ####
-* Wrap at 80 characters
+* Wrap at 80 characters (not counting '\n')
 * Use 4-space indentation
 * Expand tabs with spaces in indentations (for vi use settings: `ts=4:sw=4:et`)
 * Use K&R braces style:
