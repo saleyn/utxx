@@ -35,6 +35,9 @@ info:
 vars:
 	@cmake -H. -B$(DIR) -LA
 
+tree:
+	@tree build -I "*.cmake|CMake*" --matchdirs -F -a $(if $(full),-f)
+
 build/cache.mk:
 
 .build/.bootstrap:
