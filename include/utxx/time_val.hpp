@@ -68,38 +68,50 @@ namespace utxx {
         long nsec;
         abs_time(long s=0, long us=0) : nsec(s*1000000000L + us*1000L) {}
     };
-    /// Indication of use of relative time
+    /// Indication of use of relative time to now
     struct rel_time {
         long nsec;
         rel_time(long s=0, long us=0) : nsec(s*1000000000L + us*1000L) {}
     };
 
     struct msecs {
-        long nsec;
-        explicit msecs(long   ms) : nsec(ms*1000000L)          {}
-        explicit msecs(size_t ms) : nsec(long(ms)*1000000L)    {}
-        explicit msecs(int    ms) : nsec(long(ms)*1000000L)    {}
+        explicit msecs(long   ms) : m_nsec(ms*1000000L)         {}
+        explicit msecs(size_t ms) : m_nsec(long(ms)*1000000L)   {}
+        explicit msecs(int    ms) : m_nsec(long(ms)*1000000L)   {}
+        long     value() const { return m_nsec/1000000L;   }
+        long     nsec()  const { return m_nsec;            }
+    private:
+        long m_nsec;
     };
 
     struct usecs {
-        long nsec;
-        explicit usecs(long   us) : nsec(us*1000L)             {}
-        explicit usecs(size_t us) : nsec(long(us)*1000L)       {}
-        explicit usecs(int    us) : nsec(long(us)*1000L)       {}
+        explicit usecs(long   us) : m_nsec(us*1000L)            {}
+        explicit usecs(size_t us) : m_nsec(long(us)*1000L)      {}
+        explicit usecs(int    us) : m_nsec(long(us)*1000L)      {}
+        long     value() const { return m_nsec/1000L; }
+        long     nsec()  const { return m_nsec;       }
+    private:
+        long m_nsec;
     };
 
     struct nsecs {
-        long value;
-        explicit nsecs(long   ns) : value(ns)                  {}
-        explicit nsecs(size_t ns) : value(long(ns))            {}
+        explicit nsecs(long   ns) : m_nsec(ns)                  {}
+        explicit nsecs(size_t ns) : m_nsec(long(ns))            {}
+        long     value() const { return m_nsec; }
+        long     nsec()  const { return m_nsec; }
+    private:
+        long m_nsec;
     };
 
     struct secs {
-        long nsec;
-        explicit secs(size_t   s) : nsec(long(s) * 1000000000L){}
-        explicit secs(long     s) : nsec(s * 1000000000L)      {}
-        explicit secs(int      s) : nsec(long(s) * 1000000000L){}
-        explicit secs(double   s) : nsec(long(round(s*1e9)))   {}
+        explicit secs(size_t   s) : m_nsec(long(s)*1000000000L) {}
+        explicit secs(long     s) : m_nsec(s * 1000000000L)     {}
+        explicit secs(int      s) : m_nsec(long(s)*1000000000L) {}
+        explicit secs(double   s) : m_nsec(long(s*1e9+0.5))     {}
+        long     value() const { return m_nsec/1000000000L; }
+        long     nsec()  const { return m_nsec;             }
+    private:
+        long m_nsec;
     };
 
     namespace detail {
@@ -127,10 +139,10 @@ namespace utxx {
 
     public:
         time_val() noexcept         : m_tv(0)                  {}
-        time_val(secs   s)          : m_tv(s.nsec)             {}
-        time_val(msecs ms)          : m_tv(ms.nsec)            {}
-        time_val(usecs us)          : m_tv(us.nsec)            {}
-        time_val(nsecs ns)          : m_tv(ns.value)           {}
+        time_val(secs   s)          : m_tv(s.nsec())           {}
+        time_val(msecs ms)          : m_tv(ms.nsec())          {}
+        time_val(usecs us)          : m_tv(us.nsec())          {}
+        time_val(nsecs ns)          : m_tv(ns.nsec())          {}
         time_val(long s, long us)   : m_tv(s*N10e9 + us*1000)  {}
         time_val(time_val tv, long s)          : m_tv(tv.m_tv + s*N10e9)           {}
         time_val(time_val tv, long s, long us) : m_tv(tv.m_tv + s*N10e9 + us*1000) {}
@@ -360,14 +372,14 @@ namespace utxx {
         time_val operator- (time_val tv)     const { return nsecs(m_tv - tv.m_tv);     }
         time_val operator+ (time_val tv)     const { return nsecs(m_tv + tv.m_tv);     }
 
-        time_val operator- (nsecs a)         const { return nsecs(m_tv - a.value);     }
-        time_val operator+ (nsecs a)         const { return nsecs(m_tv + a.value);     }
-        time_val operator- (usecs a)         const { return nsecs(m_tv - a.nsec);      }
-        time_val operator+ (usecs a)         const { return nsecs(m_tv + a.nsec);      }
-        time_val operator- (msecs a)         const { return nsecs(m_tv - a.nsec);      }
-        time_val operator+ (msecs a)         const { return nsecs(m_tv + a.nsec);      }
-        time_val operator- (secs  s)         const { return nsecs(m_tv - s.nsec);      }
-        time_val operator+ (secs  s)         const { return nsecs(m_tv + s.nsec);      }
+        time_val operator- (nsecs a)         const { return nsecs(m_tv - a.nsec());    }
+        time_val operator+ (nsecs a)         const { return nsecs(m_tv + a.nsec());    }
+        time_val operator- (usecs a)         const { return nsecs(m_tv - a.nsec());    }
+        time_val operator+ (usecs a)         const { return nsecs(m_tv + a.nsec());    }
+        time_val operator- (msecs a)         const { return nsecs(m_tv - a.nsec());    }
+        time_val operator+ (msecs a)         const { return nsecs(m_tv + a.nsec());    }
+        time_val operator- (secs  s)         const { return nsecs(m_tv - s.nsec());    }
+        time_val operator+ (secs  s)         const { return nsecs(m_tv + s.nsec());    }
 
         time_val operator- (double interval) const { return operator-(secs(interval)); }
         time_val operator+ (double interval) const { return operator+(secs(interval)); }
@@ -377,15 +389,15 @@ namespace utxx {
 
         void     operator-= (const struct timeval& tv)      { m_tv -= time_val(tv).m_tv;}
         void     operator-= (time_val tv)                   { m_tv -= tv.m_tv;    }
-        void     operator-= (nsecs     v)                   { m_tv -= v.value;    }
-        void     operator-= (usecs     v)                   { m_tv -= v.nsec;     }
-        void     operator-= (msecs     v)                   { m_tv -= v.nsec;     }
-        void     operator-= (secs      v)                   { m_tv -= v.nsec;     }
+        void     operator-= (nsecs     v)                   { m_tv -= v.nsec();   }
+        void     operator-= (usecs     v)                   { m_tv -= v.nsec();   }
+        void     operator-= (msecs     v)                   { m_tv -= v.nsec();   }
+        void     operator-= (secs      v)                   { m_tv -= v.nsec();   }
         void     operator+= (time_val tv)                   { m_tv += tv.m_tv;    }
-        void     operator+= (nsecs     v)                   { m_tv += v.value;    }
-        void     operator+= (usecs     v)                   { m_tv += v.nsec;     }
-        void     operator+= (msecs     v)                   { m_tv += v.nsec;     }
-        void     operator+= (secs      v)                   { m_tv += v.nsec;     }
+        void     operator+= (nsecs     v)                   { m_tv += v.nsec();   }
+        void     operator+= (usecs     v)                   { m_tv += v.nsec();   }
+        void     operator+= (msecs     v)                   { m_tv += v.nsec();   }
+        void     operator+= (secs      v)                   { m_tv += v.nsec();   }
         void     operator+= (double interval)               { add(interval);      }
 
         time_val& operator= (const struct timeval& t)       { m_tv = time_val(t).m_tv; return *this; }
@@ -397,12 +409,32 @@ namespace utxx {
             m_tv = diff.total_nanoseconds();
         }
 
-        bool operator== (time_val tv) const { return m_tv == tv.m_tv; }
-        bool operator!= (time_val tv) const { return m_tv != tv.m_tv; }
-        bool operator>  (time_val tv) const { return m_tv >  tv.m_tv; }
-        bool operator>= (time_val tv) const { return m_tv >= tv.m_tv; }
-        bool operator<  (time_val tv) const { return m_tv <  tv.m_tv; }
-        bool operator<= (time_val tv) const { return m_tv <= tv.m_tv; }
+        bool operator== (time_val tv) const { return m_tv == tv.m_tv;  }
+        bool operator!= (time_val tv) const { return m_tv != tv.m_tv;  }
+        bool operator>  (time_val tv) const { return m_tv >  tv.m_tv;  }
+        bool operator>= (time_val tv) const { return m_tv >= tv.m_tv;  }
+        bool operator<  (time_val tv) const { return m_tv <  tv.m_tv;  }
+        bool operator<= (time_val tv) const { return m_tv <= tv.m_tv;  }
+
+        bool operator<  (nsecs a)     const { return m_tv <  a.nsec(); }
+        bool operator<  (usecs a)     const { return m_tv <  a.nsec(); }
+        bool operator<  (msecs a)     const { return m_tv <  a.nsec(); }
+        bool operator<  (secs  a)     const { return m_tv <  a.nsec(); }
+
+        bool operator<= (nsecs a)     const { return m_tv <= a.nsec(); }
+        bool operator<= (usecs a)     const { return m_tv <= a.nsec(); }
+        bool operator<= (msecs a)     const { return m_tv <= a.nsec(); }
+        bool operator<= (secs  a)     const { return m_tv <= a.nsec(); }
+
+        bool operator>  (nsecs a)     const { return m_tv >  a.nsec(); }
+        bool operator>  (usecs a)     const { return m_tv >  a.nsec(); }
+        bool operator>  (msecs a)     const { return m_tv >  a.nsec(); }
+        bool operator>  (secs  a)     const { return m_tv >  a.nsec(); }
+
+        bool operator>= (nsecs a)     const { return m_tv >= a.nsec(); }
+        bool operator>= (usecs a)     const { return m_tv >= a.nsec(); }
+        bool operator>= (msecs a)     const { return m_tv >= a.nsec(); }
+        bool operator>= (secs  a)     const { return m_tv >= a.nsec(); }
 
         /// Returns true if current time_val has value.
         /// This method is explicit to avoid accidental conversion of time_val type to bool
