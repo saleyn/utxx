@@ -105,7 +105,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                              \
         static const std::string&                                            \
                            to_string(type a){ return ENUM(a).to_string();  } \
-        const char*        c_str()     const { return to_string().c_str(); } \
+        const char*        c_str()    const { return to_string().c_str();  } \
         static const char* c_str(type a)    { return to_string(a).c_str(); } \
                                                                              \
         static ENUM from_string(const char* a, bool a_nocase=false){         \
