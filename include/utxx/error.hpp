@@ -527,6 +527,7 @@ public:
     virtual ~runtime_error() throw() {}
 
     const src_info& src() const { return m_sinfo; }
+    src_info&&      src()       { return std::move(m_sinfo); }
 };
 
 /**

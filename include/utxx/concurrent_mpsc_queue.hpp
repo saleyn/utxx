@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   concurrent_spsc_queue.hpp
+/// \file   concurrent_mpsc_queue.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Producer/consumer queue.
@@ -34,8 +34,7 @@
 
  ***** END LICENSE BLOCK *****
  */
-#ifndef _UTXX_CONCURRENT_MPSC_QUEUE_HPP_
-#define _UTXX_CONCURRENT_MPSC_QUEUE_HPP_
+#pragma once
 
 #include <atomic>
 #include <cassert>
@@ -154,6 +153,13 @@ struct concurrent_mpsc_queue {
         m_allocator.deallocate(a_node, a_node->size());
     }
 
+    /// Clear the queue
+    void clear() {
+        for (node* tmp, *last = pop_all_reverse(); last; last = tmp) {
+            tmp  = last->next();
+            free(last);
+        }
+    }
 private:
     std::atomic<node*> m_head;
     Alloc              m_allocator;
@@ -296,6 +302,13 @@ struct concurrent_mpsc_queue<char, Allocator> {
         m_allocator.deallocate(reinterpret_cast<char*>(a_node), sizeof(node) + a_node->size());
     }
 
+    /// Clear the queue
+    void clear() {
+        for (node* tmp, *last = pop_all_reverse(); last; last = tmp) {
+            tmp  = last->next();
+            free(last);
+        }
+    }
 public:
     std::atomic<node*> m_head;
     Allocator          m_allocator;
@@ -304,5 +317,3 @@ public:
 #endif // __cplusplus > 201103L
 
 } // namespace utxx
-
-#endif //_UTXX_CONCURRENT_MPSC_QUEUE_HPP_
