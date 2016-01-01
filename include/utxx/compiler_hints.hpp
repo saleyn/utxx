@@ -33,9 +33,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_COMPILER_HINTS_HPP_
 #define _UTXX_COMPILER_HINTS_HPP_
 
+#include <boost/version.hpp>
+
 #ifndef NO_HINT_BRANCH_PREDICTION
+#if ((BOOST_VERSION / 100 % 1000) <= 57) 
 #include <boost/lockfree/detail/branch_hints.hpp>
+#else
+#include <boost/config.hpp>
 #endif
+#endif
+
 
 // Branch prediction optimization (see http://lwn.net/Articles/255364/)
 namespace utxx {
@@ -45,8 +52,16 @@ namespace utxx {
 #define UTXX_FILE_SRC_LOCATION __FILE__ ":" UTXX_TOSTRING(__LINE__)
 
 #ifndef NO_HINT_BRANCH_PREDICTION
+
+// https://svn.boost.org/trac/boost/ticket/11722
+#if ((BOOST_VERSION / 100 % 1000) <= 57) 
     inline bool likely(bool expr)   { return boost::lockfree::detail::likely  (expr); }
     inline bool unlikely(bool expr) { return boost::lockfree::detail::unlikely(expr); }
+#else
+    inline bool likely(bool expr)   { return BOOST_LIKELY  (expr); }
+    inline bool unlikely(bool expr) { return BOOST_UNLIKELY(expr); }
+#endif
+
 #else
     inline bool likely(bool expr)   { return expr; }
     inline bool unlikely(bool expr) { return expr; }
