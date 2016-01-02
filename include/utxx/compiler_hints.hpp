@@ -30,12 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_COMPILER_HINTS_HPP_
-#define _UTXX_COMPILER_HINTS_HPP_
-
-#ifndef NO_HINT_BRANCH_PREDICTION
-#include <boost/lockfree/detail/branch_hints.hpp>
-#endif
+#pragma once
 
 // Branch prediction optimization (see http://lwn.net/Articles/255364/)
 namespace utxx {
@@ -45,8 +40,8 @@ namespace utxx {
 #define UTXX_FILE_SRC_LOCATION __FILE__ ":" UTXX_TOSTRING(__LINE__)
 
 #ifndef NO_HINT_BRANCH_PREDICTION
-    inline bool likely(bool expr)   { return boost::lockfree::detail::likely  (expr); }
-    inline bool unlikely(bool expr) { return boost::lockfree::detail::unlikely(expr); }
+    inline bool likely(bool expr)   { return __builtin_expect((expr),1); }
+    inline bool unlikely(bool expr) { return __builtin_expect((expr),0); }
 #else
     inline bool likely(bool expr)   { return expr; }
     inline bool unlikely(bool expr) { return expr; }
@@ -69,6 +64,3 @@ template <typename T>
 constexpr T& inout(T& arg) { return arg; }
 
 } // namespace utxx
-
-#endif // _UTXX_COMPILER_HINTS_HPP_
-
