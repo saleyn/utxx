@@ -29,7 +29,7 @@ The components include:
 * Metaprogramming functions
 * Persistent blob and array
 * Futex signaling
-* PCAP format reader
+* PCAP format reader/writer
 * Throttling components
 * PID file manager
 * Variant / variant tree components
