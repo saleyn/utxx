@@ -212,16 +212,37 @@ namespace detail {
 
         void do_print(char a) { reserve(1); *m_pos++ = a; }
         void do_print(bool a) {
+            static const auto f = [](char* p, bool a) {
+                static const std::pair<const char*, int>
+                s_vals[] = {{"false", 5}, {"true", 4}};
+                auto r = s_vals[a]; memcpy(p, r.first, r.second);
+                return r.second;
+            };
             reserve(5);
-            if (a) { memcpy(m_pos, "true", 4); m_pos += 4; }
-            else   { memcpy(m_pos, "false",5); m_pos += 5; }
+            m_pos += f(m_pos, a);
+        }
+        void do_print(uint64_t a) {
+            reserve(31);
+            itoa(a, out(m_pos));
         }
         void do_print(long a) {
-            reserve(20);
+            reserve(30);
+            itoa(a, out(m_pos));
+        }
+        void do_print(uint32_t a) {
+            reserve(11);
             itoa(a, out(m_pos));
         }
         void do_print(int a) {
             reserve(10);
+            itoa(a, out(m_pos));
+        }
+        void do_print(uint16_t a) {
+            reserve(5);
+            itoa(a, out(m_pos));
+        }
+        void do_print(int16_t a) {
+            reserve(6);
             itoa(a, out(m_pos));
         }
         void do_print(double a)
