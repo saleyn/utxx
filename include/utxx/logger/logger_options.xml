@@ -85,13 +85,6 @@
                     desc="When enabled, no field definition header is written to file at startup"/>
         </option>
 
-        <option name="async-file" required="false"
-                desc="Logger's backend for writing data asynchronously to file">
-            <copy path="../../option[@name = 'file']/*"/>
-            <option name="timeout" val-type="int" default="1000"
-                    desc="Backend's number of idling milliseconds"/>
-        </option>
-
         <option name="scribe" required="false"
                 desc="Logger's backend for writing data to scribed server">
             <option name="address" val-type="string" desc="URI address of scribed server"
