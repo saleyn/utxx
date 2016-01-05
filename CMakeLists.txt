@@ -168,29 +168,39 @@ set(AddCleanFiles)  # Additional clean files
 macro(XML_CFG TargetSrcList File)
   get_filename_component(FileName ${File} NAME)
   get_filename_component(BaseName ${File} NAME_WE) # Name without extension
-  string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/?" "" RelDirName ${CMAKE_CURRENT_SOURCE_DIR})
-  set(GenFileName "${CMAKE_BINARY_DIR}/${RelDirName}/generated/${BaseName}.generated.hpp")
+  get_filename_component(DirName  ${File} DIRECTORY)
+  if (DirName MATCHES "^/")
+    set(SrcFile "${File}")
+  else()
+    if (DirName STREQUAL "")
+      set(DirName "${CMAKE_CURRENT_SOURCE_DIR}")
+    endif()
+    set(SrcFile "${DirName}/${File}")
+  endif()
+  string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/?" "" RelDirName ${DirName})
+  string(REGEX REPLACE "^([^/].+)" "/\\1"          RelDirName ${RelDirName})
+  set(GenFileName "${CMAKE_BINARY_DIR}${RelDirName}/generated/${BaseName}.generated.hpp")
   get_filename_component(GenDirName ${GenFileName} DIRECTORY)
   set(Deps ${ARGN})
   PREFIX(Deps "${CMAKE_CURRENT_SOURCE_DIR}/" "")
-  message(STATUS "  >> ${File} -> ${GenFileName}")
+  message(STATUS "  >> ${SrcFile} -> ${GenFileName}")
   if (Deps STREQUAL "")
     unset(DepComment)
   else()
     set(DepComment "\n    Dependencies: ${Deps}")
   endif()
-  set(GenIncDir ${CMAKE_CURRENT_SOURCE_DIR}:${CMAKE_SOURCE_DIR}/include)
+  set(GenIncDir ${CMAKE_CURRENT_SOURCE_DIR}:${CMAKE_SOURCE_DIR}/include:${CMAKE_BINARY_DIR}/include)
+  file(MAKE_DIRECTORY "${GenDirName}")
   add_custom_command(
     OUTPUT            "${GenFileName}"
-    COMMAND "sh" -c   "mkdir -vp ${GenDirName}"
     COMMAND           "${CMAKE_SOURCE_DIR}/bin/config_validator_codegen.py"
-                      -f "${File}" -o "${GenFileName}" --overwrite
+                      -f "${SrcFile}" -o "${GenFileName}" --overwrite
                       -d ${GenIncDir}
-    MAIN_DEPENDENCY   "${File}"
+    MAIN_DEPENDENCY   "${SrcFile}"
     # The following dependency may be extraneous due to some .hpp file
     # depending on a specific .xml file which "includes" the following file:
     DEPENDS           ${Deps}
-    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    WORKING_DIRECTORY "${CMAKE_BINARY_DIR}"
     COMMENT           ">>> ${BoldBlue}Generating: ${FileName} -> ${GenFileName}${DepComment}${ClrReset}"
   )
   # TargetSrcList contains the list name and therefore ${TargetSrcList} is

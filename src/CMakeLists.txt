@@ -22,6 +22,8 @@ list(APPEND UTXX_SRCS
   verbosity.cpp
 )
 
+XML_CFG(UTXX_SRCS ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME}/logger/logger_options.xml)
+
 add_library(${PROJECT_NAME} SHARED ${UTXX_SRCS})
 target_link_libraries(${PROJECT_NAME} ${UTXX_LIBS})
 if(ZLIB_FOUND)
@@ -46,3 +48,9 @@ install(
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
 )
+
+install(
+  FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/logger/generated/logger_options.generated.hpp
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/logger
+)
+

@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger/logger_impl.hpp>
 #include <utxx/signal_block.hpp>
 #include <utxx/variant_tree_parser.hpp>
+#include <utxx/logger/generated/logger_options.generated.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/xpressive/xpressive.hpp>
 #include <boost/thread/locks.hpp>
