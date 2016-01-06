@@ -82,6 +82,13 @@ $ make install      # Default install path is /usr/local
 After running `make bootstrap` two local links are created `build` and `inst`
 pointing to build and installation directories.
 
+If you need to do a full cleanup of the current build and rerun bootstrap with
+previously chosen options, do:
+```
+$ make distclean
+$ make rebootstrap
+```
+
 ## Commit Notifications ##
 The following news group was set up for commit notifications:
 `github-utxx at googlegroups dot com`
