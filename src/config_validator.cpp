@@ -69,7 +69,7 @@ std::string option::to_string() const {
         s << ",desc=\"" << description << '"';
     if (name_choices.size()) {
         s << ",names=["; bool l_first = true;
-        BOOST_FOREACH(const string_val& v, name_choices) {
+        for (auto& v : name_choices) {
             if (!l_first) s << ";";
             l_first = false;
             s << '"' << v.value() << '"';
@@ -78,7 +78,7 @@ std::string option::to_string() const {
     }
     if (value_choices.size()) {
         s << ",values=["; bool l_first = true;
-        BOOST_FOREACH(const variant_val& v, value_choices) {
+        for (auto& v : value_choices) {
             if (!l_first) s << ";";
             l_first = false;
             s << value(v.value());
@@ -96,7 +96,7 @@ std::string option::to_string() const {
     if (children.size()) {
         bool l_first = true;
         s << ",children=[";
-        BOOST_FOREACH(const option_map::value_type& o, children) {
+        for (auto& o : children) {
             if (!l_first) s << ",";
             l_first = false;
             s << "\n  " << o.second.to_string();
@@ -308,9 +308,9 @@ void validator::validate
     bool single_nested_tree =
         (m_options.size() == 1 && m_options.begin()->second.children.size() > 0);
 
-    BOOST_FOREACH(variant_tree::value_type& vt, a_config) {
+    for (auto& vt : a_config) {
         bool l_match = false;
-        BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+        for (auto& ovt : a_opts) {
             const option& opt = ovt.second;
             bool  check = false;
             if (opt.opt_type == ANONYMOUS) {
@@ -361,7 +361,7 @@ void validator::check_required
     std::cout << "check_required(" << a_root << ", cfg.count=" << a_config.size()
         << ", opts.count=" << a_opts.size() << ')' << std::endl;
     #endif
-    BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+    for (auto& ovt : a_opts) {
         const option& opt = ovt.second;
         if (opt.required && opt.default_value.data().is_null()) {
             #ifdef TEST_CONFIG_VALIDATOR
@@ -377,7 +377,7 @@ void validator::check_required
                         "Check XML spec. Missing required value of anonymous option!");
             } else {
                 bool l_found = false;
-                BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
+                for (auto& vt : a_config)
                     if (vt.first == opt.name) {
                         #ifdef TEST_CONFIG_VALIDATOR
                         std::cout << "    found: "
@@ -425,7 +425,7 @@ void validator::check_required
                 std::cout << "  Checking children of anonymous node "
                     << format_name(a_root, opt) << std::endl;
             #endif
-            BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
+            for (auto& vt : a_config)
                 check_required(
                     format_name(a_root, opt, vt.first, vt.second.data()),
                     vt.second, opt.children);
@@ -441,7 +441,7 @@ void validator::check_required
                           << std::endl;
             #endif
 
-            BOOST_FOREACH(const variant_tree::value_type& vt, a_config)
+            for (auto& vt : a_config)
                 if (vt.first == opt.name) {
                     l_found = true;
                     if (l_has_req) {
@@ -612,7 +612,7 @@ std::ostream& validator::dump
     std::string       l_indent = a_indent + std::string(a_level, ' ');
     const std::string l_nl_15  = l_indent + std::string(15, ' ');
 
-    BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+    for (auto& ovt : a_opts) {
         const option& opt = ovt.second;
         out << l_indent << (a_colorize ? GREEN  : "")
             << opt.name << (a_colorize ? NORMAL : "")
@@ -719,11 +719,11 @@ void validator::check_unique
 ) const throw(variant_tree_error) {
     string_set l_names;
     BOOST_ASSERT(a_opts.size() > 0);
-    BOOST_FOREACH(const variant_tree::value_type& vt, a_config) {
+    for (auto& vt : a_config) {
         if (l_names.find(vt.first) == l_names.end())
             l_names.insert(vt.first);
         else {
-            BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+            for (auto& ovt : a_opts) {
                 const option& o = ovt.second;
                 if (o.name == vt.first && o.unique)
                     throw variant_tree_error(format_name(a_root, o, vt.first,
@@ -740,7 +740,7 @@ bool validator::has_required_child_options
     tree_path& a_req_option_path
 ) const
 {
-    BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts) {
+    for (auto& ovt : a_opts) {
         const option& opt = ovt.second;
         tree_path l_path = a_req_option_path / opt.name;
         if (opt.required) {
