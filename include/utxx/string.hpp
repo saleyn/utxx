@@ -42,6 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sstream>
 #include <array>
 #include <type_traits>
+#include <utxx/types.hpp>
 #include <utxx/print.hpp>
 
 //-----------------------------------------------------------------------------
@@ -116,33 +117,57 @@ namespace utxx {
         return copy(a_dest, N, a_src.data(), M, a_delim);
     }
 
-	/// Join an iterator range to string delimited by \a a_delim
-	/// \code Example: std::string s=join(vec.begin(), vec.end());\endcode
-	template <class T = std::string, class A>
-	T join(const A& a_begin, const A& a_end, const T& a_delim = T(","))
-	{
-		T result;
-		for (auto it = a_begin; it != a_end; ++it) {
-			if (!result.empty())
-				result.append(a_delim);
-			result.append(*it);
-		}
-		return result;
-	}
+    /// Split \a a_str at the specified delimiter.
+    /// Example: \code split<LEFT>("abc, efg", ", ") -> {"abc", "efg"} \endcode
+    template <alignment Side = LEFT>
+    inline std::pair<std::string, std::string> split(std::string const& a_str, std::string const& a_delim = "|") {
+        auto   found =  Side == LEFT ? a_str.find(a_delim) : a_str.rfind(a_delim);
+        return found == std::string::npos
+            ? (Side == LEFT ? std::make_pair(a_str, std::string()) : std::make_pair(std::string(), a_str))
+            : std::make_pair(a_str.substr(0, found), a_str.substr(found+a_delim.size()));
+    }
 
-	/// Join strings from a given collection to string delimited by \a a_delim
-	/// \code Example: std::string s=join(vec);\endcode
-	template <class T = std::string, class Collection>
-	T join(const Collection& a_vec, const T& a_delim = T(","))
-	{
-		T result;
-		for (auto it = a_vec.begin(), end = a_vec.end(); it != end; ++it) {
-			if (!result.empty())
-				result.append(a_delim);
-			result.append(*it);
-		}
-		return result;
-	}
+    namespace { auto def_joiner = [](auto& a) { return a; }; }
+
+    /// Join two strings with a delimiter \a a_delim
+    inline std::string strjoin(const std::string& a, const std::string& b, const std::string& a_delim) {
+        if (a.empty()) return b.empty() ? "" : b;
+        if (b.empty()) return a;
+        std::string s;
+        s.reserve(a.size() + b.size() + a_delim.size() + 1);
+        return s.append(a).append(a_delim).append(b);
+    }
+
+    inline std::string strjoin(const char* a, const char* b, const std::string& a_delim) {
+        if (a[0] == '\0') return b[0] == '\0' ? "" : b;
+        if (b[0] == '\0') return a;
+        std::string s;
+        s.reserve(strlen(a) + strlen(b) + a_delim.size() + 1);
+        return s.append(a).append(a_delim).append(b);
+    }
+
+    /// Join an iterator range to string delimited by \a a_delim
+    /// \code Example: std::string s=join(vec.begin(), vec.end());\endcode
+    template <class A, class ToStrFun = decltype(def_joiner)>
+    std::string join(const A& a_begin, const A& a_end, const std::string& a_delim = ",", const ToStrFun& a_convert = def_joiner)
+    {
+        std::string result;
+        auto it  = a_begin;
+        if  (it != a_end) result.append(a_convert(*it++));
+        for (; it != a_end; ++it) {
+            result.append(a_delim);
+            result.append(a_convert(*it));
+        }
+        return result;
+    }
+
+    /// Join strings from a given collection to string delimited by \a a_delim
+    /// \code Example: std::string s=join(vec);\endcode
+    template <class Collection, class ToStrFun = decltype(def_joiner)>
+    std::string join(const Collection& a_vec, const std::string& a_delim, const ToStrFun& a_convert = def_joiner)
+    {
+        return join(a_vec.begin(), a_vec.end(), a_delim, a_convert);
+    }
 
     /// Convert a string to an integer value
     /// \code

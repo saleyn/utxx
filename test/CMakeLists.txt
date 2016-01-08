@@ -79,6 +79,7 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif()
 
 XML_CFG(TEST_SRCS test_config_validator.xml)
+XML_CFG(TEST_SRCS test_config_validator2.xml)
 
 # This must be AFTER link_directories
 add_executable(test_utxx ${TEST_SRCS})

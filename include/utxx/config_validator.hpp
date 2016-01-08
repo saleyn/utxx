@@ -1,7 +1,7 @@
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /// \file   config_validator.hpp
 /// \author Serge Aleynikov
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /// \brief Configuration verification framework.
 ///
 /// Nearly every
@@ -98,11 +98,11 @@
 ///
 /// An option may have child options in its body encapsulated in the 'options'
 /// tag. There is no limit in the depth of the child hierarchy of options.
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // Copyright (c) 2010 Omnibius, LLC
 // Author:  Serge Aleynikov <saleyn@gmail.com>
 // Created: 2010-06-21
-//----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 /*
 ***** BEGIN LICENSE BLOCK *****
 
@@ -126,9 +126,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_CONFIG_VALIDATOR_HPP_
-#define _UTXX_CONFIG_VALIDATOR_HPP_
+#pragma once
 
 #include <utxx/path.hpp>
 #include <utxx/error.hpp>
@@ -163,6 +161,9 @@ namespace config {
 
     class option;
 
+    //--------------------------------------------------------------------------
+    /// Typed value with description
+    //--------------------------------------------------------------------------
     template <typename T>
     class typed_val {
         T           m_value;
@@ -183,6 +184,9 @@ namespace config {
         const std::string&  desc()  const { return m_desc;  }
     };
 
+    //--------------------------------------------------------------------------
+    /// Set of typed values
+    //--------------------------------------------------------------------------
     template <typename T>
     struct typed_val_set
         : public std::set<typed_val<T>>
@@ -217,6 +221,16 @@ namespace config {
                const std::string&   a_name,
                const variant&       a_value)> custom_validator;
 
+    //--------------------------------------------------------------------------
+    /// Error raised when required option is missing
+    //--------------------------------------------------------------------------
+    class missing_required_option_error : public variant_tree_error {
+        using variant_tree_error::variant_tree_error;
+    };
+
+    //--------------------------------------------------------------------------
+    /// Configuration option metadata
+    //--------------------------------------------------------------------------
     class option {
     public:
         std::string         name;
@@ -236,6 +250,11 @@ namespace config {
         bool                required;
         bool                unique;
         bool                validate;
+
+        /// Optional branch name that will be used to check for missing
+        /// required options
+        std::string         fallback_defaults_branch_path;
+        const option*       fallback_defaults_branch;
 
         /// Optional validator for this node
         mutable const validator* m_validator;
@@ -258,7 +277,8 @@ namespace config {
             const variant&      a_max = variant(),
             const string_set&   a_names   = string_set(),
             const variant_set&  a_values  = variant_set(),
-            const option_map&   a_options = option_map()
+            const option_map&   a_options = option_map(),
+            const std::string&  a_defaults_fallback = std::string()
         )
             : name(a_name), opt_type(a_type)
             , name_choices(a_names)
@@ -271,8 +291,10 @@ namespace config {
             , required(!a_required ? false : a_def.type() == variant::TYPE_NULL)
             , unique(a_unique)
             , validate(a_validate)
-            , m_validator(NULL)
-            , m_custom_validator(NULL)
+            , fallback_defaults_branch_path(a_defaults_fallback)
+            , fallback_defaults_branch(nullptr)
+            , m_validator(nullptr)
+            , m_custom_validator(nullptr)
         {}
 
         bool operator== (const option& a_rhs) const { return name == a_rhs.name; }
@@ -287,7 +309,35 @@ namespace config {
         variant default_subst_value() const;
     };
 
+    //--------------------------------------------------------------------------
+    /// Configuration validator
+    //--------------------------------------------------------------------------
     class validator {
+        struct config_level {
+            config_level(const tree_path&  a_path, const variant_tree_base& a_cfg,
+                         const option_map& a_opts)
+                : m_path(a_path), m_config(a_cfg), m_options(a_opts)
+            {}
+
+            tree_path const&          path()    const { return m_path;    }
+            variant_tree_base const&  cfg()     const { return m_config;  }
+            option_map const&         options() const { return m_options; }
+        private:
+            tree_path                 m_path;
+            const variant_tree_base&  m_config;
+            const option_map&         m_options;
+        };
+
+        struct config_level_list : public std::list<config_level> {
+            config_level_list&
+            push(const tree_path&  a_root, const variant_tree_base& a_config,
+                 const option_map& a_opts) {
+                this->emplace_back(a_root, a_config, a_opts);
+                return *this;
+            }
+            void pop() { if (!this->empty()) this->pop_back(); }
+        };
+
         void check_option(
             const tree_path&                        a_root,
             typename variant_tree_base::value_type& a_vt,
@@ -299,8 +349,8 @@ namespace config {
         void check_unique(const tree_path& a_root, const variant_tree_base& a_config,
             const option_map& a_opts) const throw(variant_tree_error);
 
-        void check_required(const tree_path& a_root, const variant_tree_base& a_config,
-            const option_map& a_opts) const throw (variant_tree_error);
+        void check_required(config_level_list& a_stack) const
+            throw (missing_required_option_error, variant_tree_error);
 
         static option_type_t to_option_type(variant::value_type a_type);
 
@@ -312,7 +362,8 @@ namespace config {
             tree_path& a_req_option_path) const;
 
         static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
-            int a_level, const option_map& a_opts, bool a_colorize = true);
+            int a_level, const option_map& a_opts, bool a_colorize = true,
+            bool a_braces = false);
 
         static inline bool all_anonymous(const option_map& a_opts) {
             BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts)
@@ -352,6 +403,12 @@ namespace config {
         validator() : m_config(nullptr) {}
         virtual ~validator() {}
 
+        void preprocess();
+    private:
+        bool m_preprocessed = false;
+
+        using stack_t = std::list<std::pair<std::string, option_map*>>;
+        void internal_traverse(stack_t& a_stack, option_map& a_scope, std::string const& a_def_branch);
     public:
 
         /// Derived classes must implement this method
@@ -371,7 +428,8 @@ namespace config {
         std::string usage
         (
             const std::string&  a_indent   = std::string(),
-            bool                a_colorize = true
+            bool                a_colorize = true,
+            bool                a_braces   = false
         ) const;
 
         /// @return default variant for a given option's path.
@@ -428,6 +486,3 @@ namespace config {
 
 } // namespace config
 } // namespace utxx
-
-#endif // _UTXX_CONFIG_VALIDATOR_HPP_
-

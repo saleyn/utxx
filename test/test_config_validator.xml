@@ -6,32 +6,32 @@
 -->
 
 <config namespace="test" name="cfg_validator" root="test">
-    <option name="address" val_type="string" desc="Sample string entry"
+    <option name="address" type="string" desc="Sample string entry"
         default="123.124.125.012"/>
-    <option name="enabled" val_type="bool" desc="Sample bool entry"
+    <option name="enabled" type="bool" desc="Sample bool entry"
         default="true"/>
-    <option name="duration" val_type="int" desc="Sample required int entry"
+    <option name="duration" type="int" desc="Sample required int entry"
         min="10" max="60"/>
-    <option name="cost" val_type="float" desc="Sample float entry"
+    <option name="cost" type="float" desc="Sample float entry"
         default="1.5" min="0.0"/>
-    <option name="country" val_type="string"
+    <option name="country" type="string"
         desc="Sample choice required entry" unique="false">
         <value val="US" desc="USA"/>   <!-- restricts option's values -->
         <value val="CA" desc="Canada"/>
         <value val="MX"/>
-        <option name="connection" type="anonymous" val_type="string"
+        <option name="connection" type="anonymous" val-type="string"
             desc="Server connection" default="">
             <name val="ARCA"/>
             <name val="NSDQ"/>
-            <option name="address" val_type="string" desc="Server address"/>
+            <option name="address" type="string" desc="Server address"/>
         </option>
     </option>
     <option name="section" desc="First line\n
                                  Second line">
-        <option name="location" val_type="int"/>
+        <option name="location" type="int"/>
     </option>
     <option name="section2" required="false">
-        <option name="abc" val_type="string" default="x"/>
+        <option name="abc" type="string" default="x"/>
     </option>
-    <option name="tmp_str" val_type="string" default="$TMP"/>
+    <option name="tmp_str" type="string" default="$TMP"/>
 </config>

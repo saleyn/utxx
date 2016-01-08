@@ -47,13 +47,56 @@ BOOST_AUTO_TEST_CASE( test_string_conversion )
         BOOST_CHECK_EQUAL("010.1230", s.str());
     }
     {
+        auto pair = split("", ",");
+        BOOST_CHECK_EQUAL("", pair.first);
+        BOOST_CHECK_EQUAL("", pair.second);
+
+        pair = split("abc,efg", ",");
+        BOOST_CHECK_EQUAL("abc", pair.first);
+        BOOST_CHECK_EQUAL("efg", pair.second);
+
+        pair = split("abc||efg", "||");
+        BOOST_CHECK_EQUAL("abc", pair.first);
+        BOOST_CHECK_EQUAL("efg", pair.second);
+
+        pair = split("abc|efg|xyz", "|");
+        BOOST_CHECK_EQUAL("abc",     pair.first);
+        BOOST_CHECK_EQUAL("efg|xyz", pair.second);
+
+        pair = split("abc", ",");
+        BOOST_CHECK_EQUAL("abc", pair.first);
+        BOOST_CHECK_EQUAL("",    pair.second);
+
+        pair = split<RIGHT>("", ",");
+        BOOST_CHECK_EQUAL("", pair.first);
+        BOOST_CHECK_EQUAL("", pair.second);
+
+        pair = split<RIGHT>("abc,efg,xyz", ",");
+        BOOST_CHECK_EQUAL("abc,efg", pair.first);
+        BOOST_CHECK_EQUAL("xyz",     pair.second);
+
+        pair = split<RIGHT>("abc||efg", "||");
+        BOOST_CHECK_EQUAL("abc", pair.first);
+        BOOST_CHECK_EQUAL("efg", pair.second);
+
+        pair = split<RIGHT>("abc", "||");
+        BOOST_CHECK_EQUAL("",    pair.first);
+        BOOST_CHECK_EQUAL("abc", pair.second);
+    }
+    {
         std::vector<std::string> v{"a","b","c"};
-        auto s1 = join(v);
+        auto s1 = join(v, ",");
         BOOST_CHECK_EQUAL("a,b,c", s1);
         auto s2 = join(v.begin(), v.end());
         BOOST_CHECK_EQUAL("a,b,c", s2);
         auto s3 = join(v.begin(), v.end(), std::string(":"));
         BOOST_CHECK_EQUAL("a:b:c", s3);
+
+        BOOST_CHECK_EQUAL("",    strjoin("",  "", "/"));
+        BOOST_CHECK_EQUAL("a",   strjoin("a", "", "/"));
+        BOOST_CHECK_EQUAL("b",   strjoin("",  "b", "/"));
+        BOOST_CHECK_EQUAL("a/b", strjoin("a", "b", "/"));
+        BOOST_CHECK_EQUAL("a//b",strjoin("a", "b", "//"));
     }
 }
 

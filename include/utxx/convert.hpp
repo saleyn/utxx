@@ -30,9 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_ATOI_HPP_
-#define _UTXX_ATOI_HPP_
+#pragma once
 
 #include <limits>
 #include <string.h>
@@ -44,12 +42,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdexcept>
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
+#include <utxx/types.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <stdint.h>
 
 namespace utxx {
-
-enum alignment { LEFT, RIGHT };
 
 namespace detail {
     static inline const char int_to_char(int n) {
@@ -1102,5 +1099,3 @@ inline std::string itoa_hex(T a) {
 }
 
 } // namespace utxx
-
-#endif // _UTXX_ATOI_HPP_

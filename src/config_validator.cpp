@@ -37,8 +37,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/classification.hpp>
 #include <regex>
 #include <iomanip>
+
+using namespace std;
 
 namespace utxx {
 namespace config {
@@ -283,6 +287,128 @@ void validator::validate
              a_custom_validator);
 }
 
+void validator::internal_traverse(stack_t& stack, option_map& a_scope, std::string const& a_def_branch)
+{
+    auto thrower = [&, this](std::string const& a_opt, std::string const& a_path, int n) {
+        auto  joiner = [](auto& pair){ return pair.first; };
+        auto  path   = join(stack, string("/"), joiner) + a_opt;
+        throw runtime_error("Config option '", path,
+                            "' has invalid 'defaults' fallback branch (ref",
+                            n, "): ", a_path);
+    };
+
+    auto get_def_branch = [&, this](std::string const& a_path, const option_map& a_scope) {
+        const option* res = nullptr;
+        if (a_path.empty()) return res;
+
+        vector<string> parts;
+        boost::split(parts, a_path, boost::is_any_of("/"), boost::token_compress_on);
+
+        auto* map = &a_scope;
+
+        for (auto pit = parts.begin(); pit != parts.end(); ++pit) {
+            auto cit  = map->find(*pit);
+            if  (cit == map->end())
+                throw runtime_error("not_found");
+            res = &cit->second;
+            map = &res->children;
+        }
+
+        return res;
+    };
+
+    for (auto& vt : a_scope) {
+        auto& opt = vt.second;
+        opt.fallback_defaults_branch = nullptr;
+
+        if (!opt.fallback_defaults_branch_path.empty() && !opt.fallback_defaults_branch) {
+            auto it = stack.end();
+            auto s  = opt.fallback_defaults_branch_path;
+            while (s.substr(0, 3) == "../") {
+                s.erase(0, 3);
+                if (it == stack.begin())
+                    thrower(vt.first, opt.fallback_defaults_branch_path, 1);
+                --it;
+            }
+
+            if (s.empty()) {
+                if (opt.fallback_defaults_branch_path.empty())
+                    thrower(vt.first, opt.fallback_defaults_branch_path, 2);
+                s = opt.name;
+            }
+
+            bool stack_pop = false;
+
+            if (it == stack.end()) {
+                auto pair = split(s, "/");
+                auto sit  = a_scope.find(pair.first);
+                if  (sit == a_scope.end())
+                    thrower(vt.first, opt.fallback_defaults_branch_path, 3);
+                stack.emplace_back(make_pair(pair.first, &a_scope));
+                stack_pop = true;
+                it = stack.end(); --it;
+                if (pair.second.empty())
+                    s = opt.children.empty() ? strjoin(pair.first, opt.name, "/") : pair.first;
+                else
+                    s = pair.second;
+            }
+
+            // If the path ends with '/', it is a branch name => append opt.name
+            // Otherwise, the 'defaults' branch path name is the one to be
+            // searched for this option:
+            auto pair = split<RIGHT>(s, "/");
+            if (pair.second.empty()) {
+                if (!s.empty() && s.back() != '/') s += "/";
+                s += opt.name;
+            }
+
+            try {
+                opt.fallback_defaults_branch = get_def_branch(s, *it->second);
+            } catch (...) {
+                thrower(vt.first, opt.fallback_defaults_branch_path, 4);
+            }
+
+            string     root_path;
+            vector<string> paths;
+            if  (it   != stack.end()) ++it;
+            for (; it != stack.end(); ++it) paths.push_back(it->first);
+            paths.push_back(s);
+            root_path = join(paths, "/");
+            opt.fallback_defaults_branch_path = root_path;
+
+            if (stack_pop)
+                stack.pop_back();
+        }
+
+        auto def_branch = !opt.fallback_defaults_branch_path.empty()
+                        ? opt.fallback_defaults_branch_path
+                        : a_def_branch.empty()
+                        ? ""
+                        : strjoin(a_def_branch, opt.name, "/");
+
+        std::replace(def_branch.begin(), def_branch.end(), '/', '.');
+
+        if (opt.children.empty()) {
+            opt.fallback_defaults_branch_path = def_branch;
+        } else {
+            stack.emplace_back(make_pair(vt.first, &a_scope));
+            internal_traverse(stack, opt.children, def_branch);
+            stack.pop_back();
+        }
+    }
+}
+
+void validator::preprocess()
+{
+    if (m_preprocessed) return;
+
+    list<std::pair<string, option_map*>> stack;
+
+    internal_traverse(stack, m_options, "");
+
+    //dump(std::cerr, "  ", 2, m_options, true, true);
+}
+
 void validator::validate
 (
     const tree_path& a_root, variant_tree_base& a_config,
@@ -292,7 +418,11 @@ void validator::validate
     const throw (variant_tree_error)
 {
     check_unique(a_root, a_config, a_opts);
-    check_required(a_root, a_config, a_opts);
+
+    config_level_list stack;
+    stack.push(a_root, a_config, a_opts);
+
+    check_required(stack);
 
     // If the options tree is arranged such that all options are children
     // of a single branch, then don't validate non-matching named options
@@ -350,38 +480,37 @@ void validator::validate
     }
 }
 
-void validator::check_required
-(
-    const tree_path& a_root,
-    const variant_tree_base& a_config, const option_map& a_opts
-)
-    const throw (variant_tree_error)
+void validator::check_required(config_level_list& a_stack)
+    const throw (missing_required_option_error, variant_tree_error)
 {
+    const tree_path&         root = a_stack.back().path();
+    const variant_tree_base& cfg  = a_stack.back().cfg();
+
     #ifdef TEST_CONFIG_VALIDATOR
-    std::cout << "check_required(" << a_root << ", cfg.count=" << a_config.size()
-        << ", opts.count=" << a_opts.size() << ')' << std::endl;
+    std::cout << "check_required(" << root << ", cfg.count=" << cfg.size()
+        << ", opts.count=" << a_stack.back().options().size() << ')' << std::endl;
     #endif
-    for (auto& ovt : a_opts) {
+    for (auto& ovt : a_stack.back().options()) {
         const option& opt = ovt.second;
         if (opt.required && opt.default_value.data().is_null()) {
             #ifdef TEST_CONFIG_VALIDATOR
-            std::cout << "  checking_option(" << format_name(a_root, opt) << ")"
+            std::cout << "  checking_option(" << format_name(root, opt) << ")"
                 << (opt.opt_type == ANONYMOUS ? " [anonymous]" : "")
                 << (opt.unique ? " [unique]" : "")
                 << " [required, no default]"
                 << std::endl;
             #endif
             if (opt.opt_type == ANONYMOUS) {
-                if (a_config.empty())
-                    throw variant_tree_error(format_name(a_root, opt),
+                if (cfg.empty())
+                    throw missing_required_option_error(format_name(root, opt),
                         "Check XML spec. Missing required value of anonymous option!");
             } else {
                 bool l_found = false;
-                for (auto& vt : a_config)
+                for (auto& vt : cfg)
                     if (vt.first == opt.name) {
                         #ifdef TEST_CONFIG_VALIDATOR
                         std::cout << "    found: "
-                            << format_name(a_root, opt, vt.first, vt.second.data())
+                            << format_name(root, opt, vt.first, vt.second.data())
                             << ", value=" << vt.second.data().to_string()
                             << ", type=" << type_to_string(opt.opt_type)
                             << std::endl;
@@ -393,24 +522,29 @@ void validator::check_required
                         }
 
                         if (vt.second.data().is_null())
-                            throw variant_tree_error(format_name(a_root, opt,
-                                    vt.first, vt.second.data()),
-                                "Missing value of the required option "
-                                "and no default provided!");
+                            throw missing_required_option_error
+                                (format_name(root, opt, vt.first, vt.second.data()),
+                                 "Missing value of the required option "
+                                 "and no default provided!");
                         l_found = true;
                         if (opt.unique)
                             break;
                     }
 
-                if (!l_found && (opt.opt_type != BRANCH || opt.children.empty()))
-                    throw variant_tree_error(format_name(a_root, opt),
-                        "Missing required ", (opt.opt_type == BRANCH ? "branch" : "option"),
-                        " with no default!");
+                if (!l_found && (opt.opt_type != BRANCH || opt.children.empty())) {
+                    if (!opt.fallback_defaults_branch_path.empty())
+                        if (a_stack.front().cfg().get_child_optional(opt.fallback_defaults_branch_path))
+                            l_found = true;
+                    if (!l_found)
+                        throw missing_required_option_error(format_name(root, opt),
+                            "Missing required ", (opt.opt_type == BRANCH ? "branch" : "option"),
+                            " with no default!");
+                }
             }
         }
         #ifdef TEST_CONFIG_VALIDATOR
         else {
-            std::cout << "  option(" << format_name(a_root, opt)
+            std::cout << "  option(" << format_name(root, opt)
                 << ") is " << (opt.required ? "required" : "not required")
                 << " and " << (opt.default_value.data().is_null()
                     ? "no default"
@@ -421,14 +555,16 @@ void validator::check_required
 
         if (opt.opt_type == ANONYMOUS) {
             #ifdef TEST_CONFIG_VALIDATOR
-            if (a_config.size())
+            if (cfg.size())
                 std::cout << "  Checking children of anonymous node "
-                    << format_name(a_root, opt) << std::endl;
+                    << format_name(root, opt) << std::endl;
             #endif
-            for (auto& vt : a_config)
-                check_required(
-                    format_name(a_root, opt, vt.first, vt.second.data()),
-                    vt.second, opt.children);
+            for (auto& vt : cfg) {
+                auto path = format_name(root, opt, vt.first, vt.second.data());
+                a_stack.push(path, vt.second, opt.children);
+                check_required(a_stack);
+                a_stack.pop();
+            }
         } else {
             tree_path l_req_name;
             bool l_has_req = has_required_child_options(opt.children, l_req_name);
@@ -436,34 +572,63 @@ void validator::check_required
 
             #ifdef TEST_CONFIG_VALIDATOR
             if (opt.children.size())
-                std::cout << "  Checking children of " << format_name(a_root, opt)
+                std::cout << "  Checking children of " << format_name(root, opt)
                           << " (hasreq=" << (l_has_req ? l_req_name.dump() : "") << ")"
                           << std::endl;
             #endif
 
-            for (auto& vt : a_config)
+            for (auto& vt : cfg)
                 if (vt.first == opt.name) {
                     l_found = true;
                     if (l_has_req) {
                         if (!vt.second.size())
-                            throw variant_tree_error(format_name(a_root, opt,
-                                    vt.first, vt.second.data()),
-                                    "Option is missing required child option: ",
-                                    l_req_name.dump());
-                        check_required(
-                            format_name(a_root, opt, vt.first, vt.second.data()),
-                            vt.second, opt.children);
+                            throw missing_required_option_error
+                                (format_name(root, opt, vt.first, vt.second.data()),
+                                 "Option is missing required child option: ",
+                                 l_req_name.dump());
+                        auto path = format_name(root, opt, vt.first, vt.second.data());
+                        try {
+                            a_stack.push(path, vt.second, opt.children);
+                            check_required(a_stack);
+                            a_stack.pop();
+                        } catch (missing_required_option_error const& e) {
+                            a_stack.pop();
+                            // If this branch option is not required, and the
+                            // exception is due to missing child options, we
+                            // can ignore it
+                            if (!opt.required && opt.opt_type == BRANCH)
+                                continue;
+                            throw;
+                        }
                     }
                     if (!opt.children.size() && vt.second.size() && opt.validate)
-                        throw variant_tree_error(format_name(a_root, opt, vt.first,
-                                vt.second.data()),
-                            "Option is not allowed to have child nodes!");
+                        throw missing_required_option_error
+                            (format_name(root, opt, vt.first, vt.second.data()),
+                             "Option is not allowed to have child nodes!");
                 }
 
-            if (!l_found && l_has_req && opt.validate)
-                throw variant_tree_error(format_name(a_root, opt),
-                                         "Missing a required child option: ",
-                                         l_req_name.dump());
+            if (!l_found && l_has_req && opt.validate) {
+                if (!opt.required && !opt.children.empty()) {
+                    // Check if all children have values in default fallback branches
+                    bool ok = true;
+                    for (auto& vt : opt.children)
+                        if (vt.second.required && !vt.second.fallback_defaults_branch_path.empty()) {
+                            auto s = vt.second.fallback_defaults_branch_path;
+                            auto c = a_stack.front().cfg().get_child_optional(s);
+                            if (!c) {
+                                ok = false;
+                                break;
+                            }
+                        }
+                    if (ok)
+                        l_found = true;
+                }
+
+                if (!l_found)
+                    throw missing_required_option_error
+                        (format_name(root, opt), "Missing a required child option: ",
+                        l_req_name.dump());
+            }
         }
     }
 }
@@ -593,16 +758,17 @@ option_type_t validator::to_option_type(variant::value_type a_type) {
     }
 }
 
-std::string validator::usage(const std::string& a_indent, bool a_colorize) const {
+std::string validator::
+usage(const std::string& a_indent, bool a_colorize, bool a_braces) const {
     std::stringstream s;
-    dump(s, a_indent, 0, m_options, a_colorize);
+    dump(s, a_indent, 0, m_options, a_colorize, a_braces);
     return s.str();
 }
 
 std::ostream& validator::dump
 (
     std::ostream& out, const std::string& a_indent,
-    int a_level, const option_map& a_opts, bool a_colorize
+    int a_level, const option_map& a_opts, bool a_colorize, bool a_braces
 ) {
     static const char GREEN[]  = "\E[1;32;40m";
     static const char YELLOW[] = "\E[1;33;40m";
@@ -619,7 +785,7 @@ std::ostream& validator::dump
             << (opt.opt_type == ANONYMOUS ? " (anonymous): " : ": ")
             << (a_colorize ? YELLOW : "")
             << type_to_string(opt.value_type) << (a_colorize ? NORMAL : "")
-            << std::endl;
+            << (a_braces ? " {" : "") << std::endl;
         if (!opt.description.empty()) {
             auto desc = std::regex_replace(opt.description, eol_re, "\n"+l_nl_15,
                                            std::regex_constants::match_any);
@@ -705,8 +871,12 @@ std::ostream& validator::dump
                 first = false;
             }
         }
+        if (!opt.fallback_defaults_branch_path.empty())
+            out << l_indent << " Fallback Def: " << opt.fallback_defaults_branch_path << endl;
         if (opt.children.size())
-            dump(out, l_indent, a_level+2, opt.children, a_colorize);
+            dump(out, l_indent, a_level+2, opt.children, a_colorize, a_braces);
+        if (a_braces)
+            out << l_indent << "}" << endl;
     }
     return out;
 }

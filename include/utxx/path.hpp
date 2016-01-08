@@ -163,7 +163,7 @@ inline bool write_file(const std::string& a_file, std::string&& a_data, bool a_a
 
 /// Split \a a_path to directory and filename
 inline std::pair<std::string, std::string> split(std::string const& a_path) {
-    auto found = a_path.find_last_of(slash());
+    auto found = a_path.rfind(slash());
     return found == std::string::npos
          ? std::make_pair("", a_path)
          : std::make_pair(a_path.substr(0, found), a_path.substr(found+1));
