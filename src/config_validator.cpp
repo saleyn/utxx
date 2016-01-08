@@ -388,9 +388,9 @@ void validator::internal_traverse(stack_t& stack, option_map& a_scope, std::stri
 
         std::replace(def_branch.begin(), def_branch.end(), '/', '.');
 
-        if (opt.children.empty()) {
-            opt.fallback_defaults_branch_path = def_branch;
-        } else {
+        opt.fallback_defaults_branch_path = def_branch;
+
+        if (!opt.children.empty()) {
             stack.emplace_back(make_pair(vt.first, &a_scope));
             internal_traverse(stack, opt.children, def_branch);
             stack.pop_back();
