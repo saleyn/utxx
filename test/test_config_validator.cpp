@@ -89,7 +89,10 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_config_validator2 )
 {
     variant_tree l_config;
-    std::stringstream l_stream; l_stream << "def { key = \"yahoo\" }\n";
+    std::stringstream l_stream;
+    l_stream
+        << "def  { key  = \"yahoo\" }\n"
+        << "grp2 { addr = \"abc\"   }\n";
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);

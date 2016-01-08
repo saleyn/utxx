@@ -212,7 +212,7 @@ namespace config {
 
     const char* type_to_string(option_type_t a_type);
 
-    class validator;
+    struct validator;
 
     /// Performs custom validation of unrecognized options
     /// @return true if given option is valid.
@@ -233,35 +233,41 @@ namespace config {
     //--------------------------------------------------------------------------
     class option {
     public:
-        std::string         name;
-        option_type_t       opt_type;   // STRING | ANONYMOUS
-        string_set          name_choices;
-        variant_set         value_choices;
+        std::string                 name;
+        option_type_t               opt_type;   // STRING | ANONYMOUS
+        string_set                  name_choices;
+        variant_set                 value_choices;
 
-        option_type_t       value_type;
+        option_type_t               value_type;
         // NB: Default value is a tree because variant_tree.get_child()
         // may need to return a default child tree node as a const expression
-        variant_tree_base   default_value;
-        variant             min_value;
-        variant             max_value;
+        variant_tree_base           default_value;
+        variant                     min_value;
+        variant                     max_value;
 
-        std::string         description;
-        option_map          children;
-        bool                required;
-        bool                unique;
-        bool                validate;
+        std::string                 description;
+        option_map                  children;
+        bool                        required;
+        bool                        unique;
+        bool                        validate;
+
+        /// A 'default' branch may have required=false applied recursively to all children
+        bool                        recursive;
 
         /// Optional branch name that will be used to check for missing
         /// required options
-        std::string         fallback_defaults_branch_path;
-        const option*       fallback_defaults_branch;
+        mutable std::string         fallback_defaults_branch_path;
+        mutable const option*       fallback_defaults_branch;
 
         /// Optional validator for this node
-        mutable const validator* m_validator;
+        mutable const validator*    m_validator;
         /// Optional custom validator for this node
-        mutable custom_validator m_custom_validator;
+        mutable custom_validator    m_custom_validator;
 
-        option() : opt_type(UNDEF), value_type(UNDEF), required(true), unique(true) {}
+        option()
+            : opt_type(UNDEF), value_type(UNDEF), required(true), unique(true)
+            , recursive(false)
+        {}
 
         option
         (
@@ -278,7 +284,8 @@ namespace config {
             const string_set&   a_names   = string_set(),
             const variant_set&  a_values  = variant_set(),
             const option_map&   a_options = option_map(),
-            const std::string&  a_defaults_fallback = std::string()
+            const std::string&  a_defaults_fallback = std::string(),
+            bool                a_recursive = false
         )
             : name(a_name), opt_type(a_type)
             , name_choices(a_names)
@@ -291,6 +298,7 @@ namespace config {
             , required(!a_required ? false : a_def.type() == variant::TYPE_NULL)
             , unique(a_unique)
             , validate(a_validate)
+            , recursive(a_recursive)
             , fallback_defaults_branch_path(a_defaults_fallback)
             , fallback_defaults_branch(nullptr)
             , m_validator(nullptr)
@@ -312,105 +320,7 @@ namespace config {
     //--------------------------------------------------------------------------
     /// Configuration validator
     //--------------------------------------------------------------------------
-    class validator {
-        struct config_level {
-            config_level(const tree_path&  a_path, const variant_tree_base& a_cfg,
-                         const option_map& a_opts)
-                : m_path(a_path), m_config(a_cfg), m_options(a_opts)
-            {}
-
-            tree_path const&          path()    const { return m_path;    }
-            variant_tree_base const&  cfg()     const { return m_config;  }
-            option_map const&         options() const { return m_options; }
-        private:
-            tree_path                 m_path;
-            const variant_tree_base&  m_config;
-            const option_map&         m_options;
-        };
-
-        struct config_level_list : public std::list<config_level> {
-            config_level_list&
-            push(const tree_path&  a_root, const variant_tree_base& a_config,
-                 const option_map& a_opts) {
-                this->emplace_back(a_root, a_config, a_opts);
-                return *this;
-            }
-            void pop() { if (!this->empty()) this->pop_back(); }
-        };
-
-        void check_option(
-            const tree_path&                        a_root,
-            typename variant_tree_base::value_type& a_vt,
-            const option&                           a_opt,
-            bool                                    a_fill_defaults,
-            const custom_validator&                 a_custom_validator
-        ) const throw(std::invalid_argument, variant_tree_error);
-
-        void check_unique(const tree_path& a_root, const variant_tree_base& a_config,
-            const option_map& a_opts) const throw(variant_tree_error);
-
-        void check_required(config_level_list& a_stack) const
-            throw (missing_required_option_error, variant_tree_error);
-
-        static option_type_t to_option_type(variant::value_type a_type);
-
-        tree_path format_name(const tree_path& a_root, const option& a_opt,
-            const std::string& a_cfg_opt   = std::string(),
-            const variant&     a_cfg_value = variant()) const;
-
-        bool has_required_child_options(const option_map& a_opts,
-            tree_path& a_req_option_path) const;
-
-        static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
-            int a_level, const option_map& a_opts, bool a_colorize = true,
-            bool a_braces = false);
-
-        static inline bool all_anonymous(const option_map& a_opts) {
-            BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts)
-                if (ovt.second.opt_type != ANONYMOUS)
-                    return false;
-            return true;
-        }
-
-        tree_path strip_root(const tree_path& a_root_path,
-                             const tree_path& a_root = tree_path()) const
-            throw(variant_tree_error);
-
-        static const option* find(tree_path& a_suffix, const option_map& a_options)
-            throw ();
-
-    protected:
-        mutable tree_path                m_root;   // Path from configuration root
-        mutable const variant_tree_base* m_config; // If set, the derived class can use typed
-                                                   // accessor methods as syntactic sugar to
-                                                   // access named option values
-        option_map                       m_options;
-
-        void validate(const tree_path& a_root, variant_tree_base& a_config,
-            const option_map& a_opts, bool fill_defaults,
-            const custom_validator& a_custom_validator
-        ) const throw(variant_tree_error);
-
-        void validate(variant_tree& a_config,
-            const option_map& a_opts, bool fill_defaults,
-            const custom_validator& a_custom_validator
-        ) const throw(variant_tree_error);
-
-        static void add_option(option_map& a, const option& a_opt) {
-            a.insert(std::make_pair(a_opt.name, a_opt));
-        }
-
-        validator() : m_config(nullptr) {}
-        virtual ~validator() {}
-
-        void preprocess();
-    private:
-        bool m_preprocessed = false;
-
-        using stack_t = std::list<std::pair<std::string, option_map*>>;
-        void internal_traverse(stack_t& a_stack, option_map& a_scope, std::string const& a_def_branch);
-    public:
-
+    struct validator {
         /// Derived classes must implement this method
         template <class Derived>
         static const Derived* instance
@@ -482,6 +392,112 @@ namespace config {
         // Validate configuration tree stored in config()
         void validate(const custom_validator& a_custom_validator = NULL)
             const throw(variant_tree_error);
+
+    protected:
+        mutable tree_path                m_root;   // Path from configuration root
+        mutable const variant_tree_base* m_config; // If set, the derived class can use typed
+                                                   // accessor methods as syntactic sugar to
+                                                   // access named option values
+        option_map                       m_options;
+
+        /// No direct construction - always derive implementations from this class
+        validator() : m_config(nullptr) {}
+        virtual ~validator() {}
+
+        void validate(variant_tree& a_config,
+            const option_map& a_opts, bool fill_defaults,
+            const custom_validator& a_custom_validator
+        ) const throw(variant_tree_error);
+
+        static void add_option(option_map& a, const option& a_opt) {
+            a.insert(std::make_pair(a_opt.name, a_opt));
+        }
+
+        void preprocess();
+
+    private:
+        bool m_preprocessed = false;
+
+        struct config_level {
+            config_level(const tree_path&  a_path, const variant_tree_base& a_cfg,
+                         const option*     a_opt,  const option_map&        a_opts)
+                : m_path(a_path),  m_config(a_cfg)
+                , m_option(a_opt), m_options(a_opts)
+            {}
+
+            tree_path  const&         path()    const { return m_path;    }
+            variant_tree_base const&  cfg()     const { return m_config;  }
+            option     const*         opt()     const { return m_option;  }
+            option_map const&         options() const { return m_options; }
+
+            void opt(const option* a_opt) { m_option = a_opt; }
+        private:
+            tree_path                 m_path;
+            const variant_tree_base&  m_config;
+            const option*             m_option;
+            const option_map&         m_options;
+        };
+
+        struct config_level_list : public std::list<config_level> {
+            config_level_list&
+            push(const tree_path&  a_root, const variant_tree_base& a_config,
+                 const option*     a_opt,  const option_map&        a_opts) {
+                this->emplace_back(a_root, a_config, a_opt, a_opts);
+                return *this;
+            }
+            void pop() { if (!this->empty()) this->pop_back(); }
+        };
+
+        using stack_t = std::list<std::pair<std::string, option_map*>>;
+
+        void recursive_validate(
+            config_level_list&      a_stack,
+            bool                    a_fill_defaults,
+            const custom_validator& a_custom_validator
+        ) const throw(variant_tree_error);
+
+        void check_option(
+            config_level_list&                      a_stack,
+            typename variant_tree_base::value_type& a_vt,
+            bool                                    a_fill_defaults,
+            const custom_validator&                 a_custom_validator
+        ) const throw(std::invalid_argument, variant_tree_error);
+
+        void check_unique(const tree_path& a_root, const variant_tree_base& a_config,
+            const option_map& a_opts) const throw(variant_tree_error);
+
+        void check_required(config_level_list& a_stack) const
+            throw (missing_required_option_error, variant_tree_error);
+
+        static option_type_t to_option_type(variant::value_type a_type);
+
+        tree_path format_name(const tree_path& a_root, const option& a_opt,
+            const std::string& a_cfg_opt   = std::string(),
+            const variant&     a_cfg_value = variant()) const;
+
+        bool has_required_child_options(const option_map& a_opts,
+            tree_path& a_req_option_path) const;
+
+        static std::ostream& dump(std::ostream& a_out, const std::string& a_indent,
+            int a_level, const option_map& a_opts, bool a_colorize = true,
+            bool a_braces = false);
+
+        static inline bool all_anonymous(const option_map& a_opts) {
+            BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts)
+                if (ovt.second.opt_type != ANONYMOUS)
+                    return false;
+            return true;
+        }
+
+        tree_path strip_root(const tree_path& a_root_path,
+                             const tree_path& a_root = tree_path()) const
+            throw(variant_tree_error);
+
+        static const option* find(tree_path& a_suffix, const option_map& a_options)
+            throw ();
+
+        void internal_fill_fallback_defaults
+            (stack_t& a_stack, option_map& a_scope, std::string const& a_def_branch);
     };
 
 } // namespace config

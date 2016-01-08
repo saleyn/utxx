@@ -381,7 +381,7 @@ class ConfigGenerator(object):
             f.write("               s_instance.m_root = a_root;\n")
             f.write("            return &s_instance;\n")
             f.write("        }\n\n")
-            f.write("        friend class config::validator;\n\n")
+            f.write("        friend struct config::validator;\n\n")
             f.write("        virtual ~%s() {}\n\n" % name)
             f.write("        %s() {\n" % name)
             f.write('            m_root = "%s";\n' % (root.attrib['root'] if root.attrib.get('root') else ""))
@@ -456,11 +456,18 @@ class ConfigGenerator(object):
             self.check_valid_attribs(node.attrib.keys(), valid_opt_attr_names, name, node)
 
             err = None
+            recursive = 'false'
 
+            if tp == 'defaults':
+                if not subopts: err = "'defaults' branch must have child options"
+                tp        = 'branch'
+                required  = 'false'
+                recursive = 'true'
+            
             if len(filter(lambda x: x not in ['true', 'false'], [unique, required, validate])):
                 err = "non-boolean value given to option (must be 'true' or 'false'): %s" % node.attrib
             if not valtype:
-                valtype = tp if tp else 'string'
+                valtype = tp if (tp and tp != 'branch') else 'string'
             elif (valtype=='int' or valtype=='float') and min   : pass
             elif valtype == 'string' and minlen                 : min = minlen
             elif min                                            : err = "'min': %s " % min
@@ -520,14 +527,14 @@ class ConfigGenerator(object):
             f.write("%sconfig::option(%s(), %s, %s,\n"
                     '%s  "%s", %s /*unique*/, %s /*required*/, %s /*validate*/,\n'
                     "%s  %s /*default*/, v(%s) /*min*/, v(%s) /*max*/,\n"
-                    "%s  l_names, l_values, l_children%d, \"%s\"));\n"
+                    "%s  l_names, l_values, l_children%d, \"%s\", %s));\n"
                     "%s}\n" % (
                     ws2, format_name(name), str_tp, self.string_to_type(valtp),
                     ws2, desc, unique, required, validate,
                     ws2, defval,
                         ('"%s"' % min) if min else "",
                         ('"%s"' % max) if max else "",
-                    ws2, level, defaults,
+                    ws2, level, defaults, recursive,
                     ws))
 
 

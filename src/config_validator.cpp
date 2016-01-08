@@ -268,10 +268,13 @@ void validator::validate(const custom_validator& a_custom_validator)
 {
     if (!m_config || m_config->empty())
         throw variant_tree_error(std::string(), "validator: unassigned field 'config()'!");
+
     // Note that the following const cast is safe - since fill_defaults is false
     // the tree will not be updated
-    validate(m_root, *const_cast<variant_tree_base*>(m_config),
-             m_options, false, a_custom_validator);
+    config_level_list stack;
+    stack.push(m_root, *const_cast<variant_tree_base*>(m_config), nullptr, m_options);
+
+    recursive_validate(stack, false, a_custom_validator);
 }
 
 void validator::validate
@@ -283,11 +286,13 @@ void validator::validate
 )
     const throw(variant_tree_error)
 {
-    validate(a_config.root_path(), a_config.to_base(), a_opts, a_fill_defaults,
-             a_custom_validator);
+    config_level_list stack;
+    stack.push(a_config.root_path(), a_config.to_base(), nullptr, a_opts);
+    recursive_validate(stack, a_fill_defaults, a_custom_validator);
 }
 
-void validator::internal_traverse(stack_t& stack, option_map& a_scope, std::string const& a_def_branch)
+void validator::internal_fill_fallback_defaults
+    (stack_t& stack, option_map& a_scope, std::string const& a_def_branch)
 {
     auto thrower = [&, this](std::string const& a_opt, std::string const& a_path, int n) {
         auto  joiner = [](auto& pair){ return pair.first; };
@@ -392,7 +397,7 @@ void validator::internal_traverse(stack_t& stack, option_map& a_scope, std::stri
 
         if (!opt.children.empty()) {
             stack.emplace_back(make_pair(vt.first, &a_scope));
-            internal_traverse(stack, opt.children, def_branch);
+            internal_fill_fallback_defaults(stack, opt.children, def_branch);
             stack.pop_back();
         }
     }
@@ -402,27 +407,29 @@ void validator::preprocess()
 {
     if (m_preprocessed) return;
 
-    list<std::pair<string, option_map*>> stack;
+    stack_t stack;
 
-    internal_traverse(stack, m_options, "");
+    internal_fill_fallback_defaults(stack, m_options, "");
 
     //dump(std::cerr, "  ", 2, m_options, true, true);
 }
 
-void validator::validate
+void validator::recursive_validate
 (
-    const tree_path& a_root, variant_tree_base& a_config,
-    const option_map& a_opts, bool a_fill_defaults,
+    config_level_list&      a_stack,
+    bool                    a_fill_defaults,
     const custom_validator& a_custom_validator
 )
     const throw (variant_tree_error)
 {
+    const tree_path&         a_root   = a_stack.back().path();
+    const variant_tree_base& a_config = a_stack.back().cfg();
+    const option_map&        a_opts   = a_stack.back().options();
+
+    auto  old_opt = a_stack.back().opt();
+
     check_unique(a_root, a_config, a_opts);
-
-    config_level_list stack;
-    stack.push(a_root, a_config, a_opts);
-
-    check_required(stack);
+    check_required(a_stack);
 
     // If the options tree is arranged such that all options are children
     // of a single branch, then don't validate non-matching named options
@@ -460,12 +467,18 @@ void validator::validate
             if (check) {
                 if (!opt.validate)
                     l_match = true;
-                else if (opt.m_validator)
-                    opt.m_validator->validate(a_root / opt.name, vt.second, opt.children,
-                        a_fill_defaults, opt.m_custom_validator);
-                else
-                    check_option(a_root, vt, opt, a_fill_defaults,
+                else if (opt.m_validator) {
+                    a_stack.push(a_root / opt.name, vt.second, &opt, opt.children);
+                    opt.m_validator->recursive_validate
+                        (a_stack, a_fill_defaults, opt.m_custom_validator);
+                    a_stack.pop();
+                } else {
+                    a_stack.back().opt(&opt);
+                    check_option(a_stack,
+                        const_cast<typename variant_tree_base::value_type&>(vt),
+                        a_fill_defaults,
                         opt.m_custom_validator ? opt.m_custom_validator : a_custom_validator);
+                }
                 l_match = true;
                 break;
             }
@@ -478,6 +491,8 @@ void validator::validate
                 throw variant_tree_error(p, "Unsupported config option!");
         }
     }
+
+    a_stack.back().opt(old_opt);
 }
 
 void validator::check_required(config_level_list& a_stack)
@@ -485,12 +500,13 @@ void validator::check_required(config_level_list& a_stack)
 {
     const tree_path&         root = a_stack.back().path();
     const variant_tree_base& cfg  = a_stack.back().cfg();
+    const option_map&        opts = a_stack.back().options();
 
     #ifdef TEST_CONFIG_VALIDATOR
     std::cout << "check_required(" << root << ", cfg.count=" << cfg.size()
         << ", opts.count=" << a_stack.back().options().size() << ')' << std::endl;
     #endif
-    for (auto& ovt : a_stack.back().options()) {
+    for (auto& ovt : opts) {
         const option& opt = ovt.second;
         if (opt.required && opt.default_value.data().is_null()) {
             #ifdef TEST_CONFIG_VALIDATOR
@@ -505,7 +521,7 @@ void validator::check_required(config_level_list& a_stack)
                     throw missing_required_option_error(format_name(root, opt),
                         "Check XML spec. Missing required value of anonymous option!");
             } else {
-                bool l_found = false;
+                bool found = false;
                 for (auto& vt : cfg)
                     if (vt.first == opt.name) {
                         #ifdef TEST_CONFIG_VALIDATOR
@@ -517,7 +533,7 @@ void validator::check_required(config_level_list& a_stack)
                         #endif
 
                         if (opt.opt_type == BRANCH) {
-                            l_found = true;
+                            found = true;
                             break;
                         }
 
@@ -526,16 +542,32 @@ void validator::check_required(config_level_list& a_stack)
                                 (format_name(root, opt, vt.first, vt.second.data()),
                                  "Missing value of the required option "
                                  "and no default provided!");
-                        l_found = true;
+                        found = true;
                         if (opt.unique)
                             break;
                     }
 
-                if (!l_found && (opt.opt_type != BRANCH || opt.children.empty())) {
+                if (!found && (opt.opt_type != BRANCH || opt.children.empty())) {
+                    // If the option points to some other node with a fallback
+                    // default, then we check if that path has a value, in which
+                    // case the value is considered to be found:
                     if (!opt.fallback_defaults_branch_path.empty())
                         if (a_stack.front().cfg().get_child_optional(opt.fallback_defaults_branch_path))
-                            l_found = true;
-                    if (!l_found)
+                            found = true;
+                    if (!found) {
+                        // Go up the stack of options tree and see if
+                        // there's any parent branch that has
+                        // 'required=false' and 'recursive=true':
+                        for (auto it=a_stack.rbegin(); it != a_stack.rend(); ++it) {
+                            auto* br = it->opt();
+                            if (!br) break;
+                            if (br->opt_type != BRANCH || br->required || !br->recursive)
+                                continue;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found)
                         throw missing_required_option_error(format_name(root, opt),
                             "Missing required ", (opt.opt_type == BRANCH ? "branch" : "option"),
                             " with no default!");
@@ -561,14 +593,14 @@ void validator::check_required(config_level_list& a_stack)
             #endif
             for (auto& vt : cfg) {
                 auto path = format_name(root, opt, vt.first, vt.second.data());
-                a_stack.push(path, vt.second, opt.children);
+                a_stack.push(path, vt.second, &opt, opt.children);
                 check_required(a_stack);
                 a_stack.pop();
             }
         } else {
             tree_path l_req_name;
             bool l_has_req = has_required_child_options(opt.children, l_req_name);
-            bool l_found   = false;
+            bool found   = false;
 
             #ifdef TEST_CONFIG_VALIDATOR
             if (opt.children.size())
@@ -579,7 +611,7 @@ void validator::check_required(config_level_list& a_stack)
 
             for (auto& vt : cfg)
                 if (vt.first == opt.name) {
-                    l_found = true;
+                    found = true;
                     if (l_has_req) {
                         if (!vt.second.size())
                             throw missing_required_option_error
@@ -588,7 +620,7 @@ void validator::check_required(config_level_list& a_stack)
                                  l_req_name.dump());
                         auto path = format_name(root, opt, vt.first, vt.second.data());
                         try {
-                            a_stack.push(path, vt.second, opt.children);
+                            a_stack.push(path, vt.second, &opt, opt.children);
                             check_required(a_stack);
                             a_stack.pop();
                         } catch (missing_required_option_error const& e) {
@@ -607,7 +639,7 @@ void validator::check_required(config_level_list& a_stack)
                              "Option is not allowed to have child nodes!");
                 }
 
-            if (!l_found && l_has_req && opt.validate) {
+            if (!found && l_has_req && opt.validate) {
                 if (!opt.required && !opt.children.empty()) {
                     // Check if all children have values in default fallback branches
                     bool ok = true;
@@ -621,10 +653,10 @@ void validator::check_required(config_level_list& a_stack)
                             }
                         }
                     if (ok)
-                        l_found = true;
+                        found = true;
                 }
 
-                if (!l_found)
+                if (!found)
                     throw missing_required_option_error
                         (format_name(root, opt), "Missing a required child option: ",
                         l_req_name.dump());
@@ -637,42 +669,45 @@ void validator::check_required(config_level_list& a_stack)
 void validator::
 check_option
 (
-    const tree_path& a_root,
+    config_level_list&                      a_stack,
     typename variant_tree_base::value_type& a_vt,
-    const option& a_opt, bool a_fill_defaults,
-    const custom_validator& a_custom_validator
+    bool                                    a_fill_defaults,
+    const custom_validator&                 a_custom_validator
 )
     const throw(std::invalid_argument, variant_tree_error)
 {
+    assert(a_stack.back().opt());
+    const tree_path& root =  a_stack.back().path();
+    const option&    opt  = *a_stack.back().opt();
     try {
         // Populate default value
-        if (!a_opt.required && a_vt.second.data().is_null()) {
-            if (a_opt.default_value.data().is_null() && a_opt.opt_type != BRANCH)
+        if (!opt.required && a_vt.second.data().is_null()) {
+            if (opt.default_value.data().is_null() && opt.opt_type != BRANCH)
                 throw std::invalid_argument("Check XML spec. Required option is missing default value!");
             BOOST_ASSERT(
-                (a_opt.opt_type == BRANCH && a_opt.default_value.data().is_null()) ||
-                (to_option_type(a_opt.default_value.data().type()) == a_opt.value_type));
-            if (a_fill_defaults && !a_opt.default_value.data().is_null())
-                a_vt.second.data() = a_opt.default_value.data();
+                (opt.opt_type == BRANCH && opt.default_value.data().is_null()) ||
+                (to_option_type(opt.default_value.data().type()) == opt.value_type));
+            if (a_fill_defaults && !opt.default_value.data().is_null())
+                a_vt.second.data() = opt.default_value.data();
         }
 
-        switch (a_opt.value_type) {
+        switch (opt.value_type) {
             case STRING:
                 if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_STRING)
                     throw std::invalid_argument("Wrong type - expected string!");
-                if (!a_opt.min_value.is_null() &&
-                     a_vt.second.data().to_str().size() < (size_t)a_opt.min_value.to_int())
+                if (!opt.min_value.is_null() &&
+                     a_vt.second.data().to_str().size() < (size_t)opt.min_value.to_int())
                     throw std::invalid_argument("String value too short!");
-                if (!a_opt.max_value.is_null() &&
-                     a_vt.second.data().to_str().size() > (size_t)a_opt.max_value.to_int())
+                if (!opt.max_value.is_null() &&
+                     a_vt.second.data().to_str().size() > (size_t)opt.max_value.to_int())
                     throw std::invalid_argument("String value too long!");
                 break;
             case INT:
                 if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_INT)
                     throw std::invalid_argument("Wrong type - expected integer!");
-                if (!a_opt.min_value.is_null() && a_opt.min_value > a_vt.second.data())
+                if (!opt.min_value.is_null() && opt.min_value > a_vt.second.data())
                     throw std::invalid_argument("Value too small!");
-                if (!a_opt.max_value.is_null() && a_opt.max_value < a_vt.second.data())
+                if (!opt.max_value.is_null() && opt.max_value < a_vt.second.data())
                     throw std::invalid_argument("Value too large!");
                 break;
             case BOOL:
@@ -682,33 +717,36 @@ check_option
             case FLOAT:
                 if (!a_vt.second.data().is_null() && a_vt.second.data().type() != variant::TYPE_DOUBLE)
                     throw std::invalid_argument("Wrong type - expected float!");
-                if (!a_opt.min_value.is_null() && a_opt.min_value > a_vt.second.data())
+                if (!opt.min_value.is_null() && opt.min_value > a_vt.second.data())
                     throw std::invalid_argument("Value too small!");
-                if (!a_opt.max_value.is_null() && a_opt.max_value < a_vt.second.data())
+                if (!opt.max_value.is_null() && opt.max_value < a_vt.second.data())
                     throw std::invalid_argument("Value too large!");
                 break;
             default: {
                 // Allow anonymous options to have no value (since the
                 // name defines the value)
-                if (a_opt.opt_type == ANONYMOUS || a_opt.opt_type == BRANCH)
+                if (opt.opt_type == ANONYMOUS || opt.opt_type == BRANCH)
                     break;
-                throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
+                throw variant_tree_error(format_name(root, opt, a_vt.first,
                         a_vt.second.data()),
                     "Check XML spec. Option's value_type '",
-                    type_to_string(a_opt.value_type),
+                    type_to_string(opt.value_type),
                     "' is invalid!");
             }
         }
 
-        if (a_opt.required &&
-                a_opt.opt_type != ANONYMOUS &&
-                a_opt.opt_type != BRANCH &&
-                a_vt.second.data().is_null())
+        if
+        (
+            opt.required &&
+            opt.opt_type != ANONYMOUS &&
+            opt.opt_type != BRANCH &&
+            a_vt.second.data().is_null()
+        )
             throw std::invalid_argument("Required value missing!");
         if (a_vt.first.empty())
             throw std::invalid_argument("Expected non-empty name!");
 
-        switch (a_opt.opt_type) {
+        switch (opt.opt_type) {
             case STRING:    break;
             case ANONYMOUS: break;
             case BRANCH:    break;
@@ -716,33 +754,35 @@ check_option
             case FLOAT:     break;
             case BOOL:      break;
             default: {
-                throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
+                throw variant_tree_error(format_name(root, opt, a_vt.first,
                         a_vt.second.data()),
                     "Check XML spec. Unsupported type of option: ",
-                    type_to_string(a_opt.opt_type));
+                    type_to_string(opt.opt_type));
             }
         }
 
-        if (!a_opt.name_choices.empty()) {
-            if (a_opt.opt_type != ANONYMOUS)
-                throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
+        if (!opt.name_choices.empty()) {
+            if (opt.opt_type != ANONYMOUS)
+                throw variant_tree_error(format_name(root, opt, a_vt.first,
                         a_vt.second.data()),
                     "Check XML spec. Non-anonymous option cannot have name choices!");
-            if (a_opt.name_choices.find(a_vt.first) == a_opt.name_choices.end())
+            if (opt.name_choices.find(a_vt.first) == opt.name_choices.end())
                 throw std::invalid_argument("Invalid name given to anonymous option!");
         }
 
-        if (!a_opt.value_choices.empty())
-            if (a_opt.value_choices.find(a_vt.second.data()) == a_opt.value_choices.end()) {
-                throw variant_tree_error(format_name(a_root, a_opt,
+        if (!opt.value_choices.empty())
+            if (opt.value_choices.find(a_vt.second.data()) == opt.value_choices.end()) {
+                throw variant_tree_error(format_name(root, opt,
                         a_vt.first, a_vt.second.data()),
                     "Value is not allowed for option!");
             }
-        if (!a_opt.children.empty())
-            validate(a_root / a_opt.name, a_vt.second, a_opt.children, a_fill_defaults,
-                a_custom_validator);
+        if (!opt.children.empty()) {
+            a_stack.push(root / opt.name, a_vt.second, &opt, opt.children);
+            recursive_validate(a_stack, a_fill_defaults, opt.m_custom_validator);
+            a_stack.pop();
+        }
     } catch (std::invalid_argument& e) {
-        throw variant_tree_error(format_name(a_root, a_opt, a_vt.first,
+        throw variant_tree_error(format_name(root, opt, a_vt.first,
                 a_vt.second.data()),
                 e.what());
     }
