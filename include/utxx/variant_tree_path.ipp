@@ -23,6 +23,26 @@ namespace utxx
         return t;
     }
 
+    template <class Ch>
+    inline basic_tree_path<Ch> operator/ (const basic_tree_path<Ch>& a, const char* b) {
+        return a / tree_path(b, a.separator());
+    }
+
+    template <class Ch>
+    inline basic_tree_path<Ch> operator/ (const basic_tree_path<Ch>& a, const std::string& b) {
+        return a / tree_path(b, a.separator());
+    }
+
+    template <class Ch>
+    inline basic_tree_path<Ch>& operator/= (basic_tree_path<Ch>& a, const char* s) {
+        return a /= tree_path(s, a.separator());
+    }
+
+    template <class Ch>
+    inline basic_tree_path<Ch>& operator/= (basic_tree_path<Ch>& a, const std::string& s) {
+        return a /= tree_path(s, a.separator());
+    }
+
     inline tree_path operator/ (const tree_path& a, const char* s) {
         return a / tree_path(s, a.separator());
     }

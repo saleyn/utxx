@@ -29,14 +29,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_VARIANT_TREE_HPP_
-#define _UTXX_VARIANT_TREE_HPP_
+#pragma once
 
 #include <utxx/variant.hpp>
+#include <utxx/variant_tree_path.hpp>
 #include <utxx/variant_tree_error.hpp>
 #include <utxx/variant_tree_fwd.hpp>
 #include <utxx/variant_translator.hpp>
-#include <utxx/variant_tree_path.hpp>
 #include <utxx/typeinfo.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/utility/enable_if.hpp>
@@ -661,7 +660,7 @@ private:
     static const variant& update_fun(
         const basic_variant_tree::path_type& a, const variant& v)
     { return v; }
-    
+
     template <typename T>
     void throw_bad_type(const path_type& a_path, const variant& a_data) const {
         throw variant_tree_bad_data(
@@ -674,6 +673,3 @@ private:
 
 
 } // namespace utxx
-
-#endif // _UTXX_VARIANT_TREE_HPP_
-

@@ -67,12 +67,17 @@
 ///   optional list of <tt>/config/option/value</tt> values and the
 ///   following attributes:
 ///     - <tt>name</tt> - the name of an option.
-///     - <tt>type</tt> - the type of the option's name: "string" (default)
-///                       or "anonymous". The former is a regular named
-///                       option.  The later is an option with a variable
-///                       name.  It may be useful to have options where the
-///                       option's name signifies a group name of options.
-///     - <tt>val_type</tt> - the type of option's value: "string", "int",
+///     - <tt>type</tt> - the type of the option's name: "string" (default),
+///                       "anonymous", "branch", or "defaults". The "anonymous"
+///                       option permits to have a variable value.  It may be
+///                       useful to have options where the option's name
+///                       signifies a group name of options. "branch" means that
+///                       this option has children. "defaults" option means that
+///                       this is a branch option that contains children that
+///                       serve the purpose of defaults (i.e. other nodes in
+///                       other branches may point to them via
+///                       "../path/to/default/node" syntax).
+///     - <tt>val-type</tt> - the type of option's value: "string", "int",
 ///                       "float", "bool".
 ///     - <tt>description</tt> - description of an option (used for
 ///                       outputting usage details).

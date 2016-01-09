@@ -46,6 +46,11 @@ using basic_tree_path = boost::property_tree::string_path<
 
 typedef basic_tree_path<char> tree_path;
 
+/// Constructs a path in the form "Node[Data]"
+tree_path make_tree_path_pair(const char*,const char*, char a_sep = '.');
+/// Constructs a path in the form "Node[Data]"
+tree_path make_tree_path_pair(const std::string&, const std::string&, char a_sep = '.');
+
 template <class Ch>
 basic_tree_path<Ch> operator/
 (
@@ -60,10 +65,53 @@ basic_tree_path<Ch> operator/
     const char* b
 );
 
-/// Constructs a path in the form "Node[Data]"
-tree_path make_tree_path_pair(const char*,const char*, char a_sep = '.');
-/// Constructs a path in the form "Node[Data]"
-tree_path make_tree_path_pair(const std::string&, const std::string&, char a_sep = '.');
+template <class Ch>
+basic_tree_path<Ch> operator/
+(
+    const basic_tree_path<Ch>& a,
+    const std::string& b
+);
+
+template <class Ch>
+basic_tree_path<Ch>& operator/=
+(
+    basic_tree_path<Ch>& a,
+    const char* b
+);
+
+template <class Ch>
+basic_tree_path<Ch>& operator/=
+(
+    basic_tree_path<Ch>& a,
+    const std::string& b
+);
+
+template <class Ch>
+basic_tree_path<Ch>
+make_tree_path(basic_tree_path<Ch>&& a_path) { return std::move(a_path); }
+
+template <class Ch, class T, class... Args>
+basic_tree_path<Ch>
+make_tree_path(basic_tree_path<Ch>&& a_path1, T&& a_path2, Args&&... args) {
+    a_path1 /= a_path2;
+    return make_tree_path<Ch>(std::move(a_path1), std::forward<Args>(args)...);
+}
+
+template <char Sep, class Ch, class T, class... Args>
+basic_tree_path<Ch>
+make_tree_path(const std::basic_string<Ch>& a_path1, T&& a_path2, Args&&... args) {
+    auto path = basic_tree_path<Ch>(a_path1, Sep);
+    path /= a_path2;
+    return make_tree_path<Ch>(std::move(path), std::forward<Args>(args)...);
+}
+
+template <char Sep, class Ch, class T, class U, class... Args>
+basic_tree_path<Ch>
+make_tree_path(const Ch* a_path1, U&& a_path2, Args&&... args) {
+    auto path = basic_tree_path<Ch>(a_path1, Sep);
+    path /= a_path2;
+    return make_tree_path<Ch>(std::move(path), std::forward<Args>(args)...);
+}
 
 tree_path  operator/ (const tree_path& a, const std::string& s);
 tree_path  operator/ (const std::string& a, const tree_path& s);

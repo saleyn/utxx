@@ -247,6 +247,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
         m_show_thread    = a_cfg.get<bool>       ("logger.show-thread",   m_show_thread);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
+        m_ident          = replace_macros(m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
         m_timestamp_type = parse_stamp_type(ts);
         std::string levs = a_cfg.get<std::string>("logger.levels", "");
