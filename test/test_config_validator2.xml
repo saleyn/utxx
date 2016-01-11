@@ -1,0 +1,25 @@
+<!--
+    Configuration validation framework test case input for config_validator.xsl
+
+    Copyright (C) 2012 Serge Aleynikov <saleyn@gmail.com>
+    Created: 2012-01-13
+-->
+
+<config namespace="test" name="cfg_validator2" root="test">
+    <option name="def" desc="Default options" type="defaults">
+        <option name="key"  type="string"/>
+        <option name="addr" type="string"/>
+    </option>
+
+    <option name="key" type="string" defaults="def/"/>
+
+    <option name="grp" type="branch" required="false">
+        <option name="key"  type="string" defaults="../def/"/>
+        <option name="key2" type="string" defaults="../def/key"/>
+    </option>
+
+    <option name="grp2" type="branch" defaults="def" required="false">
+        <option name="key"  type="string"/>
+        <option name="addr" type="string"/>
+    </option>
+</config>
