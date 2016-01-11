@@ -64,7 +64,7 @@ static void print(bool prod, int id, int iter, futex& fut,
       << (prod ? " producer" : " consumer") << "[" << id  << "]: iter=" << iter
       << ", res=" << (prod ? std::to_string(res) : to_string(fres))
       << ", val="   << fut.value() << '\n';
-    printf(s.str().c_str());
+    printf("%s", s.str().c_str());
 }
 
 void producer(futex& fut, int id)

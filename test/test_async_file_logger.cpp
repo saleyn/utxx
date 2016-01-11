@@ -219,7 +219,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
 
     int cur_count[nthreads];
 
-    bzero(cur_count, sizeof(cur_count));
+    bzero(cur_count, sizeof(int)*nthreads);
 
     std::ifstream file(s_filename, std::ios::in);
     for (int i = 0; i < ITERATIONS*nthreads; i++) {

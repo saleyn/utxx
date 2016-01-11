@@ -30,6 +30,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
+#include <boost/version.hpp>
+#if (BOOST_VERSION >= 105700)
+
 #include <boost/test/unit_test.hpp>
 #include <utxx/enum.hpp>
 #include <utxx/enumx.hpp>
@@ -393,3 +396,5 @@ BOOST_AUTO_TEST_CASE( test_enum_flags_old )
     v.clear(my_flags::C | my_flags::E);
     BOOST_CHECK(v == my_flags::B);
 }
+
+#endif

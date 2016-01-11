@@ -8,7 +8,7 @@ addons:
     packages:
     - gcc-4.9
     - g++-4.9
-    - # libboost1.55-all-dev
+    - libboost1.55-all-dev
     - libxslt1.1
     - python-lxml
     - doxygen
@@ -24,14 +24,13 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install cmake-data cmake
   - # dpkg -S /usr/include/boost/version.hpp
-  - sudo apt-get install libboost1.55-all-dev
+  - # sudo apt-get install libboost1.55-all-dev
   - sudo updatedb
   - sudo dpkg -L libboost1.55-all-dev
   - find /usr/include/boost -print | head -100
   - grep BOOST_LIB_VERSION /usr/include/boost/version.hpp | grep define
   - locate libboost | head -100
   - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
-  - # sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev libthrift0 thrift-compiler
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 90
 
 before_script:
@@ -44,7 +43,7 @@ before_script:
   - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.$(hostname)
   - g++ --version
 script:
-  - make bootstrap generator=make build=Debug || cat /tmp/travis/utxx/CMakeFiles/CMakeOutput.log && false
+  - make bootstrap generator=make build=Debug
   - make
 after_script:
   - # cat config.log

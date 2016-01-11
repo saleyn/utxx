@@ -148,7 +148,7 @@ BOOST_AUTO_TEST_CASE( test_concurrent_stack )
     unsigned long sums[consumer_threads];
     volatile long prod_count = 0, cons_count = 0;
 
-    bzero(sums, sizeof(sums));
+    bzero(sums, sizeof(long)*consumer_threads);
 
     std::vector<std::shared_ptr<sproducer>>   producers(producer_threads);
     std::vector<std::shared_ptr<sconsumer>>   consumers(consumer_threads);

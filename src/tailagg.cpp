@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
   size_t sz = std::max<size_t>(1, regex_vals.size());
 
   bool changed[sz];
-  memset(changed, 0, sizeof(changed));
+  memset(changed, 0, sizeof(bool)*sz);
 
   lines.resize(sz);
 

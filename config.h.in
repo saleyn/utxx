@@ -1,13 +1,18 @@
-/* Level1 cacheline size */
+// Level1 cacheline size
 #cmakedefine UTXX_CL_SIZE @UTXX_CL_SIZE@
 
-/* Define to 1 if you have `z' library (-lz) */
+// Define to 1 if you have `z' library (-lz)
 #cmakedefine UTXX_HAVE_LIBZ
 
-/* Define to 1 if Thrift library is available */
+// Define to 1 if Thrift library is available
 #cmakedefine UTXX_HAVE_THRIFT_H
 
-/* Define to 1 if enum.h and enumx.h should be friends of boost::serialization::access */
+// This is needed for Thrift:
+#cmakedefine HAVE_INTTYPES_H
+#cmakedefine HAVE_NETINET_IN_H
+
+// Define to 1 if enum.h and enumx.h should be friends of boost::serialization::access
 #cmakedefine UTXX_ENUM_SUPPORT_SERIALIZATION
 
 #cmakedefine UTXX_HAVE_BOOST_TIMER_TIMER_HPP
+
