@@ -6,6 +6,7 @@ addons:
     - ubuntu-toolchain-r-test
     - boost-latest
     packages:
+    - gcc-4.9
     - g++-4.9
     - libboost1.55-all-dev
     - libxslt1.1
@@ -32,7 +33,7 @@ before_script:
   - echo "WITH_THRIFT=ON"             >> .cmake-args.$(hostname)
   - g++ --version
 script:
-  - make bootstrap generator=ninja build=Debug
+  - make bootstrap generator=make build=Debug
   - make
 after_script:
   - # cat config.log
