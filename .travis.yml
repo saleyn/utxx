@@ -13,6 +13,9 @@ addons:
     - python-lxml
     - doxygen
 
+install:
+  - sudo apt-get install libboost1.55-all-dev
+
 before_script:
   - lsb_release -a
   - uname -a
