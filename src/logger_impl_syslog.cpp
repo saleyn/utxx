@@ -125,7 +125,7 @@ void logger_impl_syslog::log_msg
 {
     int priority = get_priority(a_msg.level());
     if (priority)
-        ::syslog(priority, a_buf);
+        ::syslog(priority, "%s", a_buf);
 }
 
 } // namespace utxx

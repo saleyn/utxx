@@ -99,7 +99,7 @@ inline bool logger::logfmt(
     const std::string&  a_cat,
     const char        (&a_src_loc)[N],
     const char        (&a_src_fun)[M],
-    const char*         a_fmt,
+    const char          a_fmt[],
     Args&&...           a_args)
 {
     if (!is_enabled(a_level))
