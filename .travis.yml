@@ -37,7 +37,7 @@ before_script:
   - echo "DIR:INSTALL=/opt/pkg/@PROJECT@/@VERSION@" >> .cmake-args.$(hostname)
   - echo "PKG_ROOT_DIR=/usr/local"                  >> .cmake-args.$(hostname)
   - echo "WITH_THRIFT=ON"                           >> .cmake-args.$(hostname)
-  - echo "BOOST_ROOT=/usr/local/boost"              >> .cmake-args.$(hostname)
+  - echo "BOOST_ROOT=/usr/local"                    >> .cmake-args.$(hostname)
   - echo "WITH_ENUM_SERIALIZATION=ON"               >> .cmake-args.$(hostname)
   - g++ --version
 script:
