@@ -29,8 +29,7 @@ before_install:
   - sudo dpkg -L libboost1.55-all-dev
   - find /usr/include/boost -print | head -100
   - grep BOOST_LIB_VERSION /usr/include/boost/version.hpp | grep define
-  - ls -l /usr/lib/*boost*
-  - locate libboost
+  - locate libboost | head -100
   - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
   - # sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev libthrift0 thrift-compiler
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 90
@@ -40,8 +39,8 @@ before_script:
   - echo "DIR:INSTALL=/tmp/${USER}/install/@PROJECT@/@VERSION@" >> .cmake-args.$(hostname)
   - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.$(hostname)
   - echo "WITH_THRIFT=ON"                                       >> .cmake-args.$(hostname)
-  - # echo "BOOST_INCLUDEDIR=/usr/include"                        >> .cmake-args.$(hostname)
-  - # echo "BOOST_LIBRARYDIR=/usr/lib"                            >> .cmake-args.$(hostname)
+  - echo "BOOST_INCLUDEDIR=/usr/include"                        >> .cmake-args.$(hostname)
+  - echo "BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu"           >> .cmake-args.$(hostname)
   - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.$(hostname)
   - g++ --version
 script:
