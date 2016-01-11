@@ -93,23 +93,15 @@ inline bool logger::logcs(
     return dolog(a_level, a_cat, a_buf, a_size, a_src_loc, N-1, a_src_fun, M-1);
 }
 
-template <int N, int M>
-inline bool logger::logfmt(
-    log_level           a_level,
-    const std::string&  a_cat,
-    const char        (&a_src_loc)[N],
-    const char        (&a_src_fun)[M],
-    const char*         a_fmt)
-{
-    if (!is_enabled(a_level))
-        return false;
-
-    char buf[1024];
-    int  n = std::snprintf(buf, sizeof(buf), a_fmt);
-    std::string sbuf(buf, std::min<int>(n, sizeof(buf)-1));
-    bool res = m_queue.emplace(a_level, a_cat, sbuf, a_src_loc, N-1, a_src_fun, M-1);
-    m_event.signal_fast();
-    return res;
+namespace {
+    inline int do_copy(char* a_buf, size_t a_sz, const char* a_str) {
+        char* p = a_buf;
+        return stpncpy(p, a_str, a_sz) - a_buf;
+    }
+    template <class... Args>
+    inline int do_copy(char* a_buf, size_t a_sz, const char* a_fmt, Args&&... args) {
+        return std::snprintf(a_buf, a_sz, a_fmt, std::forward<Args>(args)...);
+    }
 }
 
 template <int N, int M, typename... Args>
@@ -125,7 +117,10 @@ inline bool logger::logfmt(
         return false;
 
     char buf[1024];
-    int  n = std::snprintf(buf, sizeof(buf), a_fmt, a_args...);
+    int  n;
+    // The condition below prevents the compiler warning about snprintf
+    // when there are no arguments provides, since a_fmt is not a string literal
+    n = do_copy(buf, sizeof(buf), a_fmt, std::forward<Args>(a_args)...);
     std::string sbuf(buf, std::min<int>(n, sizeof(buf)-1));
     bool res = m_queue.emplace(a_level, a_cat, sbuf, a_src_loc, N-1, a_src_fun, M-1);
     m_event.signal_fast();

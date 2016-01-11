@@ -607,11 +607,6 @@ public:
                 const char (&a_src_loc)[N], const char (&a_src_fun)[M],
                 const char*  a_fmt, Args&&... a_args);
 
-    template<int N, int M>
-    bool logfmt(log_level a_level, const std::string& a_cat,
-                const char (&a_src_loc)[N], const char (&a_src_fun)[M],
-                const char*  a_fmt);
-
     /// Log a message of given log level to the registered implementations.
     /// Formatting of the resulting string to be logged happens in the caller's
     /// context, but actual message logging is handled asynchronously.
