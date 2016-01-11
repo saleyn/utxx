@@ -36,10 +36,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #ifndef NO_HINT_BRANCH_PREDICTION
 #  ifndef  LIKELY
-#   define LIKELY(expr)    __builtin_expect((expr),1)
+#   define LIKELY(expr)    __builtin_expect(!!(expr),1)
 #  endif
 #  ifndef  UNLIKELY
-#   define UNLIKELY(expr)  __builtin_expect((expr),0)
+#   define UNLIKELY(expr)  __builtin_expect(!!(expr),0)
 #  endif
 #else
 #  ifndef  LIKELY
