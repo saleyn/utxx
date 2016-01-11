@@ -13,10 +13,7 @@ addons:
     - python-lxml
     - doxygen
 
-install:
-  - # echo ok
-
-before_script:
+before_install:
   - lsb_release -a
   - uname -a
   - sudo apt-add-repository -y "deb http://archive.ubuntu.com/ubuntu/ trusty main restricted"
@@ -29,11 +26,14 @@ before_script:
   - # dpkg -S /usr/include/boost/version.hpp
   - sudo apt-get install libboost1.55-all-dev
   - sudo dpkg -L libboost1.55-all-dev
+  - find /usr/include/boost -print
   - grep BOOST_LIB_VERSION /usr/include/boost/version.hpp | grep define
   - ls -l /usr/lib/*boost*
   - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
   - # sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev libthrift0 thrift-compiler
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 90
+
+before_script:
   - echo "DIR:BUILD=/tmp/${USER}/utxx"                           > .cmake-args.$(hostname)
   - echo "DIR:INSTALL=/tmp/${USER}/install/@PROJECT@/@VERSION@" >> .cmake-args.$(hostname)
   - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.$(hostname)
