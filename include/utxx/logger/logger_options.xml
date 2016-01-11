@@ -73,6 +73,8 @@
                     desc="If true the log file is open in the appending mode"/>
             <option name="mode" val-type="int" default="0644"
                     desc="Octal file access mask"/>
+            <option name="symlink"   type="string" required="false"
+                    desc="Symbolic link to the log file"/>
             <option name="levels" val-type="string" default="info|warning|error|alert|fatal"
                     desc="Filter of log severity levels to be saved">
                 <copy path="../../../option[@name = 'min-level-filter']/value"/>

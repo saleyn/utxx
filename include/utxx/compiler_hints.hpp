@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   optimize.hpp
+/// \file   compiler_hints.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Definition of some types used for optimization.
@@ -33,6 +33,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 // Branch prediction optimization (see http://lwn.net/Articles/255364/)
+
+#ifndef NO_HINT_BRANCH_PREDICTION
+#  ifndef  LIKELY
+#   define LIKELY(expr)    __builtin_expect((expr),1)
+#  endif
+#  ifndef  UNLIKELY
+#   define UNLIKELY(expr)  __builtin_expect((expr),0)
+#  endif
+#else
+#  ifndef  LIKELY
+#   define LIKELY(expr)    (expr)
+#  endif
+#  ifndef  UNLIKELY
+#   define UNLIKELY(expr)  (expr)
+#  endif
+#endif
+
 namespace utxx {
 
 #define UTXX_STRINGIFY(x) #x
@@ -40,12 +57,21 @@ namespace utxx {
 #define UTXX_FILE_SRC_LOCATION __FILE__ ":" UTXX_TOSTRING(__LINE__)
 
 #ifndef NO_HINT_BRANCH_PREDICTION
+    [[deprecated]]
     inline bool likely(bool expr)   { return __builtin_expect((expr),1); }
+    [[deprecated]]
     inline bool unlikely(bool expr) { return __builtin_expect((expr),0); }
 #else
+    [[deprecated]]
     inline bool likely(bool expr)   { return expr; }
+    [[deprecated]]
     inline bool unlikely(bool expr) { return expr; }
 #endif
+
+/// Evaluate compile-time condition.
+/// If the condition is true, call "LIKELY(expr)", else call "UNLIKELY(expr)".
+#define UTXX_TRY_LIKELY(condition, expr) \
+    std::conditional<(condition), LIKELY(expr), UNLIKELY(expr)>::value
 
 /// A helper function used to signify an "out" argument in a function call
 /// \code

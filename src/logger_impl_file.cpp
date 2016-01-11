@@ -51,8 +51,10 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
     out << a_prefix << "logger." << name() << '\n'
         << a_prefix << "    filename       = " << m_filename << '\n'
         << a_prefix << "    append         = " << (m_append ? "true" : "false")       << '\n'
-        << a_prefix << "    mode           = " << m_mode << '\n'
-        << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
+        << a_prefix << "    mode           = " << m_mode << '\n';
+    if (!m_symlink.empty()) out <<
+           a_prefix << "    symlink        = " << m_symlink << '\n';
+    out << a_prefix << "    levels         = " << logger::log_levels_to_str(m_levels) << '\n'
         << a_prefix << "    use-mutex      = " << (m_use_mutex ? "true" : "false")    << '\n'
         << a_prefix << "    no-header      = " << (m_no_header ? "true" : "false")    << '\n';
     return out;
@@ -76,10 +78,11 @@ bool logger_impl_file::init(const variant_tree& a_config)
     // thread safety.  Mutex is enabled by default in the overwrite mode (i.e. "append=false").
     // Use the "use-mutex=false" option to inhibit this behavior if your
     // platform has thread-safe write(2) call.
-    m_use_mutex     = m_append ? false : a_config.get("logger.file.use-mutex", true);
+    m_use_mutex     = !m_append || a_config.get("logger.file.use-mutex", true);
     m_no_header     = a_config.get("logger.file.no-header", false);
-    m_mode          = a_config.get("logger.file.mode", 0644);
-    auto levels     = a_config.get("logger.file.levels", "");
+    m_mode          = a_config.get("logger.file.mode",       0644);
+    m_symlink       = a_config.get("logger.file.symlink",      "");
+    auto levels     = a_config.get("logger.file.levels",       "");
 
     m_levels = levels.empty()
              ? m_log_mgr->level_filter()
@@ -96,8 +99,11 @@ bool logger_impl_file::init(const variant_tree& a_config)
                     O_CREAT|O_WRONLY|O_LARGEFILE | (m_append ? O_APPEND : 0),
                     m_mode);
         if (m_fd < 0)
-            throw io_error(errno, "Error opening file", m_filename);
+            UTXX_THROW_IO_ERROR(errno, "Error opening file ", m_filename);
 
+        if (!m_symlink.empty() && !utxx::path::file_symlink(m_filename, m_symlink, true))
+            UTXX_THROW_IO_ERROR(errno, "Error creating symlink ", m_symlink,
+                                " -> ", m_filename, ": ");
         // Write field information
         if (!m_no_header) {
             char buf[256];

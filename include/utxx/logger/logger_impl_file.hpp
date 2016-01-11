@@ -66,6 +66,7 @@ class logger_impl_file: public logger_impl {
     std::string  m_name;
     std::string  m_filename;
     bool         m_append;
+    std::string  m_symlink;
     bool         m_use_mutex;
     uint32_t     m_levels;
     mode_t       m_mode;
