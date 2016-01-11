@@ -11,7 +11,6 @@ addons:
     - libboost1.55-all-dev
     - libxslt1.1
     - python-lxml
-    - cmake
 
 before_script:
   - lsb_release -a
@@ -20,8 +19,10 @@ before_script:
   - sudo add-apt-repository -y "deb http://ppa.launchpad.net/dns/gnu/ubuntu precise main"
   - sudo add-apt-repository -y "deb http://ppa.launchpad.net/wnoronha/thrift/ubuntu precise main"
   - sudo add-apt-repository -y "deb http://ppa.launchpad.net/kzemek/boost/ubuntu utopic main"
+  - sudo add-apt-repository ppa:george-edison55/precise-backports --yes
   - # sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
   - sudo apt-get update -qq
+  - sudo apt-get install cmake-data cmake
   - # sudo apt-get install -qq g++-4.9
   - sudo apt-get install -qq automake autoconf autoconf-archive
   - # dpkg -S /usr/include/boost/version.hpp
