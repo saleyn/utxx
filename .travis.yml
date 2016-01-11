@@ -10,7 +10,6 @@ addons:
     - libboost1.55-all-dev
     - libxslt1.1
     - python-lxml
-    - libthrift-dev
     - cmake
 
 before_script:
@@ -25,7 +24,7 @@ before_script:
   - # sudo apt-get install -qq g++-4.9
   - sudo apt-get install -qq automake autoconf autoconf-archive
   - # dpkg -S /usr/include/boost/version.hpp
-  - sudo apt-get install -qq libthrift0 thrift-compiler
+  - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
   - # sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev libthrift0 thrift-compiler
   - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.9 90
   - echo "DIR_BUILD=/tmp/${USER}/utxx" > .cmake-args.$(hostname)
