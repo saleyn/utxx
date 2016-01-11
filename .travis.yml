@@ -38,7 +38,7 @@ before_script:
   - echo "DIR:BUILD=/tmp/${USER}/utxx"                           > .cmake-args.$(hostname)
   - echo "DIR:INSTALL=/tmp/${USER}/install/@PROJECT@/@VERSION@" >> .cmake-args.$(hostname)
   - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.$(hostname)
-  - echo "WITH_THRIFT=ON"                                       >> .cmake-args.$(hostname)
+  - echo "WITH_THRIFT=OFF"                                      >> .cmake-args.$(hostname)
   - echo "BOOST_INCLUDEDIR=/usr/include"                        >> .cmake-args.$(hostname)
   - echo "BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu"           >> .cmake-args.$(hostname)
   - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.$(hostname)

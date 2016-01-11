@@ -204,16 +204,17 @@ int non_blocking(int sfd) {
 }
 
 char* data_fmt_string(data_fmt_t fmt, char* pfx, char* sfx, char* def) {
-  static char buf[128];
-  int n = sprintf(buf, "%s", pfx);
+  static char buf[256];
+  char* p = buf;
+  p = stpcpy(p, pfx);
   switch (fmt) {
-    case MICEX: n += sprintf(buf+n, "MICEX"); break;
-    case FORTS: n += sprintf(buf+n, "FORTS"); break;
+    case MICEX: p = stpcpy(p, "MICEX"); break;
+    case FORTS: p = stpcpy(p, "FORTS"); break;
     default:
-      sprintf(buf, def);
+      stpcpy(p, def);
       return buf;
   }
-  sprintf(buf+n, sfx);
+  stpcpy(p, sfx);
   return buf;
 }
 
