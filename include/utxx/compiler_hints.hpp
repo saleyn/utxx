@@ -56,21 +56,19 @@ namespace utxx {
 #define UTXX_TOSTRING(x)                    UTXX_STRINGIFY(x)
 #define UTXX_FILE_SRC_LOCATION __FILE__ ":" UTXX_TOSTRING(__LINE__)
 
+// Though the compiler should optimize this inlined code in the same way as
+// when using LIKELY/UNLIKELY macros directly the preference is to use the later
 #ifndef NO_HINT_BRANCH_PREDICTION
-    [[deprecated]]
     inline bool likely(bool expr)   { return __builtin_expect((expr),1); }
-    [[deprecated]]
     inline bool unlikely(bool expr) { return __builtin_expect((expr),0); }
 #else
-    [[deprecated]]
     inline bool likely(bool expr)   { return expr; }
-    [[deprecated]]
     inline bool unlikely(bool expr) { return expr; }
 #endif
 
 /// Evaluate compile-time condition.
 /// If the condition is true, call "LIKELY(expr)", else call "UNLIKELY(expr)".
-#define UTXX_TRY_LIKELY(condition, expr) \
+#define UTXX_MAYBE(condition, expr) \
     std::conditional<(condition), LIKELY(expr), UNLIKELY(expr)>::value
 
 /// A helper function used to signify an "out" argument in a function call
