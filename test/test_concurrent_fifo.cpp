@@ -198,7 +198,7 @@ struct queue_test_runner
         boost::barrier barrier(producer_threads + consumer_threads + 1);
 
         bzero(sums, sizeof(sums));
-        bzero(const_cast<long*>(prod_counts), sizeof(prod_counts));
+        bzero(const_cast<long*>(prod_counts), sizeof(long)*producer_threads);
 
         for (int i=0; i < producer_threads; ++i) {
             producers[i].reset(

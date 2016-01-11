@@ -66,10 +66,15 @@ namespace utxx {
     inline bool unlikely(bool expr) { return expr; }
 #endif
 
+#define UTXX_PP_IIF_0(t, f)      f
+#define UTXX_PP_IIF_1(t, f)      t
+#define UTXX_PP_IIF_I(bit, t, f) UTXX_PP_IIF_##bit(t, f)
+#define UTXX_PP_IIF(bit, t, f)   UTXX_PP_IIF_I(bit, t, f)
+
 /// Evaluate compile-time condition.
 /// If the condition is true, call "LIKELY(expr)", else call "UNLIKELY(expr)".
-#define UTXX_MAYBE(condition, expr) \
-    std::conditional<(condition), LIKELY(expr), UNLIKELY(expr)>::value
+#define UTXX_CHECK(condition, expr) \
+    UTXX_PP_IIF(condition, LIKELY(expr), UNLIKELY(expr))
 
 /// A helper function used to signify an "out" argument in a function call
 /// \code

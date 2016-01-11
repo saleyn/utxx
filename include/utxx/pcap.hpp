@@ -32,8 +32,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#define __USE_BSD
-
 #include <utxx/error.hpp>
 #include <utxx/endian.hpp>
 #include <utxx/time_val.hpp>

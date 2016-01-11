@@ -10,6 +10,7 @@ list(APPEND TEST_SRCS
     test_buffer.cpp
     test_call_speed.cpp
     test_clustered_map.cpp
+    test_compiler_hints.cpp
     test_collections.cpp
     test_concurrent_stack.cpp
     test_concurrent_update.cpp
