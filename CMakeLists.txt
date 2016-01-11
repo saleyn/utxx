@@ -122,7 +122,7 @@ if(WITH_THRIFT)
 	  set(Thrift_DIR         "${PKG_ROOT_DIR}/thrift/current")
 	endif()
   # Determine thrift include/libs
-  set(ENV{PKG_CONFIG_PATH} "${Thrift_DIR}/gcc/lib/pkgconfig")
+  set(ENV{PKG_CONFIG_PATH} "${Thrift_DIR}/gcc/lib/pkgconfig:${Thrift_DIR}/lib/pkgconfig")
   pkg_search_module(Thrift thrift)
 	if (Thrift_FOUND)
 		message(STATUS "Found thrift: ${Thrift_DIR}")
