@@ -16,3 +16,6 @@
 
 #cmakedefine UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 
+// Define to 1 if struct tcphdr has th_flags
+#cmakedefine UTXX_HAVE_TCPHDR_TH_FLAGS_H
+

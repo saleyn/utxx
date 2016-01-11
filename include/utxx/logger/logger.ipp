@@ -93,13 +93,13 @@ inline bool logger::logcs(
     return dolog(a_level, a_cat, a_buf, a_size, a_src_loc, N-1, a_src_fun, M-1);
 }
 
-template <int N, int M, typename... Args>
+template <int N, int M, int FN, typename... Args>
 inline bool logger::logfmt(
     log_level           a_level,
     const std::string&  a_cat,
     const char        (&a_src_loc)[N],
     const char        (&a_src_fun)[M],
-    const char          a_fmt[],
+    const char        (&a_fmt)[FN],
     Args&&...           a_args)
 {
     if (!is_enabled(a_level))

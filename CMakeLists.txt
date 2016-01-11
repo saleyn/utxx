@@ -94,6 +94,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 #include(${CMAKE_ROOT}/Modules/CheckTypeSize.cmake)
 #include(${CMAKE_ROOT}/Modules/CheckFunctionExists.cmake)
 include(${CMAKE_ROOT}/Modules/FindZLIB.cmake)
+include(${CMAKE_ROOT}/Modules/CheckStructHasMember.cmake)
+include(${CMAKE_ROOT}/Modules/CheckIncludeFile.cmake)
 
 if(ZLIB_FOUND)
 	set(UTXX_HAVE_LIBZ 1)
@@ -104,6 +106,13 @@ execute_process(COMMAND getconf LEVEL1_DCACHE_LINESIZE OUTPUT_VARIABLE UTXX_CL_S
 
 #check_type_size(size_t SIZE_T)
 
+# Needed for Thrift
+CHECK_INCLUDE_FILE(inttypes.h   HAVE_INTTYPES_H)
+CHECK_INCLUDE_FILE(netinet/in.h HAVE_NETINET_IN_H)
+# Needed for pcap.hpp tests
+#CHECK_STRUCT_HAS_MEMBER("struct tcphdr" th_flags netinet/tcp.h UTXX_HAVE_TCPHDR_TH_FLAGS_H)
+
+message("TCP: ${UTXX_HAVE_TCPHDR_TH_FLAGS_H}")
 #-------------------------------------------------------------------------------
 # Dependent packages and their directory locations
 #-------------------------------------------------------------------------------
@@ -127,8 +136,6 @@ if(WITH_THRIFT)
 	if (Thrift_FOUND)
 		message(STATUS "Found thrift: ${Thrift_DIR}")
 		set(UTXX_HAVE_THRIFT_H 1)
-		set(HAVE_INTTYPES_H    1)
-		set(HAVE_NETINET_IN_H  1)
  	endif()
 else()
   message(STATUS "Building without Thrift")

@@ -602,10 +602,10 @@ public:
     /// @param a_src_fun identifies the current function name (i.e. __func__).
     /// @param a_fmt is the format string passed to <sprintf()>
     /// @param args is the list of optional arguments passed to <args>
-    template<int N, int M, typename... Args>
+    template<int N, int M, int FN, typename... Args>
     bool logfmt(log_level a_level, const std::string& a_cat,
                 const char (&a_src_loc)[N], const char (&a_src_fun)[M],
-                const char a_fmt[], Args&&... a_args);
+                const char (&a_fmt)[FN], Args&&... a_args);
 
     /// Log a message of given log level to the registered implementations.
     /// Formatting of the resulting string to be logged happens in the caller's

@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#define __USE_BSD
+
 #include <utxx/error.hpp>
 #include <utxx/endian.hpp>
 #include <utxx/time_val.hpp>
@@ -580,7 +582,6 @@ private:
         frame.tcp.dest    = a_dst_port;
         frame.tcp.seq     = htonl(seqno);
         frame.tcp.ack_seq = 0;
-        frame.tcp.th_flags= 0;
         frame.tcp.syn     = !seqno;
         frame.tcp.ack     = 1;
         frame.tcp.doff    = 5;    // the size of TCP header in 32-bit words
