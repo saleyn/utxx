@@ -25,7 +25,6 @@ before_script:
   - sudo apt-get install cmake-data cmake
   - # dpkg -S /usr/include/boost/version.hpp
   - grep BOOST_LIB_VERSION /usr/include/boost/version.hpp | grep define
-  - ls -l /usr/local/lib/*boost*
   - ls -l /usr/lib/*boost*
   - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
   - # sudo apt-get install -qq libxslt1.1 python-lxml libthrift-dev libthrift0 thrift-compiler
@@ -35,7 +34,7 @@ before_script:
   - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.$(hostname)
   - echo "WITH_THRIFT=ON"                                       >> .cmake-args.$(hostname)
   - echo "BOOST_INCLUDEDIR=/usr/include"                        >> .cmake-args.$(hostname)
-  - echo "BOOST_LIBRARYDIR=/usr/local/lib"                      >> .cmake-args.$(hostname)
+  - echo "BOOST_LIBRARYDIR=/usr/lib"                            >> .cmake-args.$(hostname)
   - echo "Boost_NO_SYSTEM_PATHS=ON"                             >> .cmake-args.$(hostname)
   - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.$(hostname)
   - g++ --version
