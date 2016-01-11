@@ -24,6 +24,7 @@ before_script:
   - sudo apt-get update -qq
   - sudo apt-get install cmake-data cmake
   - # dpkg -S /usr/include/boost/version.hpp
+  - sudo dpkg -L libboost1.55-all-dev
   - grep BOOST_LIB_VERSION /usr/include/boost/version.hpp | grep define
   - ls -l /usr/lib/*boost*
   - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
