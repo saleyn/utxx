@@ -101,9 +101,13 @@ bool logger_impl_file::init(const variant_tree& a_config)
         if (m_fd < 0)
             UTXX_THROW_IO_ERROR(errno, "Error opening file ", m_filename);
 
-        if (!m_symlink.empty() && !utxx::path::file_symlink(m_filename, m_symlink, true))
-            UTXX_THROW_IO_ERROR(errno, "Error creating symlink ", m_symlink,
-                                " -> ", m_filename, ": ");
+        if (!m_symlink.empty()) {
+            m_symlink = m_log_mgr->replace_macros(m_symlink);
+            if (!utxx::path::file_symlink(m_filename, m_symlink, true))
+                UTXX_THROW_IO_ERROR(errno, "Error creating symlink ", m_symlink,
+                                    " -> ", m_filename, ": ");
+        }
+
         // Write field information
         if (!m_no_header) {
             char buf[256];
