@@ -80,8 +80,6 @@ protected:
         return time_val(secs(a_utc_seconds)).write_date(a_buf, eos_pos, a_sep);
     }
 
-    static void update_midnight_nseconds(time_val a_now);
-
     static void update_slow();
 
     static void check_midnight_seconds() {
@@ -92,6 +90,11 @@ protected:
 public:
     /// Suggested buffer space type needed for format() calls.
     typedef char buf_type[32];
+
+    // These methods are made public for testing only:
+    static void        update_midnight_nseconds(time_val a_now);
+    static const char* cached_utc_timestamp()   { return s_utc_timestamp;   }
+    static const char* cached_local_timestamp() { return s_local_timestamp; }
 
     /// Write local date in format: YYYYMMDD, YYYY-MM-DD. If \a eos_pos > 8
     /// the function appends '-' at the end of the YYYYMMDD string.
@@ -137,23 +140,30 @@ public:
         // FIXME: the method below will produce incorrect time stamps during
         // switch to/from daylight savings time because of the unaccounted
         // utc_offset change.
-        if (unlikely(a_now.nanoseconds() >= s_next_utc_midnight_nseconds))
+        auto ns = a_now.nanoseconds();
+        if (unlikely((ns >= s_next_utc_midnight_nseconds) ||
+                     (ns + s_utc_nsec_offset >= s_next_local_midnight_nseconds)))
             update_midnight_nseconds(a_now);
     }
 
     /// Return the number of seconds from epoch to midnight in UTC.
-    static time_t utc_midnight_seconds()   { return utc_midnight_nseconds().sec();  }
+    static time_t utc_midnight_seconds()   { return utc_midnight_time().sec();  }
     /// Return the number of seconds from epoch to midnight in local time.
-    static time_t local_midnight_seconds() { return local_midnight_nseconds().sec();}
+    static time_t local_midnight_seconds() { return local_midnight_time().sec();}
 
     /// Return the number of nanoseconds from epoch to midnight in UTC.
-    static time_val utc_midnight_nseconds()   {
+    static time_val utc_midnight_time()   {
         return nsecs(s_next_utc_midnight_nseconds - DAY_NSEC);
     }
     /// Return the number of nanoseconds from epoch to midnight in local time.
-    static time_val local_midnight_nseconds() {
+    static time_val local_midnight_time() {
         return nsecs(s_next_local_midnight_nseconds - DAY_NSEC);
     }
+
+    /// Return the number of seconds from epoch to midnight in UTC.
+    static time_val utc_next_midnight_time()   {return nsecs(s_next_utc_midnight_nseconds);}
+    /// Return the number of seconds from epoch to midnight in local time.
+    static time_val local_next_midnight_time() {return nsecs(s_next_local_midnight_nseconds);}
 
     /// Number of seconds since midnight in local time zone for a given UTC time.
     static time_t local_seconds_since_midnight(time_t a_utc_time) {
@@ -169,11 +179,13 @@ public:
         return s_utc_nsec_offset / 1000000000L;
     }
 
+    static long utc_offset_nseconds() { return s_utc_nsec_offset; }
+
     /// Convert a timestamp to the number of microseconds
     /// since midnight in local time.
     static int64_t local_usec_since_midnight(time_val a_now_utc) {
         check_midnight_seconds();
-        long diff = a_now_utc.diff_nsec(local_midnight_nseconds());
+        long diff = a_now_utc.diff_nsec(local_midnight_time());
         if (unlikely(diff < 0)) diff = -diff % DAY_NSEC;
         return diff / 1000;
     }
@@ -182,7 +194,7 @@ public:
     /// since midnight in UTC.
     static int64_t utc_usec_since_midnight(time_val a_now_utc) {
         check_midnight_seconds();
-        long diff = a_now_utc.diff_nsec(utc_midnight_nseconds());
+        long diff = a_now_utc.diff_nsec(utc_midnight_time());
         if (unlikely(diff < 0)) diff = -diff % DAY_NSEC;
         return diff / 1000;
     }

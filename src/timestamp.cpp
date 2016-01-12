@@ -98,14 +98,18 @@ void timestamp::update_midnight_nseconds(time_val a_now)
     struct tm tm;
     localtime_r(&s, &tm);
     s_utc_nsec_offset = tm.tm_gmtoff * 1000000000L;
-    s_next_utc_midnight_nseconds   = (a_now.nanoseconds() -
-                                      a_now.nanoseconds() % (86400L * 1000000000L))
-                                   + 86400L * 1000000000L;
-    s_next_local_midnight_nseconds = s_next_utc_midnight_nseconds - s_utc_nsec_offset;
+    auto now_midnight_nsecs   = a_now.nanoseconds() -
+                                a_now.nanoseconds() % (86400L * 1000000000L);
+    auto local_midnight_nsecs = now_midnight_nsecs - s_utc_nsec_offset;
+
+    s_next_utc_midnight_nseconds   = now_midnight_nsecs + 86400L * 1000000000L;
+    s_next_local_midnight_nseconds = a_now.nanoseconds() >= local_midnight_nsecs
+                                   ? (s_next_utc_midnight_nseconds - s_utc_nsec_offset)
+                                   : local_midnight_nsecs;
 
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
-    internal_write_date(s_local_timestamp, a_now.sec(), false, 9, '\0');
-    internal_write_date(s_utc_timestamp, a_now.sec(), true, 9, '\0');
+    internal_write_date(s_local_timestamp, s, false, 9, '\0');
+    internal_write_date(s_utc_timestamp,   s, true,  9, '\0');
 }
 
 size_t timestamp::format_size(stamp_type a_tp)

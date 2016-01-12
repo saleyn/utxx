@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define DEBUG_TIMESTAMP
 #endif
 #include <utxx/timestamp.hpp>
+#include <utxx/os.hpp>
 
 using namespace utxx;
 
@@ -491,4 +492,68 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     got = timestamp::local_usec_since_midnight(now);
 
     BOOST_REQUIRE_EQUAL(expect_local_usec_since_midnight, got);
+
+    auto env = getenv("TZ");
+    setenv("TZ", "EST", 1);
+
+    auto tv = time_val::universal_time(2000, 1, 2, 23, 59, 59, 0);
+    timestamp::update_midnight_nseconds(tv);
+    auto mu = timestamp::utc_next_midnight_time();
+    auto ml = timestamp::local_next_midnight_time();
+
+    auto tu = time_val::universal_time(2000, 1, 3, 0, 0, 0, 0);
+    auto tl = tu + nsecs(timestamp::utc_offset_nseconds());
+
+    BOOST_CHECK_EQUAL(mu.nsec(), tu.nsec());
+    BOOST_CHECK_EQUAL(ml.nsec(), tl.nsec());
+
+    BOOST_CHECK_EQUAL("20000102-", timestamp::cached_utc_timestamp());
+    BOOST_CHECK_EQUAL("20000102-", timestamp::cached_local_timestamp());
+
+    //------------------
+    tv = ml - secs(1);
+    timestamp::update_midnight_nseconds(tv);
+    mu = timestamp::utc_next_midnight_time();
+    ml = timestamp::local_next_midnight_time();
+
+    tl = tv + nsecs(timestamp::utc_offset_nseconds());
+    tu = time_val::universal_time(2000, 1, 4, 0, 0, 0, 0);
+
+    BOOST_CHECK_EQUAL(mu.nsec(), tu.nsec());
+    if (verbosity::level() > VERBOSE_NONE) {
+        std::cout
+            << "  ML=" << timestamp::to_string(ml, DATE_TIME, true, false) << "UTC"
+            << ", TL=" << timestamp::to_string(tl, DATE_TIME, true, false) << "EST"
+            << ", TV=" << timestamp::to_string(tv, DATE_TIME, true, false) << "EST"
+            << "\n"
+            <<"   ML="   << ml.sec() << std::endl
+            << "  TL="   << tl.sec() << std::endl;
+    }
+    BOOST_CHECK(ml.nanoseconds() > tl.nanoseconds());
+
+    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
+    BOOST_CHECK_EQUAL("20000102-", timestamp::cached_local_timestamp());
+
+    //------------------
+    tv += secs(1);
+    auto h = abs(int(timestamp::utc_offset() / 3600));
+    tu = time_val::universal_time(2000, 1, 3, h, 0, 0, 0);
+    timestamp::update_midnight_nseconds(tv);
+
+    BOOST_CHECK_EQUAL(tv.nanoseconds(), tu.nanoseconds());
+
+    mu = timestamp::utc_next_midnight_time();
+    ml = timestamp::local_next_midnight_time();
+
+    tu = time_val::universal_time(2000, 1, 4, 0, 0, 0, 0);
+    tl = tu + nsecs(timestamp::utc_offset_nseconds());
+
+    BOOST_CHECK_EQUAL(mu.nsec(), tu.nsec());
+    BOOST_CHECK_EQUAL(ml.nsec(), tl.nsec());
+
+    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
+    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_local_timestamp());
+
+    if (env)
+        setenv("TZ", env, 1);
 }
