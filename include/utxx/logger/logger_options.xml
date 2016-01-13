@@ -40,6 +40,7 @@
             <value val="trace4"/>
             <value val="trace5"/>
             <value val="debug"/>
+            <value val="notice"/>
             <value val="info"/>
             <value val="warning"/>
             <value val="error"/>
@@ -105,12 +106,18 @@
 
         <option name="console" required="false"
                 desc="logger's backend for writing messages to console">
-            <option name="stdout-levels" val-type="string"
-                    desc="Filter of log severity levels to print to stdout">
+            <option name="stdout-levels" val-type="string" default="notice|info|warning"
+                    desc="Filter of log severity levels to print to stdout"/>
+            <option name="stderr-levels" val-type="string" default="error|fatal|alert"
+                    desc="Filter of log severity levels to print to stderr"/>
+            <option name="min-stdout-level" val-type="string" default="notice"
+                    desc="Minimum severity of messages to log to stdout\n
+                          (this option overrides stdout-levels)">
                 <copy path="../../../option[@name = 'min-level-filter']/value"/>
             </option>
-            <option name="stderr-levels" val-type="string" default="error|fatal|alert"
-                    desc="Filter of log severity levels to print to stderr">
+            <option name="min-stderr-level" val-type="string" default="notice"
+                    desc="Minimum severity of messages to log to stderr\n
+                          (this option overrides stderr-levels)">
                 <copy path="../../../option[@name = 'min-level-filter']/value"/>
             </option>
             <option name="show-location" val-type="bool" default="false"

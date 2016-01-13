@@ -57,12 +57,21 @@ bool logger_impl_console::init(const variant_tree& a_config)
     BOOST_ASSERT(this->m_log_mgr);
 
     ptree::const_assoc_iterator it;
-    m_color         = a_config.get("logger.console.color", true);
-    std::string s   = a_config.get("logger.console.stdout-levels", "");
-    m_stdout_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stdout_levels;
+    m_color          = a_config.get("logger.console.color", true);
+    auto smin_stdout = a_config.get("logger.console.min-stdout-level", "");
+    auto smin_stderr = a_config.get("logger.console.min-stderr-level", "");
+    int  min_stdout  = logger::parse_min_log_level(smin_stdout);
+    int  min_stderr  = logger::parse_min_log_level(smin_stderr);
+    auto so          = a_config.get("logger.console.stdout-levels", "");
+    auto se          = a_config.get("logger.console.stderr-levels", "");
 
-    s = a_config.get("logger.console.stderr-levels", "");
-    m_stderr_levels = !s.empty() ? logger::parse_log_levels(s) : s_def_stderr_levels;
+    m_stdout_levels  = !smin_stdout.empty() ? min_stdout                   :
+                       !so.empty()          ? logger::parse_log_levels(so) :
+                       s_def_stdout_levels;
+
+    m_stderr_levels  = !smin_stderr.empty() ? min_stderr                   :
+                       !se.empty()          ? logger::parse_log_levels(se) :
+                       s_def_stderr_levels;
 
     int all_levels = m_stdout_levels | m_stderr_levels;
     for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {

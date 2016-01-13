@@ -54,7 +54,7 @@ volatile long timestamp::s_syscalls;
 
 namespace {
     static const char* s_values[] = {
-        "none", "date", "date-time", "date-time-msec", "date-time-usec"
+        "none", "date", "date-time", "date-time-msec", "date-time-usec",
         "time", "time-msec", "time-usec",
     };
 }

@@ -45,8 +45,8 @@ class logger_impl_console: public logger_impl {
     int          m_stdout_levels;
     int          m_stderr_levels;
 
-    static const int s_def_stdout_levels = LEVEL_INFO  | LEVEL_WARNING;
-    static const int s_def_stderr_levels = LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT;
+    static const int s_def_stdout_levels = LEVEL_NOTICE | LEVEL_INFO  | LEVEL_WARNING;
+    static const int s_def_stderr_levels = LEVEL_ERROR  | LEVEL_FATAL | LEVEL_ALERT;
 
     logger_impl_console(const char* a_name)
         : m_name(a_name)

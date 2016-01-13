@@ -639,6 +639,11 @@ log_level logger::parse_log_level(const std::string& a_level)
     throw std::runtime_error("Invalid log level: " + a_level);
 }
 
+int logger::parse_min_log_level(const std::string& a_level) throw(std::runtime_error) {
+    auto     ll = uint32_t(parse_log_level(a_level));
+    return static_cast<uint32_t>(~(ll ? (1u << __builtin_ffs(ll))-1 : 0u));
+}
+
 void logger::set_level_filter(log_level a_level) {
     m_level_filter = static_cast<int>(a_level);
 }
