@@ -39,7 +39,7 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_get_option )
 {
     const char* argv[] = {"test", "-a", "10", "--out=file", "-t", "true",
-                          "-f", "-", "-x", "--"};
+                          "-f", "-", "-x", "--", "-y", "/temp"};
     int         argc   = std::extent< decltype(argv) >::value;
 
     int         a;
@@ -70,7 +70,12 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         }
         if (opts.match("-x", ""))
             continue;
-        BOOST_CHECK_EQUAL("--", opts());
+        if (opts() == std::string("--"))
+            continue;
+        if (opts.match("-y","", &out)) {
+            BOOST_CHECK_EQUAL("/temp", out); continue;
+        }
+        BOOST_CHECK(false);
     }
 
     BOOST_CHECK(opts.find("-a", "", &a));

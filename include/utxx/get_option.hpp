@@ -67,7 +67,7 @@ namespace {
             int  nextlen = i < argc-1 ? strlen(argv[i+1]) : 0;
             bool has_arg = nextlen && strcmp(argv[i+1], "--") != 0 &&
                                       ((argv[i+1][0] == '-' && nextlen == 1) ||
-                                       (argv[i+1][1] != '-'));
+                                       (argv[i+1][0] != '-'));
             if (a_fun)
                 a_fun(has_arg ? argv[++i] : "");
             else if (has_arg)
