@@ -617,23 +617,25 @@ int logger::parse_log_levels(const std::string& a_levels)
 log_level logger::parse_log_level(const std::string& a_level)
     throw(std::runtime_error)
 {
+    if (a_level.empty()) return LEVEL_NONE;
+
     auto s = boost::to_upper_copy(a_level);
-    if (s == "WIRE")    return LEVEL_DEBUG;  // Backward compatibility
+    if (s == "WIRE")     return LEVEL_DEBUG;  // Backward compatibility
     if (s == "NONE" ||
-        s == "FALSE")   return LEVEL_NONE;
-    if (s == "TRACE")   return LEVEL_TRACE;
-    if (s == "TRACE1")  return log_level(LEVEL_TRACE | LEVEL_TRACE1);
-    if (s == "TRACE2")  return log_level(LEVEL_TRACE | LEVEL_TRACE2);
-    if (s == "TRACE3")  return log_level(LEVEL_TRACE | LEVEL_TRACE3);
-    if (s == "TRACE4")  return log_level(LEVEL_TRACE | LEVEL_TRACE4);
-    if (s == "TRACE5")  return log_level(LEVEL_TRACE | LEVEL_TRACE5);
-    if (s == "DEBUG")   return LEVEL_DEBUG;
-    if (s == "INFO")    return LEVEL_INFO;
-    if (s == "NOTICE")  return LEVEL_NOTICE;
-    if (s == "WARNING") return LEVEL_WARNING;
-    if (s == "ERROR")   return LEVEL_ERROR;
-    if (s == "FATAL")   return LEVEL_FATAL;
-    if (s == "ALERT")   return LEVEL_ALERT;
+        s == "FALSE")    return LEVEL_NONE;
+    if (s == "TRACE")    return LEVEL_TRACE;
+    if (s == "TRACE1")   return log_level(LEVEL_TRACE | LEVEL_TRACE1);
+    if (s == "TRACE2")   return log_level(LEVEL_TRACE | LEVEL_TRACE2);
+    if (s == "TRACE3")   return log_level(LEVEL_TRACE | LEVEL_TRACE3);
+    if (s == "TRACE4")   return log_level(LEVEL_TRACE | LEVEL_TRACE4);
+    if (s == "TRACE5")   return log_level(LEVEL_TRACE | LEVEL_TRACE5);
+    if (s == "DEBUG")    return LEVEL_DEBUG;
+    if (s == "INFO")     return LEVEL_INFO;
+    if (s == "NOTICE")   return LEVEL_NOTICE;
+    if (s == "WARNING")  return LEVEL_WARNING;
+    if (s == "ERROR")    return LEVEL_ERROR;
+    if (s == "FATAL")    return LEVEL_FATAL;
+    if (s == "ALERT")    return LEVEL_ALERT;
     try   { auto n = std::stoi(s); return as_log_level(n); }
     catch (...) {}
     throw std::runtime_error("Invalid log level: " + a_level);
