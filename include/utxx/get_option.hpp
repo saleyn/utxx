@@ -64,12 +64,16 @@ namespace {
                    const std::string& a,  int& i) {
         if (a.empty() || argv[i][0] != '-') return false;
         if (a == argv[i]) {
-            if (!a_fun) {
+            int  nextlen = i < argc-1 ? strlen(argv[i+1]) : 0;
+            bool has_arg = nextlen && strcmp(argv[i+1], "--") != 0 &&
+                                      ((argv[i+1][0] == '-' && nextlen == 1) ||
+                                       (argv[i+1][1] != '-'));
+            if (a_fun)
+                a_fun(has_arg ? argv[++i] : "");
+            else if (has_arg)
                 // Fail if this option has argument, while it's not supposed to.
-                if (i < argc-1 && argv[i+1][0] != '-')
-                    return false;
-            } else
-                a_fun(((i+1 >= argc || argv[i+1][0] == '-') ? "" : argv[++i]));
+                return false;
+
             return true;
         }
         size_t n = strlen(argv[i]);

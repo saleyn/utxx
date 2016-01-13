@@ -526,7 +526,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
             << ", TL=" << timestamp::to_string(tl, DATE_TIME, true, false) << "EST"
             << ", TV=" << timestamp::to_string(tv, DATE_TIME, true, false) << "EST"
             << "\n"
-            <<"   ML="   << ml.sec() << std::endl
+            << "  ML="   << ml.sec() << std::endl
             << "  TL="   << tl.sec() << std::endl;
     }
     BOOST_CHECK(ml.nanoseconds() > tl.nanoseconds());
