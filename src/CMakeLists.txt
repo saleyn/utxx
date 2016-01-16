@@ -55,9 +55,10 @@ target_link_libraries(tailagg utxx)
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 install(
-  TARGETS ${PROJECT_NAME} mreceive tailagg
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static mreceive tailagg
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
 )
 
 install(
