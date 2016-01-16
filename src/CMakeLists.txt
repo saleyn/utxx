@@ -24,7 +24,17 @@ list(APPEND UTXX_SRCS
 
 XML_CFG(UTXX_SRCS ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME}/logger/logger_options.xml)
 
+# this is the "object library" target: compiles the sources only once
+#add_library(objlib OBJECT ${UTXX_SRCS})
+# shared libraries need PIC
+#set_target_properties(${objlib} PROPERTIES POSITION_INDEPENDENT_CODE 1)
+#set_property(TARGET ${objlib} PROPERTY POSITION_INDEPENDENT_CODE 1)
+# actual shared and static libraries built from the same object files
+#add_library(${PROJECT_NAME} SHARED $<TARGET_OBJECTS:objlib>)
+#add_library(${PROJECT_NAME}_static STATIC $<TARGET_OBJECTS:objlib>)
 add_library(${PROJECT_NAME} SHARED ${UTXX_SRCS})
+add_library(${PROJECT_NAME}_static STATIC ${UTXX_SRCS})
+set_target_properties(${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
 target_link_libraries(${PROJECT_NAME} ${UTXX_LIBS})
 if(ZLIB_FOUND)
   target_link_libraries(${PROJECT_NAME} ${LIBZ_LIBRARIES})
@@ -32,6 +42,7 @@ endif()
 
 if (${BUILD_TYPE} STREQUAL "Debug")
   set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX "-d.so")
+  set_target_properties(${PROJECT_NAME}_static PROPERTIES SUFFIX "-d.so")
 endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
