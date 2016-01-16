@@ -42,6 +42,8 @@ namespace utxx {
 class logger_impl_console: public logger_impl {
     std::string  m_name;
     bool         m_color;
+    bool         m_stdout_is_tty = true;
+    bool         m_stderr_is_tty = true;
     int          m_stdout_levels;
     int          m_stderr_levels;
 

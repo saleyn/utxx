@@ -80,6 +80,9 @@ bool logger_impl_console::init(const variant_tree& a_config)
             this->add(level, logger::on_msg_delegate_t::from_method
                     <logger_impl_console, &logger_impl_console::log_msg>(this));
     }
+
+    m_stdout_is_tty = isatty(fileno(stdout));
+    m_stderr_is_tty = m_stdout_is_tty && isatty(fileno(stderr));
     return true;
 }
 
@@ -87,12 +90,10 @@ void logger_impl_console::log_msg(
     const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
 {
     if (a_msg.level() & m_stdout_levels) {
-        bool color = m_color && isatty(fileno(stdout));
-        colorize(a_msg.level(), color, std::cout, std::string(a_buf, a_size));
+        colorize(a_msg.level(), m_stdout_is_tty, std::cout, std::string(a_buf, a_size));
         std::flush(std::cout);
     } else if (a_msg.level() & m_stderr_levels) {
-        bool color = m_color && isatty(fileno(stderr));
-        colorize(a_msg.level(), color, std::cerr, std::string(a_buf, a_size));
+        colorize(a_msg.level(), m_stderr_is_tty, std::cerr, std::string(a_buf, a_size));
     }
 }
 
@@ -104,10 +105,11 @@ void logger_impl_console::colorize
     static const char MAGENTA[]= "\E[1;35;40m";
     static const char NORMAL[] = "\E[0m";
 
-    if (!a_color || a_ll <  LEVEL_WARNING) out << a_str;
-    else if        (a_ll <= LEVEL_WARNING) out << YELLOW  << a_str << NORMAL;
-    else if        (a_ll >= LEVEL_FATAL)   out << MAGENTA << a_str << NORMAL;
-    else if        (a_ll >= LEVEL_ERROR)   out << RED     << a_str << NORMAL;
+    auto color = m_color && a_color;
+    if (!color || a_ll <  LEVEL_WARNING) out << a_str;
+    else if      (a_ll <= LEVEL_WARNING) out << YELLOW  << a_str << NORMAL;
+    else if      (a_ll >= LEVEL_FATAL)   out << MAGENTA << a_str << NORMAL;
+    else if      (a_ll >= LEVEL_ERROR)   out << RED     << a_str << NORMAL;
 }
 
 

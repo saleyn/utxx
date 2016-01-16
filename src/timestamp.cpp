@@ -160,7 +160,7 @@ int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
             return p - a_buf;
         }
         case DATE:
-            p = write_date(a_buf, pair.first, a_utc, '\0', a_use_cached_date);
+            p = write_date(a_buf, pair.first, a_utc, 8, '\0', a_use_cached_date);
             return 8;
         case DATE_TIME:
         case DATE_TIME_WITH_USEC:
