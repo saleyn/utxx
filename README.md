@@ -139,6 +139,7 @@ if (...) {
 ```
 ## Author ##
 * Serge Aleynikov `<saleyn at gmail dot com>`
+* (see AUTHORS.md for a list of contributors)
 
 ## LICENSE ##
 * Non-commercial: GNU Lesser General Public License 2.1
