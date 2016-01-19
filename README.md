@@ -86,8 +86,10 @@ If you need to do a full cleanup of the current build and rerun bootstrap with
 previously chosen options, do:
 ```
 $ make distclean
-$ make rebootstrap
+$ make rebootstrap [toolchain=gcc|clang]  [build=Debug|Release]
 ```
+Note that the `rebootstrap` command remembers previous bootstrap options, but
+if you give it arguments they will override the old ones.
 
 ## Commit Notifications ##
 The following news group was set up for commit notifications:
@@ -137,10 +139,6 @@ if (...) {
 ```
 ## Author ##
 * Serge Aleynikov `<saleyn at gmail dot com>`
-
-## Contributors ##
-* Dmitriy Kargapolov `<dmitriy.kargapolov at gmail dot com>`
-* Leonid Timochouk   `<l.timochouk at gmail dot com>`
 
 ## LICENSE ##
 * Non-commercial: GNU Lesser General Public License 2.1

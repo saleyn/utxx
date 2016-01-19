@@ -8,7 +8,6 @@ project(utxx VERSION 1.4)
 option(WITH_THRIFT             "Enable to compile UTXX with Thrift"          ON)
 option(VERBOSE                 "Turn verbosity on|off"                      OFF)
 option(WITH_ENUM_SERIALIZATION "Turn enum serialization support on|off"     OFF)
-#set(DEBUG "vars")
 
 if(VERBOSE)
   set(CMAKE_VERBOSE_MAKEFILE ON)

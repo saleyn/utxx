@@ -46,6 +46,7 @@ thread_local long       timestamp::s_next_utc_midnight_nseconds   = 0;
 thread_local time_t     timestamp::s_utc_nsec_offset              = 0;
 thread_local char       timestamp::s_local_timestamp[16];
 thread_local char       timestamp::s_utc_timestamp[16];
+thread_local char       timestamp::s_local_timezone[8];
 
 #ifdef DEBUG_TIMESTAMP
 volatile long timestamp::s_hrcalls;
@@ -106,6 +107,9 @@ void timestamp::update_midnight_nseconds(time_val a_now)
     s_next_local_midnight_nseconds = a_now.nanoseconds() >= local_midnight_nsecs
                                    ? (s_next_utc_midnight_nseconds - s_utc_nsec_offset)
                                    : local_midnight_nsecs;
+
+    strncpy(s_local_timezone, tm.tm_zone, sizeof(s_local_timezone)-1);
+    s_local_timezone[sizeof(s_local_timezone)-1] = '\0';
 
     // the mutex is not needed here at all - s_timestamp lives in TLS storage
     internal_write_date(s_local_timestamp, s, false, 9, '\0');

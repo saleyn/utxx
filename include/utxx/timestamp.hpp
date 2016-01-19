@@ -66,6 +66,7 @@ protected:
     static thread_local long        s_utc_nsec_offset;
     static thread_local char        s_utc_timestamp[16];
     static thread_local char        s_local_timestamp[16];
+    static thread_local char        s_local_timezone[8];
 
     #ifdef DEBUG_TIMESTAMP
     static volatile long s_hrcalls;
@@ -145,6 +146,9 @@ public:
                      (ns + s_utc_nsec_offset >= s_next_local_midnight_nseconds)))
             update_midnight_nseconds(a_now);
     }
+
+    /// Return symbolic abbreviation of local timzone
+    static const char* local_timezone()    { return s_local_timezone; }
 
     /// Return the number of seconds from epoch to midnight in UTC.
     static time_t utc_midnight_seconds()   { return utc_midnight_time().sec();  }
