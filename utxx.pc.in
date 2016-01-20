@@ -2,10 +2,11 @@ prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=@exec_prefix@
 libdir=@CMAKE_INSTALL_PREFIX@/lib
 includedir=@CMAKE_INSTALL_PREFIX@/include
+libsuffix=@LIB_SUFFIX@
 
 Name: @PROJECT_NAME@
 Description: C++ Utility Library.
 #Requires: boost_1_49_0
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -lutxx @THRIFT_LIBS@ -lboost_thread
+Libs: -L${libdir} -lutxx${libsuffix} @THRIFT_LIBS@ -lboost_thread
 Cflags: -I${includedir}
