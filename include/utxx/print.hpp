@@ -275,6 +275,7 @@ namespace detail {
             m_pos += Width;
         }
         void do_print(const char* a) {
+            if (UNLIKELY(!a)) return;
             const char* p = strchr(a, '\0');
             assert(p);
             size_t n = p - a;
