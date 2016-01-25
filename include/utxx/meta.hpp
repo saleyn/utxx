@@ -161,8 +161,36 @@ struct function_traits<ReturnType(ClassType::*)(Args...) const>
     };
 };
 
+//------------------------------------------------------------------------------
+/// Extract the last type in a parameter pack
+//------------------------------------------------------------------------------
+/// Usage example:
+/// \code
+/// struct S
+/// {
+///   // Accept variadic arguments so long as the last argument type is an int
+///   template <
+///     typename... T,
+///     typename = typename std::enable_if<
+///                    std::is_same<int, typename last_type<T...>::type>>::type>
+///   S(T...);
+/// };
+/// \endcode
+//------------------------------------------------------------------------------
+// 0, the empty pack has no last type (only called if 1 and 2+ don't match)
+template<typename... Ts>
+struct last_type {};
+
+// 2+ in pack, recurse:
+template<typename T0, typename T1, typename... Ts>
+struct last_type<T0, T1, Ts...> : last_type<T1, Ts...> {};
+
+// Length 1, last type is only type:
+template<typename T0>
+struct last_type<T0> { using type = T0; };
+
 //-----------------------------------------------------------------------------
-// Evaluation of anything
+/// Evaluation of anything
 //-----------------------------------------------------------------------------
 // functions, functors, lambdas, etc.
 template<
