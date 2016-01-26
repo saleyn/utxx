@@ -235,6 +235,15 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_REQUIRE_EQUAL("03:04:05.001",             t.to_string(utxx::TIME_WITH_MSEC));
         BOOST_REQUIRE_EQUAL("03:04:05.001000",          t.to_string(utxx::TIME_WITH_USEC));
     }
+
+    {
+        time_val tv1; tv1.nanoseconds(1453768119042798821);
+        time_val tv2; tv2.nanoseconds(1453768061796270822);
+        BOOST_CHECK(tv1 >= tv2);
+        BOOST_CHECK(tv1.nanoseconds() >= tv2.nanoseconds());
+        BOOST_CHECK(tv1 > tv2);
+        BOOST_CHECK(tv1.nanoseconds() >  tv2.nanoseconds());
+    }
 }
 
 
