@@ -56,6 +56,8 @@ public:
         BOOST_STATIC_ASSERT(1 <= N && N <= sizeof(long)*8);
     }
 
+    explicit bitmap_low(T a_mask) : m_data(a_mask) {}
+
     static const unsigned int max  = N - 1;
     static const unsigned int cend = N;
 
