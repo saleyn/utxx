@@ -6,7 +6,8 @@ addons:
     - ubuntu-toolchain-r-test
     - boost-latest
     packages:
-    - g++-5.2
+    - gcc-5
+    - g++-5
     - libboost1.55-all-dev
     - libxslt1.1
     - python-lxml
@@ -30,7 +31,8 @@ before_install:
   - # grep BOOST_LIB_VERSION /usr/include/boost/version.hpp | grep define
   - # locate libboost | head -100
   - sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5.2 90
+  - ls -1 /usr/bin/g++*
+  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 90
 
 before_script:
   - echo "DIR:BUILD=/tmp/${USER}/utxx"                           > .cmake-args.$(hostname)
