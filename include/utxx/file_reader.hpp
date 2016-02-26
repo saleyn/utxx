@@ -41,11 +41,11 @@ namespace detail {
  */
 template<size_t BufSize = 1024 * 1024>
 class basic_file_reader : private boost::noncopyable {
-    std::string m_fname;
-    std::ifstream m_file;
-    utxx::basic_io_buffer<BufSize> m_buf;
-    size_t m_offset;
-    bool m_open;
+    std::string                 m_fname;
+    std::ifstream               m_file;
+    basic_io_buffer<BufSize>    m_buf;
+    size_t                      m_offset;
+    bool                        m_open;
 
 public:
     /// default constructor
@@ -75,13 +75,13 @@ public:
     /// open file for reading
     void open(const std::string& a_fname) {
         if (m_open) return;
-        // make sure exception thrown in case of error
+        // make sure exception thrown in case of errors
         m_file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
         m_file.open(a_fname.c_str(), std::ios::in | std::ios::binary);
         // further read can set failbit in case there is not enough data
         // this case should not throw an exception in our class
         m_file.exceptions(std::ifstream::badbit);
-        m_open = true;
+        m_open  = true;
         m_fname = a_fname;
         m_buf.reset();
         BOOST_ASSERT(m_buf.capacity() > 0);
@@ -95,7 +95,7 @@ public:
     }
 
     /// clear error control state so read could be resumed
-    void clear() { if (m_open) m_file.clear(); }
+    void   clear() { if (m_open) m_file.clear(); }
 
     /// offset at which read start
     size_t offset() const { return m_offset; }
@@ -145,10 +145,10 @@ class data_file_reader : public detail::basic_file_reader<BufSize> {
     typedef detail::basic_file_reader<BufSize> base;
 
     codec_t m_codec;
-    size_t m_data_offset;
-    data_t m_data;
-    bool m_empty;  // no data in m_data
-    bool m_end;    // eof reached
+    size_t  m_data_offset;
+    data_t  m_data;
+    bool    m_empty;  // no data in m_data
+    bool    m_end;    // eof reached
 
     friend class iterator;
 
@@ -198,7 +198,7 @@ public:
 
     void read_data() {
         while (!m_end) {
-            ssize_t n = m_codec.decode(m_data,
+            ssize_t n = m_codec(m_data,
                 base::rd_ptr(), base::size(), m_data_offset);
             if (n > 0) {
                 m_data_offset += n;
@@ -220,10 +220,8 @@ public:
 
     /// iterator for reading sequence of records
     class iterator : public std::iterator<std::input_iterator_tag, data_t> {
-
         data_file_reader& m_freader;
-        bool m_end;
-
+        bool              m_end;
     public:
         iterator(data_file_reader& a_freader, bool a_end = false)
             : m_freader(a_freader), m_end(a_end)

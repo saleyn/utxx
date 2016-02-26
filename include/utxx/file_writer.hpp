@@ -116,11 +116,11 @@ class data_file_writer : public detail::basic_file_writer<BufSize> {
     typedef detail::basic_file_writer<BufSize> base;
 
     codec_t m_codec;
-    size_t m_data_offset;
+    size_t  m_data_offset;
 
     bool try_write(const data_t& a_data) {
         size_t n;
-        if ((n = m_codec.encode(a_data, base::wr_ptr(), base::capacity())) > 0) {
+        if ((n = m_codec(a_data, base::wr_ptr(), base::capacity())) > 0) {
             base::commit(n);
             m_data_offset += n;
             return true;

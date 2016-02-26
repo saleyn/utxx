@@ -26,7 +26,8 @@ struct string_codec {
 
     typedef std::string data_t;
 
-    size_t encode(const data_t& a_msg, char *a_buf, size_t a_len) {
+    // Encoder
+    size_t operator()(const data_t& a_msg, char *a_buf, size_t a_len) {
         size_t l = a_msg.size();
         size_t h = sizeof(size_t);
         size_t n = h + l;
@@ -37,7 +38,8 @@ struct string_codec {
         return n;
     }
 
-    ssize_t decode(data_t& a_msg, const char *a_buf, size_t a_len, size_t a_offset) const {
+    // Decoder
+    ssize_t operator()(data_t& a_msg, const char *a_buf, size_t a_len, size_t a_offset) const {
         // BOOST_TEST_MESSAGE( getpid() << ": decode at " << a_offset );
         size_t h = sizeof(size_t);
         if (a_len < h)
@@ -57,7 +59,7 @@ size_t write_file1(const char *a_fname, std::list<std::string>& a_lst) {
     char l_buf[64];
     size_t total = 0;
     for(auto& a_str : a_lst) {
-        size_t n = codec.encode(a_str, l_buf, sizeof(l_buf));
+        size_t n = codec(a_str, l_buf, sizeof(l_buf));
         if (!n)
             return 0;
         l_file.write(l_buf, n);
