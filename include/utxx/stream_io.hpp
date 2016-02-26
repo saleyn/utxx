@@ -46,13 +46,17 @@ namespace utxx {
 ///                 value is NULL, the values are read from the input stream
 ///                 in consequitive order disregarding field positions.
 /// @param a_cnt    count of values to read.
+/// @param a_convert lambda used to convert a string value to type \a T:
+///   <code>const char* (const char* begin, const char* end, T& outout);</code>
+///   The function must return NULL if conversion is unsuccessful, or a pointer
+///   past last successfully parsed character otherwise.
 /// @return true if successfully read \a a_cnt values.
 //------------------------------------------------------------------------------
-template <typename T = double, class Convert>
+template <typename T = double, int StrSize = 256, class Convert>
 bool read_values(std::ifstream& in, T* a_output, int* a_fields, int a_cnt,
                  const Convert& a_convert)
 {
-  basic_stack_string<256> str;
+  basic_stack_string<StrSize> str;
 
   auto& line = str.container();
 
