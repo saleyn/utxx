@@ -984,6 +984,8 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
 
 //--------------------------------------------------------------------------------
 /// Parses floating point numbers with fixed number of decimal digits from string.
+/// @return pointer past the last successfully parsed character or \a p if
+/// nothing was parsed.
 //
 // atof:
 //      09-May-2009 Tom Van Baak (tvb) www.LeapSecond.com

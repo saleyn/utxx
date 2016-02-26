@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 namespace io   {
 
+/// An input stream class that sets the O_LARGEFILE flag
 template <typename Char, typename Traits = std::char_traits<Char> >
 class basic_ifstream64 : public std::basic_ifstream<Char, Traits>
 {
@@ -78,6 +79,7 @@ public:
     virtual ~basic_ifstream64() override {}
 };
 
+/// An outinput stream class that sets the O_LARGEFILE flag
 template <typename Char, typename Traits = std::char_traits<Char> >
 class basic_ofstream64 : public std::basic_ofstream<Char, Traits>
 {
