@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <fstream>
+#include <iosfwd>
 #include <utxx/convert.hpp>
 #include <utxx/container/stack_container.hpp>
 
@@ -53,7 +53,7 @@ namespace utxx {
 /// @return true if successfully read \a a_cnt values.
 //------------------------------------------------------------------------------
 template <typename T = double, int StrSize = 256, class Convert>
-bool read_values(std::ifstream& in, T* a_output, int* a_fields, int a_cnt,
+bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
                  const Convert& a_convert)
 {
   basic_stack_string<StrSize> str;
