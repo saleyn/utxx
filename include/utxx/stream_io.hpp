@@ -64,8 +64,13 @@ bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
 
     if (a_fields == nullptr) {
         for (int i=0; i < a_cnt; ++i) {
-            if (in.eof()) return false;
+            if (in.eof())  return false;
             in >> *a_output++;
+            if (in.fail()) {
+                in.clear();
+                std::getline(in, line);
+                return false;
+            }
         }
     }
     else if (!std::getline(in, line))
