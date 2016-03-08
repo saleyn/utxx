@@ -45,7 +45,7 @@ namespace utxx {
 /// @param a_fields array of \a a_cnt field positions (ascending order). If this
 ///                 value is NULL, the values are read from the input stream
 ///                 in consequitive order disregarding field positions.
-/// @param a_cnt    count of values to read.
+/// @param a_cnt    count of values to read (must be > 0).
 /// @param a_convert lambda used to convert a string value to type \a T:
 ///   <code>const char* (const char* begin, const char* end, T& outout);</code>
 ///   The function must return NULL if conversion is unsuccessful, or a pointer
@@ -56,46 +56,48 @@ template <typename T = double, int StrSize = 256, class Convert>
 bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
                  const Convert& a_convert)
 {
-  basic_stack_string<StrSize> str;
+    assert(a_cnt);
 
-  auto& line = str.container();
+    basic_stack_string<StrSize> str;
 
-  if (a_fields == nullptr) {
-    for (int i=0; i < a_cnt; ++i) {
-      if (in.eof()) return false;
-      in >> *a_output++;
+    auto& line = str.container();
+
+    if (a_fields == nullptr) {
+        for (int i=0; i < a_cnt; ++i) {
+            if (in.eof()) return false;
+            in >> *a_output++;
+        }
     }
-  }
-  else if (!std::getline(in, line))
-    return false;
-  else {
-    const char* p = &*line.begin();
-    const char* e = &*line.end();
-
-    int fld = 0;
-
-    auto ws      = [](char c)     { return c == ' ' || c == '\t'; };
-    auto skip_ws = [&p, e, &ws]() { while (ws(*p) && p != e) p++; };
-
-    for (int i=0; i < a_cnt; ++i, ++a_fields, ++a_output) {
-      while (p != e) {
-        skip_ws();
-        if (++fld == *a_fields)
-          break;
-        while (!ws(*p) && p != e) p++;
-      }
-
-      if (fld != *a_fields)
+    else if (!std::getline(in, line))
         return false;
+    else {
+        const char* p = &*line.begin();
+        const char* e = &*line.end();
 
-      p = a_convert(p, e, *a_output);
+        int fld = 0;
 
-      if (!p)
-          return false;
+        auto ws      = [](char c)     { return c == ' ' || c == '\t'; };
+        auto skip_ws = [&p, e, &ws]() { while (ws(*p) && p != e) p++; };
+
+        for (int i=0; i < a_cnt; ++i, ++a_fields, ++a_output) {
+            while (p != e) {
+                skip_ws();
+                if (++fld == *a_fields)
+                    break;
+                while (!ws(*p) && p != e) p++;
+            }
+
+            if (fld != *a_fields)
+                return false;
+
+            p = a_convert(p, e, *a_output);
+
+            if (!p)
+                return false;
+        }
     }
-  }
 
-  return true;
+    return true;
 }
 
 } // namespace utxx
