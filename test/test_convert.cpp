@@ -640,7 +640,14 @@ BOOST_AUTO_TEST_CASE( test_convert_ftoa )
     ftoa_right(189.23, buf, 11, 4, '0');
     BOOST_CHECK_EQUAL("000189.2300", std::string(buf, 11));
 
+    ftoa_right(-1.8249376054, buf, 10, 5, ' ');
+    BOOST_CHECK_EQUAL("  -1.82494", std::string(buf, 10));
 
+    ftoa_right(-12.8249376, buf, 10, 5, ' ');
+    BOOST_CHECK_EQUAL(" -12.82494", std::string(buf, 10));
+
+    ftoa_right(-123.8249376, buf, 10, 5, ' ');
+    BOOST_CHECK_EQUAL("-123.82494", std::string(buf, 10));
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )

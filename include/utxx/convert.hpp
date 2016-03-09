@@ -959,13 +959,14 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
         if (neg)
             *(--p) = '-';
     } else {
-        char* end = p;
+        //char* end = p;
         while (int_part) {
             int j = int_part / 10;
             *(--p) = (char)(int_part - ((j << 3) + (j << 1)) + '0');
             int_part = j;
         }
         /* Reverse string */
+        /*
         int wid = end - p;
         for (int i = 0, n = wid >> 1; i < n; i++) {
             int64_t j = wid - i - 1;
@@ -973,6 +974,7 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
             buffer[i] = buffer[j];
             buffer[j] = c;
         }
+        */
         if (neg)
             *(--p) = '-';
     }
