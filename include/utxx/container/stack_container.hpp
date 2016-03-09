@@ -154,11 +154,12 @@ public:
     typedef stack_allocator<value_type, stack_capacity> Allocator;
 
     // Allocator must be constructed before the container!
-    stack_container() : m_allocator(&m_stack_data), m_container(m_allocator)
+    explicit stack_container(size_t capacity = stack_capacity)
+        : m_allocator(&m_stack_data), m_container(m_allocator)
     {
         // Make the container use the stack allocation by reserving our buffer size
         // before doing anything else.
-        m_container.reserve(stack_capacity);
+        m_container.reserve(capacity);
     }
 
     // Getters for the actual container.
@@ -195,15 +196,20 @@ protected:
 template<size_t stack_capacity>
 class basic_stack_string
     : public stack_container<
-        std::basic_string<
-            char, std::char_traits<char>,
-            stack_allocator<char, stack_capacity>
-        >,
+        std::basic_string<char, std::char_traits<char>,
+                          stack_allocator<char, stack_capacity>>,
         stack_capacity
       >
 {
+    using base = stack_container<
+        std::basic_string<char, std::char_traits<char>,
+                          stack_allocator<char, stack_capacity>>,
+        stack_capacity
+      >;
 public:
-    basic_stack_string() {}
+    // Note: reserving capacity-1 because string implementation does +1 to
+    // provision for terminating '\0'.
+    basic_stack_string() : base(stack_capacity-1) {}
 
 private:
     basic_stack_string(basic_stack_string const&)            = delete;
@@ -212,14 +218,18 @@ private:
 
 // basic_stack_wstring
 template<size_t stack_capacity>
-class basic_stack_wstring : public stack_container<
-    std::basic_string<wchar_t,
-    std::char_traits<wchar_t>,
-    stack_allocator<wchar_t, stack_capacity> >,
-    stack_capacity>
+class basic_stack_wstring
+    : public stack_container<
+        std::basic_string<wchar_t, std::char_traits<wchar_t>,
+                          stack_allocator<wchar_t, stack_capacity>>,
+        stack_capacity>
 {
+    using base = stack_container<
+        std::basic_string<wchar_t, std::char_traits<wchar_t>,
+                          stack_allocator<wchar_t, stack_capacity>>,
+        stack_capacity>;
 public:
-    basic_stack_wstring() {}
+    basic_stack_wstring() : base(stack_capacity - sizeof(wchar_t)) {}
 
 private:
     basic_stack_wstring(basic_stack_wstring const&)            = delete;
