@@ -11,7 +11,7 @@ licensing details).
 
 The components include:
 
-* Custom allocators
+* Custom allocators (including atomic pool allocator, stack allocator)
 * Atomic functions
 * Bitmap mask with fast iteration
 * BOOST wait_timeout, repeating timer
