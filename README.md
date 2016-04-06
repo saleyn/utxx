@@ -23,7 +23,7 @@ The components include:
 * Exception error classes with dynamic number of arguments
 * Hashmap abstraction
 * UDP receiver
-* Logging framework
+* Logging framework with pluggable back-ends using Inversion of Control design pattern 
 * Ultra-low latency async logger
 * Math functions
 * Metaprogramming functions
