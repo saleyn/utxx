@@ -42,9 +42,9 @@ namespace utxx {
 /// Read \a a_cnt values from the input stream.
 /// @param in       input stream.
 /// @param a_output array of \a a_cnt double values.
-/// @param a_fields array of \a a_cnt field positions (ascending order). If this
-///                 value is NULL, the values are read from the input stream
-///                 in consequitive order disregarding field positions.
+/// @param a_fields array of \a a_cnt field positions (1-based, ascending order).
+///                 If this value is NULL, the values are read from the input
+///                 stream in consequitive order disregarding field positions.
 /// @param a_cnt    count of values to read (must be > 0).
 /// @param a_convert lambda used to convert a string value to type \a T:
 ///   <code>const char* (const char* begin, const char* end, T& outout);</code>
