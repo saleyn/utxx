@@ -45,10 +45,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cassert>
 
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
-#include <boost/serialization/access.hpp>
+#   include <boost/serialization/access.hpp>
 
-#define UTXX__ENUM_FRIEND_SERIALIZATION__ \
+#   define UTXX__ENUM_FRIEND_SERIALIZATION__ \
     friend class boost::serialization::access
+#else
+#   define UTXX__ENUM_FRIEND_SERIALIZATION__
 #endif
 
 /// Strongly typed reflectable enum declaration
