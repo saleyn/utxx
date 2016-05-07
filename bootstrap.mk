@@ -87,6 +87,7 @@ info:
 	@echo "build:     $(BUILD)"
 	@echo "prefix:    $(prefix)"
 	@echo "generator: $(generator)"
+	@echo "toolchain: $(toolchain)"
 
 ver:
 	@echo $(VERSION)

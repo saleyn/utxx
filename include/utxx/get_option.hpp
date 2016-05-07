@@ -35,6 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdlib.h>
 #include <string.h>
 #include <type_traits>
+#include <utxx/typeinfo.hpp>
+#include <utxx/error.hpp>
 #include <boost/lexical_cast.hpp>
 
 namespace utxx {
@@ -47,15 +49,22 @@ inline long env(const char* a_var, long a_default) {
 namespace {
     template <typename T>
     typename std::enable_if<!std::is_same<T, bool>::value, T>::type
-    convert(const char* a) { return boost::lexical_cast<T>(a); }
+    convert(const char* a) {
+        try {
+            return boost::lexical_cast<T>(a);
+        } catch (...) {
+            UTXX_THROW_RUNTIME_ERROR("Cannot convert value '", a, "' to type: ",
+                                     type_to_string<T>());
+        }
+    }
 
     template <typename T>
     typename std::enable_if<std::is_same<T, bool>::value, T>::type
     convert(const char* a) {
         return !(strcasecmp(a, "false") == 0 ||
-                 strcasecmp(a, "no")    == 0 ||
-                 strcasecmp(a, "off")   == 0 ||
-                 strcmp    (a, "0")     == 0);
+                 strcasecmp(a,   "off") == 0 ||
+                 strcasecmp(a,    "no") == 0 ||
+                 strcmp    (a,     "0") == 0);
     }
 
     template <typename Char = const char>

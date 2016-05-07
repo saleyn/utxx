@@ -119,9 +119,7 @@ namespace utxx {
     }
 
     /// Returns year/month/day triple in Gregorian calendar.
-    /// @param a_days is number of days since 1970-01-01 and is in the range:
-    ///     (numeric_limits<int>::min() to numeric_limits<int>::max()-719468).
-    inline std::tuple<int, unsigned, unsigned> from_gregorian_days(int a_days) noexcept
+    inline void from_gregorian_days(int a_days, int& y, unsigned& m, unsigned& d) noexcept
     {
         static_assert(std::numeric_limits<unsigned>::digits >= 18,
                 "This algorithm has not been ported to a 16 bit unsigned integer");
@@ -131,18 +129,31 @@ namespace utxx {
         const int      era = (days >= 0 ? days : days - 146096) / 146097;
         const unsigned doe = static_cast<unsigned>(days - era * 146097);      // [0, 146096]
         const unsigned yoe = (doe - doe/1460 + doe/36524 - doe/146096) / 365; // [0, 399]
-        const int        y = static_cast<int>(yoe) + era * 400;
+                         y = static_cast<int>(yoe) + era * 400;
         const unsigned doy = doe - (365*yoe + yoe/4 - yoe/100);               // [0, 365]
         const unsigned  mp = (5*doy + 2)/153;                                 // [0, 11]
-        const unsigned   d = doy - (153*mp+2)/5 + 1;                          // [1, 31]
-        const unsigned   m = mp + (mp < 10 ? 3 : -9);                         // [1, 12]
-        return std::tuple<int, unsigned, unsigned>(y + (m <= 2), m, d);
+                         d = doy - (153*mp+2)/5 + 1;                          // [1, 31]
+                         m = mp + (mp < 10 ? 3 : -9);                         // [1, 12]
+    }
+
+    /// Returns year/month/day triple in Gregorian calendar.
+    /// @param a_days is number of days since 1970-01-01 and is in the range:
+    ///     (numeric_limits<int>::min() to numeric_limits<int>::max()-719468).
+    inline std::tuple<int, unsigned, unsigned> from_gregorian_days(int a_days) noexcept {
+        int y; unsigned m, d;
+        from_gregorian_days(a_days, y, m, d);
+        return std::make_tuple(y, m, d);
     }
 
     /// Split seconds since epoch to y/m/d
     inline std::tuple<int, unsigned, unsigned>
     from_gregorian_time(time_t a_secs) noexcept {
         return from_gregorian_days(int(a_secs / 86400));
+    }
+
+    /// Split seconds since epoch to y/m/d
+    inline void from_gregorian_time(time_t a_secs, int& y, unsigned& m, unsigned& d) noexcept {
+        from_gregorian_days(int(a_secs / 86400), y, m, d);
     }
 
     template <class To, class Rep, class Period>

@@ -77,8 +77,10 @@ protected:
         char* a_buf, time_t a_utc_seconds, bool a_utc, size_t eos_pos, char a_sep) {
         assert(s_next_utc_midnight_nseconds);
 
-        if (!a_utc) a_utc_seconds += utc_offset();
-        return time_val(secs(a_utc_seconds)).write_date(a_buf, eos_pos, a_sep);
+        if (!a_utc)  a_utc_seconds += utc_offset();
+
+        time_t sec = time_val(secs(a_utc_seconds)).sec();
+        return time_val::write_date(sec, a_buf, eos_pos, a_sep);
     }
 
     static void update_slow();

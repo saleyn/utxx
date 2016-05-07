@@ -1,4 +1,4 @@
-DIR:BUILD=/tmp/${USER}/@PROJECT@/build
+DIR:BUILD=/home/${USER}/projects/@PROJECT@/build
 DIR:INSTALL=/opt/pkg/@PROJECT@/@VERSION@
 BOOST_ROOT=/opt/pkg/boost/current
 BOOST_LIBRARYDIR=/opt/pkg/boost/current/lib

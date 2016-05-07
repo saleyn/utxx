@@ -423,6 +423,9 @@ BOOST_AUTO_TEST_CASE( test_time_latency )
 
 BOOST_AUTO_TEST_CASE( test_timestamp_time )
 {
+    auto ttt = now_utc();
+    timestamp::update_midnight_nseconds(ttt);
+
     enum { ITER = 10 };
 
     high_res_timer::calibrate(200000, 3);
