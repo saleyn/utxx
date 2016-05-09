@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_TYPE_INFO_HPP_
 #define _UTXX_TYPE_INFO_HPP_
 
+#include <string>
 #include <typeinfo>
 #if defined(__linux__)
 #include <cxxabi.h>
