@@ -69,11 +69,20 @@ install(
   ARCHIVE DESTINATION lib
 )
 
-install(
-  DIRECTORY ${CMAKE_BINARY_DIR}/src/
-  DESTINATION lib
-  FILES_MATCHING PATTERN "libutxx*.so*" PATTERN "libutxx*.a*"
-)
+if (${CMAKE_BUILD_TYPE} STREQUAL "release")
+  install(
+    FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so.${PROJECT_VERSION}
+    DESTINATION lib
+  )
+  install(
+    FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so
+    DESTINATION lib
+  )
+  install(
+    FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.a
+    DESTINATION lib
+  )
+endif()
 
 install(
   FILES ${CMAKE_BINARY_DIR}/include/${PROJECT_NAME}/logger/generated/logger_options.generated.hpp
