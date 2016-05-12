@@ -192,5 +192,37 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
         BOOST_CHECK(!res);
     }
 
+    path::write_file(fn, "1.0 | 2.0 | 3.0\n4.0|5.0 | 6.0\n");
+    {
+        std::ifstream in(fn);
+        BOOST_REQUIRE(in.is_open());
+
+        int fields[] = {1, 2};
+        const int fld_count = length(fields);
+        double output[2];
+        bool res;
+
+        auto convert = [](const char* a, const char* e, double& output) {
+            auto   p =  utxx::atof(a, e, output);
+            return p == a ? nullptr : p;
+        };
+
+        res = read_values(in, output, fields, fld_count, convert, " |");
+
+        BOOST_CHECK(res);
+        BOOST_CHECK_EQUAL(1, output[0]);
+        BOOST_CHECK_EQUAL(2, output[1]);
+
+        res = read_values(in, output, fields, fld_count, convert, " |");
+
+        BOOST_CHECK(res);
+        BOOST_CHECK_EQUAL(4, output[0]);
+        BOOST_CHECK_EQUAL(5, output[1]);
+
+        res = read_values(in, output, fields, fld_count, convert, " |");
+
+        BOOST_CHECK(!res);
+    }
+
     path::file_unlink(fn);
 }

@@ -50,11 +50,12 @@ namespace utxx {
 ///   <code>const char* (const char* begin, const char* end, T& outout);</code>
 ///   The function must return NULL if conversion is unsuccessful, or a pointer
 ///   past last successfully parsed character otherwise.
+/// @param a_delims array of delimiting characters (default: " \t")
 /// @return true if successfully read \a a_cnt values.
 //------------------------------------------------------------------------------
 template <typename T = double, int StrSize = 256, class Convert>
 bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
-                 const Convert& a_convert)
+                 const Convert& a_convert, const char a_delim[] = " \t")
 {
     assert(a_cnt);
 
@@ -81,7 +82,7 @@ bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
 
         int fld = 0;
 
-        auto ws      = [](char c)     { return c == ' ' || c == '\t'; };
+        auto ws      = [=](char c)    { return strchr(a_delim, c);    };
         auto skip_ws = [&p, e, &ws]() { while (ws(*p) && p != e) p++; };
 
         for (int i=0; i < a_cnt; ++i, ++a_fields, ++a_output) {

@@ -51,12 +51,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <map>
 
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
+# ifndef UTXX__ENUM_FRIEND_SERIALIZATION__
 #   include <boost/serialization/access.hpp>
 
 #   define UTXX__ENUM_FRIEND_SERIALIZATION__ \
     friend class boost::serialization::access
+# endif
 #else
+# ifndef UTXX__ENUM_FRIEND_SERIALIZATION__
 #   define UTXX__ENUM_FRIEND_SERIALIZATION__
+# endif
 #endif
 
 // The difference between enum.hpp and enumx.hpp is that UTXX_ENUMX
