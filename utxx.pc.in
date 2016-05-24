@@ -8,5 +8,5 @@ Name: @PROJECT_NAME@
 Description: C++ Utility Library.
 #Requires: boost_1_49_0
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -lutxx${libsuffix} @THRIFT_LIBS@ -lboost_thread
+Libs: -L${libdir} -lutxx${libsuffix} @THRIFT_LIBS@ -lboost_thread -Wl,-rpath,${libdir}
 Cflags: -I${includedir}
