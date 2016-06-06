@@ -6,6 +6,7 @@
 #include <chrono>
 #include <memory>
 #include <thread>
+#include <math.h>
 
 namespace utxx {
 
