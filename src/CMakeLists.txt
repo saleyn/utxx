@@ -1,5 +1,7 @@
 # vim:ts=2:sw=2:et
 
+string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
+
 list(APPEND UTXX_SRCS
   config_validator.cpp
   error.cpp

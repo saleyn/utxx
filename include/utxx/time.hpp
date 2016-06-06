@@ -133,7 +133,8 @@ namespace utxx {
         const unsigned doy = doe - (365*yoe + yoe/4 - yoe/100);               // [0, 365]
         const unsigned  mp = (5*doy + 2)/153;                                 // [0, 11]
                          d = doy - (153*mp+2)/5 + 1;                          // [1, 31]
-                         m = mp + (mp < 10 ? 3 : -9);                         // [1, 12]
+                         m = mp  + (mp < 10 ? 3 : -9);                        // [1, 12]
+                         y = y   + (m <= 2);
     }
 
     /// Returns year/month/day triple in Gregorian calendar.
