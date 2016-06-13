@@ -52,6 +52,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
       BOOST_CHECK_NO_THROW(Expr);       \
     }
 
+#if BOOST_VERSION < 105900
+#  define BOOST_LOG_LEVEL boost::unit_test::runtime_config::log_level()
+#else
+#  define BOOST_LOG_LEVEL \
+    boost::unit_test::runtime_config::get<boost::unit_test::log_level>( \
+        boost::unit_test::runtime_config::LOG_LEVEL )
+#endif
+
 namespace utxx {
 
 inline bool get_test_argv(const std::string& a_opt,
