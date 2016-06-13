@@ -91,6 +91,8 @@ target_include_directories(test_utxx PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(
   test_utxx
   utxx
+  boost_system
+  boost_thread
   boost_unit_test_framework
   boost_timer
 )
