@@ -79,6 +79,16 @@ $ make bootstrap [toolchain=gcc|clang]  [build=Debug|Release] \
 $ make [verbose=true]
 $ make install      # Default install path is /usr/local
 ```
+If you are doing a release install, the install process installs two
+versions of the library: `libutxx_d.so` (debug) and `libutxx.so` (release).
+To install release build you need to run the following steps:
+```
+$ make bootstrap toolchain=gcc build=debug
+$ make src/libutxx_d.so src/libutxx_d.a     # build debug versions of the library
+$ make rebootstrap build=release
+$ make                                      # build release versions
+$ make install
+```
 After running `make bootstrap` two local links are created `build` and `inst`
 pointing to build and installation directories.
 
