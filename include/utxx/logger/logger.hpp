@@ -401,6 +401,7 @@ private:
     bool                            m_show_thread           = false;
     std::string                     m_ident;
     bool                            m_silent_finish         = false;
+    int                             m_fatal_kill_signal     = 0;
     long                            m_sched_yield_us        = 250;
     macro_var_map                   m_macro_var_map;
 
@@ -436,6 +437,7 @@ private:
     void remove(log_level a_lvl, int a_id);
 
     void dolog_msg(const msg& a_msg);
+    void dolog_fatal_msg(char*  buf);
 
     void run();
 
@@ -549,7 +551,10 @@ public:
     ///         1 - function name without namespaces;
     ///         N - include N-1 preceeding namespaces in the name)
     int         show_fun_namespaces()  const { return m_show_fun_namespaces; }
-
+    /// If set to a non-zero value, the messages of LEVEL_FATAL level will
+    /// cause the logger to terminate process by given signal.
+    /// @return Fatal kill signal number, 0 is disabled.
+    int         fatal_kill_signal()    const { return m_fatal_kill_signal;   }
     /// Get program identifier to be used in the log output.
     const std::string&  ident()  const { return m_ident; }
     /// Set program identifier to be used in the log output.

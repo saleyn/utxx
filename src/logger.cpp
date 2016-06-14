@@ -246,6 +246,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         m_show_category  = a_cfg.get<bool>       ("logger.show-category", m_show_category);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
         m_show_thread    = a_cfg.get<bool>       ("logger.show-thread",   m_show_thread);
+        m_fatal_kill_signal = a_cfg.get<int>       ("logger.fatal-kill-signal",   m_fatal_kill_signal);
         m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
         m_ident          = replace_macros(m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
@@ -495,6 +496,7 @@ format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
             p = stpncpy(p, a_msg.m_category.c_str(), a_msg.m_category.size());
         *p++ = '|';
     }
+
     return p;
 }
 
@@ -569,6 +571,10 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                 buf.sprint(sfx, qs);
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, buf.str(), buf.size()));
+
+                if (fatal_kill_signal() && a_msg.level() == LEVEL_FATAL)
+                    dolog_fatal_msg(buf.str());
+
                 break;
             }
         }
@@ -578,6 +584,30 @@ void logger::dolog_msg(const logger::msg& a_msg) {
         else
             throw;
     }
+}
+
+void logger::dolog_fatal_msg(char* buf)
+{
+    // Expecting a Rethrowing signal string of
+    // this format
+    // (signal number)
+
+    int   signum    = fatal_kill_signal(); //DEFAULT SIGNAL SIGABRT
+    char* signo_str = strstr(buf, "(");
+
+    if (signo_str) {
+        signo_str++;
+        signum = atoi(signo_str);
+
+        if (signum) {
+            std::cerr << "logger exiting after receiving fatal event " << signum
+                      << std::endl;
+            detail::exit_with_default_sighandler(signum);
+            return;
+        }
+    }
+    std::cerr << "logger exiting from unknown fatal event" << signum << std::endl;
+    detail::exit_with_default_sighandler(fatal_kill_signal());
 }
 
 void logger::delete_impl(const std::string& a_name)
