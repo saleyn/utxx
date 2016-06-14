@@ -641,9 +641,14 @@ log_level logger::parse_log_level(const std::string& a_level)
     throw std::runtime_error("Invalid log level: " + a_level);
 }
 
+static inline int mask_bsf(log_level a_level) {
+    auto l = static_cast<uint32_t>(a_level);
+    return l ? ~((1u << (__builtin_ffs(l)-1))-1) : 0;
+}
+
 int logger::parse_min_log_level(const std::string& a_level) throw(std::runtime_error) {
-    auto     ll = uint32_t(parse_log_level(a_level));
-    return static_cast<uint32_t>(~(ll ? (1u << __builtin_ffs(ll))-1 : 0u));
+    auto l = parse_log_level(a_level);
+    return mask_bsf(l);
 }
 
 void logger::set_level_filter(log_level a_level) {
@@ -651,8 +656,7 @@ void logger::set_level_filter(log_level a_level) {
 }
 
 void logger::set_min_level_filter(log_level a_level) {
-    uint32_t n = (uint32_t)a_level ? (1u << __builtin_ffs(a_level)) - 1 : 0u;
-    m_level_filter = static_cast<uint32_t>(~n);
+    m_level_filter = mask_bsf(a_level);
 }
 
 int logger::add(log_level level, on_msg_delegate_t subscriber)

@@ -35,6 +35,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <utxx/get_option.hpp>
 
+// This is for runtime_config::log_level
+#if BOOST_VERSION < 105900
+#  include <boost/test/detail/unit_test_parameters.hpp>
+#else
+#  include <boost/test/unit_test_parameters.hpp>
+#endif
+
 #define BOOST_CURRENT_TEST_NAME \
   boost::unit_test::framework::current_test_case().p_name->c_str()
 

@@ -316,7 +316,7 @@ set_directory_properties(
 #===============================================================================
 enable_testing()
 
-add_test(test-utxx test/test-utxx -l message)
+add_test(test-utxx test/test_utxx -l message)
 
 #===============================================================================
 # Documentation options

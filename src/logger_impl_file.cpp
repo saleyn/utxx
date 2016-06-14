@@ -88,10 +88,13 @@ bool logger_impl_file::init(const variant_tree& a_config)
              ? m_log_mgr->level_filter()
              : logger::parse_log_levels(levels);
 
-    if (__builtin_ffs(m_levels) < __builtin_ffs(m_log_mgr->level_filter()))
+    auto lll = __builtin_ffs(m_levels)-1;
+    auto lev = __builtin_ffs(m_log_mgr->level_filter())-1;
+    if  (lll < lev)
         UTXX_THROW_RUNTIME_ERROR("File logger's levels filter '", levels,
-                                 "' is less granular that logger's default '",
-                                 logger::log_levels_to_str(m_log_mgr->min_level_filter()));
+                                 "' is less granular than logger's default '",
+                                 logger::log_levels_to_str(m_log_mgr->min_level_filter()),
+                                 "'");
 
     if (m_levels != NOLOGGING) {
         bool exists = path::file_exists(m_filename);

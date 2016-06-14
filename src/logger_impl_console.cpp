@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <utxx/logger/logger_impl_console.hpp>
 #include <utxx/logger/logger_impl.hpp>
+#include <utxx/bits.hpp>
 #include <iostream>
 #include <stdio.h>
 
@@ -72,6 +73,24 @@ bool logger_impl_console::init(const variant_tree& a_config)
     m_stderr_levels  = !smin_stderr.empty() ? min_stderr                   :
                        !se.empty()          ? logger::parse_log_levels(se) :
                        s_def_stderr_levels;
+
+    auto sol = __builtin_ffs(m_stdout_levels)-1;
+    auto sel = __builtin_ffs(m_stderr_levels)-1;
+    auto lev = __builtin_ffs(m_log_mgr->level_filter())-1;
+
+    if (sol < lev)
+        UTXX_THROW_RUNTIME_ERROR("Console logger's stdout levels filter '",
+                                 logger::log_levels_to_str(m_stdout_levels),
+                                 "' is less granular than logger's default '",
+                                 logger::log_levels_to_str(m_log_mgr->min_level_filter()),
+                                 "'");
+
+    if (sel < lev)
+        UTXX_THROW_RUNTIME_ERROR("Console logger's stderr levels filter '",
+                                 logger::log_levels_to_str(m_stderr_levels),
+                                 "' is less granular than logger's default '",
+                                 logger::log_levels_to_str(m_log_mgr->min_level_filter()),
+                                 "'");
 
     int all_levels = m_stdout_levels | m_stderr_levels;
     for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {

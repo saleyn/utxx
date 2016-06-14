@@ -123,6 +123,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     pt.put("logger.show-thread",           true);
     pt.put("logger.show-ident",            true);
     pt.put("logger.ident",                 variant("my-logger"));
+    pt.put("logger.silent-finish",         true);
 
     if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
         pt.dump(std::cout, 2, false, true, ' ', 2);
@@ -132,6 +133,28 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_REQUIRE(pt.get_child_optional("logger.console"));
 
     logger& log = logger::instance();
+
+    if (log.initialized())
+        log.finalize();
+
+    log.set_min_level_filter(LEVEL_DEBUG);
+    auto ll = log.min_level_filter();
+    BOOST_CHECK(ll == LEVEL_DEBUG);
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE ) != (int)LEVEL_TRACE );
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_DEBUG ) == (int)LEVEL_DEBUG );
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
+
+    log.set_min_level_filter(LEVEL_TRACE);
+    ll = log.min_level_filter();
+    BOOST_CHECK(ll == LEVEL_TRACE);
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE2) != (int)LEVEL_TRACE2);
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE1) != (int)LEVEL_TRACE1);
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE ) == (int)LEVEL_TRACE );
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_DEBUG ) == (int)LEVEL_DEBUG );
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
+    BOOST_CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
+
     log.init(pt);
 
     auto console = static_cast<const logger_impl_console*>(log.get_impl("console"));
@@ -179,6 +202,60 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     log.finalize();
 
     BOOST_REQUIRE(true); // to remove run-time warning
+}
+
+
+BOOST_AUTO_TEST_CASE( test_logger2 )
+{
+    variant_tree pt;
+    pt.put("logger.timestamp",             variant("time-usec"));
+    pt.put("logger.show-thread",           false);
+    pt.put("logger.show-ident",            false);
+    pt.put("logger.ident",                 variant("my-logger"));
+    pt.put("logger.silent-finish",         true);
+
+    logger& log = logger::instance();
+
+    {
+        pt.put("logger.min-level-filter",      variant("debug"));
+        pt.put("logger.console.stdout-levels", variant("info|notice|warning|error"));
+        if (log.initialized())
+            log.finalize();
+
+        log.init(pt);
+
+        BOOST_REQUIRE(log.initialized());
+    }
+
+    {
+        pt.put("logger.min-level-filter",      variant("debug"));
+        pt.put("logger.console.stdout-levels", variant("debug|notice|warning|error"));
+
+        if (log.initialized())
+            log.finalize();
+
+        log.init(pt);
+    }
+
+    {
+        pt.put("logger.min-level-filter",      variant("debug"));
+        pt.put("logger.console.stdout-levels", variant("trace|debug|notice|warning|error"));
+
+        if (log.initialized())
+            log.finalize();
+
+        try {
+            log.init(pt);
+            BOOST_CHECK(false);
+        } catch (utxx::runtime_error& e) {
+            auto exp = "Console logger's stdout levels filter "
+                       "'TRACE|DEBUG|NOTICE|WARNING|ERROR' is less granular "
+                       "than logger's default 'DEBUG'";
+            BOOST_CHECK_EQUAL(exp, e.str());
+        }
+    }
+
+    log.finalize();
 }
 #endif
 

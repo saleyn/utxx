@@ -480,6 +480,9 @@ public:
     /// Called on destruction/reinitialization of the logger.
     void finalize();
 
+    /// Returns true if the logger has been initialized
+    bool initialized() const { return m_initialized; }
+
     /// Delete logger back-end implementation identified by \a a_name
     ///
     /// This method is not thread-safe!
@@ -528,17 +531,17 @@ public:
 
     /// Set the timestamp type to use in log files.
     /// @param ts the timestamp type.
-    void timestamp_type(stamp_type ts) { m_timestamp_type = ts; }
+    void timestamp_type(stamp_type ts) { m_timestamp_type = ts;  }
 
     /// @return format type of timestamp written to log
-    stamp_type  timestamp_type() const { return m_timestamp_type; }
+    stamp_type  timestamp_type() const { return m_timestamp_type;}
 
     /// @return true if category logging is enabled by default.
     bool        show_category()  const { return m_show_category; }
     /// @return true if ident logging is enabled by default.
-    bool        show_ident()     const { return m_show_ident; }
+    bool        show_ident()     const { return m_show_ident;    }
     /// @return true if thread name logging is enabled.
-    bool        show_thread()    const { return m_show_ident; }
+    bool        show_thread()    const { return m_show_thread;   }
     /// @return true if source location display is enabled by default.
     bool        show_location()  const { return m_show_location; }
     /// @return Max depth of function name scope being printed (e.g.
@@ -565,7 +568,8 @@ public:
     static const char* default_log_levels;
     /// Filter mask of levels that need to be logged
     int        level_filter()     const { return m_level_filter; }
-    log_level  min_level_filter() const { return as_log_level(__builtin_ffs(m_level_filter)); }
+    log_level  min_level_filter() const { int n = m_level_filter < LEVEL_TRACE ? LEVEL_TRACE : 0;
+                                          return log_level(n | (1u << (__builtin_ffs(m_level_filter)-1))); }
 
     /// If the crash handler is installed, return the handled signal set
     static sigset_t* crash_handler_sigset() {
