@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator12 )
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
         BOOST_REQUIRE_EQUAL(
-            "Config error [country]: Missing a required child option: connection.address",
+            "Config error [country]: Missing required option with no default!",
             e.what());
     }
 }
@@ -234,7 +234,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator13 )
     } catch (variant_tree_error& e) {
         BOOST_REQUIRE_EQUAL("country", e.path());
         BOOST_REQUIRE_EQUAL(
-            "Config error [country]: Missing a required child option: connection.address",
+            "Config error [country]: Missing required option with no default!",
             e.what());
     }
 

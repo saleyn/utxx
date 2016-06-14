@@ -265,7 +265,9 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_double )
     }
     {
         nchar<17> rc;
-        BOOST_CHECK_EQUAL(-1, rc.from_double(-12345678901.234, 6, true)); // Not enough space
+        BOOST_CHECK_EQUAL(16, rc.from_double(-12345678901.235, 6, true));
+        BOOST_CHECK_EQUAL("-12345678901.235", rc.to_string());
+
         BOOST_CHECK_EQUAL(16, rc.from_double(-12345678901.234, 3, true));
         BOOST_CHECK_EQUAL("-12345678901.234", rc.to_string());
     }
@@ -285,7 +287,8 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_double )
     }
     {
         nchar<5> rc;
-        BOOST_CHECK_EQUAL(-1,      rc.from_double(0, 3, true, ' '));
+        BOOST_CHECK_EQUAL(3,       rc.from_double(0, 3, true, ' '));
+        BOOST_CHECK_EQUAL("0.0  ", rc.to_string());
         BOOST_CHECK_EQUAL(3,       rc.from_double(0, 2, true, ' '));
         BOOST_CHECK_EQUAL("0.0  ", rc.to_string());
         BOOST_CHECK_EQUAL(4,       rc.from_double(0, 2, false, ' '));
@@ -295,7 +298,8 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_double )
         BOOST_CHECK_EQUAL(-1,      rc.from_double(-1,3, ' '));
         BOOST_CHECK_EQUAL(5,       rc.from_double(0, 2, ' '));
         BOOST_CHECK_EQUAL(" 0.00", rc.to_string());
-        BOOST_CHECK_EQUAL(-1,      rc.from_double(-1.2, 2, false)); // No space for '\0'
+        BOOST_CHECK_EQUAL(4,       rc.from_double(-1.2, 2, false)); // No space for '\0'
+        BOOST_CHECK_EQUAL("-1.2",  rc.to_string());
         BOOST_CHECK_EQUAL(4,       rc.from_double(-1.2, 1, false));
         BOOST_CHECK_EQUAL(5,       rc.from_double(-1.2, 2, ' '));
         BOOST_CHECK_EQUAL("-1.20", rc.to_string());
