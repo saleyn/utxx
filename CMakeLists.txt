@@ -32,7 +32,17 @@ if("${toolchain}" STREQUAL "gcc")
   add_definitions(-Wno-strict-aliasing -fopenmp -Wall)
 
   if("${CMAKE_BUILD_TYPE}" STREQUAL "release")
-    add_definitions(-flto -funroll-loops -fomit-frame-pointer)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER "5.0")
+      # When this option is on, compiler versions below 5.0 cause errors with
+      # boost:
+      #   undefined reference to
+      #     `virtual thunk to boost::exception_detail::clone_impl<...'
+      #   undefined reference to
+      #     `boost::exception_detail::error_info_injector<...'
+      add_definitions(-flto)
+    endif()
+
+    add_definitions(-funroll-loops -fomit-frame-pointer)
 
     # The following will omit all symbol information from the build:
     #add_definitions(-Wl,-s)
@@ -68,7 +78,8 @@ add_definitions(
 )
 
 message(STATUS "Configuring for the "
-               "${BoldMagenta}${TOOLCHAIN}${ClrReset} toolchain "
+               "${BoldMagenta}${TOOLCHAIN}${ClrReset} toolchain version "
+               "${CMAKE_CXX_COMPILER_VERSION} "
                "${BoldMagenta}${CMAKE_BUILD_TYPE}${ClrReset} build")
 
 #-------------------------------------------------------------------------------
