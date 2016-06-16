@@ -167,7 +167,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                               \
         UTXX__ENUM_FRIEND_SERIALIZATION__;                                    \
                                                                               \
-        type m_val;                                                          \
+        type m_val;                                                           \
     }
 
 // DEPRECATED!!! Use UTXX_ENUMX!
