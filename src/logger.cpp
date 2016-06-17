@@ -483,12 +483,11 @@ format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
         *p++ = '|';
     }
     if (show_thread()) {
-        char thread_name[33];
-        if (pthread_getname_np(a_msg.m_thread_id, thread_name, sizeof(thread_name)) < 0) {
-            char* p = thread_name;
-            itoa(a_msg.m_thread_id, p, 10);
+        if (a_msg.m_thread_name[0] == '\0') {
+            char* q = const_cast<char*>(a_msg.m_thread_name);
+            itoa(a_msg.m_thread_id, q, 10);
         }
-        p = stpcpy(p, thread_name);
+        p = stpcpy(p, a_msg.m_thread_name);
         *p++ = '|';
     }
     if (show_category()) {

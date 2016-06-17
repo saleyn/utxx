@@ -202,6 +202,7 @@ struct logger : boost::noncopyable {
         const char*   m_src_fun;
         payload_t     m_type;
         pthread_t     m_thread_id;
+        char          m_thread_name[16];
 
         union U {
             char_function  cf;
@@ -231,7 +232,11 @@ struct logger : boost::noncopyable {
             , m_type        (a_type)
             , m_thread_id   (pthread_self())
             , m_fun         (a_fun)
-        {}
+        {
+            if (!logger::instance().show_thread() ||
+                pthread_getname_np(m_thread_id, m_thread_name, sizeof(m_thread_name)) < 0)
+                m_thread_name[0] = '\0';
+        }
 
     public:
 
