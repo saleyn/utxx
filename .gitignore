@@ -2,6 +2,7 @@ gmon.out
 *.o
 *.swp
 *.iml
+.cmake-args*
 log
 inst
 build
