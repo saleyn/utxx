@@ -33,6 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <iosfwd>
+#include <iomanip>
+#include <sstream>
 #include <utxx/convert.hpp>
 #include <utxx/container/stack_container.hpp>
 
@@ -105,5 +107,51 @@ bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
 
     return true;
 }
+
+struct indent_t {
+    indent_t(size_t a_level = 0) : m_level(a_level) {}
+
+    size_t level() const { return m_level; }
+private:
+    size_t m_level;
+};
+
+template <typename Stream = std::stringstream>
+class indented_stream : public Stream {
+public:
+    indented_stream(size_t a_indent_width = 2)
+        : m_level(0), m_indent_width(a_indent_width)
+    {}
+
+    size_t level()                    const { return m_level;           }
+    size_t indent_width()             const { return m_indent_width;    }
+    void   indent_width(size_t a_width)     { m_indent_width = a_width; }
+
+    void   inc_indent  (size_t a_level = 1) { m_level += a_level; }
+    void   dec_indent  (size_t a_level = 1) { m_level -= a_level; }
+    void   reset_indent(size_t a_level = 0) { m_level  = a_level; }
+
+    void   operator++(int) { inc_indent(); indent(); }
+    void   operator--(int) { dec_indent(); indent(); }
+
+    indented_stream& indent() {
+        if (level())
+            *((Stream*)this) << std::setw(level() * m_indent_width) << ' ';
+        return *this;
+    }
+
+    indented_stream& operator<<(indent_t a)   {
+        if      (a.level() > 0) inc_indent(a.level());
+        else if (a.level() < 0) dec_indent(a.level());
+        return indent();
+    }
+
+    template <typename T>
+    indented_stream& operator<<(const T& t) { *((Stream*)this) << t; return *this; }
+
+private:
+    size_t m_level;
+    size_t m_indent_width;
+};
 
 } // namespace utxx

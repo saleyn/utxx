@@ -226,3 +226,30 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
     path::file_unlink(fn);
 }
+
+BOOST_AUTO_TEST_CASE( test_stream_io_indent_stream )
+{
+    {
+        indented_stream<> stream;
+        stream << "abc\n";
+        stream++;
+        stream << "efg\n";
+        stream--;
+        stream << "xxx\n";
+
+        auto out = stream.str();
+
+        BOOST_CHECK_EQUAL("abc\n  efg\nxxx\n", out);
+
+    }
+
+    {
+        indented_stream<> stream;
+        stream << "abc\n" << indent_t(1) << "efg\n" << indent_t() << "kkk\n"
+            << indent_t(-1) << "xxx\n";
+
+        auto out = stream.str();
+
+        BOOST_CHECK_EQUAL("abc\n  efg\n  kkk\nxxx\n", out);
+    }
+}
