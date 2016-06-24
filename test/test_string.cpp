@@ -339,5 +339,9 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(s.allocated());
         BOOST_CHECK(s == test2);
         BOOST_CHECK_EQUAL(test2, s.c_str());
+
+        std::string test3(s);
+        BOOST_CHECK(s == test3);
+        BOOST_CHECK_EQUAL(test3, s.c_str());
     }
 }
