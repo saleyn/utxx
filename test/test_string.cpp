@@ -308,5 +308,36 @@ BOOST_AUTO_TEST_CASE( test_string_to_bin_string )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_string_short_string )
+{
+    using ss = short_string;
+    static_assert(sizeof(ss) == 64, "Invalid size");
 
+    { ss s; BOOST_CHECK_EQUAL(0, s.size()); }
+    {
+        ss s("a");
+        BOOST_CHECK_EQUAL(1,   s.size());
+        BOOST_CHECK_EQUAL("a", s);
+        BOOST_CHECK_EQUAL("a", s.c_str());
+        BOOST_CHECK_EQUAL("a", s.str());
+        BOOST_CHECK(!s.allocated());
 
+        s.clear();
+        BOOST_CHECK_EQUAL(0,   s.size());
+
+        const char test[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+        s = test;
+        BOOST_CHECK(s.allocated());
+        BOOST_CHECK(s == test);
+        BOOST_CHECK_EQUAL(test, s.c_str());
+        s.clear();
+        BOOST_CHECK(!s.allocated());
+        BOOST_CHECK_EQUAL(0, s.size());
+
+        std::string test2(test);
+        s = test2;
+        BOOST_CHECK(s.allocated());
+        BOOST_CHECK(s == test2);
+        BOOST_CHECK_EQUAL(test2, s.c_str());
+    }
+}
