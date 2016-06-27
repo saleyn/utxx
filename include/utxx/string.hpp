@@ -44,9 +44,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <type_traits>
 #include <utxx/types.hpp>
 #include <utxx/print.hpp>
-#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
-#include <atomic>
-#endif
 
 //-----------------------------------------------------------------------------
 // STRING
@@ -369,18 +366,24 @@ namespace utxx {
     /// Representation of a string value.
     /// Small strings (size <= 47) don't involve memory allocations.
     //--------------------------------------------------------------------------
-    template <typename Char = char, int MaxSize = 64-1-2*sizeof(void*)>
-    struct basic_short_string {
+    template <typename Char = char, int MaxSize = 64-1-2*sizeof(void*), class Alloc = std::allocator<Char>>
+    struct basic_short_string : private Alloc {
+        using Base = Alloc;
+
         static const size_t MAX_SIZE()    { return MaxSize; }
 
-        basic_short_string()                       : m_val(m_buf),m_sz(0) { m_buf[0] = '\0'; }
-        basic_short_string(const Char* a)          : m_val(m_buf),m_sz(0) { set(a,strlen((const char*)a));}
-        basic_short_string(const Char* a, size_t n): m_val(m_buf),m_sz(0) { set(a, n);       }
-        basic_short_string(basic_short_string&& a)                        { assign<false>(a);}
-        basic_short_string(const basic_short_string& a): m_val(m_buf),m_sz(0) { set(a);      }
+        basic_short_string(const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0) { m_buf[0] = '\0'; }
+        basic_short_string(const Char* a,           const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0) { set(a,strlen((const char*)a));}
+        basic_short_string(const Char* a, size_t n, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0) { set(a, n);       }
+        basic_short_string(basic_short_string&&      a, const Alloc& ac = Alloc())
+            : Base(ac) { assign<false>(a); }
+        basic_short_string(const basic_short_string& a, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0) { set(a); }
 
-        ~basic_short_string() { if (m_val != m_buf) delete [] m_val; }
-
+        ~basic_short_string() { if (m_val != m_buf) Base::deallocate(m_val, m_sz+1); }
 
         void set(const Char*                    a) { set(a, strlen((char*)a));        }
         void set(const std::basic_string<Char>& a) { set(a.c_str(), a.size()); }
@@ -391,17 +394,14 @@ namespace utxx {
             if (n <= MaxSize)
                 m_val = m_buf;
             else {
-                m_val = new Char[n+1];
-#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
-                ++m_alloc_count;
-#endif
+                m_val = Base::allocate(n+1);
             }
             strcpy((char*)m_val, (char*)a);
             m_sz = n;
         }
 
         void clear() {
-            if (m_val != m_buf) delete [] m_val;
+            if (m_val != m_buf) Base::deallocate(m_val, m_sz+1);;
             m_val = m_buf; m_buf[0] = '\0'; m_sz = 0;
         }
 
@@ -428,17 +428,11 @@ namespace utxx {
         size_t         size()           const { return m_sz;     }
         Char*          str()                  { return m_val;    }
         bool           allocated()      const { return m_val != m_buf; }
-#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
-        size_t         alloc_count()    const { return m_alloc_count;  }
-#endif
     private:
         Char* m_val;
         int   m_sz;
         Char  m_buf[MaxSize+1];
 
-#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
-        static std::atomic<size_t> m_alloc_count;
-#endif
         template <bool Clear>
         void assign(basic_short_string&& a) {
             if (Clear) clear();
@@ -448,12 +442,9 @@ namespace utxx {
             a.m_buf[0] = '\0';
             a.m_sz     = 0;
         }
-    };
 
-#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
-    template <class Char, class N>
-    std::atomic<size_t> basic_short_string<Char, N>::m_alloc_count;
-#endif
+        static_assert(sizeof(typename Alloc::value_type) == sizeof(Char), "Invalid size");
+    };
 
     using short_string = basic_short_string<>;
 

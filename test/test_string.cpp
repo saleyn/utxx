@@ -308,14 +308,33 @@ BOOST_AUTO_TEST_CASE( test_string_to_bin_string )
     }
 }
 
+template <class Char = char>
+struct Alloc {
+    using value_type = Char;
+    Char* allocate  (size_t n)          { ++s_ac; ++s_count; return std::allocator<Char>().allocate(n); }
+    void  deallocate(Char* p, size_t n) { --s_count; std::allocator<Char>().deallocate(p, n); }
+
+    static long  allocations()     { return s_count; }
+    static long  tot_allocations() { return s_ac;    }
+private:
+    static long s_count;
+    static long s_ac;
+};
+
+template <class Char> long Alloc<Char>::s_count;
+template <class Char> long Alloc<Char>::s_ac;
+
 BOOST_AUTO_TEST_CASE( test_string_short_string )
 {
-    using ss = short_string;
+    using Allocator = Alloc<char>;
+    using ss = basic_short_string<char, 64-1-2*8, Allocator>;
     static_assert(sizeof(ss) == 64, "Invalid size");
+
+    Allocator salloc;
 
     { ss s; BOOST_CHECK_EQUAL(0, s.size()); }
     {
-        ss s("a");
+        ss s("a", salloc);
         BOOST_CHECK_EQUAL(1,   s.size());
         BOOST_CHECK_EQUAL("a", s);
         BOOST_CHECK_EQUAL("a", s.c_str());
@@ -334,6 +353,9 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(!s.allocated());
         BOOST_CHECK_EQUAL(0, s.size());
 
+        BOOST_CHECK_EQUAL(1, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(0, Allocator::allocations());
+
         std::string test2(test);
         s = test2;
         BOOST_CHECK(s.allocated());
@@ -344,6 +366,8 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(s == test3);
         BOOST_CHECK_EQUAL(test3, s.c_str());
     }
+    BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
+    BOOST_CHECK_EQUAL(0, Allocator::allocations());
 
     using ssu = basic_short_string<unsigned char>;
     { ssu s; BOOST_CHECK_EQUAL(0, s.size()); }
@@ -352,8 +376,11 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         ssu s(test);
         BOOST_CHECK_EQUAL(1, s.size());
         BOOST_CHECK_EQUAL(s, test);
-        BOOST_CHECK_EQUAL(s.c_str(), test);
-        BOOST_CHECK_EQUAL(s.str(), test);
+        BOOST_CHECK(!strncmp((const char*)s.c_str(), (const char*)test, 1));
+        BOOST_CHECK(!strncmp((const char*)s.str(),   (const char*)test, 1));
         BOOST_CHECK(!s.allocated());
+
+        BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(0, Allocator::allocations());
     }
 }
