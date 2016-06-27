@@ -44,6 +44,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <type_traits>
 #include <utxx/types.hpp>
 #include <utxx/print.hpp>
+#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
+#include <atomic>
+#endif
 
 //-----------------------------------------------------------------------------
 // STRING
@@ -366,12 +369,76 @@ namespace utxx {
     /// Representation of a string value.
     /// Small strings (size <= 47) don't involve memory allocations.
     //--------------------------------------------------------------------------
-    template <int MaxSize = 64-1-2*sizeof(void*)>
-    class basic_short_string {
-        char* m_val;
-        int   m_sz;
-        char  m_buf[MaxSize+1];
+    template <typename Char = char, int MaxSize = 64-1-2*sizeof(void*)>
+    struct basic_short_string {
+        static const size_t MAX_SIZE()    { return MaxSize; }
 
+        basic_short_string()                       : m_val(m_buf),m_sz(0) { m_buf[0] = '\0'; }
+        basic_short_string(const Char* a)          : m_val(m_buf),m_sz(0) { set(a,strlen((const char*)a));}
+        basic_short_string(const Char* a, size_t n): m_val(m_buf),m_sz(0) { set(a, n);       }
+        basic_short_string(basic_short_string&& a)                        { assign<false>(a);}
+        basic_short_string(const basic_short_string& a): m_val(m_buf),m_sz(0) { set(a);      }
+
+        ~basic_short_string() { if (m_val != m_buf) delete [] m_val; }
+
+
+        void set(const Char*                    a) { set(a, strlen((char*)a));        }
+        void set(const std::basic_string<Char>& a) { set(a.c_str(), a.size()); }
+        void set(const basic_short_string&      a) { set(a.c_str(), a.size()); }
+        void set(const Char* a, size_t n) {
+            if (m_val != m_buf)
+                delete [] m_val;
+            if (n <= MaxSize)
+                m_val = m_buf;
+            else {
+                m_val = new Char[n+1];
+#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
+                ++m_alloc_count;
+#endif
+            }
+            strcpy((char*)m_val, (char*)a);
+            m_sz = n;
+        }
+
+        void clear() {
+            if (m_val != m_buf) delete [] m_val;
+            m_val = m_buf; m_buf[0] = '\0'; m_sz = 0;
+        }
+
+        void operator= (const Char*                     a) { set(a); }
+        void operator= (const std::basic_string<Char>&  a) { set(a); }
+        void operator= (basic_short_string&&            a) { assign<true>(a); }
+        void operator= (const basic_short_string&       a) { set(a); }
+
+        bool operator==(const Char* a)        const { return !strcmp((char*)m_val, (char*)a); }
+        bool operator!=(const Char* a)        const { return !operator==(a); }
+        bool operator==(const std::basic_string<Char>& a) const { return !strcmp((char*)m_val, (char*)a.c_str()); }
+        bool operator!=(const std::basic_string<Char>& a) const { return !operator==(a); }
+
+        bool operator==(const basic_short_string& a) const {
+            return m_sz == a.m_sz && !strcmp((char*)m_val, (char*)a.c_str());
+        }
+
+        bool operator!=(const basic_short_string& a) const {
+            return !operator==(a);
+        }
+
+        operator const Char*()          const { return m_val;    }
+        const Char*    c_str()          const { return m_val;    }
+        size_t         size()           const { return m_sz;     }
+        Char*          str()                  { return m_val;    }
+        bool           allocated()      const { return m_val != m_buf; }
+#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
+        size_t         alloc_count()    const { return m_alloc_count;  }
+#endif
+    private:
+        Char* m_val;
+        int   m_sz;
+        Char  m_buf[MaxSize+1];
+
+#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
+        static std::atomic<size_t> m_alloc_count;
+#endif
         template <bool Clear>
         void assign(basic_short_string&& a) {
             if (Clear) clear();
@@ -381,62 +448,12 @@ namespace utxx {
             a.m_buf[0] = '\0';
             a.m_sz     = 0;
         }
-
-    public:
-        static const size_t MAX_SIZE()    { return MaxSize; }
-
-        basic_short_string()                       : m_val(m_buf),m_sz(0) { m_buf[0] = '\0'; }
-        basic_short_string(const char* a)          : m_val(m_buf),m_sz(0) { set(a,strlen(a));}
-        basic_short_string(const char* a, size_t n): m_val(m_buf),m_sz(0) { set(a, n);       }
-        basic_short_string(basic_short_string&& a)                        { assign<false>(a);}
-        basic_short_string(const basic_short_string& a): m_val(m_buf),m_sz(0) { set(a);      }
-
-        ~basic_short_string() { if (m_val != m_buf) delete [] m_val; }
-
-
-        void set(const char*               a) { set(a, strlen(a));        }
-        void set(const std::string&        a) { set(a.c_str(), a.size()); }
-        void set(const basic_short_string& a) { set(a.c_str(), a.size()); }
-        void set(const char* a,     size_t n) {
-            if (m_val != m_buf)
-                delete [] m_val;
-            if (n <= MaxSize)
-                m_val = m_buf;
-            else
-                m_val = new char[n+1];
-            strcpy(m_val, a);
-            m_sz = n;
-        }
-
-        void clear() {
-            if (m_val != m_buf) delete [] m_val;
-            m_val = m_buf; m_buf[0] = '\0'; m_sz = 0;
-        }
-
-        void operator= (const char*               a) { set(a); }
-        void operator= (const std::string&        a) { set(a); }
-        void operator= (basic_short_string&&      a) { assign<true>(a); }
-        void operator= (const basic_short_string& a) { set(a); }
-
-        bool operator==(const char* a)        const { return !strcmp(m_val, a);         }
-        bool operator!=(const char* a)        const { return !operator==(a);            }
-        bool operator==(const std::string& a) const { return !strcmp(m_val, a.c_str()); }
-        bool operator!=(const std::string& a) const { return !operator==(a);            }
-
-        bool operator==(const basic_short_string& a) const {
-            return m_sz == a.m_sz && !strcmp(m_val, a.c_str());
-        }
-
-        bool operator!=(const basic_short_string& a) const {
-            return !operator==(a);
-        }
-
-        operator const char*()      const { return m_val;    }
-        const char*    c_str()      const { return m_val;    }
-        size_t         size()       const { return m_sz;     }
-        char*          str()              { return m_val;    }
-        bool           allocated()  const { return m_val != m_buf; }
     };
+
+#ifdef UTXX_DEBUG_SHORT_STRING_ALLOC
+    template <class Char, class N>
+    std::atomic<size_t> basic_short_string<Char, N>::m_alloc_count;
+#endif
 
     using short_string = basic_short_string<>;
 

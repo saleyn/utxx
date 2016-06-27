@@ -344,4 +344,16 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(s == test3);
         BOOST_CHECK_EQUAL(test3, s.c_str());
     }
+
+    using ssu = basic_short_string<unsigned char>;
+    { ssu s; BOOST_CHECK_EQUAL(0, s.size()); }
+    {
+        const unsigned char* test = (const unsigned char*)"a";
+        ssu s(test);
+        BOOST_CHECK_EQUAL(1, s.size());
+        BOOST_CHECK_EQUAL(s, test);
+        BOOST_CHECK_EQUAL(s.c_str(), test);
+        BOOST_CHECK_EQUAL(s.str(), test);
+        BOOST_CHECK(!s.allocated());
+    }
 }
