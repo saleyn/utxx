@@ -344,7 +344,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         s.clear();
         BOOST_CHECK_EQUAL(0,   s.size());
 
-        const char test[] = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+        const std::string test(80, 'x');
         s = test;
         BOOST_CHECK(s.allocated());
         BOOST_CHECK(s == test);
@@ -365,8 +365,30 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         std::string test3(s);
         BOOST_CHECK(s == test3);
         BOOST_CHECK_EQUAL(test3, s.c_str());
+
+        {
+            std::string t1(30, 'a');
+            std::string a1(5,  'b');
+            std::string a2(50, 'c');
+            ss s(t1);
+            BOOST_CHECK_EQUAL(t1, s.c_str());
+            BOOST_CHECK_EQUAL(t1.size(), s.size());
+            BOOST_CHECK_EQUAL(64-1-2*8,  s.capacity());
+            BOOST_CHECK(!s.allocated());
+            s.append(a1);
+            BOOST_CHECK_EQUAL(t1+a1, s.c_str());
+            BOOST_CHECK_EQUAL(t1.size()+a1.size(), s.size());
+            BOOST_CHECK_EQUAL(64-1-2*8, s.capacity());
+            BOOST_CHECK(!s.allocated());
+
+            s.append(a2);
+            BOOST_CHECK_EQUAL(t1+a1+a2, s.c_str());
+            BOOST_CHECK_EQUAL(t1.size()+a1.size()+a2.size(), s.size());
+            BOOST_CHECK_EQUAL(87, s.capacity()); // allocations are rounded by 8 minus 1 (for '\0')
+            BOOST_CHECK(s.allocated());
+        }
     }
-    BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
+    BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
     BOOST_CHECK_EQUAL(0, Allocator::allocations());
 
     using ssu = basic_short_string<unsigned char>;
@@ -380,7 +402,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(!strncmp((const char*)s.str(),   (const char*)test, 1));
         BOOST_CHECK(!s.allocated());
 
-        BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
     }
 }

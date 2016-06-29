@@ -375,36 +375,66 @@ namespace utxx {
         static constexpr size_t MaxSize()    { return MaxSz; }
 
         basic_short_string(const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0) { m_buf[0] = '\0'; }
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { m_buf[0] = '\0'; }
         basic_short_string(const Char* a,           const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0) { set(a,strlen((const char*)a));}
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz)
+            { set(a,strlen((const char*)a));}
         basic_short_string(const Char* a, size_t n, const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0) { set(a, n);       }
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a, n); }
         basic_short_string(basic_short_string&&      a, const Alloc& ac = Alloc())
             : Base(ac) { assign<false>(a); }
         basic_short_string(const basic_short_string& a, const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0) { set(a); }
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
+        basic_short_string(std::basic_string<Char>&& a, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
+        basic_short_string(const std::basic_string<Char>& a, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
 
-        ~basic_short_string() { if (m_val != m_buf) Base::deallocate(m_val, m_sz+1); }
+        ~basic_short_string() { if (m_val != m_buf) Base::deallocate(m_val, m_max_sz+1); }
 
         void set(const Char*                    a) { set(a, strlen((char*)a));        }
         void set(const std::basic_string<Char>& a) { set(a.c_str(), a.size()); }
         void set(const basic_short_string&      a) { set(a.c_str(), a.size()); }
         void set(const Char* a, size_t n) {
-            if (m_val != m_buf)
-                delete [] m_val;
-            if (n <= MaxSz)
-                m_val = m_buf;
-            else {
-                m_val = Base::allocate(n+1);
+            if (n > m_max_sz) {
+                if (m_val != m_buf)
+                    delete [] m_val;
+                if (n <= MaxSz) {
+                    m_max_sz = MaxSz;
+                    m_val    = m_buf;
+                } else {
+                    auto max = ((n + 1) + 7) & ~7;  // Round to 8 bytes
+                    m_max_sz = max-1;
+                    m_val    = Base::allocate(max);
+                }
             }
-            strcpy((char*)m_val, (char*)a);
-            m_sz = n;
+            memcpy((char*)m_val, (char*)a, n);
+            m_val[n] = '\0';
+            m_sz     = n;
         }
 
         void clear() {
-            if (m_val != m_buf) Base::deallocate(m_val, m_sz+1);;
-            m_val = m_buf; m_buf[0] = '\0'; m_sz = 0;
+            if (m_val != m_buf) Base::deallocate(m_val, m_max_sz+1);
+            m_val = m_buf; m_buf[0] = '\0'; m_sz = 0; m_max_sz = MaxSz;
+        }
+
+        void append(const std::basic_string<Char>& a) { append(a.c_str(), a.size()); }
+        void append(const Char* a)                    { append(a, strlen((char*)a)); }
+        void append(const Char* a, size_t n) {
+            auto sz  = m_sz+n;
+            if  (sz <= capacity())
+                memcpy(m_val+m_sz, a, n);
+            else {
+                auto max = ((sz + 1) + 7) & ~7;  // Round to 8 bytes
+                auto p   = Base::allocate(max);
+                memcpy(p,  m_val, m_sz);
+                memcpy(p+m_sz, a, n);
+                clear();
+                m_max_sz = max-1;
+                m_val    = p;
+            }
+            m_sz         = sz;
+            m_val[m_sz]  = '\0';
         }
 
         void operator= (const Char*                     a) { set(a); }
@@ -428,11 +458,13 @@ namespace utxx {
         operator const Char*()          const { return m_val;    }
         const Char*    c_str()          const { return m_val;    }
         size_t         size()           const { return m_sz;     }
+        size_t         capacity()       const { return m_max_sz; }
         Char*          str()                  { return m_val;    }
         bool           allocated()      const { return m_val != m_buf; }
     private:
         Char*  m_val;
-        size_t m_sz;
+        uint   m_sz;
+        uint   m_max_sz;
         Char   m_buf[MaxSz+1];
 
         template <bool Clear>
@@ -441,6 +473,7 @@ namespace utxx {
             if (a.allocated()) { m_val = a.m_val; a.m_val = a.m_buf;      }
             else               { m_val = m_buf;   strcpy(m_buf, a.m_buf); }
             m_sz       = a.m_sz;
+            m_max_sz   = a.m_max_sz;
             a.m_buf[0] = '\0';
             a.m_sz     = 0;
         }
