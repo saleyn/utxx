@@ -119,7 +119,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
             tzset();
 
             auto ll = m_log_mgr->log_level_to_string
-                        (as_log_level(__builtin_ffs(m_levels)), false);
+                      (as_log_level(__builtin_ffs(m_levels)), false);
             int  tz = -timezone;
             int  hh = abs(tz / 3600);
             int  mm = abs(tz % 60);

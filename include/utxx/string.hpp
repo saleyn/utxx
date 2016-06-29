@@ -366,11 +366,13 @@ namespace utxx {
     /// Representation of a string value.
     /// Small strings (size <= 47) don't involve memory allocations.
     //--------------------------------------------------------------------------
-    template <typename Char = char, int MaxSize = 64-1-2*sizeof(void*), class Alloc = std::allocator<Char>>
-    struct basic_short_string : private Alloc {
-        using Base = Alloc;
+    template <typename Char = char, int MaxSz = 64-1-2*sizeof(void*), class Alloc = std::allocator<Char>>
+    class basic_short_string : private Alloc {
+        using Base       = Alloc;
+    public:
+        using value_type = Char;
 
-        static const size_t MAX_SIZE()    { return MaxSize; }
+        static constexpr size_t MaxSize()    { return MaxSz; }
 
         basic_short_string(const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0) { m_buf[0] = '\0'; }
@@ -391,7 +393,7 @@ namespace utxx {
         void set(const Char* a, size_t n) {
             if (m_val != m_buf)
                 delete [] m_val;
-            if (n <= MaxSize)
+            if (n <= MaxSz)
                 m_val = m_buf;
             else {
                 m_val = Base::allocate(n+1);
@@ -429,9 +431,9 @@ namespace utxx {
         Char*          str()                  { return m_val;    }
         bool           allocated()      const { return m_val != m_buf; }
     private:
-        Char* m_val;
-        int   m_sz;
-        Char  m_buf[MaxSize+1];
+        Char*  m_val;
+        size_t m_sz;
+        Char   m_buf[MaxSz+1];
 
         template <bool Clear>
         void assign(basic_short_string&& a) {
