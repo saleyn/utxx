@@ -152,26 +152,24 @@ int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
     if (rel)
         pair.first += now.first;
 
+    auto sec = a_utc ?  pair.first
+                     : (pair.first + s_utc_nsec_offset / 1000000000L);
     char* p;
 
     switch (a_tp) {
         case TIME:
         case TIME_WITH_USEC:
         case TIME_WITH_MSEC: {
-            auto sec = a_utc ? pair.first
-                             : (pair.first + s_utc_nsec_offset / 1000000000L);
             p  = time_val::write_time(sec, pair.second, a_buf, a_tp);
             return p - a_buf;
         }
         case DATE:
-            p = write_date(a_buf, pair.first, a_utc, 8, '\0', a_use_cached_date);
+            p = write_date(a_buf, sec, a_utc, 8, '\0', a_use_cached_date);
             return 8;
         case DATE_TIME:
         case DATE_TIME_WITH_USEC:
         case DATE_TIME_WITH_MSEC: {
-            auto sec = a_utc ? pair.first
-                             : (pair.first + s_utc_nsec_offset / 1000000000L);
-            p = write_date(a_buf, pair.first, a_utc, 0, '\0', a_use_cached_date);
+            p = write_date(a_buf, sec, a_utc, 0, '\0', a_use_cached_date);
             p = time_val::write_time(sec, pair.second, p, stamp_type(a_tp+3));
             return p - a_buf;
         }
