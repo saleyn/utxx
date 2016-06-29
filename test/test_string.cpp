@@ -345,7 +345,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL(0,   s.size());
 
         const std::string test(80, 'x');
-        s = test;
+        s = test;                                   // <-- allocation 1
         BOOST_CHECK(s.allocated());
         BOOST_CHECK(s == test);
         BOOST_CHECK_EQUAL(test, s.c_str());
@@ -357,7 +357,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
 
         std::string test2(test);
-        s = test2;
+        s = test2;                                  // <-- allocation 2
         BOOST_CHECK(s.allocated());
         BOOST_CHECK(s == test2);
         BOOST_CHECK_EQUAL(test2, s.c_str());
@@ -365,6 +365,9 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         std::string test3(s);
         BOOST_CHECK(s == test3);
         BOOST_CHECK_EQUAL(test3, s.c_str());
+
+        BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(1, Allocator::allocations());
 
         {
             std::string t1(30, 'a');
@@ -381,14 +384,27 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
             BOOST_CHECK_EQUAL(64-1-2*8, s.capacity());
             BOOST_CHECK(!s.allocated());
 
-            s.append(a2);
+            s.append(a2);                           // <-- allocation 3
             BOOST_CHECK_EQUAL(t1+a1+a2, s.c_str());
             BOOST_CHECK_EQUAL(t1.size()+a1.size()+a2.size(), s.size());
-            BOOST_CHECK_EQUAL(87, s.capacity()); // allocations are rounded by 8 minus 1 (for '\0')
+            BOOST_CHECK_EQUAL(87, s.capacity());    // allocations are rounded by 8 minus 1 (for '\0')
             BOOST_CHECK(s.allocated());
+
+            s.reserve(60);                          // <-- allocation 4
+            BOOST_CHECK_EQUAL(t1+a1+a2, s.c_str());
+            BOOST_CHECK_EQUAL(t1.size()+a1.size()+a2.size(), s.size());
+            BOOST_CHECK_EQUAL(87, s.capacity());    // allocations are rounded by 8 minus 1 (for '\0')
+            BOOST_CHECK(s.allocated());
+
+            s.reserve(90);
+            BOOST_CHECK_EQUAL(t1+a1+a2, s.c_str());
+            BOOST_CHECK_EQUAL(t1.size()+a1.size()+a2.size(), s.size());
+            BOOST_CHECK_EQUAL(95, s.capacity()); // allocations are rounded by 8 minus 1 (for '\0')
+            BOOST_CHECK(s.allocated());
+
         }
     }
-    BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
+    BOOST_CHECK_EQUAL(4, Allocator::tot_allocations());
     BOOST_CHECK_EQUAL(0, Allocator::allocations());
 
     using ssu = basic_short_string<unsigned char>;
@@ -402,7 +418,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(!strncmp((const char*)s.str(),   (const char*)test, 1));
         BOOST_CHECK(!s.allocated());
 
-        BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(4, Allocator::tot_allocations());
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
     }
 }

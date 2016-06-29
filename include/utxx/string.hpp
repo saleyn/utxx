@@ -390,18 +390,16 @@ namespace utxx {
         basic_short_string(const std::basic_string<Char>& a, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
 
-        ~basic_short_string() { if (m_val != m_buf) Base::deallocate(m_val, m_max_sz+1); }
+        ~basic_short_string() { deallocate(); }
 
         void set(const Char*                    a) { set(a, strlen((char*)a));        }
         void set(const std::basic_string<Char>& a) { set(a.c_str(), a.size()); }
         void set(const basic_short_string&      a) { set(a.c_str(), a.size()); }
         void set(const Char* a, size_t n) {
             if (n > m_max_sz) {
-                if (m_val != m_buf)
-                    delete [] m_val;
+                deallocate();
                 if (n <= MaxSz) {
                     m_max_sz = MaxSz;
-                    m_val    = m_buf;
                 } else {
                     auto max = ((n + 1) + 7) & ~7;  // Round to 8 bytes
                     m_max_sz = max-1;
@@ -414,8 +412,8 @@ namespace utxx {
         }
 
         void clear() {
-            if (m_val != m_buf) Base::deallocate(m_val, m_max_sz+1);
-            m_val = m_buf; m_buf[0] = '\0'; m_sz = 0; m_max_sz = MaxSz;
+            deallocate();
+            m_buf[0] = '\0'; m_sz = 0; m_max_sz = MaxSz;
         }
 
         void append(const std::basic_string<Char>& a) { append(a.c_str(), a.size()); }
@@ -435,6 +433,18 @@ namespace utxx {
             }
             m_sz         = sz;
             m_val[m_sz]  = '\0';
+        }
+
+        void reserve(size_t a_capacity) {
+            if (a_capacity <= capacity())
+                return;
+
+            auto max = ((a_capacity + 1) + 7) & ~7;  // Round to 8 bytes
+            auto p   = Base::allocate(max);
+            memcpy(p,  m_val, m_sz+1); // Include trailing '\0'
+            deallocate();
+            m_max_sz = max-1;
+            m_val    = p;
         }
 
         void operator= (const Char*                     a) { set(a); }
@@ -466,6 +476,13 @@ namespace utxx {
         uint   m_sz;
         uint   m_max_sz;
         Char   m_buf[MaxSz+1];
+
+        void deallocate() {
+            if (allocated()) {
+                Base::deallocate(m_val, m_max_sz+1);
+                m_val = m_buf;
+            }
+        }
 
         template <bool Clear>
         void assign(basic_short_string&& a) {
