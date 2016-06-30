@@ -50,8 +50,8 @@ UTXX_ENUMX
 );
 
 UTXX_ENUMX(mmSideT, int8_t,  -1, (BID)(ASK)(SIDES));
-UTXX_ENUM( mm_enum, int64_t,  A /* Comment */, B, C);
-UTXX_ENUMI(mm_enumi,int64_t, -1, A /* Comment */, B, C);
+UTXX_ENUM( mm_enum, int64_t,     A /* Comment */, B, C);
+UTXX_ENUMI(mm_enumi,int,     -1, A /* Comment */, B, C);
 UTXX_ENUMX(mm_enumx, char, ' ', (A, 'a')(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
@@ -145,6 +145,15 @@ BOOST_AUTO_TEST_CASE( test_enum )
 
     BOOST_CHECK_EQUAL(-1, mm_enumi::UNDEFINED);
     BOOST_CHECK_EQUAL( 0, mm_enumi::A);
+    BOOST_CHECK_EQUAL( 0, (int)mm_enumi::from_string("A"));
+    BOOST_CHECK(mm_enumi::A == mm_enumi::from_string("A"));
+    BOOST_CHECK_EQUAL("UNDEFINED", mm_enumi::to_string(mm_enumi()));
+    BOOST_CHECK_EQUAL("A",         mm_enumi::to_string(mm_enumi::A));
+    BOOST_CHECK_EQUAL("B",         mm_enumi::to_string(mm_enumi::B));
+    BOOST_CHECK_EQUAL("C",         mm_enumi::to_string(mm_enumi::C));
+    BOOST_CHECK(mm_enumi::A == mm_enumi::begin());
+    BOOST_CHECK(mm_enumi::C == mm_enumi::last());
+    BOOST_CHECK_EQUAL( 3, (int)mm_enumi::end());
 
     static_assert(2 == oh_mm::mm_enum2::size(), "Invalid size");
     BOOST_CHECK_EQUAL("X", oh_mm::mm_enum2::to_string(oh_mm::mm_enum2::X));

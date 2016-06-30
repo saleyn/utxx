@@ -98,7 +98,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                               \
         explicit  ENUM(size_t v) : m_val(type(v)) { assert(v < s_size); }     \
         constexpr ENUM() noexcept: m_val(UNDEFINED) {}                        \
-        constexpr ENUM(type v)  : m_val(v) {}                                 \
+        constexpr ENUM(type v)   : m_val(v) {}                                \
                                                                               \
         ENUM(ENUM&&)                 = default;                               \
         ENUM(ENUM const&)            = default;                               \
@@ -109,7 +109,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         constexpr operator type()      const { return m_val; }                \
         constexpr bool     empty()     const { return m_val == UNDEFINED; }   \
                                                                               \
-        const std::string& to_string() const { return name(size_t(m_val));}   \
+        const std::string& to_string() const { return name(int(m_val));   }   \
         static const std::string&                                             \
                            to_string(type a) { return ENUM(a).to_string();}   \
         const char*        c_str()     const { return to_string().c_str(); }  \
@@ -118,14 +118,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static ENUM from_string(const std::string& a, bool a_nocase=false){   \
             auto f = a_nocase ? &strcasecmp : &strcmp;                        \
             for (size_t i=1; i != s_size; i++)                                \
-                if (f((names()[i]).c_str(), a.c_str()) == 0) return ENUM(i);  \
+                if (f((names()[i]).c_str(), a.c_str()) == 0)                  \
+                    return ENUM(i+INIT);                                      \
             return UNDEFINED;                                                 \
         }                                                                     \
                                                                               \
         static ENUM from_string(const char* a, bool a_nocase=false){          \
             auto f = a_nocase ? &strcasecmp : &strcmp;                        \
             for (size_t i=1; i != s_size; i++)                                \
-                if (f((names()[i]).c_str(), a) == 0) return ENUM(i);          \
+                if (f((names()[i]).c_str(), a) == 0) return ENUM(INIT+i);     \
             return UNDEFINED;                                                 \
         }                                                                     \
                                                                               \
@@ -140,14 +141,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                     \
                                                                               \
         static constexpr size_t size()  { return s_size-1; }                  \
-        static constexpr ENUM   begin() { return type(1); }                   \
+        static constexpr ENUM   begin() { return type(INIT+1); }              \
         static constexpr ENUM   end()   { return _END_; }                     \
-        static constexpr ENUM   last()  { return type(size()); }              \
+        static constexpr ENUM   last()  { return type(INIT+size()); }         \
                                                                               \
         template <typename Visitor>                                           \
         static void for_each(const Visitor& a_fun) {                          \
             for (size_t i=1; i < s_size; i++)                                 \
-                if (!a_fun(type(i)))                                          \
+                if (!a_fun(type(INIT+i)))                                     \
                     break;                                                    \
         }                                                                     \
     private:                                                                  \
@@ -164,9 +165,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return s_names;                                                   \
         }                                                                     \
                                                                               \
-        static const std::string& name(size_t n) {                            \
-            assert(n < s_size);                                               \
-            return names()[n];                                                \
+        static const std::string& name(int n) {                               \
+            auto   m = n-INIT;                                                \
+            assert(m >= 0 && m < int(s_size));                                \
+            return names()[m];                                                \
         }                                                                     \
                                                                               \
         UTXX__ENUM_FRIEND_SERIALIZATION__;                                    \
