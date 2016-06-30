@@ -49,8 +49,9 @@ UTXX_ENUMX
     (CCC)
 );
 
-UTXX_ENUMX(mmSideT, int8_t, -1, (BID)(ASK)(SIDES));
-UTXX_ENUM( mm_enum, int64_t, A /* Comment */, B, C);
+UTXX_ENUMX(mmSideT, int8_t,  -1, (BID)(ASK)(SIDES));
+UTXX_ENUM( mm_enum, int64_t,  A /* Comment */, B, C);
+UTXX_ENUMI(mm_enumi,int64_t, -1, A /* Comment */, B, C);
 UTXX_ENUMX(mm_enumx, char, ' ', (A, 'a')(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
@@ -141,6 +142,9 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK(mm_enum::B == mm_enum::from_string("B"));
     BOOST_CHECK(mm_enum::C == mm_enum::from_string("C"));
     BOOST_CHECK(mm_enum::UNDEFINED == mm_enum::from_string("D"));
+
+    BOOST_CHECK_EQUAL(-1, mm_enumi::UNDEFINED);
+    BOOST_CHECK_EQUAL( 0, mm_enumi::A);
 
     static_assert(2 == oh_mm::mm_enum2::size(), "Invalid size");
     BOOST_CHECK_EQUAL("X", oh_mm::mm_enum2::to_string(oh_mm::mm_enum2::X));

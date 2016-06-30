@@ -72,9 +72,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //  std::cout << "Value: " << val            << std::endl;
 //
 #define UTXX_ENUM(ENUM, TYPE, ...)                                            \
+        UTXX_ENUMI(ENUM, TYPE, 0, __VA_ARGS__)
+
+/// Strongly typed reflectable enum declaration
+//  #include <utxx/enum.hpp>
+//
+//  UTXX_ENUMI(MyEnumT, char, -1,
+//              Apple,
+//              Pear,
+//              Grape
+//           );
+//
+// Sample usage:
+//  MyEnumT val = MyEnumT::from_string("Pear");
+//  std::cout << "Value: " << to_string(val) << std::endl;
+//  std::cout << "Value: " << val            << std::endl;
+//
+#define UTXX_ENUMI(ENUM, TYPE, INIT, ...)                                     \
     struct ENUM {                                                             \
         enum type : TYPE {                                                    \
-            UNDEFINED,                                                        \
+            UNDEFINED = INIT,                                                 \
             __VA_ARGS__,                                                      \
             _END_                                                             \
         };                                                                    \
