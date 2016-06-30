@@ -472,6 +472,7 @@ namespace utxx {
         operator const Char*()          const { return m_val;          }
         const Char*    c_str()          const { return m_val;          }
         size_t         size()           const { return m_sz;           }
+        void           size(size_t n)         { assert(n < m_max_sz); m_val[n] = '\0'; m_sz = n; }
         size_t         capacity()       const { return m_max_sz;       }
         Char*          str()                  { return m_val;          }
         bool           allocated()      const { return m_val != m_buf; }
