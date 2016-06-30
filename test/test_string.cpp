@@ -341,7 +341,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL("a", s.str());
         BOOST_CHECK(!s.allocated());
 
-        s.clear();
+        s.reset();
         BOOST_CHECK_EQUAL(0,   s.size());
 
         const std::string test(80, 'x');
@@ -349,7 +349,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK(s.allocated());
         BOOST_CHECK(s == test);
         BOOST_CHECK_EQUAL(test, s.c_str());
-        s.clear();
+        s.reset();
         BOOST_CHECK(!s.allocated());
         BOOST_CHECK_EQUAL(0, s.size());
 
@@ -402,6 +402,15 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
             BOOST_CHECK_EQUAL(95, s.capacity()); // allocations are rounded by 8 minus 1 (for '\0')
             BOOST_CHECK(s.allocated());
 
+            s.clear();
+            BOOST_CHECK_EQUAL(0, s.size());
+            BOOST_CHECK_EQUAL(95, s.capacity());
+            BOOST_CHECK(s.allocated());
+
+            s.reset();
+            BOOST_CHECK_EQUAL(0, s.size());
+            BOOST_CHECK_EQUAL(64-1-2*8, s.capacity());
+            BOOST_CHECK(!s.allocated());
         }
     }
     BOOST_CHECK_EQUAL(4, Allocator::tot_allocations());
