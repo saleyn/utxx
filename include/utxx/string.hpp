@@ -288,12 +288,11 @@ namespace utxx {
         return result;
     }
 
-    /// Perform wildcard matching of a string. The pattern argument can
-    /// contain any letters including '*', '?', and "[]". In case of the brackets
-    /// the character set must not exceed 255 chars.
-    /// @return 1 if \a a_src matches the \a a_pattern.
-    ///         0 if \a a_src doesn't match the \a a_pattern.
-    ///        -1 if there's some other error.
+    /// Perform wildcard matching of a string.
+    /// The pattern argument can contain any letters including '*' and '?'.
+    /// '*' means to match 0 or more characters;
+    /// '?' means to match exactly one character.
+    /// @return true if \a a_src matches the \a a_pattern.
     bool wildcard_match(const char* a_src, const char* a_pattern);
 
     /// Case insensitive traits for implementing string_nocase
