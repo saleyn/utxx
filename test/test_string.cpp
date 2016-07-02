@@ -339,10 +339,37 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL("a", s);
         BOOST_CHECK_EQUAL("a", s.c_str());
         BOOST_CHECK_EQUAL("a", s.str());
+        BOOST_CHECK_EQUAL("a", s.begin());
+        BOOST_CHECK(s.begin()+1 == s.end());
+        BOOST_CHECK(!s.null());
         BOOST_CHECK(!s.allocated());
 
         s.reset();
         BOOST_CHECK_EQUAL(0,   s.size());
+        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.allocated());
+        s.set_null();
+        BOOST_CHECK(s.null());
+        BOOST_CHECK_EQUAL(-1, s.size());
+        BOOST_CHECK_EQUAL("", s.c_str());
+        BOOST_CHECK_EQUAL("", s.str());
+        BOOST_CHECK(s.begin()  == s.end());
+        BOOST_CHECK(s.cbegin() == s.cend());
+        s.set("b");
+        BOOST_CHECK(!s.null());
+        BOOST_CHECK_EQUAL(1, s.size());
+        BOOST_CHECK(s.begin()+1  == s.end());
+        BOOST_CHECK(s.cbegin()+1 == s.cend());
+        s.set(nullptr, -1);
+        BOOST_CHECK(s.null());
+        BOOST_CHECK_EQUAL(-1, s.size());
+        s.append("y");
+        BOOST_CHECK(!s.null());
+        BOOST_CHECK_EQUAL(1, s.size());
+        BOOST_CHECK_EQUAL("y", s.c_str());
+        BOOST_CHECK_EQUAL("y", s.str());
+        BOOST_CHECK(s.begin()+1  == s.end());
+        BOOST_CHECK(s.cbegin()+1 == s.cend());
 
         const std::string test(80, 'x');
         s = test;                                   // <-- allocation 1
