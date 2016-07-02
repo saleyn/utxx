@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 /// \file  test_string.cpp
 //----------------------------------------------------------------------------
-/// \brief Test cases for classes in the variant.hpp and test_variant.hpp.
+/// \brief Test cases for classes in the string.hpp.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2010-07-10
@@ -360,6 +360,14 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL(1, s.size());
         BOOST_CHECK(s.begin()+1  == s.end());
         BOOST_CHECK(s.cbegin()+1 == s.cend());
+
+        s.set("abc");
+        BOOST_CHECK_EQUAL(3, s.size());
+        s.resize(1);
+        BOOST_CHECK_EQUAL(1, s.size());
+        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.allocated());
+
         s.set(nullptr, -1);
         BOOST_CHECK(s.null());
         BOOST_CHECK_EQUAL(-1, s.size());

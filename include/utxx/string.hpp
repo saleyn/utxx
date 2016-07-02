@@ -386,7 +386,7 @@ namespace utxx {
         basic_short_string(const Char* a, size_t n, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a, n); }
         basic_short_string(basic_short_string&&      a, const Alloc& ac = Alloc())
-            : Base(ac) { assign<false>(a); }
+            : Base(ac) { assign<false>(std::move(a)); }
         basic_short_string(const basic_short_string& a, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
         basic_short_string(std::basic_string<Char>&& a, const Alloc& ac = Alloc())
@@ -438,7 +438,7 @@ namespace utxx {
                 auto p   = Base::allocate(max);
                 memcpy(p,  m_val, oldsz);
                 memcpy(p+oldsz, a, n);
-                clear();
+                deallocate();
                 m_max_sz = max-1;
                 m_val    = p;
             }
@@ -461,7 +461,7 @@ namespace utxx {
 
         void operator= (const Char*                     a) { set(a); }
         void operator= (const std::basic_string<Char>&  a) { set(a); }
-        void operator= (basic_short_string&&            a) { assign<true>(a); }
+        void operator= (basic_short_string&&            a) { assign<true>(std::move(a)); }
         void operator= (const basic_short_string&       a) { set(a); }
 
         bool operator==(const Char* a)        const { return !strcmp((char*)m_val, (char*)a); }
@@ -483,7 +483,7 @@ namespace utxx {
         operator const Char*()          const { return m_val;          }
         const Char*    c_str()          const { return m_val;          }
         int            size()           const { return m_sz;           }
-        void           size(size_t n)         { assert(n < m_max_sz); m_val[n] = '\0'; m_sz = n; }
+        void           resize(size_t n)       { assert(n < m_max_sz); m_val[n] = '\0'; m_sz = n; }
         size_t         capacity()       const { return m_max_sz;       }
         Char*          str()                  { return m_val;          }
         bool           allocated()      const { return m_val != m_buf; }
@@ -510,9 +510,9 @@ namespace utxx {
             }
         }
 
-        template <bool Clear>
+        template <bool Reset>
         void assign(basic_short_string&& a) {
-            if (Clear) clear();
+            if (Reset) reset();
             if (a.allocated()) { m_val = a.m_val; a.m_val = a.m_buf;      }
             else               { m_val = m_buf;   strcpy(m_buf, a.m_buf); }
             m_sz       = a.m_sz;

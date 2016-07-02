@@ -54,6 +54,7 @@ list(APPEND TEST_SRCS
     test_stream_io.cpp
     test_shared_queue.cpp
     test_shared_ptr.cpp
+    test_short_vector.cpp
     test_signal_block.cpp
     test_stack_container.cpp
     test_static_polymorphism.cpp
