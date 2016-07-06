@@ -68,19 +68,25 @@ namespace utxx {
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems)
         {
           resize(a_list.size());
-          for (int i=0; i < a_list.size(); ++i)
-              *this[i] = std::move(a_list[i]);
+          auto q = a_list.begin();
+          for (int i=0; i < int(a_list.size()); ++i)
+              (T&)(*this[i]) = std::move(*q++);
         }
+        explicit
         basic_short_vector(const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { m_buf[0] = '\0'; }
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) {}
+        explicit
         basic_short_vector(const T* a, size_t n, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a, n); }
+        explicit
         basic_short_vector(basic_short_vector&& a, const Alloc& ac = Alloc())
             : Base(ac)                                          { assign<false>(std::move(a));}
+        explicit
         basic_short_vector(basic_short_vector const& a, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a); }
-        basic_short_vector(std::vector<T> const& a, const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a); }
+        template <int N>
+        basic_short_vector(const T (&a)[N], const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a, N); }
 
         ~basic_short_vector() { deallocate(); }
 
@@ -141,6 +147,7 @@ namespace utxx {
         void operator= (const T*                  a) { set(a); }
         void operator= (basic_short_vector&&      a) { assign<true>(std::move(a)); }
         void operator= (const basic_short_vector& a) { set(a); }
+        void operator= (const std::vector<T>&     a) { set(a); }
 
         bool operator==(const std::vector<T>& a) const {
             if (m_sz != int(a.size()) || m_sz < 0) return false;

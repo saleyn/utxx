@@ -105,6 +105,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                               \
         constexpr operator type()      const { return m_val; }                \
         constexpr bool     empty()     const { return m_val == UNDEFINED; }   \
+        constexpr bool     is_enum()   const { return true;               }   \
+        constexpr bool     is_flags()  const { return false;              }   \
+                                                                              \
         const std::string& to_string() const {                                \
             auto it = names().find(m_val);                                    \
             return (it == names().end() ? null_pair() : *it).second;          \

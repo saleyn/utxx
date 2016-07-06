@@ -52,6 +52,12 @@ private:
 template <class Char> long Alloc<Char>::s_count;
 template <class Char> long Alloc<Char>::s_ac;
 
+struct X {
+    X(int i = 0) : m_i(i) {}
+
+    int m_i;
+};
+
 BOOST_AUTO_TEST_CASE( test_short_vector )
 {
     using Allocator = Alloc<int>;
@@ -139,5 +145,15 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
         BOOST_CHECK_EQUAL(0, s.size());
         BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
+
+        ss s2({{1,2,3}}, salloc);
+        ss s1{{1, 2, 3}};
+
+        BOOST_CHECK_EQUAL(3, s.size());
+        BOOST_CHECK(!s.allocated());
+    }
+
+    {
+        basic_short_vector<X, 10> v;
     }
 }

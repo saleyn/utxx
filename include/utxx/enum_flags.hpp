@@ -122,6 +122,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         ENUM& operator=(ENUM const&) = default;                               \
         ENUM& operator=(ENUM&&)      = default;                               \
                                                                               \
+        constexpr bool     is_enum()   const { return true;     }             \
+        constexpr bool     is_flags()  const { return true;     }             \
+                                                                              \
         void               clear()             { m_val = 0;     }             \
         void               clear(type  a)      { m_val &= ~size_t(a); }       \
         void               clear(ENUM  a)      { m_val &= ~a.m_val;   }       \
