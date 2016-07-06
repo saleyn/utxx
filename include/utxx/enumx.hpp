@@ -93,9 +93,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                   \
         };                                                                    \
                                                                               \
-        explicit  ENUM(long v) : m_val(type(v))   {}                          \
-        constexpr ENUM()       : m_val(UNDEFINED) {}                          \
-        constexpr ENUM(type v) : m_val(v) {}                                  \
+        explicit  ENUM(long v) noexcept : m_val(type(v))   {}                 \
+        constexpr ENUM()       noexcept : m_val(UNDEFINED) {}                 \
+        constexpr ENUM(type v) noexcept : m_val(v) {}                         \
                                                                               \
         ENUM(ENUM&&)                 = default;                               \
         ENUM(ENUM const&)            = default;                               \

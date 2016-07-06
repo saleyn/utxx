@@ -96,9 +96,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             _END_                                                             \
         };                                                                    \
                                                                               \
-        explicit  ENUM(size_t v) : m_val(type(v)) { assert(v < s_size); }     \
+        explicit  ENUM(size_t v) noexcept : m_val(type(v)) {assert(v<s_size);}\
         constexpr ENUM() noexcept: m_val(UNDEFINED) {}                        \
-        constexpr ENUM(type v)   : m_val(v) {}                                \
+        constexpr ENUM(type v) noexcept   : m_val(v) {}                       \
                                                                               \
         ENUM(ENUM&&)                 = default;                               \
         ENUM(ENUM const&)            = default;                               \

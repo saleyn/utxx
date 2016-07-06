@@ -514,7 +514,7 @@ namespace utxx {
         void assign(basic_short_string&& a) {
             if (Reset) reset();
             if (a.allocated()) { m_val = a.m_val; a.m_val = a.m_buf;      }
-            else               { m_val = m_buf;   strcpy(m_buf, a.m_buf); }
+            else               { m_val = m_buf;   strcpy((char*)m_buf, (const char*)a.m_buf); }
             m_sz       = a.m_sz;
             m_max_sz   = a.m_max_sz;
             a.m_buf[0] = '\0';

@@ -334,6 +334,8 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
 
     { ss s; BOOST_CHECK_EQUAL(0, s.size()); }
     {
+        ss s0 = "abc";
+
         ss s("a", salloc);
         BOOST_CHECK_EQUAL(1,   s.size());
         BOOST_CHECK_EQUAL("a", s);
@@ -348,6 +350,7 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL(0,   s.size());
         BOOST_CHECK(!s.null());
         BOOST_CHECK(!s.allocated());
+
         s.set_null();
         BOOST_CHECK(s.null());
         BOOST_CHECK_EQUAL(-1, s.size());

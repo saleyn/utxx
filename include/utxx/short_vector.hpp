@@ -64,6 +64,13 @@ namespace utxx {
 
         static constexpr size_t MaxCapacity()    { return MaxItems; }
 
+        basic_short_vector(std::initializer_list<T> a_list, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems)
+        {
+          resize(a_list.size());
+          for (int i=0; i < a_list.size(); ++i)
+              *this[i] = std::move(a_list[i]);
+        }
         basic_short_vector(const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { m_buf[0] = '\0'; }
         basic_short_vector(const T* a, size_t n, const Alloc& ac = Alloc())
