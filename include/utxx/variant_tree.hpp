@@ -201,12 +201,14 @@ private:
         typedef typename
             boost::mpl::if_<boost::is_const<PTree>, const base, base>::type TBase;
 
+        static const boost::optional<TBase&> s_empty;
+
         path_type p(path);
 
         BOOST_ASSERT(!p.empty());
 
         TBase* t = navigate(tree, p, (const int*)NULL, false);
-        return t ? *t : boost::optional<TBase&>();
+        return t ? *t : s_empty;
     }
 
 public:
