@@ -103,10 +103,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         ENUM& operator=(ENUM const&) = default;                               \
         ENUM& operator=(ENUM&&)      = default;                               \
                                                                               \
-        constexpr operator type()      const { return m_val; }                \
-        constexpr bool     empty()     const { return m_val == UNDEFINED; }   \
-        constexpr bool     is_enum()   const { return true;               }   \
-        constexpr bool     is_flags()  const { return false;              }   \
+        constexpr operator  type()     const { return m_val; }                \
+        constexpr bool      empty()    const { return m_val == UNDEFINED; }   \
+        static    constexpr bool is_enum()   { return true;               }   \
+        static    constexpr bool is_flags()  { return false;              }   \
                                                                               \
         const std::string& to_string() const {                                \
             auto it = names().find(m_val);                                    \

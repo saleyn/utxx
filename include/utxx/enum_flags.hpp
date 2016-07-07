@@ -122,21 +122,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         ENUM& operator=(ENUM const&) = default;                               \
         ENUM& operator=(ENUM&&)      = default;                               \
                                                                               \
-        constexpr bool     is_enum()   const { return true;     }             \
-        constexpr bool     is_flags()  const { return true;     }             \
+        static constexpr bool is_enum()        { return true;   }             \
+        static constexpr bool is_flags()       { return true;   }             \
                                                                               \
         void               clear()             { m_val = 0;     }             \
         void               clear(type  a)      { m_val &= ~size_t(a); }       \
         void               clear(ENUM  a)      { m_val &= ~a.m_val;   }       \
         void               clear(size_t a)     { m_val &= ~a;   }             \
+        explicit                                                              \
         constexpr operator size_t()      const { return m_val;  }             \
+        explicit                                                              \
         constexpr operator uint()        const { return m_val;  }             \
         constexpr operator type()        const { return type(m_val); }        \
         constexpr bool     empty()       const { return !m_val; }             \
         constexpr bool     has(type   a) const { return m_val & size_t(a); }  \
         constexpr bool has_any(size_t a) const { return m_val & a;         }  \
         constexpr bool has_all(size_t a) const { return (m_val & a) == a;  }  \
-        constexpr bool   valid(size_t a) const { return a < _END_;    }       \
+        static constexpr bool   valid(size_t a){ return a < _END_;    }       \
         static constexpr size_t size()         { return s_size;       }       \
                                                                               \
         ENUM operator=  (type   a) { m_val  = size_t(a); return *this; }      \
