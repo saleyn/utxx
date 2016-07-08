@@ -447,6 +447,7 @@ namespace utxx {
             m_val[m_sz]  = '\0';
         }
 
+        /// Reserve space for holding \a a_capacity bytes without changing size.
         void reserve(size_t a_capacity) {
             if (a_capacity <= capacity())
                 return;
@@ -484,8 +485,13 @@ namespace utxx {
         operator const Char*()          const { return m_val;          }
         const Char*    c_str()          const { return m_val;          }
         int            size()           const { return m_sz;           }
+
+        /// Change size and add null-terminator (the size must not exceed capacity!)
         void           size(size_t n)         { assert(n < m_max_sz); m_val[n] = '\0'; m_sz = n; }
+
+        /// Reserve space for \a n bytes and set size to \a n.
         void           resize(size_t n)       { reserve(n);  size(n);  }
+
         size_t         capacity()       const { return m_max_sz;       }
         Char*          str()                  { return m_val;          }
         bool           allocated()      const { return m_val != m_buf; }
