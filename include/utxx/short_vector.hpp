@@ -67,10 +67,10 @@ namespace utxx {
         basic_short_vector(std::initializer_list<T> a_list, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems)
         {
-          resize(a_list.size());
+          resize  (a_list.size());
           auto q = a_list.begin();
           for (int i=0; i < int(a_list.size()); ++i)
-              (T&)(*this[i]) = std::move(*q++);
+              (T&)((*this)[i]) = std::move(*q++);
         }
         explicit
         basic_short_vector(const Alloc& ac = Alloc())
@@ -132,6 +132,8 @@ namespace utxx {
             m_sz = sz;
         }
 
+        /// Allocate capacity but don't change current size.
+        /// \see resize()
         void reserve(size_t a_capacity) {
             if (a_capacity <= capacity())
                 return;
@@ -170,7 +172,9 @@ namespace utxx {
         const T* c_str()          const { return m_val;          }
         T*       str()                  { return m_val;          }
         int      size()           const { return m_sz;           }
-        void     resize(size_t n)       { assert(n < m_max_sz); m_sz = n; }
+        void     size(size_t n)         { assert(n <= m_max_sz); m_sz = n; }
+        void     resize(size_t n)       { reserve(n); m_sz = n;  }
+
         size_t   capacity()       const { return m_max_sz;       }
         bool     allocated()      const { return m_val != m_buf; }
 

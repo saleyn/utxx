@@ -140,17 +140,30 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
         BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
         BOOST_CHECK_EQUAL(1, Allocator::allocations());
 
+        s.resize(1100);
+
+        BOOST_CHECK(s.allocated());
+        BOOST_CHECK_EQUAL(1100, s.size());
+        BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(1, Allocator::allocations());
+
+        s.size(20);
+        BOOST_CHECK(s.allocated());
+        BOOST_CHECK_EQUAL(20, s.size());
+
         s.reset();
         BOOST_CHECK(!s.allocated());
         BOOST_CHECK_EQUAL(0, s.size());
-        BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
+        BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
 
         ss s2({{1,2,3}}, salloc);
         ss s1{{1, 2, 3}};
 
-        BOOST_CHECK_EQUAL(3, s.size());
-        BOOST_CHECK(!s.allocated());
+        BOOST_CHECK_EQUAL(3, s1.size());
+        BOOST_CHECK_EQUAL(3, s2.size());
+        BOOST_CHECK(!s1.allocated());
+        BOOST_CHECK(!s2.allocated());
     }
 
     {

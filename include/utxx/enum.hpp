@@ -108,6 +108,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                               \
         constexpr operator type()      const { return m_val; }                \
         constexpr bool     empty()     const { return m_val == UNDEFINED; }   \
+        void               clear()           { m_val =  UNDEFINED;        }   \
+                                                                              \
         static constexpr   bool is_enum()    { return true;               }   \
         static constexpr   bool is_flags()   { return false;              }   \
                                                                               \
@@ -238,7 +240,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                             \
         constexpr operator etype()     const { return m_val; }              \
         constexpr bool     empty()     const { return m_val == UNDEFINED; } \
-                                                                            \
         const std::string& to_string() const { return name(size_t(m_val));} \
         static const std::string&                                           \
                            to_string(etype a){ return ENUM(a).to_string();} \
