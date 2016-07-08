@@ -376,7 +376,8 @@ namespace utxx {
         using iterator       = Char*;
         using const_iterator = const Char*;
 
-        static constexpr size_t MaxSize()    { return MaxSz; }
+        static constexpr size_t max_size()   { return MaxSz; }
+        static size_t round_size(size_t a)   { return ((a+(1+2*sizeof(void*)))+7)&~7; }
 
         basic_short_string(const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { m_buf[0] = '\0'; }

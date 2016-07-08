@@ -330,6 +330,13 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
     using ss = basic_short_string<char, 64-1-2*8, Allocator>;
     static_assert(sizeof(ss) == 64, "Invalid size");
 
+    BOOST_CHECK_EQUAL(47, ss::max_size());
+
+    BOOST_CHECK_EQUAL(64, ss::round_size(45));
+    BOOST_CHECK_EQUAL(64, ss::round_size(46));
+    BOOST_CHECK_EQUAL(64, ss::round_size(47));
+    BOOST_CHECK_EQUAL(72, ss::round_size(48));
+
     Allocator salloc;
 
     { ss s; BOOST_CHECK_EQUAL(0, s.size()); }
