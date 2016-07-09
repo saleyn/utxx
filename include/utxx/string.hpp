@@ -502,6 +502,9 @@ namespace utxx {
         iterator       begin()                { return m_val;          }
         iterator       end()                  { return null() ? m_val : m_val+m_sz; }
 
+        const_iterator begin()          const { return m_val;          }
+        const_iterator end()            const { return null() ? m_val : m_val+m_sz; }
+
         const_iterator cbegin()         const { return m_val;          }
         const_iterator cend()           const { return null() ? m_val : m_val+m_sz; }
     private:
