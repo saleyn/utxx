@@ -90,16 +90,17 @@ struct pcap {
         uint32_t dst_ip()   const { return ntohl(ip.daddr);   }
 
         std::string src() const {
-            char buf[32]; char* p = buf; fmt(p, src_ip());
+            char buf[32]; fmt(buf, src_ip());
             return std::string(buf);
         }
         std::string dst() const {
-            char buf[32]; char* p = buf; fmt(p, dst_ip());
+            char buf[32]; fmt(buf, dst_ip());
             return std::string(buf);
         }
 
-    protected:
-        static char* fmt(char* p, uint32_t ip) {
+        template <int N>
+        static char* fmt(char (&p)[N], uint32_t ip) {
+            static_assert(N >= 16, "Buffer too small!");
             int n = sprintf(p, "%u.%u.%u.%u",
                 ip >> 24 & 0xFF, ip >> 16 & 0xFF, ip >> 8 & 0xFF, ip & 0xFF);
             return p + n;
