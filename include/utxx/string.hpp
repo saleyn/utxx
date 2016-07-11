@@ -371,6 +371,10 @@ namespace utxx {
               class    Alloc = std::allocator<Char>>
     class basic_short_string : private Alloc {
         using Base           = Alloc;
+
+        static basic_short_string init_null() {
+            basic_short_string s; s.set_null(); return s;
+        }
     public:
         using value_type     = Char;
         using iterator       = Char*;
@@ -378,6 +382,11 @@ namespace utxx {
 
         static constexpr size_t max_size()   { return MaxSz; }
         static size_t round_size(size_t a)   { return ((a+(1+2*sizeof(void*)))+7)&~7; }
+
+        static const  basic_short_string& null_value() {
+            static basic_short_string s_null = init_null();
+            return s_null;
+        }
 
         basic_short_string(const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { m_buf[0] = '\0'; }
