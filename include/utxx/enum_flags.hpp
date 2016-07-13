@@ -122,6 +122,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         ENUM& operator=(ENUM const&) = default;                               \
         ENUM& operator=(ENUM&&)      = default;                               \
                                                                               \
+        static constexpr const char*   class_name() { return #ENUM; }         \
+                                                                              \
         static constexpr bool is_enum()        { return true;   }             \
         static constexpr bool is_flags()       { return true;   }             \
                                                                               \
