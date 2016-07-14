@@ -62,7 +62,8 @@ static const char* test_set[] = {
   /* 4 */  "\x4f\x5c\x6d\x7e\xDf\x81\x4f\x5c\x6d\x7e\x96",
   /* 5 */  "\x3f\x4f\x5c\x6d\x7e\xEf\x81\x3f\x4f\x5c\x97",
   /* 6 */  "\x2f\x3f\x4f\x5c\x6d\x7e\xFf\x81\x2f\x3f\x4f\x98",
-  /* 7 */  "\x1f\x2f\x3f\x4f\x5c\x6d\x7e\xFf\x81\x1e\x2d\x3c\x99"
+  /* 7 */  "\x1f\x2f\x3f\x4f\x5c\x6d\x7e\xFf\x81\x1e\x2d\x3c\x99",
+  // 8 */  "\x1f\x2f\x3f\x4f\x5c\x6d\x7e\x1a\xFf\x1e\x2d\x3c\x99"
 };
 
 static const uint8_t buffers0[] = 
@@ -207,9 +208,9 @@ BOOST_AUTO_TEST_CASE( test_pmap )
     }
 }
 
-int GetInteger(const char** buf, const char* end, uint64_t* res) {
-    const bool  nullable = true;
-    char const* buff = *buf;
+int GetInteger2(const char** buf, const char* end, uint64_t* res, bool* is_neg) {
+    const bool  nullable = is_neg;
+    char const* buff     = *buf;
 
     // Here the result is accumulated from 7-bit bytes; maximum of N 7-bit
     // bytes for the size of type "T":
@@ -268,23 +269,22 @@ int GetInteger(const char** buf, const char* end, uint64_t* res) {
       }
     }
 
+    bool is_null;
+
     // Check for NULL and adjust nullable values:
-    bool is_null = false;
-
-    if (unlikely(!is_null))  // Just to avoid compiler warning
-        throw std::runtime_error("Impossible happened");
-
     if (nullable)
     {
       if (n == 1 && !acc[0])
         is_null = true;
-      else
+      else {
         // Non-null: decrement the value (for signed types,  only if it is non-
         // negative).  IMPORTANT:  because of possible overflows,  we must NOT
         // compare "lres" with 0 (may get false equality) -- use the "neg" flag
         // instead!!!
         if (!neg)
           lres--;
+        is_null = false;
+      }
     }
 
     // Invariant test (but only AFTER the NULL adjustment). Note that "neg" set
@@ -297,10 +297,14 @@ int GetInteger(const char** buf, const char* end, uint64_t* res) {
     *res = lres;
     assert(buff + n <= end);
 
-    //if (is_neg != NULL && is_null)
-    //  *is_neg = neg;
+    if (nullable && is_null)
+      *is_neg = neg;
 
     return n;
+}
+
+int GetInteger(const char** buf, const char* end, uint64_t* res) {
+    return GetInteger2(buf, end, res, nullptr);
 }
 
 
@@ -321,7 +325,7 @@ inline int find_stopbit_byte(const char* buff, const char* end) {
         pos = 8 + (__builtin_ffsl(unmasked) >> 3);
     }
 
-    return likely(buff + pos < end) ? pos : 0;
+    return likely(buff + pos <= end) ? pos : 0;
 }
 
 
@@ -481,7 +485,7 @@ int decode_uint_fast(const char** buff, const char* end, uint64_t* val) {
     };
 
     if (likely(n)) {
-        *val  = f[n](*buff);
+        *val  = f[n-1](*buff);
         *buff += n;
     }
 
@@ -519,20 +523,30 @@ BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
     long ITERATIONS = getenv("ITERATIONS") ? atol(getenv("ITERATIONS")) : 10000000;
 
     for (int i=0; i < (int)length(test_set); ++i) {
-        uint64_t t1, t2;
+        uint64_t t1, t2, t3;
         const char* p = test_set[i];
         const char* q = test_set[i];
+        const char* w = test_set[i];
         //const char* m = test_set[i];
-        long r1 = decode_uint_loop(&p, p+8, &t1);
+        long r3 = GetInteger      (&w, w+8, &t3);
         long r2 = decode_uint_fast(&q, q+8, &t2);
-        BOOST_REQUIRE_EQUAL(r1, r2);
-        if (t1 != t2) {
+        long r1 = decode_uint_loop(&p, p+8, &t1);
+        BOOST_CHECK_EQUAL(r3, r2);
+        if (t3 != t2 || r3 != r2) {
             for (int j=0; j < (int)strlen(test_set[i]); j++)
                 printf("%02x ", (uint8_t)test_set[i][j]);
-            printf("\n  loop() -> %lx\n", t1);
-            printf(  "  fast() -> %lx\n", t2);
+            printf(  "  GetInt() -> %lx (%ld)\n", t3, r3);
+            printf("\n  fast()   -> %lx (%ld)\n", t2, r2);
         }
-        BOOST_REQUIRE_EQUAL(t1, t2);
+        BOOST_REQUIRE_EQUAL(t3, t2);
+        BOOST_CHECK_EQUAL(r3, r1);
+        if (t3 != t1 || r3 != r1) {
+            for (int j=0; j < (int)strlen(test_set[i]); j++)
+                printf("%02x ", (uint8_t)test_set[i][j]);
+            printf(  "  GetInt() -> %lx (%ld)\n", t3, r3);
+            printf("\n  loop()   -> %lx (%ld)\n", t1, r1);
+        }
+        BOOST_REQUIRE_EQUAL(t3, t1);
 
         //BOOST_REQUIRE_EQUAL(decode_uint_fast(&q, q+8, &t2));
         //BOOST_REQUIRE_EQUAL(p, q);
