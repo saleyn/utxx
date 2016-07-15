@@ -672,3 +672,42 @@ BOOST_AUTO_TEST_CASE( test_convert_itoa_hex )
     p = buf;
     BOOST_CHECK(itoa_hex(0x12345678, p, sizeof(buf)-1) > int(sizeof(buf)-1));
 }
+
+BOOST_AUTO_TEST_CASE( test_convert_itoa_bits )
+{
+    BOOST_CHECK_EQUAL("10000000", (itoa_bits<uint64_t,true, 2>(1ul    << 63, true)));
+    BOOST_CHECK_EQUAL("11000000", (itoa_bits<uint64_t,true, 2>(0xc0ul << 56, true)));
+
+    BOOST_CHECK_EQUAL("11000000-00010111", (itoa_bits<uint64_t,true, 2>(0xc017ul << 48, true)));
+
+    BOOST_CHECK_EQUAL(
+        "00000010-00000000-00000000-00000000-00000000-00000000-00000000-00001000",
+        (itoa_bits<uint64_t,true>(1ul << 57 | 1ul << 3)));
+
+    BOOST_CHECK_EQUAL("0xAB00000000000000",(itoa_bits<uint64_t,true,1>(0xab00ul << 48)));
+    BOOST_CHECK_EQUAL("0xAB00000000000000",(itoa_bits<uint64_t,true,-1>(0xab00ul << 48, true)));
+    BOOST_CHECK_EQUAL("10101011",          (itoa_bits<uint64_t,true,1>(0xab00ul << 48, true)));
+    BOOST_CHECK_EQUAL("0xABCD",            (itoa_bits<uint64_t,true,1>(0xabcd)));
+    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,1>(0xabcdef1234ul)));
+    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,2>(0xabcdef1234ul)));
+    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,7>(0xabcdef1234ul)));
+
+    //------
+
+    BOOST_CHECK_EQUAL("10000000",          (itoa_bits<uint64_t,false, 2>(1ul << 7, true)));
+    BOOST_CHECK_EQUAL("11000000",          (itoa_bits<uint64_t,false, 2>(0xc0ul,   true)));
+
+    BOOST_CHECK_EQUAL("11000000-00010111", (itoa_bits<uint64_t,false, 2>(0xc017, true)));
+
+    BOOST_CHECK_EQUAL(
+        "00000010-00000000-00000000-00000000-00000000-00000000-00000000-00001000",
+        (itoa_bits<uint64_t,false>(1ul << 57 | 1ul << 3)));
+
+    BOOST_CHECK_EQUAL("0xAB",              (itoa_bits<uint64_t,false,1>(0xab)));
+    BOOST_CHECK_EQUAL("10101011",          (itoa_bits<uint64_t,false,1>(0xab, true)));
+    BOOST_CHECK_EQUAL("0xABCD",            (itoa_bits<uint64_t,false,1>(0xabcd)));
+    BOOST_CHECK_EQUAL("0xAB00",            (itoa_bits<uint64_t,false,-1>(0xab00ul, true)));
+    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,1>(0xabcdef1234ul)));
+    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,2>(0xabcdef1234ul)));
+    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,7>(0xabcdef1234ul)));
+}

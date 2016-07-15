@@ -1102,4 +1102,63 @@ inline std::string itoa_hex(T a) {
     return buf;
 }
 
+//--------------------------------------------------------------------------------
+/// Print bits of \a a_val to a_buf
+/// \tparam MostSignificantFirst when true, \a a_drop_trailing_zeros are removed
+///                              from right side, otherwise from left side
+/// \tparam MaxOctets prints bits if the number fits in at most these number
+///                   of octets, otherwise prints hex. If this number is
+///                   negative, prints hex.
+//--------------------------------------------------------------------------------
+template <typename T, bool MostSignificantFirst=true, int MaxOctets=sizeof(T)>
+typename std::enable_if<std::is_integral<T>::value, int>::
+type itoa_bits(char* a_buf, int a_sz, T a_val, bool a_drop_trailing_zeros=false) {
+    static constexpr const int s_size = 8*sizeof(T);
+    static_assert(MaxOctets < 0 || MaxOctets <= sizeof(T), "Invalid size");
+    assert((MaxOctets < 0 && a_sz >= s_size+9) || (a_sz >= MaxOctets*9+1));
+
+    int lsb = __builtin_ffsl(a_val); // 1 + position of the least significant 1.
+    if(!lsb) { strncpy(a_buf, "", a_sz); return 0; }
+    int msb = __builtin_clzl(a_val); // Number of leading 0.
+
+    auto p  = a_buf;
+    int len = s_size
+            - (a_drop_trailing_zeros
+                ? ((((MostSignificantFirst ? lsb : msb))+7)&~7)
+                : 0);
+    if (len/8 > MaxOctets || MaxOctets < 0) {
+        *p++ = '0'; *p++ = 'x';
+        return itoa_hex(a_val, p, a_sz)+2;
+    }
+
+    int from = MostSignificantFirst ? s_size : len;
+    int to   = MostSignificantFirst ? s_size-std::min(64,len+8) : 0;
+
+    // print bits
+    for(int i  = from; i > to; --i) {
+        if (i != from && i%8 == 0) *p++ ='-';
+        *p++ = (a_val & (1ul << (i-1))) ? '1' : '0';
+    }
+
+    *p = '\0';
+    assert(p <= a_buf+a_sz);
+    return p-a_buf;
+}
+
+//--------------------------------------------------------------------------------
+/// Print bits of \a a_val to a_buf
+/// \tparam MostSignificantFirst when true, \a a_drop_trailing_zeros are removed
+///                              from right side, otherwise from left side
+/// \tparam MaxOctets prints bits if the number fits in at most these number
+///                   of octets, otherwise prints hex. If this number is
+///                   negative, prints hex.
+//--------------------------------------------------------------------------------
+template <typename T, bool MostSignificantFirst=true, int MaxOctets=sizeof(T)>
+std::string itoa_bits(T a_val, bool a_drop_trailing_zeros=false) {
+    char buf[96];
+    itoa_bits<T, MostSignificantFirst, MaxOctets>
+        (buf, sizeof(buf), a_val, a_drop_trailing_zeros);
+    return std::string(buf);
+}
+
 } // namespace utxx

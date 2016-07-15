@@ -32,10 +32,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_BITS_HPP_
-#define _UTXX_BITS_HPP_
+#pragma once
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <utxx/detail/bit_count.hpp>
 
 #if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
@@ -125,5 +124,3 @@ static inline unsigned long find_first_zero(unsigned long v) {
 
 } // namespace bits
 } // namespace utxx
-
-#endif // _UTXX_BITS_HPP_

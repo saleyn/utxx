@@ -570,7 +570,7 @@ BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
         double elapsed = time_val::now_diff(start);
         int speed = (double)ITERATIONS / elapsed;
 
-        printf("Speed: %d it/s, elapsed: %.6fs\n", speed, elapsed);
+        printf("Spgieed: %d it/s, elapsed: %.6fs\n", speed, elapsed);
     }
 }
 

@@ -32,8 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_BITMAP_HPP_
-#define _UTXX_BITMAP_HPP_
+#pragma once
 
 #include <boost/assert.hpp>
 #include <utxx/meta.hpp>
@@ -232,6 +231,3 @@ typedef bitmap_high<1024> bitmap1024;
 typedef bitmap_high<4096> bitmap4096;
 
 } // namespace utxx
-
-#endif // _HPCL_BITMAP_HPP_
-
