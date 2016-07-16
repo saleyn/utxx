@@ -70,6 +70,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 #define UTXX_ENUM_FLAGS(ENUM, TYPE, ...)                                      \
     struct ENUM {                                                             \
+        using value_type = TYPE;                                              \
+                                                                              \
         enum type : TYPE {                                                    \
             NONE,                                                             \
             BOOST_PP_SEQ_ENUM(                                                \

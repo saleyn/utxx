@@ -86,6 +86,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //
 #define UTXX_ENUMX(ENUM, TYPE, UndefValue, ...)                               \
     struct ENUM {                                                             \
+        using value_type = TYPE;                                              \
+                                                                              \
         enum type : TYPE {                                                    \
             UNDEFINED = (UndefValue),                                         \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                         \

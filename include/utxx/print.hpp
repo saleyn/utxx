@@ -55,7 +55,8 @@ struct fixed {
         , m_fill(' ')
     {}
 
-    inline friend std::ostream& operator<<(std::ostream& out, const fixed& f) {
+    template <typename StreamT>
+    inline friend StreamT& operator<<(StreamT& out, const fixed& f) {
         out << std::fixed;
         if (f.m_digits > -1)
             out << std::setfill(f.m_fill) << std::setw(f.m_digits);
@@ -99,7 +100,8 @@ struct width {
     width(width&& a)      : m_value(a.value()), m_pad(a.pad()), m_precision(a.precision()) {}
     width(const width& a) : m_value(a.value()), m_pad(a.pad()), m_precision(a.precision()) {}
 
-    inline friend std::ostream& operator<<(std::ostream& out, const width& a) {
+    template <typename StreamT>
+    inline friend StreamT& operator<<(StreamT& out, const width& a) {
         char buf[Width];
         a.write(buf);
         out.write(buf, Width);
