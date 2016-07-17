@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   enumx.hpp
+/// \file   enumv.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief This file defines enum stringification declaration macro.
@@ -65,11 +65,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #endif
 
 //------------------------------------------------------------------------------
-/// The difference between enum.hpp and enumx.hpp is that UTXX_ENUMX
+/// The difference between enum.hpp and enumv.hpp is that UTXX_ENUMV
 /// allows to assign specific values to the enumerated constants.
 //------------------------------------------------------------------------------
 /// NOTE: Make sure that UndefValue is distinct from other values in this enum!
-/// NOTE: The name lookups in ENUMX happen by using std::map<ENUM, string>. The
+/// NOTE: The name lookups in ENUMV happen by using std::map<ENUM, string>. The
 ///       reason we can't use a switch statement or array is that assigned enum
 ///       values can be duplicated, e.g.: ```enum X { A = 1, B = 1, C = 2 }```.
 ///       In this case we must guarantee that both ENUM::from_name("A") and
@@ -86,9 +86,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///
 /// Enum declaration:
 /// ```
-/// #include <utxx/enumx.hpp>
+/// #include <utxx/enumv.hpp>
 ///
-/// UTXX_ENUMX(MyEnumT,
+/// UTXX_ENUMV(MyEnumT,
 ///    char,                // This is enum storage type
 ///    ' ',                 // This is an "UNDEFINED" value
 ///    (Apple, 'x', "Fuji") // Item with a value and with name string "Fuji"
@@ -101,14 +101,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// std::cout << "Value: " << to_string(val) << std::endl;
 /// std::cout << "Value: " << val            << std::endl;
 //------------------------------------------------------------------------------
-#define UTXX_ENUMX(ENUM, TYPE, UndefValue, ...)                                \
+#define UTXX_ENUMV(ENUM, TYPE, UndefValue, ...)                                \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
             UNDEFINED = (UndefValue),                                          \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
-                UTXX_INTERNAL_ENUMX_VAL, _,                                    \
+                UTXX_INTERNAL_ENUMV_VAL, _,                                    \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
         };                                                                     \
                                                                                \
@@ -204,7 +204,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             s_metas{{                                                          \
                 null_pair(),                                                   \
                 BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                      \
-                    UTXX_INTERNAL_ENUMX_PAIR, _,                               \
+                    UTXX_INTERNAL_ENUMV_PAIR, _,                               \
                     BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                \
             }};                                                                \
             return s_metas;                                                    \
@@ -220,9 +220,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         type m_val;                                                            \
     }
 
-// DEPRECATED!!! Use UTXX_ENUMX!
+// DEPRECATED!!! Use UTXX_ENUMV!
 //
-// Same as UTXX_ENUMX except that the enum is untyped.
+// Same as UTXX_ENUMV except that the enum is untyped.
 //
 // The difference between enum.hpp and enumx.hpp is that UTXX_DEFINE_ENUMX
 // allows to assign specific values to the enumerated constants.
@@ -246,7 +246,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         enum etype {                                                         \
             UNDEFINED = (UndefValue),                                        \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                        \
-                UTXX_INTERNAL_ENUMX_VAL, _,                                  \
+                UTXX_INTERNAL_ENUMV_VAL, _,                                  \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                  \
         };                                                                   \
                                                                              \
@@ -262,7 +262,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             static const std::map<etype, std::string> s_names{               \
                 null_pair(),                                                 \
                 BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                    \
-                    UTXX_INTERNAL_ENUM_PAIR, _,                              \
+                    UTXX_INTERNAL_DEPRECATED_ENUM_PAIR, _,                   \
                     BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)                \
                 ))                                                           \
             };                                                               \
@@ -323,14 +323,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     }
 
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_INTERNAL_ENUMX_VAL(x, _, val)                                     \
+#define UTXX_INTERNAL_ENUMV_VAL(x, _, val)                                     \
     BOOST_PP_TUPLE_ELEM(0, val)                                                \
     BOOST_PP_IF(                                                               \
         BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),                         \
         = BOOST_PP_TUPLE_ELEM(1, val),                                         \
         BOOST_PP_EMPTY())
 
-#define UTXX_INTERNAL_ENUMX_PAIR(x, _, val)                                    \
+#define UTXX_INTERNAL_ENUMV_PAIR(x, _, val)                                    \
     std::make_pair(                                                            \
         BOOST_PP_TUPLE_ELEM(0, val),                                           \
         std::make_pair(                                                        \
@@ -340,6 +340,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                 BOOST_PP_TUPLE_ELEM(2, BOOST_PP_TUPLE_PUSH_BACK(val,_)),       \
                 BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)))))
 
-#define UTXX_INTERNAL_ENUM_PAIR(x, _, val)                                     \
+#define UTXX_INTERNAL_DEPRECATED_ENUM_PAIR(x, _, val)                                     \
     {std::make_pair(BOOST_PP_TUPLE_ELEM(0, val),                               \
                     BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)))}

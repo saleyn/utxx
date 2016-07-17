@@ -163,12 +163,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         template <typename StreamT> StreamT&                                   \
-        print(StreamT& out, const char* a_delim="|", bool a_id=true) const {   \
+        print(StreamT& out, const char* a_delim="|", bool as_name=true) const {\
             bool bp=false;                                                     \
             for (size_t i=0; i < s_size; ++i)                                  \
                 if (m_val & (1ul << i)) {                                      \
                     if (bp) out << a_delim;                                    \
-                    out << (a_id ? meta(i+1).second : meta(i+1).first);        \
+                    out << (as_name ? meta(i+1).first : meta(i+1).second);     \
                     bp = true;                                                 \
                 }                                                              \
             return out;                                                        \
