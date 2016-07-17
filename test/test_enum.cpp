@@ -42,23 +42,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 // Using UTXX_ENUM, UTXX_ENUMX, UTXX_ENUM_FLAGS
 //------------------------------------------------------------------------------
-UTXX_ENUMX
-(mm_enumx0, char, ' ',
-    (A,  'a')
-    (Bb, 'b')
-    (CCC)
-);
 
 UTXX_ENUMX(mmSideT, int8_t,  -1, (BID)(ASK)(SIDES));
-UTXX_ENUM( mm_enum, int64_t,     A /* Comment */, B, C);
-UTXX_ENUMI(mm_enumi,int,     -1, A /* Comment */, B, C);
-UTXX_ENUMX(mm_enumx, char, ' ', (A, 'a')(BB, 'b')(CCC));
+UTXX_ENUM( mm_enum, int64_t,     A, B, C);
+UTXX_ENUMZ(mm_enumz,int,     UNDEFINED, -1, (A) (B) (C));
+UTXX_ENUMX(mm_enumx, char, ' ', (A, 'a', "AAA")(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
     B,
     C,
     D,
     E
+);
+UTXX_ENUM_FLAGZ(mm_flagz, uint8_t, Nil,
+    (A)
+    (B, "bb")
+    (C, "Cc")
+    (D)
 );
 
 // Define an enum my_enum2 inside a struct:
@@ -100,7 +100,7 @@ struct oh_my { UTXX_DEFINE_ENUM(my_enum2, X, Y); };
 BOOST_AUTO_TEST_CASE( test_enum )
 {
     static_assert(3 == mm_enum::size(),         "Invalid size");
-    static_assert(1 == sizeof(mm_enumx0),       "Invalid size");
+    static_assert(1 == sizeof(mm_enumx),        "Invalid size");
     static_assert(1 == sizeof(mmSideT),         "Invalid size");
     static_assert(8 == sizeof(mm_enum),         "Invalid size");
     static_assert(1 == sizeof(oh_mm::mm_enum2), "Invalid size");
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE( test_enum )
         std::stringstream s; s << mm_enum::to_string(val);
         BOOST_CHECK_EQUAL("B", s.str());
 
-        auto val1 = mm_enumx0::from_string("Bb", true);
+        auto val1 = mm_enumx::from_string("Bb", true);
         BOOST_CHECK_EQUAL('b', (char)val1);
     }
 
@@ -143,17 +143,17 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK(mm_enum::C == mm_enum::from_string("C"));
     BOOST_CHECK(mm_enum::UNDEFINED == mm_enum::from_string("D"));
 
-    BOOST_CHECK_EQUAL(-1, mm_enumi::UNDEFINED);
-    BOOST_CHECK_EQUAL( 0, mm_enumi::A);
-    BOOST_CHECK_EQUAL( 0, (int)mm_enumi::from_string("A"));
-    BOOST_CHECK(mm_enumi::A == mm_enumi::from_string("A"));
-    BOOST_CHECK_EQUAL("UNDEFINED", mm_enumi::to_string(mm_enumi()));
-    BOOST_CHECK_EQUAL("A",         mm_enumi::to_string(mm_enumi::A));
-    BOOST_CHECK_EQUAL("B",         mm_enumi::to_string(mm_enumi::B));
-    BOOST_CHECK_EQUAL("C",         mm_enumi::to_string(mm_enumi::C));
-    BOOST_CHECK(mm_enumi::A == mm_enumi::begin());
-    BOOST_CHECK(mm_enumi::C == mm_enumi::last());
-    BOOST_CHECK_EQUAL( 3, (int)mm_enumi::end());
+    BOOST_CHECK_EQUAL(-1, mm_enumz::UNDEFINED);
+    BOOST_CHECK_EQUAL( 0, mm_enumz::A);
+    BOOST_CHECK_EQUAL( 0, (int)mm_enumz::from_string("A"));
+    BOOST_CHECK(mm_enumz::A == mm_enumz::from_string("A"));
+    BOOST_CHECK_EQUAL("UNDEFINED", mm_enumz::to_string(mm_enumz()));
+    BOOST_CHECK_EQUAL("A",         mm_enumz::to_string(mm_enumz::A));
+    BOOST_CHECK_EQUAL("B",         mm_enumz::to_string(mm_enumz::B));
+    BOOST_CHECK_EQUAL("C",         mm_enumz::to_string(mm_enumz::C));
+    BOOST_CHECK(mm_enumz::A == mm_enumz::begin());
+    BOOST_CHECK(mm_enumz::C == mm_enumz::last());
+    BOOST_CHECK_EQUAL( 3, (int)mm_enumz::end());
 
     static_assert(2 == oh_mm::mm_enum2::size(), "Invalid size");
     BOOST_CHECK_EQUAL("X", oh_mm::mm_enum2::to_string(oh_mm::mm_enum2::X));
@@ -224,10 +224,20 @@ BOOST_AUTO_TEST_CASE( test_enumx )
     BOOST_CHECK_EQUAL(mm_enumx::A,   mm_enumx('a'));
     BOOST_CHECK_EQUAL(mm_enumx::BB,  mm_enumx('b'));
     BOOST_CHECK_EQUAL(mm_enumx::CCC, mm_enumx('c'));
-    BOOST_CHECK_EQUAL("A",           mm_enumx::to_string(mm_enumx::A));
+    BOOST_CHECK_EQUAL("AAA",         mm_enumx::to_string(mm_enumx::A));
     BOOST_CHECK_EQUAL("BB",          mm_enumx::to_string(mm_enumx::BB));
     BOOST_CHECK_EQUAL("CCC",         mm_enumx::to_string(mm_enumx::CCC));
-    BOOST_CHECK_EQUAL("A",           mm_enumx::from_string("A").to_string());
+    BOOST_CHECK_EQUAL("UNDEFINED",   mm_enumx::from_string("A").to_string());
+    BOOST_CHECK_EQUAL("AAA",         mm_enumx::from_string("AAA").to_string());
+    BOOST_CHECK_EQUAL("A",           mm_enumx(mm_enumx::A).name());
+    BOOST_CHECK_EQUAL("AAA",         mm_enumx(mm_enumx::A).value());
+    BOOST_CHECK_EQUAL('a',           mm_enumx(mm_enumx::A).code());
+    BOOST_CHECK_EQUAL("BB",          mm_enumx(mm_enumx::BB).name());
+    BOOST_CHECK_EQUAL("BB",          mm_enumx(mm_enumx::BB).value());
+    BOOST_CHECK_EQUAL('b',           mm_enumx(mm_enumx::BB).code());
+    BOOST_CHECK_EQUAL("CCC",         mm_enumx(mm_enumx::CCC).name());
+    BOOST_CHECK_EQUAL("CCC",         mm_enumx(mm_enumx::CCC).value());
+    BOOST_CHECK_EQUAL('c',           mm_enumx(mm_enumx::CCC).code());
 
     {
         mm_enumx val = mm_enumx::from_string("BB");
@@ -239,14 +249,39 @@ BOOST_AUTO_TEST_CASE( test_enumx )
     {
         // Iterate over all enum values defined in mm_enum type:
         std::stringstream s;
-        mm_enumx::for_each([&s](mm_enumx e, std::string const& name) {
+        mm_enumx::for_each([&s](mm_enumx::type e, auto& name_pair) {
             s << e;
             return true;
         });
+        BOOST_CHECK_EQUAL("AAABBCCC", s.str());
+
+        s.str("");
+        s.clear();
+
+        mm_enumx::for_each([&s](mm_enumx::type e, auto& name_pair) {
+            s << name_pair.first;
+            return true;
+        });
         BOOST_CHECK_EQUAL("ABBCCC", s.str());
+
+        s.str("");
+        s.clear();
+
+        mm_enumx::for_each([&s](mm_enumx::type e, auto& name_pair) {
+            s << name_pair.second;
+            return true;
+        });
+        BOOST_CHECK_EQUAL("AAABBCCC", s.str());
+
     }
 
-    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_string("A"));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_string("AAA"));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_string_nc("aaa"));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_string_nc("a", true));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_name("A"));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_name("a", true));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_value("AAA"));
+    BOOST_CHECK(mm_enumx::A   == mm_enumx::from_value("aaa", true));
     BOOST_CHECK(mm_enumx::BB  == mm_enumx::from_string("BB"));
     BOOST_CHECK(mm_enumx::CCC == mm_enumx::from_string("CCC"));
     BOOST_CHECK(mm_enumx::UNDEFINED == mm_enumx::from_string("D"));
@@ -310,12 +345,17 @@ BOOST_AUTO_TEST_CASE( test_enum_flags )
     BOOST_CHECK_EQUAL(0,        mm_flags::NONE);
     BOOST_CHECK_EQUAL(1u << 0,  mm_flags::A);
     BOOST_CHECK_EQUAL(1u << 1,  mm_flags::B);
+    BOOST_CHECK_EQUAL(1u << 2,  mm_flags::C);
+    BOOST_CHECK_EQUAL(1u << 3,  mm_flags::D);
+    BOOST_CHECK_EQUAL(1u << 4,  mm_flags::E);
     BOOST_CHECK_EQUAL("A",      mm_flags(mm_flags::A).to_string());
     BOOST_CHECK_EQUAL("B",      mm_flags(mm_flags::B).to_string());
     BOOST_CHECK_EQUAL("A|C",    mm_flags(mm_flags::A, mm_flags::C).to_string());
-    BOOST_CHECK_EQUAL("A",      mm_flags::from_string("A").to_string());
+    BOOST_CHECK_EQUAL("A",      mm_flags::from_names("A").to_string());
 
     BOOST_CHECK_THROW(mm_flags::from_string("A|F"), utxx::badarg_error);
+    BOOST_CHECK_THROW(mm_flags::from_names("A|F"),  utxx::badarg_error);
+    BOOST_CHECK_THROW(mm_flags::from_values("A|F"), utxx::badarg_error);
 
     {
         mm_flags val = mm_flags::from_string("A|B|E");
@@ -350,7 +390,31 @@ BOOST_AUTO_TEST_CASE( test_enum_flags )
     BOOST_CHECK(v.empty());
     v = mm_flags::B | mm_flags::C | mm_flags::E;
     v.clear(mm_flags::C | mm_flags::E);
+
     BOOST_CHECK(v == mm_flags::B);
+    BOOST_CHECK(mm_flags::_END_ == int(mm_flags::E) << 1);
+    BOOST_CHECK_EQUAL("A",      mm_flagz(mm_flagz::A).to_string());
+    BOOST_CHECK_EQUAL("bb",     mm_flagz(mm_flagz::B).to_string());
+    BOOST_CHECK_EQUAL("B",      mm_flagz(mm_flagz::B).names());
+    BOOST_CHECK_EQUAL("bb",     mm_flagz(mm_flagz::B).values());
+    BOOST_CHECK_EQUAL("A|Cc",   mm_flagz(mm_flagz::A, mm_flagz::C).to_string());
+    BOOST_CHECK_EQUAL("A|C",    mm_flagz(mm_flagz::A, mm_flagz::C).names());
+    BOOST_CHECK_EQUAL("A|Cc",   mm_flagz(mm_flagz::A, mm_flagz::C).values());
+    BOOST_CHECK_EQUAL("bb",     mm_flagz::from_names("B").to_string());
+    BOOST_CHECK_EQUAL("bb",     mm_flagz::from_values("bb").to_string());
+    BOOST_CHECK_EQUAL("B",      mm_flagz::from_values("bb").names());
+    BOOST_CHECK_EQUAL("A|Cc",   mm_flagz::from_values("A|Cc").values());
+
+    BOOST_CHECK_THROW(mm_flags::from_string("A|F"), utxx::badarg_error);
+    BOOST_CHECK_THROW(mm_flags::from_names("A|F"),  utxx::badarg_error);
+    BOOST_CHECK_THROW(mm_flags::from_values("A|F"), utxx::badarg_error);
+
+    {
+        mm_flags val = mm_flags::from_string("A|B|E");
+        BOOST_CHECK_EQUAL("A|B|E", val.to_string());
+        std::stringstream s; s << mm_flags::to_string(val);
+        BOOST_CHECK_EQUAL("A|B|E", s.str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_enum_flags_old )

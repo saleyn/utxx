@@ -60,7 +60,8 @@ struct fixed {
         out << std::fixed;
         if (f.m_digits > -1)
             out << std::setfill(f.m_fill) << std::setw(f.m_digits);
-        return out << std::setprecision(f.m_precision) << f.m_value;
+        out << std::setprecision(f.m_precision) << f.m_value;
+        return out;
     }
 
     double value()     const { return m_value;     }
@@ -447,9 +448,10 @@ namespace detail {
         }
 
         template <typename T>
-        basic_buffered_print<N>& operator<< (T&& a) {
-            print(std::forward<T>(a));
-            return *this;
+        friend inline basic_buffered_print<N>&
+        operator<< (basic_buffered_print<N>& out, T&& a) {
+            out.print(std::forward<T>(a));
+            return out;
         }
     };
 }

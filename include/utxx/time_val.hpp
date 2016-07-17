@@ -35,7 +35,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/static_assert.hpp>
 #include <utxx/detail/gettimeofday.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/time.hpp>

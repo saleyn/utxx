@@ -228,10 +228,12 @@ namespace utxx {
         static void do_copy(T* a_dst, const T* a, int n) {
             if (n > 0) {
                 assert(a);
-                if (std::is_pod<T>::value)
+                if (std::is_pod<T>::value) {
                     memcpy((char*)a_dst, (char*)a, n*sizeof(T));
-                else
-                    for (auto p = a_dst, q = a, e = a+n; q != e; *p++ = *q++);
+                    return;
+                }
+                auto p = a_dst;
+                for (auto q = a, e = a+n; q != e; *p++ = *q++);
             }
         }
 
