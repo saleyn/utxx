@@ -130,9 +130,14 @@ namespace {
     };
 }
 
+/// Convert list of chars to integer (up to 8 bytes).
+/// I.e. to_int<'A','B','C','Z'>::value() is a compile-time equivalent of
+/// size_t("ABCZ\0\0\0\0").  This type of value can be quickly used in switch
+/// statements instead of doing string comparisons.
 template <char... Chars>
 struct to_int {
     static constexpr size_t value() {
+        static_assert(sizeof...(Chars) <= 8, "Invalid size!");
         return to_int_helper<(sizeof...(Chars))-1, Chars...>::value;
     }
 };
@@ -235,5 +240,24 @@ auto eval(R(C::*m), C& c) -> R&
 {
     return c.*m;
 }
+
+//-----------------------------------------------------------------------------
+/// Check that a tuple has a given type
+/// Example:
+/// ```
+/// if (has_type<SomeT, std::tuple<int, uint, bool>>::value) return;
+/// ```
+//-----------------------------------------------------------------------------
+template <typename T, typename Tuple>
+struct has_type;
+
+template <typename T>
+struct has_type<T, std::tuple<>> : std::false_type {};
+
+template <typename T, typename U, typename... Ts>
+struct has_type<T, std::tuple<U, Ts...>> : has_type<T, std::tuple<Ts...>> {};
+
+template <typename T, typename... Ts>
+struct has_type<T, std::tuple<T, Ts...>> : std::true_type {};
 
 } // namespace utxx
