@@ -82,7 +82,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// ```
 /// #include <utxx/enum_flags.hpp>
 ///
-/// UTXX_ENUM_FLAGS
+/// UTXX_ENUM_FLAGZ
 /// (MyEnumT, char, Nil,
 ///     (Apple,  "A")   // Flags can optionally have string value.
 ///     (Pear,  "PP")
