@@ -69,6 +69,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// allows to assign specific values to the enumerated constants.
 //------------------------------------------------------------------------------
 /// NOTE: Make sure that UndefValue is distinct from other values in this enum!
+/// NOTE: The name lookups in ENUMX happen by using std::map<ENUM, string>. The
+///       reason we can't use a switch statement or array is that assigned enum
+///       values can be duplicated, e.g.: ```enum X { A = 1, B = 1, C = 2 }```.
+///       In this case we must guarantee that both ENUM::from_name("A") and
+///       ENUM::from_name("B") resolve to value ENUM::A, and ENUM::B, which
+///       happen to be the same. So if we used a switch statement, that would
+///       result in compiler error:
+///       ```
+///          switch(enum_value) {
+///             case ENUM::A: "A";
+///             case ENUM::B: "B";
+///             ...
+///          }
+///       ```
 ///
 /// Enum declaration:
 /// ```
