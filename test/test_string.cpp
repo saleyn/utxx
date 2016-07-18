@@ -330,7 +330,8 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
     using ss = basic_short_string<char, 64-1-2*8, Allocator>;
     static_assert(sizeof(ss) == 64, "Invalid size");
 
-    BOOST_REQUIRE(ss::null_value().null());
+    BOOST_REQUIRE(ss::null_value().is_null());
+    BOOST_REQUIRE(!ss::null_value());
     BOOST_CHECK_EQUAL(47, ss::max_size());
 
     BOOST_CHECK_EQUAL(64, ss::round_size(45));
@@ -351,23 +352,26 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL("a", s.str());
         BOOST_CHECK_EQUAL("a", s.begin());
         BOOST_CHECK(s.begin()+1 == s.end());
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
+        BOOST_CHECK(s);
         BOOST_CHECK(!s.allocated());
 
         s.reset();
         BOOST_CHECK_EQUAL(0,   s.size());
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
+        BOOST_CHECK(s);
         BOOST_CHECK(!s.allocated());
 
         s.set_null();
-        BOOST_CHECK(s.null());
+        BOOST_CHECK(s.is_null());
+        BOOST_CHECK(!s);
         BOOST_CHECK_EQUAL(-1, s.size());
         BOOST_CHECK_EQUAL("", s.c_str());
         BOOST_CHECK_EQUAL("", s.str());
         BOOST_CHECK(s.begin()  == s.end());
         BOOST_CHECK(s.cbegin() == s.cend());
         s.set("b");
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK_EQUAL(1, s.size());
         BOOST_CHECK(s.begin()+1  == s.end());
         BOOST_CHECK(s.cbegin()+1 == s.cend());
@@ -376,14 +380,14 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL(3, s.size());
         s.resize(1);
         BOOST_CHECK_EQUAL(1, s.size());
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK(!s.allocated());
 
         s.set(nullptr, -1);
-        BOOST_CHECK(s.null());
+        BOOST_CHECK(s.is_null());
         BOOST_CHECK_EQUAL(-1, s.size());
         s.append("y");
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK_EQUAL(1, s.size());
         BOOST_CHECK_EQUAL("y", s.c_str());
         BOOST_CHECK_EQUAL("y", s.str());

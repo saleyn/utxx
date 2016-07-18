@@ -362,8 +362,8 @@ namespace utxx {
     }
 
     //--------------------------------------------------------------------------
-    /// Representation of a short string value.
-    /// Short strings (size <= 47) don't involve memory allocations.
+    /// Representation of a string value that has an embedded buffer.
+    /// Short strings (size <= N) don't involve memory allocations (def: N=47).
     /// Short string can be set to have NULL value by using "set_null()" method.
     /// NULL strings are represented by having size() = -1.
     //--------------------------------------------------------------------------
@@ -439,7 +439,7 @@ namespace utxx {
         void append(const Char* a)                    { append(a, strlen((char*)a)); }
         void append(const Char* a, size_t n) {
             assert(a);
-            auto oldsz = null() ? 0 : m_sz;
+            auto oldsz = is_null() ? 0 : m_sz;
             auto sz    = oldsz+n;
             if  (sz   <= capacity())
                 memcpy(m_val+oldsz, a, n);
@@ -497,7 +497,9 @@ namespace utxx {
         Char  operator[](int n)         const { assert(n >= 0 && n < m_sz); return m_val[n]; }
         Char& operator[](int n)               { assert(n >= 0 && n < m_sz); return m_val[n]; }
 
+        operator       bool()           const { return !is_null();     }
         operator const Char*()          const { return m_val;          }
+
         const Char*    c_str()          const { return m_val;          }
         int            size()           const { return m_sz;           }
 
@@ -511,17 +513,17 @@ namespace utxx {
         Char*          str()                  { return m_val;          }
         bool           allocated()      const { return m_val != m_buf; }
 
-        bool           null()           const { return m_sz < 0;       }
+        bool           is_null()        const { return m_sz < 0;       }
         void           set_null()             { m_sz=-1; m_val[0]='\0';}
 
         iterator       begin()                { return m_val;          }
-        iterator       end()                  { return null() ? m_val : m_val+m_sz; }
+        iterator       end()                  { return is_null() ? m_val : m_val+m_sz; }
 
         const_iterator begin()          const { return m_val;          }
-        const_iterator end()            const { return null() ? m_val : m_val+m_sz; }
+        const_iterator end()            const { return is_null() ? m_val : m_val+m_sz; }
 
         const_iterator cbegin()         const { return m_val;          }
-        const_iterator cend()           const { return null() ? m_val : m_val+m_sz; }
+        const_iterator cend()           const { return is_null() ? m_val : m_val+m_sz; }
     private:
         Char*  m_val;
         int    m_sz;
