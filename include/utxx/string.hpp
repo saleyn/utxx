@@ -488,6 +488,12 @@ namespace utxx {
             return !operator==(a);
         }
 
+        template <typename StreamT>
+        inline friend StreamT& operator<<(StreamT& out, basic_short_string const& a) {
+            out << a.c_str();
+            return out;
+        }
+
         Char  operator[](int n)         const { assert(n >= 0 && n < m_sz); return m_val[n]; }
         Char& operator[](int n)               { assert(n >= 0 && n < m_sz); return m_val[n]; }
 
