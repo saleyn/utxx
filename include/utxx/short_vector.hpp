@@ -116,7 +116,7 @@ namespace utxx {
 
         void append(const T* a, size_t n) {
             assert(a);
-            auto oldsz = null() ? 0 : m_sz;
+            auto oldsz = is_null() ? 0 : m_sz;
             auto sz    = oldsz+n;
             if  (sz   <= capacity())
                 do_copy(m_val + oldsz, a, n);
@@ -178,17 +178,17 @@ namespace utxx {
         size_t   capacity()       const { return m_max_sz;       }
         bool     allocated()      const { return m_val != m_buf; }
 
-        bool     null()           const { return m_sz < 0;       }
+        bool     is_null()        const { return m_sz < 0;       }
         void     set_null()             { m_sz=-1;               }
 
         iterator begin()                { return m_val;          }
-        iterator end()                  { return null() ? m_val : m_val+m_sz; }
+        iterator end()                  { return is_null() ? m_val : m_val+m_sz; }
 
         const_iterator begin()    const { return m_val;          }
-        const_iterator end()      const { return null() ? m_val : m_val+m_sz; }
+        const_iterator end()      const { return is_null() ? m_val : m_val+m_sz; }
 
         const_iterator cbegin()   const { return m_val;          }
-        const_iterator cend()     const { return null() ? m_val : m_val+m_sz; }
+        const_iterator cend()     const { return is_null() ? m_val : m_val+m_sz; }
     private:
         T*   m_val;
         int  m_sz;

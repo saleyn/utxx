@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
     {
         ss s(salloc);
         BOOST_CHECK_EQUAL(0,   s.size());
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK(!s.allocated());
         BOOST_CHECK(s.begin() == s.end());
         s.push_back(5);
@@ -80,24 +80,24 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
         s.resize(10);
         BOOST_CHECK_EQUAL(10,  s.size());
         BOOST_CHECK(s.begin()+10 == s.end());
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK(!s.allocated());
 
         BOOST_CHECK_EQUAL(0, Allocator::tot_allocations());
 
         s.reset();
         BOOST_CHECK_EQUAL(0,   s.size());
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK(!s.allocated());
         s.set_null();
-        BOOST_CHECK(s.null());
+        BOOST_CHECK(s.is_null());
         BOOST_CHECK_EQUAL(-1, s.size());
         BOOST_CHECK(s.begin()  == s.end());
         BOOST_CHECK(s.cbegin() == s.cend());
 
         int dummy[] = {1, 2, 3, 4};
         s.append(dummy, 4);
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK_EQUAL(4, s.size());
         BOOST_CHECK(s.begin()+4  == s.end());
         BOOST_CHECK(s.cbegin()+4 == s.cend());
@@ -105,10 +105,10 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
         BOOST_CHECK(!s.allocated());
 
         s.set(nullptr, -1);
-        BOOST_CHECK(s.null());
+        BOOST_CHECK(s.is_null());
         BOOST_CHECK_EQUAL(-1, s.size());
         s.push_back(5);
-        BOOST_CHECK(!s.null());
+        BOOST_CHECK(!s.is_null());
         BOOST_CHECK_EQUAL(1, s.size());
         BOOST_CHECK_EQUAL(5, s[0]);
         BOOST_CHECK_EQUAL(5, s[0]);
