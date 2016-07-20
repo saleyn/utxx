@@ -81,7 +81,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// ```
 //------------------------------------------------------------------------------
 #define UTXX_ENUM(ENUM, TYPE, ...)                                             \
-        UTXX_ENUMZ(                                                            \
+        UTXX_ENUM2(                                                            \
             ENUM,                                                              \
             UTXX_ENUM_GET_TYPE(TYPE),                                          \
             UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
@@ -108,10 +108,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// #include <utxx/enum.hpp>
 ///
 /// UTXX_ENUMZ(MyEnumT,
-///    char,           // This is enum storage type
-///    UNDEFINED,      // The "name" of the first (i.e. "undefined") item
-///    -1,             // "initial" enum value for "UNDEFINED" value
-///
+///    (char,           // This is enum storage type
+///     UNDEFINED,      // The "name" of the first (i.e. "undefined") item
+///     -1,             // "initial" enum value for "UNDEFINED" value
+///    )
 ///    (Apple, "Gala") // An item can optionally have an associated string value
 ///    (Pear)          // String value defaults to item's name (i.e. "Pear")
 ///    (Grape, "Fuji")
@@ -129,7 +129,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// std::cout << "Value: " << v.value()     << std::endl;    // Out: Fuji
 /// ```
 //------------------------------------------------------------------------------
-#define UTXX_ENUMZ(ENUM, TYPE, UNDEFINED, INIT, ...)                           \
+#define UTXX_ENUMZ(ENUM, TYPE, ...)                                            \
+        UTXX_ENUM2(                                                            \
+            ENUM,                                                              \
+            UTXX_ENUM_GET_TYPE(TYPE),                                          \
+            UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
+            UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
+            __VA_ARGS__                                                        \
+        )
+
+#define UTXX_ENUM2(ENUM, TYPE, UNDEFINED, INIT, ...)                           \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
@@ -224,7 +233,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             1+BOOST_PP_SEQ_SIZE(BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__));    \
         static const std::pair<std::string,std::string>* names() {             \
             static const std::pair<std::string,std::string> s_names[] = {      \
-                std::make_pair(#UNDEFINED, #UNDEFINED),                        \
+                std::make_pair(BOOST_PP_STRINGIZE(UNDEFINED),                  \
+                               BOOST_PP_STRINGIZE(UNDEFINED)),                 \
                 BOOST_PP_SEQ_ENUM(                                             \
                     BOOST_PP_SEQ_TRANSFORM(                                    \
                         UTXX_INTERNAL_ENUMI_PAIR, ,                            \
