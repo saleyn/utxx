@@ -43,14 +43,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // Using UTXX_ENUM, UTXX_ENUMV, UTXX_ENUM_FLAGS
 //------------------------------------------------------------------------------
 
-UTXX_ENUMV(mmSideT, int8_t,    -1, (BID)(ASK)(SIDES));
-UTXX_ENUM( mm_enum, int64_t,        A, B, C);
-UTXX_ENUM( mm_enum2, (int64_t, -2), A, B, C);
-UTXX_ENUM( mm_enum3, (char,Nil,-3), A, B, C);
+UTXX_ENUM( mm_enum,   int64_t,      A,  B,  C);
+UTXX_ENUM( mm_enum2, (int64_t, -2), A,  B,  C);
+UTXX_ENUM( mm_enum3, (char,Nil,-3), A,  B,  C);
 UTXX_ENUMZ(mm_enumz, (int,     -1),(A) (B) (C));
 UTXX_ENUMZ(mm_enumz2, int,         (A) (B) (C));
 UTXX_ENUMZ(mm_enumz3,(int, Nil,-3),(A) (B) (C));
-UTXX_ENUMV(mm_enumv, char, ' ', (A, 'a', "AAA")(BB, 'b')(CCC));
+UTXX_ENUMZ(mm_enumz4,(char,Nil,-3),(A,"AA")(B)(C));
+UTXX_ENUMV(mmSideT,  int8_t,    -1, (BID)(ASK)(SIDES));
+UTXX_ENUMV(mm_enumv, char,     ' ', (A, 'a', "AAA")(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
     B,

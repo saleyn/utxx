@@ -256,7 +256,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         type m_val;                                                            \
     }
 
-// Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
+// Internal macros for supporting BOOST_PP_SEQ_TRANSFORM
 #define UTXX_INTERNAL_ENUMI_VAL(x, _, val)       BOOST_PP_TUPLE_ELEM(0, val)
 
 #define UTXX_INTERNAL_ENUMI_PAIR(x, _, val)                                    \
@@ -266,10 +266,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                         BOOST_PP_TUPLE_ELEM(1, val),                           \
                         BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )
 
-// Undefined option may be in one of three forms:
-//      char                // Enum Type
-//      (char, 0)           // Enum Type, Default Value
-//      (char, Undef, 0)    // Enum Type, UndefinedItemName, Default Value
+// Type value may be in one of three forms:
+//      char                // EnumType
+//      (char, 0)           // EnumType, DefaultValue
+//      (char, Undef, 0)    // EnumType, UndefinedItemName, DefaultValue
 //
 // The following three macros get the {Type, Name, Value} accordingly:
 #define UTXX_ENUM_GET_TYPE(type)       UTXX_ENUM_UNDEF_1__(0, type)
