@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/enum.hpp>
 #include <boost/preprocessor/tuple/size.hpp>
+#include <boost/preprocessor/comparison/equal.hpp>
 #include <boost/preprocessor/punctuation/is_begin_parens.hpp>
 #include <utxx/string.hpp>
 #include <utxx/config.h>
