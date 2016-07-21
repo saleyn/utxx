@@ -46,10 +46,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 UTXX_ENUM( mm_enum,   int64_t,      A,  B,  C);
 UTXX_ENUM( mm_enum2, (int64_t, -2), A,  B,  C);
 UTXX_ENUM( mm_enum3, (char,Nil,-3), A,  B,  C);
-UTXX_ENUMZ(mm_enumz, (int,     -1),(A) (B) (C));
-UTXX_ENUMZ(mm_enumz2, int,         (A) (B) (C));
-UTXX_ENUMZ(mm_enumz3,(int, Nil,-3),(A) (B) (C));
-UTXX_ENUMZ(mm_enumz4,(char,Nil,-3),(A,"AA")(B)(C));
+UTXX_ENUM( mm_enum4, (char,Nil,-3),(A,"AA") (B) (C));
+UTXX_ENUM( mm_enumz, (int,     -1),(A) (B) (C));
+UTXX_ENUM( mm_enumz2, int,         (A) (B) (C));
+UTXX_ENUM( mm_enumz3,(int, Nil,-3),(A) (B) (C));
+UTXX_ENUM( mm_enumz4,(char,Nil,-3),(A,"AA")(B)(C));
+UTXX_ENUM( mm_enumz5,(char,Nil,-3), A);
+UTXX_ENUM( mm_enumz6,(char,Nil,-3),(A));
+UTXX_ENUM( mm_enumz7,(char,Nil,-3),(A,"a"));
 UTXX_ENUMV(mmSideT,  int8_t,    -1, (BID)(ASK)(SIDES));
 UTXX_ENUMV(mm_enumv, char,     ' ', (A, 'a', "AAA")(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
@@ -82,7 +86,12 @@ BOOST_AUTO_TEST_CASE( test_enum )
     static_assert(-3 == mm_enum3::Nil,          "Invalid value");
     static_assert(-1 == mm_enumz::UNDEFINED,    "Invalid value");
     static_assert(0  == mm_enumz2::UNDEFINED,   "Invalid value");
-    static_assert(-3 == mm_enumz3::Nil,         "Invalid value");
+    static_assert(1  == mm_enumz5::size(),      "Invalid value");
+    static_assert(1  == mm_enumz6::size(),      "Invalid value");
+    static_assert(1  == mm_enumz7::size(),      "Invalid value");
+    static_assert(-2 == mm_enumz5::A,           "Invalid value");
+    static_assert(-2 == mm_enumz6::A,           "Invalid value");
+    static_assert(-2 == mm_enumz7::A,           "Invalid value");
 
     mm_enum v;
 
@@ -99,6 +108,11 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK_EQUAL("B", mm_enum::to_string(mm_enum::B));
     BOOST_CHECK_EQUAL("C", mm_enum::to_string(mm_enum::C));
     BOOST_CHECK_EQUAL("A", mm_enum::from_string("A").to_string());
+
+    BOOST_CHECK_EQUAL("a", mm_enumz7(mm_enumz7::A).to_string());
+    BOOST_CHECK_EQUAL("a", mm_enumz7::from_string("a").to_string());
+    BOOST_CHECK_EQUAL("A", mm_enumz7(mm_enumz7::A).name());
+    BOOST_CHECK_EQUAL("a", mm_enumz7(mm_enumz7::A).value());
 
     {
         mm_enum val = mm_enum::from_string("B");

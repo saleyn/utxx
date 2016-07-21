@@ -66,49 +66,42 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 /// Strongly typed reflectable enum declaration
 //------------------------------------------------------------------------------
-/// \copydoc #UTXX_ENUMZ().
+/// This macro allows to define a reflectable enum. It accepts the following:
+///
+/// `UTXX_ENUM(EnumName, Opts, Enums)`
+/// * EnumName - the name of ENUM
+/// * Opts - can be one of three formats:
+///     * Type                      - Enum storage Type. Adds UNDEFINED=0
+///     * (Type,DefValue)           - Enum storage Type. Adds UNDEFINED=DefValue
+///     * (Type,UndefName,DefValue) - Enum storage Type. Adds UndefName=DefValue
+/// * Enums is either a variadic list or sequence of arguments:
+///     * Enum1, Enum2, ...
+///     * (Enum1)(Enum2)...
+///     where each `EnumN` gets the code of the incremented sequence number
+///     assigned, and may optionally specify a symbolic value label:
+///         * EnumName
+///         * (EnumName,"EnumValue")  - EnumName will have value() = "EnumValue"
+///
+/// A symbolic value is NOT the member's value, but a description that may be
+/// obtained by calling the value() method. The item's actual enum value is the
+/// starting value of this enum type plus the position of item in the list.
+///
+/// The value() of a member defaults to its symbolic name.
 /// ```
 /// #include <utxx/enum.hpp>
 ///
-/// UTXX_ENUM(OpT, char,          ...)  // Adds UNDEFINED=0  default item
-/// UTXX_ENUM(OpT, (char, -1),    ...)  // Adds UNDEFINED=-1 default item
-/// UTXX_ENUM(OpT, (char,NIL,-1), ...)  // Adds NIL=0        default item
-///
-/// UTXX_ENUM(MyEnumT, char,       // Automatically gets UNDEFINED=0 item added
+/// UTXX_ENUM(Fruits, char,       // Automatically gets UNDEFINED=0 item added
 ///             Apple,
 ///             Pear,
 ///             Grape
 ///          );
-/// ```
-//------------------------------------------------------------------------------
-#define UTXX_ENUM(ENUM, TYPE, ...)                                             \
-        UTXX_ENUM2(                                                            \
-            ENUM,                                                              \
-            UTXX_ENUM_GET_TYPE(TYPE),                                          \
-            UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
-            UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
-            BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)                              \
-        )
-
-//------------------------------------------------------------------------------
-/// Strongly typed reflectable enum declaration
-/// This macro allows to customize the name of the "UNDEFINED" element, the
-/// initial enum value, as well as optionally give descriptions to enumerated
-/// items.
 ///
-/// Note that an item of the enum sequence may optionally have symbolic values.
+/// UTXX_ENUM(Op1, char,          A,B);  // Adds UNDEFINED=0  default item
+/// UTXX_ENUM(Op2, (char, -1),    A,B);  // Adds UNDEFINED=-1 default item
+/// UTXX_ENUM(Op3, (char,NIL,-1), A,B);  // Adds NIL=0        default item
+/// UTXX_ENUM(Op4, char,  (A,"a") (B));  // Adds UNDEFINED=0  default item
 ///
-/// A symbolic value is NOT the item's value, but a description that may be
-/// obtained by calling the value() method. The item's actual enum value is the
-/// starting value of this enum type plus the position of item in the list.
-///
-/// The value() of an item defaults to its symbolic name.
-//------------------------------------------------------------------------------
-/// Sample usage:
-/// ```
-/// #include <utxx/enum.hpp>
-///
-/// UTXX_ENUMZ(MyEnumT,
+/// UTXX_ENUM(MyEnumT,
 ///    (char,           // This is enum storage type
 ///     UNDEFINED,      // The "name" of the first (i.e. "undefined") item
 ///     -1,             // "initial" enum value for "UNDEFINED" value
@@ -130,16 +123,30 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// std::cout << "Value: " << v.value()     << std::endl;    // Out: Fuji
 /// ```
 //------------------------------------------------------------------------------
-#define UTXX_ENUMZ(ENUM, TYPE, ...)                                            \
-        UTXX_ENUM2(                                                            \
+// NOTE: the last "if" statement unifies possible forms of vararg inputs:
+//   UTXX_ENUM(XXX, int, A, B, C)       ->  UTXX_ENUM2(XXX, int, (A)(B)(C))
+//   UTXX_ENUM(XXX, int, (A,"a"), B, C) ->  UTXX_ENUM2(XXX, int, (A,"a")(B)(C))
+//   UTXX_ENUM(XXX, int, (A) (B) (C))   ->  UTXX_ENUM2(XXX, int, (A)(B)(C))
+//------------------------------------------------------------------------------
+#define UTXX_ENUM(ENUM, TYPE, ...)                                             \
+        UTXX_ENUMZ(                                                            \
             ENUM,                                                              \
             UTXX_ENUM_GET_TYPE(TYPE),                                          \
             UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
             UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
-            __VA_ARGS__                                                        \
+            BOOST_PP_TUPLE_ENUM(                                               \
+                BOOST_PP_IF(                                                   \
+                    BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE(__VA_ARGS__), 1),    \
+                        BOOST_PP_IF(BOOST_PP_IS_BEGIN_PARENS(__VA_ARGS__),     \
+                            (__VA_ARGS__),                                     \
+                            ((__VA_ARGS__))),                                  \
+                        (BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))))              \
         )
 
-#define UTXX_ENUM2(ENUM, TYPE, UNDEFINED, INIT, ...)                           \
+//------------------------------------------------------------------------------
+// For internal use
+//------------------------------------------------------------------------------
+#define UTXX_ENUMZ(ENUM, TYPE, UNDEFINED, INIT, ...)                           \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
@@ -183,9 +190,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static ENUM                                                            \
         from_string(const char* a, bool nocase=false, bool as_name=false)  {   \
             auto f = nocase  ? &strcasecmp : &strcmp;                          \
-            for (TYPE i=(INIT)+1; i != s_size; i++)                            \
-                if(!f((as_name ? meta(i).second : meta(i).first).c_str(),a))   \
-                    return ENUM(i);                                            \
+            for (int i=1; i < int(s_size); ++i) {                              \
+                int j = i+(INIT);                                              \
+                if(!f((as_name ? meta(j).first : meta(j).second).c_str(),a))   \
+                    return ENUM(j);                                            \
+            }                                                                  \
             return ENUM(UNDEFINED);                                            \
         }                                                                      \
                                                                                \
@@ -246,8 +255,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static const std::pair<std::string,std::string>& meta(TYPE n) {        \
-            auto   m = n-(INIT);                                               \
-            assert(m >= 0 && m < TYPE(s_size));                                \
+            auto   m = int(n)-(INIT);                                          \
+            assert(m >= 0 && m < int(s_size));                                \
             return names()[m];                                                 \
         }                                                                      \
                                                                                \
