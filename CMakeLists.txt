@@ -27,8 +27,13 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/build-aux/CMakeEx.txt)
 #-------------------------------------------------------------------------------
 # See also build/CMakeInit.txt
 if("${toolchain}" STREQUAL "gcc")
-  set(CMAKE_C_COMPILER   "gcc")
-  set(CMAKE_CXX_COMPILER "g++")
+  if (NOT CMAKE_C_COMPILER)
+    set(CMAKE_C_COMPILER   "gcc")
+  endif()
+  if (NOT CMAKE_CXX_COMPILER)
+    set(CMAKE_CXX_COMPILER "g++")
+  endif()
+
   add_definitions(-Wno-strict-aliasing -fopenmp -Wall)
 
   if("${CMAKE_BUILD_TYPE}" STREQUAL "release")

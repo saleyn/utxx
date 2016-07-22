@@ -388,8 +388,10 @@ namespace utxx {
             return s_null;
         }
 
+        explicit
         basic_short_string(const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { m_buf[0] = '\0'; }
+        explicit
         basic_short_string(const Char* a,           const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz)
             { set(a,strlen((const char*)a));}
