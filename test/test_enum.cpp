@@ -54,8 +54,8 @@ UTXX_ENUM( mm_enumz4,(char,Nil,-3),(A,"AA")(B)(C));
 UTXX_ENUM( mm_enumz5,(char,Nil,-3), A);
 UTXX_ENUM( mm_enumz6,(char,Nil,-3),(A));
 UTXX_ENUM( mm_enumz7,(char,Nil,-3),(A,"a"));
-UTXX_ENUMV(mmSideT,  int8_t,    -1, (BID)(ASK)(SIDES));
-UTXX_ENUMV(mm_enumv, char,     ' ', (A, 'a', "AAA")(BB, 'b')(CCC));
+UTXX_ENUMV(mmSideT,  (int8_t,  -1), (BID)(ASK)(SIDES));
+UTXX_ENUMV(mm_enumv, (char,   ' '), (A, 'a', "AAA")(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
     B,

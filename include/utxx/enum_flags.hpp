@@ -40,21 +40,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/seq/transform.hpp>
 #include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/comparison/greater.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/preprocessor/tuple/size.hpp>
 #include <boost/algorithm/string.hpp>
+#include <utxx/detail/enum_helper.hpp>
 #include <utxx/string.hpp>
 #include <utxx/error.hpp>
 #include <cassert>
 #include <vector>
-
-#ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
-#include <boost/serialization/access.hpp>
-#define UTXX__ENUM_FRIEND_SERIALIZATION__ \
-    friend class boost::serialization::access
-#endif
 
 //------------------------------------------------------------------------------
 /// Strongly typed reflectable enum flags declaration
@@ -107,7 +98,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             NONE,                                                              \
             BOOST_PP_SEQ_ENUM(                                                 \
                 BOOST_PP_SEQ_FOR_EACH_I(                                       \
-                    UTXX_INTERNAL_FLAGZ_INIT, _,                               \
+                    UTXX_ENUM_INTERNAL_INIT__, _,                              \
                     BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))),               \
             _END_ =  1 << BOOST_PP_SEQ_SIZE(                                   \
                             BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)),        \
@@ -253,7 +244,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                 std::make_pair(#NONE, #NONE),                                  \
                 BOOST_PP_SEQ_ENUM(                                             \
                     BOOST_PP_SEQ_TRANSFORM(                                    \
-                        UTXX_INTERNAL_ENUM_FLAGZ_PAIR, ,                       \
+                        UTXX_ENUM_INTERNAL_GET_PAIR__, ,                       \
                         BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)              \
                 ))                                                             \
             };                                                                 \
@@ -280,12 +271,5 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     }
 
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_INTERNAL_FLAGZ_INIT(x, _, i, item)                                \
+#define UTXX_ENUM_INTERNAL_INIT__(x, _, i, item)                               \
             (BOOST_PP_TUPLE_ELEM(0, item) = 1ul << i)
-
-#define UTXX_INTERNAL_ENUM_FLAGZ_PAIR(x, _, val)                               \
-    std::make_pair( BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),           \
-                    BOOST_PP_IIF(                                              \
-                        BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),         \
-                        BOOST_PP_TUPLE_ELEM(1, val),                           \
-                        BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )

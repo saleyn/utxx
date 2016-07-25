@@ -41,12 +41,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/facilities/empty.hpp>
-#include <boost/preprocessor/comparison/greater.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-#include <boost/preprocessor/tuple/size.hpp>
 #include <boost/preprocessor/tuple/push_back.hpp>
 #include <boost/preprocessor/stringize.hpp>
+#include <utxx/detail/enum_helper.hpp>
 #include <utxx/string.hpp>
 #include <cassert>
 #include <map>
@@ -101,14 +98,22 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// std::cout << "Value: " << to_string(val) << std::endl;
 /// std::cout << "Value: " << val            << std::endl;
 //------------------------------------------------------------------------------
-#define UTXX_ENUMV(ENUM, TYPE, UndefValue, ...)                                \
+#define UTXX_ENUMV(ENUM, TYPE, ...)                                            \
+        UTXX_ENUMV__(                                                          \
+            ENUM,                                                              \
+            UTXX_ENUM_GET_TYPE(TYPE),                                          \
+            UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
+            UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
+            __VA_ARGS__)
+
+#define UTXX_ENUMV__(ENUM, TYPE, UNDEFINED, UndefValue, ...)                   \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
             UNDEFINED = (UndefValue),                                          \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
-                UTXX_INTERNAL_ENUMV_VAL, _,                                    \
+                UTXX_ENUM_INTERNAL_GET_NAMEVAL__, _,                           \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
         };                                                                     \
                                                                                \
@@ -204,7 +209,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             s_metas{{                                                          \
                 null_pair(),                                                   \
                 BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                      \
-                    UTXX_INTERNAL_ENUMV_PAIR, _,                               \
+                    UTXX_ENUM_INTERNAL_GET_PAIR_AND_PAIR__, _,                 \
                     BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                \
             }};                                                                \
             return s_metas;                                                    \
@@ -221,14 +226,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     }
 
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_INTERNAL_ENUMV_VAL(x, _, val)                                     \
+#define UTXX_ENUM_INTERNAL_GET_NAMEVAL__(x, _, val)                            \
     BOOST_PP_TUPLE_ELEM(0, val)                                                \
     BOOST_PP_IF(                                                               \
         BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),                         \
         = BOOST_PP_TUPLE_ELEM(1, val),                                         \
         BOOST_PP_EMPTY())
 
-#define UTXX_INTERNAL_ENUMV_PAIR(x, _, val)                                    \
+#define UTXX_ENUM_INTERNAL_GET_PAIR_AND_PAIR__(x, _, val)                      \
     std::make_pair(                                                            \
         BOOST_PP_TUPLE_ELEM(0, val),                                           \
         std::make_pair(                                                        \
@@ -237,3 +242,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                 BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 2),                 \
                 BOOST_PP_TUPLE_ELEM(2, BOOST_PP_TUPLE_PUSH_BACK(val,_)),       \
                 BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)))))
+
+// Internal macros for supporting BOOST_PP_SEQ_TRANSFORM
+#define UTXX_ENUM_INTERNAL_GET_PAIR__(x, _, val)                               \
+    std::make_pair( BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),           \
+                    BOOST_PP_IIF(                                              \
+                        BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),         \
+                        BOOST_PP_TUPLE_ELEM(1, val),                           \
+                        BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )

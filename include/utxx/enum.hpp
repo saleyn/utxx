@@ -40,29 +40,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/seq/transform.hpp>
 #include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/comparison/greater.hpp>
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
 #include <boost/preprocessor/tuple/enum.hpp>
-#include <boost/preprocessor/tuple/size.hpp>
 #include <boost/preprocessor/comparison/equal.hpp>
-#include <boost/preprocessor/punctuation/is_begin_parens.hpp>
+#include <utxx/detail/enum_helper.hpp>
 #include <utxx/string.hpp>
 #include <utxx/config.h>
 #include <cassert>
-
-#ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
-# ifndef UTXX__ENUM_FRIEND_SERIALIZATION__
-#   include <boost/serialization/access.hpp>
-
-#   define UTXX__ENUM_FRIEND_SERIALIZATION__ \
-    friend class boost::serialization::access
-# endif
-#else
-# ifndef UTXX__ENUM_FRIEND_SERIALIZATION__
-#   define UTXX__ENUM_FRIEND_SERIALIZATION__
-# endif
-#endif
 
 //------------------------------------------------------------------------------
 /// Strongly typed reflectable enum declaration
@@ -154,7 +137,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         enum type : TYPE {                                                     \
             UNDEFINED = (INIT),                                                \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
-                UTXX_INTERNAL_ENUMI_VAL, _,                                    \
+                UTXX_ENUM_INTERNAL_GET_0__, _,                                 \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))),                   \
             _END_                                                              \
         };                                                                     \
@@ -248,7 +231,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                BOOST_PP_STRINGIZE(UNDEFINED)),                 \
                 BOOST_PP_SEQ_ENUM(                                             \
                     BOOST_PP_SEQ_TRANSFORM(                                    \
-                        UTXX_INTERNAL_ENUMI_PAIR, ,                            \
+                        UTXX_ENUM_INTERNAL_GET_PAIR__, ,                       \
                         BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)              \
                 ))                                                             \
             };                                                                 \
@@ -257,7 +240,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         static const std::pair<std::string,std::string>& meta(TYPE n) {        \
             auto   m = int(n)-(INIT);                                          \
-            assert(m >= 0 && m < int(s_size));                                \
+            assert(m >= 0 && m < int(s_size));                                 \
             return names()[m];                                                 \
         }                                                                      \
                                                                                \
@@ -265,46 +248,3 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         type m_val;                                                            \
     }
-
-// Internal macros for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_INTERNAL_ENUMI_VAL(x, _, val)       BOOST_PP_TUPLE_ELEM(0, val)
-
-#define UTXX_INTERNAL_ENUMI_PAIR(x, _, val)                                    \
-    std::make_pair( BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),           \
-                    BOOST_PP_IIF(                                              \
-                        BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),         \
-                        BOOST_PP_TUPLE_ELEM(1, val),                           \
-                        BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )
-
-// Type value may be in one of three forms:
-//      char                // EnumType
-//      (char, 0)           // EnumType, DefaultValue
-//      (char, Undef, 0)    // EnumType, UndefinedItemName, DefaultValue
-//
-// The following three macros get the {Type, Name, Value} accordingly:
-#define UTXX_ENUM_GET_TYPE(type)       UTXX_ENUM_UNDEF_1__(0, type)
-#define UTXX_ENUM_GET_UNDEF_NAME(type) UTXX_ENUM_UNDEF_1__(1, type)
-#define UTXX_ENUM_GET_UNDEF_VAL(type)  UTXX_ENUM_UNDEF_1__(2, type)
-
-#define UTXX_ENUM_UNDEF_ARG__(N, arg)                                          \
-    BOOST_PP_IIF(                                                              \
-        BOOST_PP_IS_BEGIN_PARENS(arg),                                         \
-        BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(arg),2),             \
-            BOOST_PP_TUPLE_ELEM(N, arg),                                       \
-            BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ELEM(0, arg),               \
-                                    UNDEFINED,                                 \
-                                    BOOST_PP_TUPLE_ELEM(1, arg)))),            \
-        BOOST_PP_TUPLE_ELEM(N, (arg, UNDEFINED, 0)))
-
-#define UTXX_ENUM_UNDEF_1__(N, arg)                                            \
-    BOOST_PP_IIF(                                                              \
-        BOOST_PP_IS_BEGIN_PARENS(arg),                                         \
-        UTXX_ENUM_UNDEF_2__(N, arg),                                           \
-        UTXX_ENUM_UNDEF_2__(N, (arg, UNDEFINED, 0)))
-
-#define UTXX_ENUM_UNDEF_2__(N, arg)                                            \
-    BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(arg),2),                 \
-        BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(arg), _)),                 \
-        BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ELEM(0, arg),                   \
-                                UNDEFINED,                                     \
-                                BOOST_PP_TUPLE_ELEM(1, arg))))
