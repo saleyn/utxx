@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE( test_decimal )
     { BOOST_CHECK_NE(   decimal(-1,1), decimal(1,1)); }
     { BOOST_CHECK_NE(   decimal(2,1),  decimal(1,1)); }
     { BOOST_CHECK_NE(   decimal(-2,1), decimal(1,1)); }
-    { BOOST_CHECK_EQUAL(decimal(127,0),decimal::null_val()); }
+    { BOOST_CHECK_EQUAL(decimal(127,0),decimal::null_value()); }
     { decimal d( 2,  1);        BOOST_CHECK_EQUAL(100.0, (double)d); }
     { decimal d(-2,  1);        BOOST_CHECK_EQUAL(0.01,  (double)d); }
     { decimal d(-2, -125);      BOOST_CHECK_EQUAL(-1.25, (double)d); }

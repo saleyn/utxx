@@ -67,7 +67,7 @@ class decimal
 
 public:
     static constexpr double nan()       { return nlimits<double>::quiet_NaN(); }
-    static decimal   const& null_val()  { static decimal s(nullptr); return s; }
+    static decimal   const& null_value(){ static decimal s(nullptr); return s; }
 
     constexpr decimal() : decimal(0, 0) {
         static_assert(sizeof(decimal) == sizeof(long), "Invalid size");
@@ -100,8 +100,8 @@ public:
     long   mantissa()  const { return m_mant; }
     double value()     const { return is_null() ? nan() : pow10(m_exp)*m_mant; }
 
-    bool   is_null()   const { return *this == null_val();     }
-    void   set_null()        { *this = null_val();             }
+    bool   is_null()   const { return *this == null_value();   }
+    void   set_null()        { *this = null_value();           }
     void   clear()           { *(long*)this = 0l;              }
 
     static double pow10(int a_exp) {
