@@ -221,20 +221,24 @@ namespace detail {
 
         /// Store the variable of type T as binary integer using big
         /// endian encoding.
-        template <typename T>
+        template <typename T, bool IsBigEndian = true>
         void from_binary(T a) {
             BOOST_STATIC_ASSERT(sizeof(T) == N && 
                 (sizeof(T) <= 8) && (sizeof(T) & 1) == 0);
-            utxx::store_be(m_data, a);
+            if (IsBigEndian) utxx::store_be(m_data, a);
+            else             utxx::store_le(m_data, a);
+
         }
 
         /// Return the result by treating the content as big 
         /// endian binary integer or double encoding.
-        template <typename T>
+        template <typename T, bool IsBigEndian = true>
         T to_binary() const {
             BOOST_STATIC_ASSERT(sizeof(T) == N && 
                 (sizeof(T) <= 8) && (sizeof(T) & 1) == 0);
-            T n; utxx::cast_be(m_data, n);
+            T n;
+            if (IsBigEndian) utxx::cast_be(m_data, n);
+            else             utxx::cast_le(m_data, n);
             return n;
         }
 

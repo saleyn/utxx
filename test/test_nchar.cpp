@@ -69,6 +69,7 @@ BOOST_AUTO_TEST_CASE( test_nchar )
     }
     {
         nchar<4> rc(1);
+        BOOST_CHECK_EQUAL(0x01000000, (rc.to_binary<int, false>()));
         BOOST_CHECK_EQUAL(1, rc.to_binary<int>());
         const uint8_t expect[] = {0,0,0,1};
         BOOST_CHECK_EQUAL(0, memcmp(expect, (char*)rc, sizeof(expect)));
