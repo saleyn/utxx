@@ -18,6 +18,7 @@ list(APPEND TEST_SRCS
     test_concurrent_mpsc_queue.cpp
     test_config_validator.cpp
     test_convert.cpp
+    test_decimal.cpp
     test_enum.cpp
     test_error.cpp
     test_file_reader.cpp
