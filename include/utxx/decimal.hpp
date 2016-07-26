@@ -166,8 +166,6 @@ public:
     template <typename StreamT> inline friend
     StreamT& operator<<(StreamT& out, decimal const& d) { return d.print(out); }
 
-private:
-
     /// \param a_const_exp can be either const or initial value of the exponent
     CONSTEXPR
     void normalize(int a_const_exp = 0) {
@@ -187,6 +185,8 @@ private:
             m_exp = a_const_exp;
     }
     }
+
+private:
 
     /// Construct a decimal from a double.
     /// The problem this function solves is that due to imprecision of doubles

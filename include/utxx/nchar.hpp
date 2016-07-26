@@ -56,37 +56,37 @@ namespace detail {
      * The class doesn't provide constructors and assignment operator
      * overloads so that it can be included in unions.
      */
-    template <int N>
+    template <int N, class Char = char>
     class basic_nchar {
     protected:
-        char m_data[N];
+        Char m_data[N];
         BOOST_STATIC_ASSERT(N > 0);
     public:
-        void set(const char (&a)[N+1])      { memcpy(m_data, a, N); }
+        void set(const Char (&a)[N+1])          { memcpy(m_data, a, N); }
         template <int M>
-        void set(const char (&a)[M])        { copy_from(a, M); }
-        void set(const std::string& a)      { copy_from(a.c_str(), a.size()); }
-        void set(const char* a, size_t n)   { copy_from(a, n); }
-        void set(const basic_nchar<N>& a)   { set(a.m_data, N); }
+        void set(const Char (&a)[M])            { copy_from(a, M); }
+        void set(const std::string& a)          { copy_from(a.c_str(),a.size());}
+        void set(const Char* a, size_t n)       { copy_from(a, n); }
+        void set(const basic_nchar<N,Char>& a)  { set(a.m_data, N); }
 
         template <int M>
-        size_t copy_from(const basic_nchar<M>& a) {
+        size_t copy_from(const basic_nchar<M, Char>& a) {
             BOOST_STATIC_ASSERT(N <= M);
             return copy_from(a.data(), M);
         }
 
-        size_t copy_from(const std::string& a) {
+        size_t copy_from(const std::basic_string<Char>& a) {
             return copy_from(a.c_str(), a.size());
         }
 
-        size_t copy_from(const char* a, size_t n) {
+        size_t copy_from(const Char* a, size_t n) {
             size_t m = std::min((size_t)N, n);
             memcpy(m_data, a, m);
             if (m < N) m_data[m] = '\0';
             return m;
         }
 
-        size_t copy_from(const char* a, size_t n, char pad) {
+        size_t copy_from(const Char* a, size_t n, Char pad) {
             size_t m = copy_from(a, n);
             fill(pad, m);
             return N;
@@ -96,16 +96,16 @@ namespace detail {
         /// The buffer is copied until the \a delim character is found or \a n
         /// is reached.
         /// @return pointer to the last byte copied
-        char* copy_to(char* dest, size_t n, char delim = '\0') const {
+        char* copy_to(Char* dest, size_t n, Char delim = '\0') const {
             return copy(dest, n, m_data, N, delim);        // from utxx/string.hpp
         }
 
         template <int M>
-        char* copy_to(char (&dest)[M], char delim = '\0') const {
+        char* copy_to(Char (&dest)[M], Char delim = '\0') const {
             return copy(dest, M, m_data, N, delim);        // from utxx/string.hpp
         }
 
-        void fill(char a_ch, int a_offset = 0) {
+        void fill(Char a_ch, int a_offset = 0) {
             const int n = N - a_offset;
             if (n > 0)
                 memset(&m_data[a_offset], a_ch, n);
@@ -113,23 +113,23 @@ namespace detail {
 
         char& operator[] (size_t n) { return m_data[n]; }
 
-        const char*   data()    const  { return m_data; }
-        char*         data()           { return m_data; }
+        const Char*   data()    const  { return m_data; }
+        Char*         data()           { return m_data; }
         constexpr size_t size() const  { return N; }
-        const char*   end()     const  { return m_data + N; }
+        const Char*   end()     const  { return m_data + N; }
 
         operator uint8_t* ()    const  { return reinterpret_cast<uint8_t*>(m_data); }
         operator uint8_t* ()           { return reinterpret_cast<uint8_t*>(m_data); }
 
-        operator const  char*() const  { return m_data; }
-        operator        char*()        { return m_data; }
+        operator const  Char*() const  { return m_data; }
+        operator        Char*()        { return m_data; }
 
         /// Return a string with trailing characters matching \a rtrim removed.
-        std::string to_string(char rtrim = '\0') const {
-            const char* end = m_data+N;
+        std::string to_string(Char rtrim = '\0') const {
+            const Char* end = m_data+N;
             if (rtrim)
-                for(const char* q = end-1, *e = m_data-1; q != e && (*q == rtrim || !*q); end = q--);
-            for(const char*p = m_data; p != end; ++p)
+                for(const Char* q = end-1, *e = m_data-1; q != e && (*q == rtrim || !*q); end = q--);
+            for(const Char*p = m_data; p != end; ++p)
                 if (!*p) {
                     end = p;
                     break;
@@ -141,14 +141,14 @@ namespace detail {
         /// given delimiter.
         /// @return the string length up to the \a delimiter or size() if
         ///         the \a delimiter is not found
-        size_t len(char delimiter) const {
-            const char* pos = find_pos(m_data, end(), delimiter);
+        size_t len(Char delimiter) const {
+            const Char* pos = find_pos(m_data, end(), delimiter);
             return pos - m_data;
         }
 
         std::ostream& to_bin_string(std::ostream& out, int until_char = -1) const {
             out << "<<" << (int)*(uint8_t*)m_data;
-            for(const char* p = m_data+1, *end = m_data + N;
+            for(const Char* p = m_data+1, *end = m_data + N;
                 p < end && (until_char < 0 || *p != (char)until_char); ++p)
                 out << ',' << (int)*(unsigned char*)p;
             return out << ">>";
@@ -157,7 +157,7 @@ namespace detail {
         /// Convert the ASCII buffer to an integer (assuming it's left-aligned)
         /// @param skip skip leading characters matching \a skip.
         template <typename T>
-        T to_integer(char skip) const {
+        T to_integer(Char skip) const {
             T n;
             atoi_left(m_data, n, skip);
             return n;
@@ -167,7 +167,7 @@ namespace detail {
         /// right-aligned, skips leading space and 0's)
         template <typename T>
         T to_integer() const {
-            const char* p = m_data;
+            const Char* p = m_data;
             return unsafe_fixed_atol<N>(p);
         }
 
@@ -183,8 +183,8 @@ namespace detail {
 
         /// Convert the ASCII buffer to a double
         /// @param skip optionally skip leading characters matching \a skip.
-        double to_double(char skip = '\0') const {
-            const char *p = m_data, *end = p + N;
+        double to_double(Char skip = '\0') const {
+            const Char *p = m_data, *end = p + N;
             if (skip)
                 while (*p == skip && p != end) p++;
             double res = 0.0;
@@ -199,10 +199,10 @@ namespace detail {
         /// @param a_trail optional trailing character.
         /// @param a_compact strip extra '0' at the end
         /// @returns number of characters written, or -1 on error
-        int from_double(double n, int a_precision, bool a_compact, char a_trail='\0') {
+        int from_double(double n, int a_precision, bool a_compact, Char a_trail='\0') {
             int k = ftoa_left(n, m_data, N, a_precision, a_compact);
             if (a_trail && k < N)
-                for (char* p = m_data+k, *end = m_data+N; p != end; ++p)
+                for (auto* p = m_data+k, *end = m_data+N; p != end; ++p)
                     *p = a_trail;
             return k;
         }
@@ -213,7 +213,7 @@ namespace detail {
         /// @param a_precision number of digits abter decimal point
         /// @param a_lef_pad   left-padding character
         /// @returns number of characters written, or -1 on error
-        int from_double(double n, int a_precision, char a_left_pad) {
+        int from_double(double n, int a_precision, Char a_left_pad) {
             try { ftoa_right(n, m_data, N, a_precision, a_left_pad); }
             catch (std::invalid_argument& e) { return -1; }
             return N;
@@ -244,19 +244,19 @@ namespace detail {
 
         std::ostream& dump(std::ostream& out) const {
             bool printable = true;
-            const char* end = m_data + N;
-            for (const char* p = m_data; p != end; ++p) {
+            const Char* end = m_data + N;
+            for (const Char* p = m_data; p != end; ++p) {
                 if (*p < ' ' || *p > '~') {
                     printable = false; break;
                 } else if (p > m_data && *p == '\0') {
                     end = ++p; break;
                 }
             }
-            for (const char* p = m_data; p != end; ++p) {
+            for (const Char* p = m_data; p != end; ++p) {
                 if (printable)
                     out << *p;
                 else
-                    out << (p == m_data ? "" : ",") << (int)*(unsigned char*)p;
+                    out << (p == m_data ? "" : ",") << (int)*(uint8_t*)p;
             }
             return out;
         }
@@ -269,21 +269,21 @@ namespace detail {
  * The buffer allows for easy conversion between big endian and 
  * native data representation.
  */
-template <int N>
-class nchar : public detail::basic_nchar<N> {
-    typedef detail::basic_nchar<N> super;
+template <int N, class Char = char>
+class nchar : public detail::basic_nchar<N, Char> {
+    typedef detail::basic_nchar<N, Char> super;
 public:
     nchar() {}
 
     template <typename T>
     nchar(T a)                      { *this = a; }
 
-    nchar(const char (&a)[N+1])     { super::set(a); }
+    nchar(const Char (&a)[N+1])     { super::set(a); }
     template <int M>
-    nchar(const char (&a)[M])       { super::set(a); }
+    nchar(const Char (&a)[M])       { super::set(a); }
     nchar(const std::string& a)     { super::set(a); }
     nchar(const uint8_t (&a)[N])    { super::set(a, N); }
-    nchar(const char* a, size_t n)  { super::set(a, n); }
+    nchar(const Char* a, size_t n)  { super::set(a, n); }
 
     template <typename T>
     void operator= (T a)             { super::set(a); }
