@@ -461,8 +461,10 @@ struct pcap {
         return true;
     }
 
-    bool     is_open()               const { return m_file != NULL; }
-    uint64_t tell()                  const { return m_file ? ftell(m_file) : 0; }
+    bool                    is_open()const { return m_file != NULL; }
+    uint64_t                tell()   const { return m_file ? ftell(m_file) : 0; }
+
+    FILE*                   handle()       { return m_file;         }
 
     const    file_header&   header() const { return m_file_header;  }
     const    packet_header& packet() const { return m_pkt_header;   }

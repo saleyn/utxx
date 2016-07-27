@@ -38,6 +38,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <utxx/pcap.hpp>
 
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr)   __builtin_expect(!!(expr), 1)
@@ -123,6 +124,8 @@ int         display_packets           = 0;
 int         display_packets_hex       = 0;
 const char* output_file               = NULL;
 const char* write_file                = NULL;
+bool        pcap_format   = 0;
+utxx::pcap  pcap_file;
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
@@ -155,7 +158,8 @@ void usage(const char* program) {
          "      -X [Size]   - Print packet up to Size bytes in HEX format\n"
          "      -q          - Quiet (no output)\n"
          "      -o Filename - Output log file\n"
-         "      -w Filename - Write packets to file\n\n"
+         "      -w Filename - Write packets to file (raw data)\n\n"
+         "      -W Filename - Write packets to file in PCAP format\n\n"
          "If there is no incoming data, press several Ctrl-C to break\n\n"
          "Return code: = 0  - if the process received at least one packet\n"
          "             > 0  - if no packets were received or there was an error\n\n"
@@ -444,9 +448,11 @@ int main(int argc, char *argv[])
       max_pkts = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-o") && i < argc-1)
       output_file = argv[++i];
-    else if (!strcmp(argv[i], "-w") && i < argc-1)
-      write_file = argv[++i];
-    else if (!strcmp(argv[i], "-d") && i < argc-1) {
+    else if((!strcmp(argv[i], "-w")   ||
+             !strcmp(argv[i], "-W"))  && i < argc-1) {
+      pcap_format = argv[i][1] == 'W';
+      write_file  = argv[++i];
+    } else if (!strcmp(argv[i], "-d") && i < argc-1) {
       gettimeofday(&tv, NULL);
       alarm(atoi(argv[++i]));
     } else if (!strncmp(argv[i], "-v", 2))
@@ -495,7 +501,14 @@ int main(int argc, char *argv[])
   }
 
   if (write_file) {
-    wfd = open(write_file, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
+    if (!pcap_format)
+      wfd = open(write_file, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
+    else {
+      wfd = pcap_file.open_write(write_file, false, utxx::pcap::link_type::raw_tcp);
+      if (wfd >= 0)
+        wfd = fileno(pcap_file.handle());
+    }
+
     if (wfd < 0) {
       fprintf(stderr, "Cannot open file '%s' for writing: %s\n",
         write_file, strerror(errno));
@@ -820,8 +833,8 @@ int main(int argc, char *argv[])
     if (sorted_addrs[i])
       free(sorted_addrs[i]);
 
-  if (efd != -1) close(efd);
-  if (wfd != -1) close(wfd);
+  if (efd != -1)   close(efd);
+  if (wfd != -1) { close(wfd); if (pcap_format) pcap_file.close(); }
 
   return tot_pkts ? 0 : 1;
 }
@@ -1107,7 +1120,18 @@ void process_packet(struct address* addr, const char* buf, int n) {
   }
 
   if (wfd != -1) {
-    if (write(wfd, buf, n) < 0) {
+    int rc;
+    if (pcap_format) {
+      rc = pcap_file.write_packet(true, utxx::usecs(now_time), utxx::pcap::proto::udp,
+                                  addr->mcast_addr, addr->port,
+                                  addr->iface,      addr->port,
+                                  //uint32_t a_src_ip, uint16_t a_src_port,
+                                  //uint32_t a_dst_ip, uint16_t a_dst_port,
+                                  buf, n);
+    } else
+      rc = write(wfd, buf, n);
+
+    if (rc < 0) {
       fprintf(stderr, "Error writing to the output file %s: %s\n",
         write_file, strerror(errno));
       exit(1);
