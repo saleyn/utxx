@@ -483,24 +483,27 @@ struct pcap {
         return true;
     }
 
-    bool                    is_open()const { return m_file != NULL; }
-    uint64_t                tell()   const { return m_file ? ftell(m_file) : 0; }
+    bool                 is_open()        const { return m_file != NULL; }
+    uint64_t             tell()           const { return m_file ? ftell(m_file) : 0; }
 
-    FILE*                   handle()       { return m_file;         }
+    FILE*                handle()               { return m_file;         }
 
-    const    file_header&   header() const { return m_file_header;  }
-    const    packet_header& packet() const { return m_pkt_header;   }
-    const    ethhdr&        eframe() const { return m_eth_header;   }
-    const    udp_frame&     uframe() const { return m_frame.u;      }
-    const    tcp_frame&     tframe() const { return m_frame.t;      }
+    const file_header&   header()         const { return m_file_header;  }
+    const packet_header& packet()         const { return m_pkt_header;   }
+    const ethhdr&        eframe()         const { return m_eth_header;   }
+    const udp_frame&     uframe()         const { return m_frame.u;      }
+    const tcp_frame&     tframe()         const { return m_frame.t;      }
 
-    time_val                packet_ts() const {
+    time_val             packet_ts()      const {
         return nsecs(m_pkt_header.ts_sec, m_nsec_time ? m_pkt_header.ts_usec
                                                       : m_pkt_header.ts_usec*1000);
     }
 
-    size_t          frame_offset()   const { return m_frame_offset; }
-    link_type       get_link_type()  const { return link_type(m_file_header.network); }
+    bool                 nsec_time()      const { return m_nsec_time;  }
+    bool                 big_endian()     const { return m_big_endian; }
+
+    size_t               frame_offset()   const { return m_frame_offset; }
+    link_type            get_link_type()  const { return link_type(m_file_header.network); }
 
     void set_handle(FILE* a_handle) {
         close();
