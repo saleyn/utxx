@@ -161,13 +161,15 @@ struct pcap {
     BOOST_STATIC_ASSERT(sizeof(udp_frame)      == 28);
     BOOST_STATIC_ASSERT(sizeof(tcp_frame)      == 40);
 
-    pcap()
+    explicit
+    pcap(bool a_big_endian = true, bool a_nsec_time = false)
         : m_file(NULL)
         , m_eth_header{{0}}
-        , m_big_endian(true)
+        , m_big_endian(a_big_endian)
         , m_own_handle(false)
         , m_frame_offset(0)
         , m_tcp_seqnos{0,0}
+        , m_nsec_time(a_nsec_time)
     {
         m_eth_header.h_proto = htons(ETH_P_IP);
     }
@@ -213,7 +215,7 @@ struct pcap {
     int init_file_header(link_type a_tp = link_type::ethernet) {
         int n = encode_file_header
             (reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp,
-             m_big_endian);
+             m_big_endian, m_nsec_time);
         m_frame_offset = a_tp == link_type::ethernet ? sizeof(ethhdr) : 0;
         memset(&m_eth_header, 0, sizeof(m_eth_header));
         memset(&m_tcp_seqnos, 0, sizeof(m_tcp_seqnos));
@@ -228,11 +230,12 @@ struct pcap {
 
     static int encode_file_header(char* buf, size_t sz,
                                   link_type a_tp = link_type::ethernet,
-                                  bool      a_big_endian = true) {
+                                  bool      a_big_endian = true,
+                                  bool      a_nsec_time  = false) {
         BOOST_ASSERT(sz >= sizeof(file_header));
         file_header* p = reinterpret_cast<file_header*>(buf);
         if (a_big_endian) {
-            store_be((char*)&p->magic_number , 0xa1b2c3d4);
+            store_be((char*)&p->magic_number , a_nsec_time ? 0xa1b23c4d : 0xa1b2c3d4);
             store_be((char*)&p->version_major, uint16_t(2));
             store_be((char*)&p->version_minor, uint16_t(4));
             store_be((char*)&p->thiszone     , int32_t(0));
@@ -240,7 +243,7 @@ struct pcap {
             store_be((char*)&p->snaplen      , uint32_t(65535));
             store_be((char*)&p->network      , uint32_t(a_tp));
         } else {
-            p->magic_number     = 0xa1b2c3d4;
+            p->magic_number     = a_nsec_time ? 0xa1b23c4d : 0xa1b2c3d4;
             p->version_major    = 2;
             p->version_minor    = 4;
             p->thiszone         = 0;
@@ -267,12 +270,12 @@ struct pcap {
                     + (a_proto == proto::tcp ? sizeof(tcp_frame) : sizeof(udp_frame));
         if (m_big_endian) {
             store_be((char*)&p->ts_sec  , uint32_t(tv.sec()));
-            store_be((char*)&p->ts_usec , uint32_t(tv.usec()));
+            store_be((char*)&p->ts_usec , uint32_t(m_nsec_time ? tv.nsec() : tv.usec()));
             store_be((char*)&p->incl_len, uint32_t(sz));
             store_be((char*)&p->orig_len, uint32_t(sz));
         } else {
             p->ts_sec   = tv.sec();
-            p->ts_usec  = tv.usec();
+            p->ts_usec  = m_nsec_time ? tv.nsec() : tv.usec();
             p->incl_len = sz;
             p->orig_len = sz;
         }
@@ -296,10 +299,9 @@ struct pcap {
             return -1;
 
         const uint8_t* p = (const uint8_t*)buf;
-        m_big_endian = *p++ == 0xa1
-                    && *p++ == 0xb2
-                    && *p++ == 0xc3
-                    && *p++ == 0xd4;
+        if (!check_magic_number(p))
+            return -2;
+
         if (!m_big_endian) {
             m_file_header = *reinterpret_cast<const file_header*>(buf);
             buf += sizeof(file_header);
@@ -327,13 +329,13 @@ struct pcap {
             return -1;
         if (!m_big_endian) {
             m_pkt_header = *reinterpret_cast<const packet_header*>(buf);
+            buf += sizeof(packet_header);
         } else {
             m_pkt_header.ts_sec   = get32be(buf);
             m_pkt_header.ts_usec  = get32be(buf);
             m_pkt_header.incl_len = get32be(buf);
             m_pkt_header.orig_len = get32be(buf);
         }
-        buf += sizeof(packet_header);
         return m_pkt_header.incl_len;
     }
 
@@ -492,6 +494,11 @@ struct pcap {
     const    udp_frame&     uframe() const { return m_frame.u;      }
     const    tcp_frame&     tframe() const { return m_frame.t;      }
 
+    time_val                packet_ts() const {
+        return nsecs(m_pkt_header.ts_sec, m_nsec_time ? m_pkt_header.ts_usec
+                                                      : m_pkt_header.ts_usec*1000);
+    }
+
     size_t          frame_offset()   const { return m_frame_offset; }
     link_type       get_link_type()  const { return link_type(m_file_header.network); }
 
@@ -513,9 +520,29 @@ private:
     bool          m_own_handle;
     size_t        m_frame_offset;
     uint          m_tcp_seqnos[2];
+    bool          m_nsec_time;
     file_header   m_file_header;
     packet_header m_pkt_header;
     bool          m_is_pipe;
+
+    bool check_magic_number(const uint8_t* p) {
+        if ((*p==0xa1) && (*(p+1)==0xb2) && (*(p+2)==0xc3) && (*(p+3)==0xd4)) {
+            m_big_endian = true;
+            m_nsec_time  = false;
+        } else if ((*p==0xd4) && (*(p+1)==0xc3) && (*(p+2)==0xb2) && (*(p+3)==0xa1)) {
+            m_big_endian = false;
+            m_nsec_time  = false;
+        } else if ((*p==0xa1) && (*(p+1)==0xb2) && (*(p+2)==0x3c) && (*(p+3)==0x4d)) {
+            m_big_endian = true;
+            m_nsec_time  = true;
+        } else if ((*p==0x4d) && (*(p+1)==0x3c) && (*(p+2)==0xb2) && (*(p+3)==0xa1)) {
+            m_big_endian = false;
+            m_nsec_time  = true;
+        } else
+            return false;
+
+        return true;
+    }
 
     /// @return 0 if opening a pipe or stdin
     long open(const char* a_filename, const std::string& a_mode, bool a_is_pipe) {

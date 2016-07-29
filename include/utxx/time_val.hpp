@@ -84,9 +84,10 @@ namespace utxx {
     };
 
     struct usecs {
-        explicit usecs(long   us) : m_nsec(us*1000L)            {}
-        explicit usecs(size_t us) : m_nsec(long(us)*1000L)      {}
-        explicit usecs(int    us) : m_nsec(long(us)*1000L)      {}
+        explicit usecs(long   us) : m_nsec(us*1000L)                {}
+        explicit usecs(size_t us) : m_nsec(long(us)*1000L)          {}
+        explicit usecs(int    us) : m_nsec(long(us)*1000L)          {}
+        usecs(long s,  long   us) : m_nsec(s*1000000000L+us*1000L)  {}
         long     value() const { return m_nsec/1000L; }
         long     nsec()  const { return m_nsec;       }
     private:
@@ -96,6 +97,7 @@ namespace utxx {
     struct nsecs {
         explicit nsecs(long   ns) : m_nsec(ns)                  {}
         explicit nsecs(size_t ns) : m_nsec(long(ns))            {}
+        nsecs(long s,  long   ns) : m_nsec(s*1000000000L+ns)    {}
         long     value() const { return m_nsec; }
         long     nsec()  const { return m_nsec; }
     private:
