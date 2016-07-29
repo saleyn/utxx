@@ -220,9 +220,7 @@ struct pcap {
     int init_file_header(char* buf, size_t sz,
                          link_type a_tp        = link_type::ethernet,
                          bool      a_nsec_time = false) {
-        int n = encode_file_header
-            (reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp,
-             m_big_endian, a_nsec_time);
+        int n = encode_file_header(buf, sz, a_tp, m_big_endian, a_nsec_time);
         m_nsec_time    = a_nsec_time;
         m_frame_offset = a_tp == link_type::ethernet ? sizeof(ethhdr) : 0;
         memset(&m_eth_header, 0, sizeof(m_eth_header));
