@@ -395,6 +395,7 @@ int main(int argc, char *argv[])
   int                   i;
 
   signal(SIGINT,  sig_handler);
+  signal(SIGTERM, sig_handler);
   signal(SIGALRM, sig_handler);
 
   if (argc < 3)

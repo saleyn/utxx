@@ -61,7 +61,7 @@ struct pcap {
     // See: http://www.tcpdump.org/linktypes.html
     enum class link_type {
         ethernet = 1,       // Record ETHR,IP,TCP headers
-        raw_tcp  = 12       // Record IP,TCP headers (no ETHR)
+        raw_tcp  = 101      // Record IP,TCP headers (no ETHR)  LINKTYPE_RAW
     };
 
     struct file_header {
@@ -213,7 +213,7 @@ struct pcap {
     int init_file_header(link_type a_tp = link_type::ethernet) {
         int n = encode_file_header
             (reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp);
-        m_frame_offset = a_tp == link_type::raw_tcp ? 0 : sizeof(ethhdr);
+        m_frame_offset = a_tp == link_type::ethernet ? sizeof(ethhdr) : 0;
         memset(&m_eth_header, 0, sizeof(m_eth_header));
         memset(&m_tcp_seqnos, 0, sizeof(m_tcp_seqnos));
         m_eth_header.h_proto = htons(ETH_P_IP);
@@ -292,8 +292,8 @@ struct pcap {
             m_file_header.snaplen       = get32be(buf);
             m_file_header.network       = get32be(buf);
         }
-        m_frame_offset = get_link_type() == link_type::raw_tcp
-                       ? 0 : sizeof(ethhdr);
+        m_frame_offset = get_link_type() == link_type::ethernet
+                       ? sizeof(ethhdr) : 0;
         return buf - begin;
     }
 
@@ -345,7 +345,7 @@ struct pcap {
     }
 
     proto read_protocol_type(const char* buf, size_t sz) const {
-        size_t offset = get_link_type() == link_type::raw_tcp ? 0 : sizeof(ethhdr);
+        size_t offset = get_link_type() == link_type::ethernet ? sizeof(ethhdr) : 0;
         if (sz < offset + sizeof(ip_frame))
             return proto::undefined;
         auto  p = (ip_frame*)(buf + offset);
