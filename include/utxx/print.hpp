@@ -82,6 +82,7 @@ struct width {
     using TT = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 
     // For integers and bool types
+    explicit
     width(T a_val, char a_pad = ' ') : m_value(a_val), m_pad(a_pad), m_precision(0)
     {
         static_assert(std::is_integral<TT>::value           ||
