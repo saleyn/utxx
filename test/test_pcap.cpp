@@ -221,7 +221,12 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
         auto s = path::read_file(file);
 
         BOOST_REQUIRE_EQUAL(length(s_exp), s.size());
-        BOOST_REQUIRE(memcmp(s_exp, s.c_str(), s.size()) == 0);
+        res = memcmp(s_exp, s.c_str(), s.size());
+
+        if (res)
+            BOOST_TEST_MESSAGE(
+                "  Mismatch: " << to_bin_string(s.c_str(), s.size(), true, false));
+        BOOST_REQUIRE(res == 0);
     }
 
     path::file_unlink(file);
