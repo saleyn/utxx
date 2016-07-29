@@ -13,6 +13,8 @@
  * Copyright (c) 2014 Serge Aleynikov
  * Created: 2014-01-27
  * License: BSD open source
+ *
+ * TODO: use IP_PKTINFO for getting mcast src addr/port
  */
 
 #include <arpa/inet.h>
@@ -677,7 +679,7 @@ int main(int argc, char *argv[])
       struct sockaddr_storage   si;
       static const socklen_t    si_len = sizeof(si);
       if (getsockname(addrs[i].fd, (struct sockaddr*)&si, (socklen_t*)&si_len))
-        addrs[i].iface_port = 0;
+        addrs[i].iface_port = addrs[i].port;
       else {
         auto dst = (sockaddr_in*)&si;
         addrs[i].iface_port = dst->sin_port;
