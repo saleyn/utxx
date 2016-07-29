@@ -57,9 +57,11 @@ namespace utxx {
         , DATE_TIME                 // Parsed from "date-time"
         , DATE_TIME_WITH_MSEC       // Parsed from "date-time-msec"
         , DATE_TIME_WITH_USEC       // Parsed from "date-time-usec"
+        , DATE_TIME_WITH_NSEC       // Parsed from "date-time-nsec"
         , TIME                      // Parsed from "time"
         , TIME_WITH_MSEC            // Parsed from "time-msec"
         , TIME_WITH_USEC            // Parsed from "time-usec"
+        , TIME_WITH_NSEC            // Parsed from "time-nsec"
     };
 
     /// Indication of use of absolute time
@@ -459,7 +461,7 @@ namespace utxx {
                     char a_ddelim = '\0', char a_tdelim = ':', char a_ssep = '.') const {
             auto pair = split();
             auto p = ((a_tp > NO_TIMESTAMP) && (a_tp < TIME))
-                   ? std::make_pair(write_date(pair.first, a_buf, 0, a_ddelim),stamp_type(a_tp+3))
+                   ? std::make_pair(write_date(pair.first, a_buf, 0, a_ddelim),stamp_type(a_tp+4))
                    : std::make_pair(a_buf, a_tp);
             return write_time(pair, p.first, p.second, a_tdelim, a_ssep);
         }
@@ -548,6 +550,11 @@ namespace utxx {
                         if (a_sep) *p++ = a_sep;
                         size_t usec = a_ns / 1000;
                         p = detail::itoar(usec, p, 6);
+                        break;
+                    }
+                    case TIME_WITH_NSEC: {
+                        if (a_sep) *p++ = a_sep;
+                        p = detail::itoar(a_ns, p, 9);
                         break;
                     }
                     default:

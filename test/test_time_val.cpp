@@ -226,6 +226,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
 
         auto t = utxx::time_val::universal_time(2000, 1, 2, 3, 4, 5, 1000);
         BOOST_REQUIRE_EQUAL("", t.to_string(utxx::NO_TIMESTAMP));
+        BOOST_REQUIRE_EQUAL("20000102-03:04:05.001000000", t.to_string(utxx::DATE_TIME_WITH_NSEC));
         BOOST_REQUIRE_EQUAL("20000102-03:04:05.001000", t.to_string(utxx::DATE_TIME_WITH_USEC));
         BOOST_REQUIRE_EQUAL("20000102-03:04:05",        t.to_string(utxx::DATE_TIME));
         BOOST_REQUIRE_EQUAL("2000-01-02-03:04:05",      t.to_string(utxx::DATE_TIME, '-'));
@@ -234,6 +235,7 @@ BOOST_AUTO_TEST_CASE( test_time_val )
         BOOST_REQUIRE_EQUAL("03:04:05",                 t.to_string(utxx::TIME));
         BOOST_REQUIRE_EQUAL("03:04:05.001",             t.to_string(utxx::TIME_WITH_MSEC));
         BOOST_REQUIRE_EQUAL("03:04:05.001000",          t.to_string(utxx::TIME_WITH_USEC));
+        BOOST_REQUIRE_EQUAL("03:04:05.001000000",       t.to_string(utxx::TIME_WITH_NSEC));
     }
 
     {

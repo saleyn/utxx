@@ -55,8 +55,9 @@ volatile long timestamp::s_syscalls;
 
 namespace {
     static const char* s_values[] = {
-        "none", "date", "date-time", "date-time-msec", "date-time-usec",
-        "time", "time-msec", "time-usec",
+        "none", "date", "date-time",
+        "date-time-msec", "date-time-usec", "date-time-nsec",
+        "time", "time-msec", "time-usec",   "time-nsec"
     };
 }
 
@@ -121,12 +122,14 @@ size_t timestamp::format_size(stamp_type a_tp)
     switch (a_tp) {
         case NO_TIMESTAMP:          return 0;
         case TIME:                  return 8;
-        case TIME_WITH_USEC:        return 15;
         case TIME_WITH_MSEC:        return 12;
+        case TIME_WITH_USEC:        return 15;
+        case TIME_WITH_NSEC:        return 18;
         case DATE:                  return 8;
         case DATE_TIME:             return 17;
-        case DATE_TIME_WITH_USEC:   return 24;
         case DATE_TIME_WITH_MSEC:   return 21;
+        case DATE_TIME_WITH_USEC:   return 24;
+        case DATE_TIME_WITH_NSEC:   return 27;
         default:                    break;
     }
     assert(false);  // should never get here
@@ -158,8 +161,9 @@ int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
 
     switch (a_tp) {
         case TIME:
+        case TIME_WITH_MSEC:
         case TIME_WITH_USEC:
-        case TIME_WITH_MSEC: {
+        case TIME_WITH_NSEC: {
             p  = time_val::write_time(sec, pair.second, a_buf, a_tp);
             return p - a_buf;
         }
@@ -167,10 +171,11 @@ int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
             p = write_date(a_buf, sec, a_utc, 8, '\0', a_use_cached_date);
             return 8;
         case DATE_TIME:
+        case DATE_TIME_WITH_MSEC:
         case DATE_TIME_WITH_USEC:
-        case DATE_TIME_WITH_MSEC: {
+        case DATE_TIME_WITH_NSEC: {
             p = write_date(a_buf, sec, a_utc, 0, '\0', a_use_cached_date);
-            p = time_val::write_time(sec, pair.second, p, stamp_type(a_tp+3));
+            p = time_val::write_time(sec, pair.second, p, stamp_type(a_tp+4));
             return p - a_buf;
         }
         default:
@@ -193,7 +198,8 @@ time_val timestamp::from_string(const char* a_datetime, size_t n, bool a_utc) {
         return i;
     };
 
-    unsigned hour = 0, min = 0, sec = 0, usec = 0;
+    unsigned hour = 0, min = 0, sec = 0;
+    long     nsec = 0;
     int      year = parse(4);
     unsigned mon  = parse(2);
     unsigned day  = parse(2);
@@ -209,22 +215,23 @@ time_val timestamp::from_string(const char* a_datetime, size_t n, bool a_utc) {
         {
             const char* end = p + std::min<size_t>(6, n - (p - a_datetime));
             while (*p >= '0' && *p <= '9' && p != end)
-                usec = 10*usec + (*p++ - '0');
+                nsec = 10*nsec + (*p++ - '0');
 
             int len = p - dot - 1;
             switch (len)
             {
-                case 3:  usec *= 1000; break;
-                case 6:  break;
-                default: throw badarg_error("Invalid millisecond format: ",
+                case 3:  nsec *= 1000000; break;
+                case 6:  nsec *= 1000;    break;
+                case 9:  break;
+                default: throw badarg_error("Invalid microsecond format: ",
                                             std::string(a_datetime, end - a_datetime));
             }
         }
     }
 
-    return a_utc
-         ? time_val::universal_time(year, mon, day, hour, min, sec, usec)
-         : time_val::local_time(year, mon, day, hour, min, sec, usec);
+    return (a_utc
+          ? time_val::universal_time(year, mon, day, hour, min, sec, 0)
+          : time_val::local_time(year, mon, day, hour, min, sec, 0)) + nsecs(nsec);
 }
 
 } // namespace utxx
