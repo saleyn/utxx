@@ -212,10 +212,18 @@ struct pcap {
             || *reinterpret_cast<const uint32_t*>(buf) == 0xd4c3b2a1);
     }
 
-    int init_file_header(link_type a_tp = link_type::ethernet) {
+    int init_file_header(link_type a_tp = link_type::ethernet, bool a_nsec_time = false) {
+        return init_file_header(reinterpret_cast<char*>(&m_file_header),
+                                sizeof(file_header), a_tp, a_nsec_time);
+    }
+
+    int init_file_header(char* buf, size_t sz,
+                         link_type a_tp        = link_type::ethernet,
+                         bool      a_nsec_time = false) {
         int n = encode_file_header
             (reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp,
-             m_big_endian, m_nsec_time);
+             m_big_endian, a_nsec_time);
+        m_nsec_time    = a_nsec_time;
         m_frame_offset = a_tp == link_type::ethernet ? sizeof(ethhdr) : 0;
         memset(&m_eth_header, 0, sizeof(m_eth_header));
         memset(&m_tcp_seqnos, 0, sizeof(m_tcp_seqnos));
@@ -223,8 +231,8 @@ struct pcap {
         return n;
     }
 
-    int write_file_header(link_type a_tp = link_type::ethernet) {
-        int n = init_file_header(a_tp);
+    int write_file_header(link_type a_tp = link_type::ethernet, bool a_nsec_time = false) {
+        int n = init_file_header(a_tp, a_nsec_time);
         return write(reinterpret_cast<const char*>(&m_file_header), n);
     }
 
