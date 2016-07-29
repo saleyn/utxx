@@ -401,8 +401,10 @@ namespace utxx {
             : Base(ac) { assign<false>(std::move(a)); }
         basic_short_string(const basic_short_string& a, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
+        explicit
         basic_short_string(std::basic_string<Char>&& a, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
+        explicit
         basic_short_string(const std::basic_string<Char>& a, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxSz) { set(a); }
 
