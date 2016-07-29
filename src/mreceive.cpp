@@ -65,9 +65,10 @@ struct address {
   char*                 title;
   char                  iface_name[64];
   in_addr_t             iface;
+  uint16_t              iface_port;     /* destination port on the interface */
   in_addr_t             mcast_addr;
   in_addr_t             src_addr;
-  int                   port;
+  uint16_t              port;
   int                   fd;
   data_fmt_t            data_format;    /* (m)icex, (f)orts */
   long                  last_data_time; /* time of the last gap detected */
@@ -284,7 +285,7 @@ void parse_addr(char* s) {
   in_addr_t*        iface       = &paddr->iface;
   in_addr_t*        mcast_addr  = &paddr->mcast_addr;
   in_addr_t*        src_addr    = &paddr->src_addr;
-  int*              port        = &paddr->port;
+  uint16_t*         port        = &paddr->port;
   data_fmt_t*       data_format = &paddr->data_format;
 
   memset(paddr, 0, sizeof(struct address));
@@ -669,6 +670,17 @@ int main(int argc, char *argv[])
       if (bind(addrs[i].fd, (struct sockaddr*)&local_s, sizeof(local_s))) {
           perror("binding datagram socket");
           exit(1);
+      }
+
+      // NOTE: even with IP_PKTINFO enabled recvmsg() doesn't provide sin_port
+      // so we have to retrieve it using getsockname():
+      struct sockaddr_storage   si;
+      static const socklen_t    si_len = sizeof(si);
+      if (getsockname(addrs[i].fd, (struct sockaddr*)&si, (socklen_t*)&si_len))
+        addrs[i].iface_port = 0;
+      else {
+        auto dst = (sockaddr_in*)&si;
+        addrs[i].iface_port = dst->sin_port;
       }
     }
 
@@ -1123,9 +1135,10 @@ void process_packet(struct address* addr, const char* buf, int n) {
   if (wfd != -1) {
     int rc;
     if (pcap_format) {
-      rc = pcap_file.write_packet(true, utxx::usecs(now_time), utxx::pcap::proto::udp,
+      rc = pcap_file.write_packet(true, utxx::usecs(now_time),
+                                  utxx::pcap::proto::udp,
                                   addr->mcast_addr, addr->port,
-                                  addr->iface,      addr->port,
+                                  addr->iface,      addr->iface_port,
                                   //uint32_t a_src_ip, uint16_t a_src_port,
                                   //uint32_t a_dst_ip, uint16_t a_dst_port,
                                   buf, n);
