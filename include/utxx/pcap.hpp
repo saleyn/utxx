@@ -583,6 +583,7 @@ private:
         frame.tcp.dest    = a_dst_port;
         frame.tcp.seq     = htonl(seqno);
         frame.tcp.ack_seq = 0;
+        frame.tcp.th_flags= 0;
         frame.tcp.syn     = !seqno;
         frame.tcp.ack     = 1;
         frame.tcp.doff    = 5;    // the size of TCP header in 32-bit words
