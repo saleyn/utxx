@@ -59,7 +59,7 @@ struct pcap {
     };
 
     // See: http://www.tcpdump.org/linktypes.html
-    enum class link_type {
+    enum class link_type : uint {
         ethernet = 1,       // Record ETHR,IP,TCP headers
         raw_tcp  = 101      // Record IP,TCP headers (no ETHR)  LINKTYPE_RAW
     };
@@ -212,7 +212,8 @@ struct pcap {
 
     int init_file_header(link_type a_tp = link_type::ethernet) {
         int n = encode_file_header
-            (reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp);
+            (reinterpret_cast<char*>(&m_file_header), sizeof(file_header), a_tp,
+             m_big_endian);
         m_frame_offset = a_tp == link_type::ethernet ? sizeof(ethhdr) : 0;
         memset(&m_eth_header, 0, sizeof(m_eth_header));
         memset(&m_tcp_seqnos, 0, sizeof(m_tcp_seqnos));
@@ -225,16 +226,28 @@ struct pcap {
         return write(reinterpret_cast<const char*>(&m_file_header), n);
     }
 
-    static int encode_file_header(char* buf, size_t sz, link_type a_tp = link_type::ethernet) {
+    static int encode_file_header(char* buf, size_t sz,
+                                  link_type a_tp = link_type::ethernet,
+                                  bool      a_big_endian = true) {
         BOOST_ASSERT(sz >= sizeof(file_header));
         file_header* p = reinterpret_cast<file_header*>(buf);
-        p->magic_number     = 0xa1b2c3d4;
-        p->version_major    = 2;
-        p->version_minor    = 4;
-        p->thiszone         = 0;
-        p->sigfigs          = 0;
-        p->snaplen          = 65535;
-        p->network          = int(a_tp);
+        if (a_big_endian) {
+            store_be((char*)&p->magic_number , 0xa1b2c3d4);
+            store_be((char*)&p->version_major, uint16_t(2));
+            store_be((char*)&p->version_minor, uint16_t(4));
+            store_be((char*)&p->thiszone     , int32_t(0));
+            store_be((char*)&p->sigfigs      , uint32_t(0));
+            store_be((char*)&p->snaplen      , uint32_t(65535));
+            store_be((char*)&p->network      , uint32_t(a_tp));
+        } else {
+            p->magic_number     = 0xa1b2c3d4;
+            p->version_major    = 2;
+            p->version_minor    = 4;
+            p->thiszone         = 0;
+            p->sigfigs          = 0;
+            p->snaplen          = 65535u;
+            p->network          = uint32_t(a_tp);
+        }
         return sizeof(file_header);
     }
 
@@ -252,10 +265,17 @@ struct pcap {
         packet_header* p = reinterpret_cast<packet_header*>(a_buf);
         int sz      = len + m_frame_offset
                     + (a_proto == proto::tcp ? sizeof(tcp_frame) : sizeof(udp_frame));
-        p->ts_sec   = tv.sec();
-        p->ts_usec  = tv.usec();
-        p->incl_len = sz;
-        p->orig_len = sz;
+        if (m_big_endian) {
+            store_be((char*)&p->ts_sec  , uint32_t(tv.sec()));
+            store_be((char*)&p->ts_usec , uint32_t(tv.usec()));
+            store_be((char*)&p->incl_len, uint32_t(sz));
+            store_be((char*)&p->orig_len, uint32_t(sz));
+        } else {
+            p->ts_sec   = tv.sec();
+            p->ts_usec  = tv.usec();
+            p->incl_len = sz;
+            p->orig_len = sz;
+        }
         return sizeof(packet_header);
     }
 
