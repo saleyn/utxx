@@ -206,10 +206,27 @@ struct pcap {
         }
     }
 
-    static bool is_pcap_header(const char* buf, size_t sz) {
-        return sz >= 4 &&
-             ( *reinterpret_cast<const uint32_t*>(buf) == 0xa1b2c3d4
-            || *reinterpret_cast<const uint32_t*>(buf) == 0xd4c3b2a1);
+    bool is_pcap_header(const char* buf, size_t sz) {
+        if (sz < sizeof(file_header))
+            return false;
+
+        auto p = reinterpret_cast<const uint8_t*>(buf);
+        if ((*p==0xa1) && (*(p+1)==0xb2) && (*(p+2)==0xc3) && (*(p+3)==0xd4)) {
+            m_big_endian = true;
+            m_nsec_time  = false;
+        } else if ((*p==0xd4) && (*(p+1)==0xc3) && (*(p+2)==0xb2) && (*(p+3)==0xa1)) {
+            m_big_endian = false;
+            m_nsec_time  = false;
+        } else if ((*p==0xa1) && (*(p+1)==0xb2) && (*(p+2)==0x3c) && (*(p+3)==0x4d)) {
+            m_big_endian = true;
+            m_nsec_time  = true;
+        } else if ((*p==0x4d) && (*(p+1)==0x3c) && (*(p+2)==0xb2) && (*(p+3)==0xa1)) {
+            m_big_endian = false;
+            m_nsec_time  = true;
+        } else
+            return false;
+
+        return true;
     }
 
     int init_file_header(link_type a_tp = link_type::ethernet, bool a_nsec_time = false) {
@@ -300,14 +317,10 @@ struct pcap {
     // For use with externally open files
     /// @return size of consumed file reader
     int read_file_header(const char*& buf, size_t sz) {
-        auto begin = buf;
-        if (sz < sizeof(file_header) || !is_pcap_header(buf, sz))
+        if (!is_pcap_header(buf, sz))
             return -1;
 
-        const uint8_t* p = (const uint8_t*)buf;
-        if (!check_magic_number(p))
-            return -2;
-
+        auto begin = buf;
         if (!m_big_endian) {
             m_file_header = *reinterpret_cast<const file_header*>(buf);
             buf += sizeof(file_header);
@@ -533,25 +546,6 @@ private:
     file_header   m_file_header;
     packet_header m_pkt_header;
     bool          m_is_pipe;
-
-    bool check_magic_number(const uint8_t* p) {
-        if ((*p==0xa1) && (*(p+1)==0xb2) && (*(p+2)==0xc3) && (*(p+3)==0xd4)) {
-            m_big_endian = true;
-            m_nsec_time  = false;
-        } else if ((*p==0xd4) && (*(p+1)==0xc3) && (*(p+2)==0xb2) && (*(p+3)==0xa1)) {
-            m_big_endian = false;
-            m_nsec_time  = false;
-        } else if ((*p==0xa1) && (*(p+1)==0xb2) && (*(p+2)==0x3c) && (*(p+3)==0x4d)) {
-            m_big_endian = true;
-            m_nsec_time  = true;
-        } else if ((*p==0x4d) && (*(p+1)==0x3c) && (*(p+2)==0xb2) && (*(p+3)==0xa1)) {
-            m_big_endian = false;
-            m_nsec_time  = true;
-        } else
-            return false;
-
-        return true;
-    }
 
     /// @return 0 if opening a pipe or stdin
     long open(const char* a_filename, const std::string& a_mode, bool a_is_pipe) {
