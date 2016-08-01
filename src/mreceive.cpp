@@ -70,6 +70,9 @@ struct address {
   uint16_t              iface_port;     /* destination port on the interface */
   in_addr_t             mcast_addr;
   in_addr_t             src_addr;
+  in_addr_t             dst_addr;
+  uint16_t              src_port;
+  uint16_t              dst_port;
   uint16_t              port;
   int                   fd;
   data_fmt_t            data_format;    /* (m)icex, (f)orts */
@@ -128,7 +131,7 @@ int         display_packets_hex       = 0;
 const char* output_file               = NULL;
 const char* write_file                = NULL;
 bool        pcap_format   = 0;
-utxx::pcap  pcap_file;
+auto        pcap_file     = utxx::pcap(true, true);
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
@@ -686,6 +689,15 @@ int main(int argc, char *argv[])
       }
     }
 
+    {
+      // Set IP_PKTINFO to receive mcast source addr/port
+      int on = 1;
+      if (setsockopt(addrs[i].fd, SOL_IP, IP_PKTINFO, &on, sizeof(on)) < 0) {
+        perror("cannot set pktinfo");
+        exit(1);
+      }
+    }
+
     /*
     * Join the (source-specific?) multicast group on the given interface.
     * Note that this IP_ADD_(SOURCE_)MEMBERSHIP option must be
@@ -812,18 +824,68 @@ int main(int argc, char *argv[])
 
       struct address* addr = addrs_idx[events[i].data.fd];
 
+      char   ctlbuf[256];
+      struct iovec iov[1];
+      struct msghdr msg;
+      struct sockaddr_in peeraddr;        // Remote/src addr goes here
+
+      if (use_epoll) {
+        msg.msg_name        = (void*)&peeraddr;
+        msg.msg_namelen     = sizeof (peeraddr);
+        msg.msg_iov         = iov;
+        msg.msg_iovlen      = 1;
+        msg.msg_flags       = 0;
+        msg.msg_control     = ctlbuf;
+        msg.msg_controllen  = sizeof(ctlbuf);
+      }
+
       do {
-        if (use_epoll)
+        if (!use_epoll)
           n = read(addr->fd, databuf, sizeof(databuf));
-        if (n < 0) {
-          if (errno != EAGAIN && errno != EINTR) {
-            perror("read");
-            terminate = 1;
-            close(addr->fd);
+        else {
+          do {
+            // http://man7.org/linux/man-pages/man2/recvmmsg.2.html
+            iov[0].iov_base = databuf;
+            iov[0].iov_len  = sizeof(databuf);
+            n = ::recvmsg(addr[i].fd, &msg, 0);
+          } while (n < 0 && errno == EINTR);
+
+          if (n > 0) {
+            // Otherwise: successful read returning 0 or more bytes read.
+            // If it's 0 - on connected sockets this means that it got disconnected.
+            // Commit the data into the buffer invoke the Action, and continue.
+
+            addr[i].src_addr = peeraddr.sin_addr.s_addr;
+            addr[i].src_port = peeraddr.sin_port;
+            addr[i].dst_addr = 0;
+            // Dst addr doesn't get sent by PKTINFO. Need to obtain it by getsockname()
+            addr[i].dst_port = addr[i].port;
+            // Control messages are always accessed via macros
+            // http://www.kernel.org/doc/man-pages/online/pages/man3/cmsg.3.html
+            for(auto cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
+              // ignore the control headers that don't match what we want
+              if (cm->cmsg_level == IPPROTO_IP &&
+                  cm->cmsg_type  == IP_PKTINFO)
+              {
+                struct in_pktinfo* pi = (struct in_pktinfo*)CMSG_DATA(cm);
+                //addr[i].if_addr   = pi->ipi_spec_dst.s_addr; // Iface addr
+                addr[i].dst_addr  = pi->ipi_addr.s_addr;     // Mcast addr
+                break;
+              }
+            }
+          } else {
+            // errno == EGAIN means that no more data is available.
+            // Action is not to be invoked here if there is no new data:
+            if (errno != EAGAIN) {
+                perror("read");
+                terminate = 1;
+                close(addr[i].fd);
+            }
+            break;
           }
-          break;
+
+          process_packet(addr, databuf, n);
         }
-        process_packet(addr, databuf, n);
       } while (use_epoll);
     }
   }
@@ -1087,16 +1149,18 @@ void print_report() {
 }
 
 void process_packet(struct address* addr, const char* buf, int n) {
-  struct timeval tv;
   long seqno;
 
-  gettimeofday(&tv, NULL);
-  now_time = tv.tv_sec * 1000000 + tv.tv_usec;
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts );
+
+  now_time = ts.tv_sec * 1000000000l + ts.tv_nsec;
 
   /* Get timestamp of the packet */
   if ((last_pkts < 1000 && pkts < 1000) || (rand() % 100) < 10) {
-    ioctl(addr->fd, SIOCGSTAMP, &tv);
-    pkt_time = now_time - (tv.tv_sec * 1000000 + tv.tv_usec);
+    struct timespec ts1;
+    ioctl(addr->fd, SIOCGSTAMPNS, &ts1);
+    pkt_time = now_time - (ts1.tv_sec * 1000000000l + ts1.tv_nsec);
     sum_pkt_time += pkt_time;
     if (pkt_time < min_pkt_time) min_pkt_time = pkt_time;
     if (pkt_time > max_pkt_time) max_pkt_time = pkt_time;
@@ -1139,10 +1203,8 @@ void process_packet(struct address* addr, const char* buf, int n) {
     if (pcap_format) {
       rc = pcap_file.write_packet(true, utxx::usecs(now_time),
                                   utxx::pcap::proto::udp,
-                                  addr->mcast_addr, addr->port,
-                                  addr->iface,      addr->iface_port,
-                                  //uint32_t a_src_ip, uint16_t a_src_port,
-                                  //uint32_t a_dst_ip, uint16_t a_dst_port,
+                                  addr->src_addr, addr->src_port,
+                                  addr->dst_addr, addr->dst_port,
                                   buf, n);
     } else
       rc = write(wfd, buf, n);
