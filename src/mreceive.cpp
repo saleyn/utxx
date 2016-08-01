@@ -255,8 +255,8 @@ const char* scale_suffix(long n, long multiplier) {
 
 long get_time() {
   struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return ts.tv_sec * 1000000000l + ts.tv_nsec;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  return long(ts.tv_sec) * 1000000000l + ts.tv_nsec;
 }
 
 void test_forts_decode();
@@ -398,7 +398,6 @@ int main(int argc, char *argv[])
   struct ip_mreq_source group_s;
   struct epoll_event    events[256];
   int                   bsize = 0;
-  struct timeval        tv;
   int                   use_epoll = 1, efd = -1, tfd = -1;
   struct epoll_event    timer_event;
 
@@ -467,7 +466,6 @@ int main(int argc, char *argv[])
       pcap_format = argv[i][1] == 'W';
       write_file  = argv[++i];
     } else if (!strcmp(argv[i], "-d") && i < argc-1) {
-      gettimeofday(&tv, NULL);
       alarm(atoi(argv[++i]));
     } else if (!strncmp(argv[i], "-v", 2))
       (void)0;
@@ -765,8 +763,7 @@ int main(int argc, char *argv[])
     timeout.it_interval.tv_sec  = interval;
     timeout.it_interval.tv_nsec = 0;
 
-    struct itimerspec oldt;
-    if (tfd >= 0 && timerfd_settime(tfd, TFD_TIMER_ABSTIME, &timeout, &oldt) < 0) {
+    if (tfd >= 0 && timerfd_settime(tfd, TFD_TIMER_ABSTIME, &timeout, NULL) < 0) {
       perror("timerfd_settime");
       exit(1);
     }
@@ -900,8 +897,6 @@ int main(int argc, char *argv[])
   /*----------------------------------------------------------------------
    * Print summary
    *--------------------------------------------------------------------*/
-  gettimeofday(&tv, NULL);
-
   if (!quiet) {
     double sec = (get_time() - start_time)/1000000000l;
     if (sec == 0.0) sec = 1.0;
