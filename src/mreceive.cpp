@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <time.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/in.h>
@@ -679,14 +680,12 @@ int main(int argc, char *argv[])
 
       // NOTE: even with IP_PKTINFO enabled recvmsg() doesn't provide sin_port
       // so we have to retrieve it using getsockname():
-      struct sockaddr_storage   si;
-      static const socklen_t    si_len = sizeof(si);
-      if (getsockname(addrs[i].fd, (struct sockaddr*)&si, (socklen_t*)&si_len))
+      struct sockaddr_in   si = {0};
+      static socklen_t si_len = sizeof(si);
+      if (getsockname(addrs[i].fd, (struct sockaddr*)&si, &si_len) < 0)
         addrs[i].iface_port = addrs[i].port;
-      else {
-        auto dst = (sockaddr_in*)&si;
-        addrs[i].iface_port = dst->sin_port;
-      }
+      else
+        addrs[i].iface_port = si.sin_port;
     }
 
     {
