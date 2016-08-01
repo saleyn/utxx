@@ -103,7 +103,7 @@ struct address {
 };
 
 sigjmp_buf  jbuf;
-struct address   addrs[128];
+struct address   addrs[256];
 struct address*  addrs_idx[1024];   // Maps fd -> addrs*
 struct address** sorted_addrs[4];   // For report stats sorting
 
@@ -742,9 +742,9 @@ int main(int argc, char *argv[])
       struct sockaddr_in   si = {0};
       static socklen_t si_len = sizeof(si);
       if (getsockname(addrs[i].fd, (struct sockaddr*)&si, &si_len) < 0)
-        addrs[i].iface_port = addrs[i].port;
+        addrs[i].dst_port = htons(addrs[i].port);
       else
-        addrs[i].iface_port = si.sin_port;
+        addrs[i].dst_port = si.sin_port;
     }
   }
 
@@ -863,7 +863,7 @@ int main(int argc, char *argv[])
             addr[i].src_port = peeraddr.sin_port;
             addr[i].dst_addr = 0;
             // Dst addr doesn't get sent by PKTINFO. Need to obtain it by getsockname()
-            addr[i].dst_port = addr[i].port;
+            // addr[i].dst_port = addr[i].port;
             // Control messages are always accessed via macros
             // http://www.kernel.org/doc/man-pages/online/pages/man3/cmsg.3.html
             for(auto cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
@@ -1108,7 +1108,7 @@ void print_report() {
   if (output) {
     double sec = (double)(now_time - last_time)/1000000000l;
     struct tm* tm  = localtime(&tv.tv_sec);
-    double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count : 0.0;
+    double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count / 1000.0 : 0.0;
     int socks_with_gaps = 0, socks_with_ooo = 0, socks_with_nodata = 0;
 
     for(i = 0; i < addrs_count; i++) {
@@ -1133,8 +1133,8 @@ void print_report() {
         (double)tot_bytes / MEGABYTE, (long)(tot_pkts / 1000),
         tot_ooo_count,  tot_gap_count,
         pkt_time_count, avg_lat,
-        pkt_time_count ? min_pkt_time : 0,
-        max_pkt_time);
+        pkt_time_count ? min_pkt_time/1000 : 0,
+        max_pkt_time/1000);
   }
 
   min_pkt_time  = LONG_MAX;
