@@ -55,6 +55,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
 add_executable(mreceive  mreceive.cpp)
 set_source_files_properties(mreceive.c PROPERTIES COMPILE_FLAGS -Wno-effc++)
+target_link_libraries(mreceive rt)
 
 add_executable(tailagg   tailagg.cpp)
 target_link_libraries(tailagg utxx)

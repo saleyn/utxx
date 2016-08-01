@@ -22,7 +22,6 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <time.h>
 #include <net/if.h>
 #include <netinet/in.h>
 #include <netinet/in.h>
@@ -41,6 +40,7 @@
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
+#include <utxx/time_val.hpp>
 #include <utxx/pcap.hpp>
 
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
@@ -251,6 +251,12 @@ const char* scale_suffix(long n, long multiplier) {
          n > m ? "M" :
          n > k ? "K" :
          " ";
+}
+
+long get_time() {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return ts.tv_sec * 1000000000l + ts.tv_nsec;
 }
 
 void test_forts_decode();
@@ -677,15 +683,6 @@ int main(int argc, char *argv[])
           perror("binding datagram socket");
           exit(1);
       }
-
-      // NOTE: even with IP_PKTINFO enabled recvmsg() doesn't provide sin_port
-      // so we have to retrieve it using getsockname():
-      struct sockaddr_in   si = {0};
-      static socklen_t si_len = sizeof(si);
-      if (getsockname(addrs[i].fd, (struct sockaddr*)&si, &si_len) < 0)
-        addrs[i].iface_port = addrs[i].port;
-      else
-        addrs[i].iface_port = si.sin_port;
     }
 
     {
@@ -740,20 +737,31 @@ int main(int argc, char *argv[])
 
     if (use_epoll)
       non_blocking(addrs[i].fd);
+
+    {
+      // NOTE: even with IP_PKTINFO enabled recvmsg() doesn't provide sin_port
+      // so we have to retrieve it using getsockname():
+      struct sockaddr_in   si = {0};
+      static socklen_t si_len = sizeof(si);
+      if (getsockname(addrs[i].fd, (struct sockaddr*)&si, &si_len) < 0)
+        addrs[i].iface_port = addrs[i].port;
+      else
+        addrs[i].iface_port = si.sin_port;
+    }
   }
 
-  gettimeofday(&tv, NULL);
-  start_time = now_time = last_time = tv.tv_sec * 1000000 + tv.tv_usec;
+  start_time = last_time = now_time = get_time();
 
   /* Set up reporting timeout */
 
   if (tfd > 0) {
     struct itimerspec timeout;
-    long rem = 5000000 - ((tv.tv_sec % 5) * 1000000 + tv.tv_usec);
-    long next_time  = now_time + rem;
+    long nsec = start_time % 1000000000l;
+    long rem  = 5000000000l - ((start_time/1000000000l % 5) + nsec);
+    long next_time = start_time + rem;
     memset(&timeout, 0, sizeof(timeout));
-    timeout.it_value.tv_sec     = next_time / 1000000;
-    timeout.it_value.tv_nsec    = next_time % 1000000;
+    timeout.it_value.tv_sec     = next_time / 1000000000l;
+    timeout.it_value.tv_nsec    = next_time % 1000000000l;
     timeout.it_interval.tv_sec  = interval;
     timeout.it_interval.tv_nsec = 0;
 
@@ -765,7 +773,7 @@ int main(int argc, char *argv[])
 
     if (verbose > 2)
       printf("Reporting timer setup in %ld seconds\n",
-        timeout.it_value.tv_sec - now_time/1000000);
+        timeout.it_value.tv_sec - start_time/1000000000l);
 
     for (i=0; i < (int)(sizeof(sorted_addrs) / sizeof(sorted_addrs[0])); i++) {
       int j, sz = addrs_count * sizeof(struct address*);
@@ -895,7 +903,7 @@ int main(int argc, char *argv[])
   gettimeofday(&tv, NULL);
 
   if (!quiet) {
-    double sec = (double)(tv.tv_sec * 1000000 + tv.tv_usec - start_time)/1000000;
+    double sec = (get_time() - start_time)/1000000000l;
     if (sec == 0.0) sec = 1.0;
     printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %sB %9ld %spkts | OutOfSeq %ld | Lost: %ld\n",
       label ? label : "TOTAL",
@@ -1103,7 +1111,7 @@ void print_report() {
   // We skip first reporting period as it may be skewed due
   // to slow subscription startup
   if (output) {
-    double sec = (double)(now_time - last_time)/1000000;
+    double sec = (double)(now_time - last_time)/1000000000l;
     struct tm* tm  = localtime(&tv.tv_sec);
     double avg_lat = pkt_time_count ? (double)sum_pkt_time / pkt_time_count : 0.0;
     int socks_with_gaps = 0, socks_with_ooo = 0, socks_with_nodata = 0;
@@ -1135,7 +1143,6 @@ void print_report() {
   }
 
   min_pkt_time  = LONG_MAX;
-  max_pkt_time  = 0;
   sum_pkt_time  = 0;
   pkt_time_count= 0;
   last_pkts     = pkts;
@@ -1150,10 +1157,7 @@ void print_report() {
 void process_packet(struct address* addr, const char* buf, int n) {
   long seqno;
 
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts );
-
-  now_time = ts.tv_sec * 1000000000l + ts.tv_nsec;
+  now_time = get_time();
 
   /* Get timestamp of the packet */
   if ((last_pkts < 1000 && pkts < 1000) || (rand() % 100) < 10) {
@@ -1200,7 +1204,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
   if (wfd != -1) {
     int rc;
     if (pcap_format) {
-      rc = pcap_file.write_packet(true, utxx::usecs(now_time),
+      rc = pcap_file.write_packet(true, utxx::nsecs(now_time),
                                   utxx::pcap::proto::udp,
                                   addr->src_addr, addr->src_port,
                                   addr->dst_addr, addr->dst_port,
