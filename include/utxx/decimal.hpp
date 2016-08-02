@@ -169,21 +169,22 @@ public:
     /// \param a_const_exp can be either const or initial value of the exponent
     CONSTEXPR
     void normalize(int a_const_exp = 0) {
-    if (!a_const_exp) {
-        while (m_mant != 0 && m_mant % 10 == 0) {
-            m_mant /= 10;
-            m_exp  += 1;
-        }
+        if (!a_const_exp) {
+            while (m_mant != 0 && m_mant % 10 == 0) {
+                m_mant /= 10;
+                m_exp  += 1;
+            }
 
-        if (m_mant == 0)
-            m_exp  =  0;
-    } else {
-        // Adjust m_mant and m_exp if the exponent is required to be const
-        auto   diff = m_exp - a_const_exp;
-        for (; diff > 0; --diff) m_mant *= 10;
-        for (; diff < 0; ++diff) m_mant /= 10;
+            if (m_mant == 0)
+                m_exp  =  0;
+        } else {
+            // Adjust m_mant and m_exp if the exponent is required to be const
+            auto   diff =  m_exp - a_const_exp;
+            if  (  diff == 0) return;
+            for (; diff >  0; --diff) m_mant *= 10;
+            for (; diff <  0; ++diff) m_mant /= 10;
             m_exp = a_const_exp;
-    }
+        }
     }
 
 private:
