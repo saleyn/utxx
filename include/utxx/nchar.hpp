@@ -118,9 +118,6 @@ namespace detail {
         constexpr size_t size() const  { return N; }
         const Char*   end()     const  { return m_data + N; }
 
-        operator uint8_t* ()    const  { return reinterpret_cast<uint8_t*>(m_data); }
-        operator uint8_t* ()           { return reinterpret_cast<uint8_t*>(m_data); }
-
         operator const  Char*() const  { return m_data; }
         operator        Char*()        { return m_data; }
 

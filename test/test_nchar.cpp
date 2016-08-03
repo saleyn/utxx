@@ -115,6 +115,14 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         BOOST_CHECK_EQUAL("ab", buf2);
         BOOST_CHECK_EQUAL(buf2+2, p);
     }
+
+    {
+        nchar<4, uint8_t> ss;
+        ss.copy_from((const uint8_t*)"ab", 4, ' ');
+
+        const uint8_t* a = ss;
+        BOOST_CHECK_EQUAL(std::string("ab  "), std::string((const char*)a));
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_nchar_to_binary )
