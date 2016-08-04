@@ -251,12 +251,8 @@ public:
     }
 
     /// Initialize and start asynchronous file writer
-    /// @param filename     - name of the file
-    /// @param max_msg_size - expected maximum message size (used to allocate
-    ///                       the buffer on the stack to format the
-    ///                       output string when calling fwrite function)
-    /// @param mode         - set file access mode
-    int  start();
+    /// @param a_block_signals if true all signals will be blocked in thread.
+    int  start(bool a_block_signals = true);
 
     /// Stop asynchronous file writing thread
     void stop();
@@ -774,11 +770,17 @@ writev(stream_info& a_si, const char** a_categories, const iovec* a_iovec, size_
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-start() {
+start(bool a_block_signals) {
     std::unique_lock<std::mutex> lock(m_mutex);
 
     if (running())
         return -1;
+
+    if (a_block_signals) {
+        sigset_t    set;
+        sigfillset(&set);
+        pthread_sigmask(SIG_SETMASK, &set, nullptr);
+    }
 
     m_event.reset();
     m_cancel = false;

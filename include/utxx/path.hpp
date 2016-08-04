@@ -92,10 +92,10 @@ inline int  file_exists(const std::string& a) { return file_exists(a.c_str()); }
 bool        is_symlink (const char* a_path);
 inline bool is_symlink (const std::string& a) { return is_symlink(a.c_str());  }
 
-/// Check if given \a a_path is a regular file
+/// Check if given \a a_path exists and is a regular file
 bool        is_regular (const std::string& a_path);
 
-/// Check if given \a a_path is a directory
+/// Check if given \a a_path exists and is a directory
 bool        is_dir     (const std::string& a_path);
 
 /// Get the name of the file pointed by \a a_symlink
