@@ -72,11 +72,11 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         BOOST_CHECK_EQUAL(str.str(), "ab");
 
         str.str(std::string());
-        rc.dump(str, 0, true);
+        rc.dump(str, 0, print_opts::hex);
         BOOST_CHECK_EQUAL(str.str(), "61,62,63,64");
 
         str.str(std::string());
-        nchar<4>("\r\n@\x15").dump(str, 0, true);
+        nchar<4>("\r\n@\x15").dump(str, 0, print_opts::hex);
         BOOST_CHECK_EQUAL(str.str(), "0d,0a,40,15");
     }
     {

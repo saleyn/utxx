@@ -31,10 +31,111 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #include <boost/test/unit_test.hpp>
 #include <utxx/print.hpp>
+#include <utxx/print_opts.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/string.hpp>
 #include <iostream>
 
 using namespace utxx;
+
+BOOST_AUTO_TEST_CASE( test_print_opts )
+{
+    {
+        std::stringstream ss;
+        const char s[] = "abcd";
+        output(ss, s, s+length(s), print_opts::hex);
+        BOOST_CHECK_EQUAL("61,62,63,64", ss.str());
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::hex, "|");
+        BOOST_CHECK_EQUAL("61|62|63|64", ss.str());
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::hex, "|", "0x");
+        BOOST_CHECK_EQUAL("0x61|0x62|0x63|0x64", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::dec);
+        BOOST_CHECK_EQUAL("97,98,99,100", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_string);
+        BOOST_CHECK_EQUAL("abcd", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_hex);
+        BOOST_CHECK_EQUAL("abcd", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_dec);
+        BOOST_CHECK_EQUAL("abcd", ss.str());
+    }
+    {
+        std::stringstream ss;
+        const char s[] = "a\0cd";
+        output(ss, s, s+length(s), print_opts::hex);
+        BOOST_CHECK_EQUAL("61,00,63,64", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::dec);
+        BOOST_CHECK_EQUAL("97,0,99,100", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_string);
+        BOOST_TEST_MESSAGE("Expected: \"a.cd\" Got: \"" << ss.str() << "\"");
+        BOOST_CHECK_EQUAL("a.cd", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_hex);
+        BOOST_CHECK_EQUAL("61,00,63,64", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_dec);
+        BOOST_CHECK_EQUAL("97,0,99,100", ss.str());
+    }
+    {
+        std::stringstream ss;
+        const char s[] = "a\t\nb";
+        output(ss, s, s+length(s), print_opts::hex);
+        BOOST_CHECK_EQUAL("61,09,0a,62", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::dec);
+        BOOST_CHECK_EQUAL("97,9,10,98", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_string);
+        BOOST_CHECK_EQUAL("a\\t\\nb", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_hex);
+        BOOST_CHECK_EQUAL("a\t\nb", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_dec);
+        BOOST_CHECK_EQUAL("a\t\nb", ss.str());
+    }
+    {
+        std::stringstream ss;
+        const char s[] = "";
+        output(ss, s, s+length(s), print_opts::hex);
+        BOOST_CHECK_EQUAL("", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::dec);
+        BOOST_CHECK_EQUAL("", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_string);
+        BOOST_CHECK_EQUAL("", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_hex);
+        BOOST_CHECK_EQUAL("", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_dec);
+        BOOST_CHECK_EQUAL("", ss.str());
+    }
+}
 
 BOOST_AUTO_TEST_CASE( test_print )
 {
