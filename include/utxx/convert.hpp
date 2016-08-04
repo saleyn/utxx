@@ -234,7 +234,7 @@ namespace detail {
         /**
          * A replacement to atoi() library function that does
          * the job 4 times faster. Additionally it allows skipping
-         * leading characters before making a signness_helper.
+         * leading characters before invoking a signness_helper.
          */
         static T fast_atoi(const Char*& bytes, Char skip = '\0') {
             const char* p = bytes;
@@ -263,16 +263,44 @@ namespace detail {
         }
 
         inline static T fast_atoi(const Char*& bytes, Char skip = '\0') {
-            const char* p = bytes;
-            if (skip && *p == skip)
-                return fast_atoi(++bytes, skip);
-            if (*p == '-') {
+            auto  e = bytes + N;
+            if (skip) {
+                while (*bytes == skip && bytes != e) ++bytes;
+                switch (e - bytes) {
+                    case  0: return 0;
+                    case  1: return fast_atoi2< 1>(bytes);
+                    case  2: return fast_atoi2< 2>(bytes);
+                    case  3: return fast_atoi2< 3>(bytes);
+                    case  4: return fast_atoi2< 4>(bytes);
+                    case  5: return fast_atoi2< 5>(bytes);
+                    case  6: return fast_atoi2< 6>(bytes);
+                    case  7: return fast_atoi2< 7>(bytes);
+                    case  8: return fast_atoi2< 8>(bytes);
+                    case  9: return fast_atoi2< 9>(bytes);
+                    case 10: return fast_atoi2<10>(bytes);
+                    case 11: return fast_atoi2<11>(bytes);
+                    case 12: return fast_atoi2<12>(bytes);
+                    case 13: return fast_atoi2<13>(bytes);
+                    case 14: return fast_atoi2<14>(bytes);
+                    case 15: return fast_atoi2<15>(bytes);
+                    case 16: return fast_atoi2<16>(bytes);
+                    case 17: return fast_atoi2<17>(bytes);
+                    case 18: return fast_atoi2<18>(bytes);
+                    case 19: return fast_atoi2<19>(bytes);
+                    default: return fast_atoi2<20>(bytes);
+                }
+            } else
+                return fast_atoi2<N>(bytes);
+        }
+
+        template <int M>
+        inline static T fast_atoi2(const Char*& bytes) {
+            if (*bytes == '-') {
                 long n = unrolled_byte_loops<Char, N-1, LEFT>::
-                    atoi_skip_left(++bytes, skip);
+                    load_atoi(++bytes, 0);
                 return static_cast<T>(-n);
             }
-            return unrolled_byte_loops<Char, N, LEFT>::
-                atoi_skip_left(bytes, skip);
+            return unrolled_byte_loops<Char, N, LEFT>::load_atoi(bytes, 0);
         }
     };
 
@@ -513,11 +541,10 @@ inline std::string itoa_left(T value, char pad = '\0') {
  */
 template <typename T, int N, typename Char>
 inline const char* atoi_left(const Char* bytes, T& value, Char skip = '\0') {
-    const char* p = bytes;
     value = detail::signness_helper<
         T,N,std::numeric_limits<T>::is_signed, LEFT, Char>::
-        fast_atoi(p, skip);
-    return p;
+        fast_atoi(bytes, skip);
+    return bytes;
 }
 
 template <typename T, int N, typename Char>

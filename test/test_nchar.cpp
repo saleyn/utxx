@@ -66,6 +66,18 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         std::stringstream str;
         rc.dump(str);
         BOOST_CHECK_EQUAL(str.str(), "abcd");
+
+        str.str(std::string());
+        rc.dump(str, 2);
+        BOOST_CHECK_EQUAL(str.str(), "ab");
+
+        str.str(std::string());
+        rc.dump(str, 0, true);
+        BOOST_CHECK_EQUAL(str.str(), "61,62,63,64");
+
+        str.str(std::string());
+        nchar<4>("\r\n@\x15").dump(str, 0, true);
+        BOOST_CHECK_EQUAL(str.str(), "0d,0a,40,15");
     }
     {
         nchar<4> rc(1);
@@ -118,7 +130,7 @@ BOOST_AUTO_TEST_CASE( test_nchar )
 
     {
         nchar<4, uint8_t> ss;
-        ss.copy_from((const uint8_t*)"ab", 4, ' ');
+        ss.copy_from((const uint8_t*)"ab", 2, ' ');
 
         const uint8_t* a = ss;
         BOOST_CHECK_EQUAL(std::string("ab  "), std::string((const char*)a));

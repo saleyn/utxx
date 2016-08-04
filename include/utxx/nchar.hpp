@@ -239,21 +239,33 @@ namespace detail {
             return n;
         }
 
-        std::ostream& dump(std::ostream& out) const {
-            bool printable = true;
-            const Char* end = m_data + N;
-            for (const Char* p = m_data; p != end; ++p) {
-                if (*p < ' ' || *p > '~') {
+        template <typename StreamT>
+        StreamT& dump(StreamT& out, size_t a_sz = 0, bool a_hex = false) const {
+            bool  printable = true;
+            const Char* p   = m_data;
+            const Char* end = m_data + std::min<int>(a_sz ? a_sz : N, N);
+            auto  hex       = [&](auto ch) {
+                static const char s_hex[] = "0123456789abcdef";
+                uint8_t c = uint8_t(ch);
+                out << (s_hex[(c & 0xF0) >> 4]) << (s_hex[(c & 0x0F)]);
+            };
+            if (a_hex) {
+                if    (p != end) hex(*p++);
+                while (p != end) { out << ','; hex(*p++); }
+                return out;
+            }
+            for (auto q = p; q != end; ++q) {
+                if (*q < ' ' || *q > '~') {
                     printable = false; break;
-                } else if (p > m_data && *p == '\0') {
-                    end = ++p; break;
+                } else if (q > m_data && *q == '\0') {
+                    end = ++q; break;
                 }
             }
-            for (const Char* p = m_data; p != end; ++p) {
-                if (printable)
-                    out << *p;
-                else
-                    out << (p == m_data ? "" : ",") << (int)*(uint8_t*)p;
+            if (printable) {
+                while (p != end) { out << *p++; }
+            } else {
+                if    (p != end)   out << (int)*(uint8_t*)p++;
+                while (p != end) { out << ',' << (int)*(uint8_t*)p++; }
             }
             return out;
         }
