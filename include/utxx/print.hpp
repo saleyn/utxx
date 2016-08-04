@@ -29,8 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_PRINT_HPP_
-#define _UTXX_PRINT_HPP_
+#pragma once
 
 #include <string>
 #include <type_traits>
@@ -508,5 +507,3 @@ namespace std {
     flush(utxx::detail::basic_buffered_print<N>& a_out)
     { return a_out; }
 }
-
-#endif //_UTXX_PRINT_HPP_
