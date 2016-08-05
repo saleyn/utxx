@@ -281,6 +281,9 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 
     timestamp::buf_type buf, expected, expected_utc, temp;
 
+    auto v = timestamp::to_string(nsecs(1466441912363349876), utxx::DATE_TIME_WITH_NSEC, false, true);
+    BOOST_CHECK_EQUAL("20160620-12:58:32.363349876", v);
+
     sprintf(expected, "%d%02d%02d-%02d:%02d:%02d",
         (unsigned short) now_local.date().year(),
         (unsigned short) now_local.date().month(),

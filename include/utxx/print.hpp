@@ -207,6 +207,8 @@ namespace detail {
     template <size_t N = 256, class Alloc = std::allocator<char>>
     class basic_buffered_print : public Alloc
     {
+        using self_t = basic_buffered_print<N, Alloc>;
+
         mutable char*   m_begin; // mutable so that we can write '\0' in c_str()
         char*           m_pos;
         char*           m_end;
@@ -459,6 +461,14 @@ namespace detail {
             out.print(std::forward<T>(a));
             return out;
         }
+
+        // For compatibility with ostream
+        self_t& write(const char* a_str, size_t a_size) {
+            sprint(a_str, a_size);
+            return *this;
+        }
+
+        self_t& put(char c) { do_print(c); return *this; }
     };
 }
 
