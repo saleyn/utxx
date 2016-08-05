@@ -583,6 +583,15 @@ private:
         // Read the frame without ethhdr
         memcpy(&m_frame.u, buf+m_frame_offset, a_frame_sz); buf += frame_sz;
 
+        if (a_proto == IPPROTO_TCP) {
+            auto tcp_header_sz  = m_frame.t.tcp.doff * 4 /* 32-bit words */;
+            auto tcp_options_sz = tcp_header_sz - (a_frame_sz-sizeof(tcphdr));
+            if (tcp_options_sz > 0) {
+                buf      += tcp_options_sz;
+                frame_sz += tcp_options_sz;
+            }
+        }
+
         return m_frame.u.ip.protocol != a_proto ? -1 : frame_sz;
     }
 

@@ -71,6 +71,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define UTXX_LOG_TRACE3( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE3 , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_TRACE2( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE2 , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_TRACE1( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE1 , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE  , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_DEBUG(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_DEBUG  , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_INFO(   Fmt, ...)     UTXX_CLOG(utxx::LEVEL_INFO   , "",  Fmt, ##__VA_ARGS__)
 #   define UTXX_LOG_NOTICE( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_NOTICE , "",  Fmt, ##__VA_ARGS__)
@@ -83,6 +84,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define UTXX_CLOG_TRACE3( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE3 , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_TRACE2( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE2 , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_TRACE1( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE1 , Cat, Fmt, ##__VA_ARGS__)
+#   define UTXX_CLOG_TRACE(  Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE  , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_DEBUG(  Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_DEBUG  , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_NOTICE( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_NOTICE , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_INFO(   Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_INFO   , Cat, Fmt, ##__VA_ARGS__)
@@ -96,6 +98,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define LOG_TRACE3   UTXX_LOG_TRACE3
 #   define LOG_TRACE2   UTXX_LOG_TRACE2
 #   define LOG_TRACE1   UTXX_LOG_TRACE1
+#   define LOG_TRACE    UTXX_LOG_TRACE
 #   define LOG_DEBUG    UTXX_LOG_DEBUG
 #   define LOG_INFO     UTXX_LOG_INFO
 #   define LOG_NOTICE   UTXX_LOG_NOTICE
@@ -108,6 +111,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   define CLOG_TRACE3  UTXX_CLOG_TRACE3
 #   define CLOG_TRACE2  UTXX_CLOG_TRACE2
 #   define CLOG_TRACE1  UTXX_CLOG_TRACE1
+#   define CLOG_TRACE   UTXX_CLOG_TRACE
 #   define CLOG_DEBUG   UTXX_CLOG_DEBUG
 #   define CLOG_INFO    UTXX_CLOG_INFO
 #   define CLOG_NOTICE  UTXX_CLOG_NOTICE
@@ -118,6 +122,36 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #endif  // UTXX_LOGGER_RESTRICT_NAMESPACE_PREFIX
 
 #endif  // UTXX_SKIP_LOG_MACROS
+
+//------------------------------------------------------------------------------
+// Syntactic sugar for comparing debug level with log level
+//------------------------------------------------------------------------------
+#define UTXX_IS_GE_TRACE4( Level) utxx::is_ge<utxx::LEVEL_TRACE4 >(Level)
+#define UTXX_IS_GE_TRACE3( Level) utxx::is_ge<utxx::LEVEL_TRACE3 >(Level)
+#define UTXX_IS_GE_TRACE2( Level) utxx::is_ge<utxx::LEVEL_TRACE2 >(Level)
+#define UTXX_IS_GE_TRACE1( Level) utxx::is_ge<utxx::LEVEL_TRACE1 >(Level)
+#define UTXX_IS_GE_TRACE(  Level) utxx::is_ge<utxx::LEVEL_TRACE  >(Level)
+#define UTXX_IS_GE_DEBUG(  Level) utxx::is_ge<utxx::LEVEL_DEBUG  >(Level)
+#define UTXX_IS_GE_INFO(   Level) utxx::is_ge<utxx::LEVEL_INFO   >(Level)
+#define UTXX_IS_GE_NOTICE( Level) utxx::is_ge<utxx::LEVEL_NOTICE >(Level)
+#define UTXX_IS_GE_WARNING(Level) utxx::is_ge<utxx::LEVEL_WARNING>(Level)
+#define UTXX_IS_GE_ERROR(  Level) utxx::is_ge<utxx::LEVEL_ERROR  >(Level)
+#define UTXX_IS_GE_FATAL(  Level) utxx::is_ge<utxx::LEVEL_FATAL  >(Level)
+#define UTXX_IS_GE_ALERT(  Level) utxx::is_ge<utxx::LEVEL_ALERT  >(Level)
+
+#define UTXX_IS_GT_NONE(   Level) utxx::is_gt<utxx::LEVEL_NONE   >(Level)
+#define UTXX_IS_GT_TRACE4( Level) utxx::is_gt<utxx::LEVEL_TRACE4 >(Level)
+#define UTXX_IS_GT_TRACE3( Level) utxx::is_gt<utxx::LEVEL_TRACE3 >(Level)
+#define UTXX_IS_GT_TRACE2( Level) utxx::is_gt<utxx::LEVEL_TRACE2 >(Level)
+#define UTXX_IS_GT_TRACE1( Level) utxx::is_gt<utxx::LEVEL_TRACE1 >(Level)
+#define UTXX_IS_GT_TRACE(  Level) utxx::is_gt<utxx::LEVEL_TRACE  >(Level)
+#define UTXX_IS_GT_DEBUG(  Level) utxx::is_gt<utxx::LEVEL_DEBUG  >(Level)
+#define UTXX_IS_GT_INFO(   Level) utxx::is_gt<utxx::LEVEL_INFO   >(Level)
+#define UTXX_IS_GT_NOTICE( Level) utxx::is_gt<utxx::LEVEL_NOTICE >(Level)
+#define UTXX_IS_GT_WARNING(Level) utxx::is_gt<utxx::LEVEL_WARNING>(Level)
+#define UTXX_IS_GT_ERROR(  Level) utxx::is_gt<utxx::LEVEL_ERROR  >(Level)
+#define UTXX_IS_GT_FATAL(  Level) utxx::is_gt<utxx::LEVEL_FATAL  >(Level)
+#define UTXX_IS_GT_ALERT(  Level) utxx::is_gt<utxx::LEVEL_ALERT  >(Level)
 
 //------------------------------------------------------------------------------
 // Shortcut for "__FILE__:__LINE__:__func__" argument passed to the logger
@@ -155,6 +189,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 struct logger_impl;
+
+/// Check that \a a_lhs is greater or equal than the \a a_rhs log level
+template <log_level LL>
+inline bool is_ge(int a_lhs)                  { return a_lhs >= as_int<LL>();  }
+inline bool is_ge(int a_lhs, log_level a_rhs) { return a_lhs >= as_int(a_rhs); }
+
+/// Check that \a a_lhs is greater than the \a a_rhs log level
+template <log_level LL>
+inline bool is_gt(int a_lhs)                  { return a_lhs >  as_int<LL>();  }
+inline bool is_gt(int a_lhs, log_level a_rhs) { return a_lhs >  as_int(a_rhs); }
 
 /// Logging class that supports pluggable back-ends responsible for handling
 /// log messages. Examples of backends are implemented in the logger_impl_console,

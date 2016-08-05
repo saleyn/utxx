@@ -242,10 +242,11 @@ namespace detail {
 
         template <typename StreamT>
         StreamT& dump(StreamT& out, size_t a_sz = 0,
-                      print_opts a_opts = print_opts::printable_or_dec) const
+                      print_opts a_opts = print_opts::printable_or_dec,
+                      const char* a_sep = ",", const char* a_hex_pfx = "0x") const
         {
             const Char* end = m_data + std::min<int>(a_sz ? a_sz : N, N);
-            return output(out, m_data, end, a_opts);
+            return output(out, m_data, end, a_opts, a_sep, a_hex_pfx);
         }
     };
 } // namespace detail
