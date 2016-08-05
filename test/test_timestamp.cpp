@@ -307,12 +307,12 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
         std::cout << " Seconds since UTC (local): "
                   << local_diff.total_seconds() << std::endl;
 
-        printf("Expected %s\n", expected);
+        BOOST_TEST_MESSAGE("Expected " << expected);
     }
 
-    struct timeval tv;
+    struct timespec tv;
 
-    tv.tv_sec = utc_diff.total_seconds(); tv.tv_usec = 100234;
+    tv.tv_sec = utc_diff.total_seconds(); tv.tv_nsec = 100234567;
 
     if (verbosity::level() > VERBOSE_NONE)
         std::cerr << "UTC Offset: " << timestamp::utc_offset() << std::endl;
@@ -326,12 +326,16 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     strncpy(temp, expected_utc+9, 9);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
-    timestamp::format(TIME_WITH_USEC, tt, buf);
-    snprintf(temp, 16, "%s.%06d", expected+9, (int)tv.tv_usec);
+    timestamp::format(TIME_WITH_MSEC, tt, buf);
+    snprintf(temp, 13, "%s.%03d", expected+9, (int)tv.tv_nsec / 1000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
-    timestamp::format(TIME_WITH_MSEC, tt, buf);
-    snprintf(temp, 13, "%s.%03d", expected+9, (int)tv.tv_usec / 1000);
+    timestamp::format(TIME_WITH_USEC, tt, buf);
+    snprintf(temp, 16, "%s.%06d", expected+9, (int)tv.tv_nsec / 1000);
+    BOOST_REQUIRE_EQUAL(temp, buf);
+
+    timestamp::format(TIME_WITH_NSEC, tt, buf);
+    snprintf(temp, 19, "%s.%09d", expected+9, (int)tv.tv_nsec);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(DATE_TIME, tt, buf);
@@ -342,23 +346,31 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     snprintf(temp, 18, "%s", expected_utc);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
-    timestamp::format(DATE_TIME_WITH_USEC, tt, buf);
-    snprintf(temp, 25, "%s.%06d", expected, (int)tv.tv_usec);
-    BOOST_REQUIRE_EQUAL(temp, buf);
-
-    timestamp::format(DATE_TIME_WITH_USEC, tt, buf, true);
-    snprintf(temp, 25, "%s.%06d", expected_utc, (int)tv.tv_usec);
-    BOOST_REQUIRE_EQUAL(temp, buf);
-
     timestamp::format(DATE_TIME_WITH_MSEC, tt, buf);
-    snprintf(temp, 22, "%s.%03d", expected, (int)tv.tv_usec / 1000);
+    snprintf(temp, 22, "%s.%03d", expected, (int)tv.tv_nsec / 1000000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(DATE_TIME_WITH_MSEC, tt, buf, true);
-    snprintf(temp, 22, "%s.%03d", expected_utc, (int)tv.tv_usec / 1000);
+    snprintf(temp, 22, "%s.%03d", expected_utc, (int)tv.tv_nsec / 1000000);
     BOOST_REQUIRE_EQUAL(temp, buf);
 
-    tv = utxx::now_utc().timeval();
+    timestamp::format(DATE_TIME_WITH_USEC, tt, buf);
+    snprintf(temp, 25, "%s.%06d", expected, (int)tv.tv_nsec / 1000);
+    BOOST_REQUIRE_EQUAL(temp, buf);
+
+    timestamp::format(DATE_TIME_WITH_USEC, tt, buf, true);
+    snprintf(temp, 25, "%s.%06d", expected_utc, (int)tv.tv_nsec / 1000);
+    BOOST_REQUIRE_EQUAL(temp, buf);
+
+    timestamp::format(DATE_TIME_WITH_NSEC, tt, buf);
+    snprintf(temp, 28, "%s.%09d", expected, (int)tv.tv_nsec);
+    BOOST_REQUIRE_EQUAL(temp, buf);
+
+    timestamp::format(DATE_TIME_WITH_NSEC, tt, buf, true);
+    snprintf(temp, 28, "%s.%09d", expected_utc, (int)tv.tv_nsec);
+    BOOST_REQUIRE_EQUAL(temp, buf);
+
+    tv = utxx::now_utc().timespec();
     std::string str = timestamp::to_string(tt, DATE_TIME);
     BOOST_REQUIRE_EQUAL(expected, str);
 
@@ -383,6 +395,9 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 
     p = timestamp::write_time(buf, time_val(10*3600+9*60+8, 123456), TIME_WITH_USEC, true, ':');
     BOOST_REQUIRE_EQUAL("10:09:08.123456", std::string(buf, p - buf));
+
+    p = timestamp::write_time(buf, time_val(utxx::nsecs(10*3600+9*60+8, 123456789)), TIME_WITH_NSEC, true, ':');
+    BOOST_REQUIRE_EQUAL("10:09:08.123456789", std::string(buf, p - buf));
 
     BOOST_CHECK(is_leap(0));
     BOOST_CHECK(is_leap(4));
