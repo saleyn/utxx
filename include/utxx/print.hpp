@@ -55,11 +55,17 @@ struct fixed {
     {}
 
     template <typename StreamT>
-    inline friend StreamT& operator<<(StreamT& out, const fixed& f) {
-        out << std::fixed;
-        if (f.m_digits > -1)
-            out << std::setfill(f.m_fill) << std::setw(f.m_digits);
-        out << std::setprecision(f.m_precision) << f.m_value;
+    inline friend StreamT& operator<<(StreamT& out, const fixed& a) {
+        if (a.digits() > -1) {
+            char buf[a.digits()];
+            utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
+            out.write(buf, a.digits());
+        } else {
+            char buf[256];
+            int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), true);
+            if (likely(n >= 0))
+                out.write(buf, n);
+        }
         return out;
     }
 

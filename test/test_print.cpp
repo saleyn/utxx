@@ -80,7 +80,6 @@ BOOST_AUTO_TEST_CASE( test_print_opts )
 
         ss.str(std::string());
         output(ss, s, s+length(s), print_opts::printable_string);
-        BOOST_TEST_MESSAGE("Expected: \"a.cd\" Got: \"" << ss.str() << "\"");
         BOOST_CHECK_EQUAL("a.cd", ss.str());
 
         ss.str(std::string());
@@ -139,6 +138,13 @@ BOOST_AUTO_TEST_CASE( test_print_opts )
 
 BOOST_AUTO_TEST_CASE( test_print )
 {
+    using sstrm = std::stringstream;
+
+    { sstrm s; s << width<7, LEFT, double>(2.123, 2); BOOST_CHECK_EQUAL("2.12   ", s.str()); }
+    { sstrm s; s << width<7, RIGHT,double>(2.123, 2); BOOST_CHECK_EQUAL("   2.12", s.str()); }
+    { sstrm s; s << fixed(2.123, 6, 3, ' '); BOOST_CHECK_EQUAL(" 2.123", s.str()); }
+    { sstrm s; s << fixed(2.123, 2);         BOOST_CHECK_EQUAL("2.12",   s.str()); }
+
     std::string str("xxx");
 
     { std::string s = print(1);      BOOST_CHECK_EQUAL("1",     s); }
