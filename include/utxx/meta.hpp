@@ -114,6 +114,14 @@ constexpr typename std::underlying_type<E>::type to_underlying(E e) {
     return static_cast<typename std::underlying_type<E>::type>(e);
 }
 
+/// Syntactic sugar that evaluates to type \a T if \a T is derived from \a BaseT
+template <typename BaseT, typename T, typename R = T>
+using if_base_of = typename std::enable_if<std::is_base_of<BaseT, T>::value, R>::type;
+
+/// Syntactic sugar that evaluates to type \a T if \a T is not derived from \a BaseT
+template <typename BaseT, typename T, typename R = T>
+using if_not_base_of = typename std::enable_if<!std::is_base_of<BaseT, T>::value, R>::type;
+
 namespace {
     template<int N, char... Chars>
     struct to_int_helper;

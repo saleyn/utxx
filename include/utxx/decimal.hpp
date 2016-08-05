@@ -63,17 +63,17 @@ class decimal
     long   m_mant: 56;
 
     template <typename T> using nlimits = std::numeric_limits<T>;
-    static constexpr int    nullexp()   { return nlimits<int8_t>::max();       }
+    static constexpr int     nullexp()   { return nlimits<int8_t>::max();      }
 
 public:
-    static constexpr double nan()       { return nlimits<double>::quiet_NaN(); }
-    static decimal   const& null_value(){ static decimal s(nullptr); return s; }
+    static constexpr double  nan()       { return nlimits<double>::quiet_NaN();}
+    static const decimal&    null_value(){ static decimal s(nullptr); return s;}
 
-    constexpr decimal() : decimal(0, 0) {
+    constexpr decimal() noexcept : decimal(0, 0) {
         static_assert(sizeof(decimal) == sizeof(long), "Invalid size");
     }
     explicit
-    constexpr decimal(std::nullptr_t)  : m_exp(nullexp()), m_mant(0) {}
+    constexpr decimal(std::nullptr_t) noexcept : m_exp(nullexp()), m_mant(0) {}
     explicit
     CONSTEXPR decimal(int  m) noexcept : m_exp(0), m_mant(m) { normalize(); }
     explicit
@@ -168,7 +168,7 @@ public:
 
     /// \param a_const_exp can be either const or initial value of the exponent
     CONSTEXPR
-    void normalize(int a_const_exp = 0) {
+    decimal& normalize(int a_const_exp = 0) {
         if (!a_const_exp) {
             while (m_mant != 0 && m_mant % 10 == 0) {
                 m_mant /= 10;
@@ -180,11 +180,12 @@ public:
         } else {
             // Adjust m_mant and m_exp if the exponent is required to be const
             auto   diff =  m_exp - a_const_exp;
-            if  (  diff == 0) return;
+            if  (  diff == 0) return *this;
             for (; diff >  0; --diff) m_mant *= 10;
             for (; diff <  0; ++diff) m_mant /= 10;
             m_exp = a_const_exp;
         }
+        return *this;
     }
 
 private:

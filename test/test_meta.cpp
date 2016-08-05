@@ -49,18 +49,36 @@ struct eval_tester {
 
 int add_one(int n) { return n+1; }
 
+struct A     { const char* name() { return "A"; } };
+struct B : A { const char* name() { return "B"; } };
+struct C     { const char* name() { return "C"; } };
+
+template <class T> bool check(if_base_of<A, T>     const& v) { return true;  }
+template <class T> bool check(if_not_base_of<A, T> const& v) { return false; }
+
+template <class T>
+typename std::enable_if<std::is_base_of<A,T>::value, bool>::type
+check2() { return true; }
+template <class T>
+typename std::enable_if<!std::is_base_of<A,T>::value, bool>::type
+check2() { return false; }
+
+template <class T> if_base_of<A,T,bool>
+check3() { return true; }
+template <class T> if_not_base_of<A,T,bool>
+check3() { return false; }
 
 BOOST_AUTO_TEST_CASE( test_meta )
 {
-    enum class B { B1 = 1, B2 = 2 };
+    enum class E { B1 = 1, B2 = 2 };
 
     int t = 10;
     int j = test_it(out(t));
 
     BOOST_REQUIRE_EQUAL(10, j);
 
-    BOOST_STATIC_ASSERT(1 == to_underlying(B::B1));
-    BOOST_REQUIRE_EQUAL(1, to_underlying(B::B1));
+    BOOST_STATIC_ASSERT(1        == to_underlying(E::B1));
+    BOOST_REQUIRE_EQUAL(1,          to_underlying(E::B1));
 
     BOOST_STATIC_ASSERT(0x00     == to_int<'\0'>::value());
     BOOST_STATIC_ASSERT(0x01     == to_int<'\1'>::value());
@@ -68,12 +86,12 @@ BOOST_AUTO_TEST_CASE( test_meta )
     BOOST_STATIC_ASSERT(0x0102   == to_int<'\1', '\2'>::value());
     BOOST_STATIC_ASSERT(0x010203 == to_int<'\1', '\2', '\3'>::value());
 
-    BOOST_STATIC_ASSERT(0  == upper_power<0,  2>::value);
-    BOOST_STATIC_ASSERT(1  == upper_power<1,  2>::value);
-    BOOST_STATIC_ASSERT(2  == upper_power<2,  2>::value);
-    BOOST_STATIC_ASSERT(4  == upper_power<3,  2>::value);
-    BOOST_STATIC_ASSERT(16 == upper_power<15, 2>::value);
-    BOOST_STATIC_ASSERT(32 == upper_power<32, 2>::value);
+    BOOST_STATIC_ASSERT(0        == upper_power<0,  2>::value);
+    BOOST_STATIC_ASSERT(1        == upper_power<1,  2>::value);
+    BOOST_STATIC_ASSERT(2        == upper_power<2,  2>::value);
+    BOOST_STATIC_ASSERT(4        == upper_power<3,  2>::value);
+    BOOST_STATIC_ASSERT(16       == upper_power<15, 2>::value);
+    BOOST_STATIC_ASSERT(32       == upper_power<32, 2>::value);
 
     {
         auto  lambda = [](int i, int j) { return long(i*10 + j); };
@@ -103,5 +121,34 @@ BOOST_AUTO_TEST_CASE( test_meta )
         //eval(&eval_tester::a, &ttt)++; // increment a by reference
         BOOST_CHECK_EQUAL(10, eval(&eval_tester::a, ttt));
     }
-}
 
+    {
+        /*
+        std::cout << std::boolalpha;
+        std::cout << "a2b: " << std::is_base_of<A, B>::value << '\n';
+        std::cout << "b2a: " << std::is_base_of<B, A>::value << '\n';
+        std::cout << "c2b: " << std::is_base_of<C, B>::value << '\n';
+        std::cout << "c2c: " << std::is_base_of<C, C>::value << '\n';
+        */
+
+        A a;
+        B b;
+        C c;
+        BOOST_CHECK(( std::is_base_of<A,A>::value));
+        BOOST_CHECK(( std::is_base_of<A,B>::value));
+        BOOST_CHECK((!std::is_base_of<B,A>::value));
+        BOOST_CHECK((!std::is_base_of<A,C>::value));
+
+        BOOST_CHECK( check<A>(a));
+        BOOST_CHECK( check<B>(b));
+        BOOST_CHECK(!check<C>(c));
+
+        BOOST_CHECK( check2<A>());
+        BOOST_CHECK( check2<B>());
+        BOOST_CHECK(!check2<C>());
+
+        BOOST_CHECK( check3<A>());
+        BOOST_CHECK( check3<B>());
+        BOOST_CHECK(!check3<C>());
+    }
+}
