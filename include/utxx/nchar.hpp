@@ -119,7 +119,9 @@ namespace detail {
         constexpr size_t size() const  { return N; }
         const Char*   end()     const  { return m_data + N; }
 
+        explicit
         operator const  Char*() const  { return m_data; }
+        explicit
         operator        Char*()        { return m_data; }
 
         /// Return a string with trailing characters matching \a rtrim removed.

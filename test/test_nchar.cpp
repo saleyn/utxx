@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         nchar<4, uint8_t> ss;
         ss.copy_from((const uint8_t*)"ab", 2, ' ');
 
-        const uint8_t* a = ss;
+        const uint8_t* a = (const uint8_t*)ss;
         BOOST_CHECK_EQUAL(std::string("ab  "), std::string((const char*)a));
     }
 }
