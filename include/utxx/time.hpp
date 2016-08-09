@@ -227,6 +227,22 @@ namespace utxx {
 
 #endif
 
+  //----------------------------------------------------------------------------
+  /// Parse time in format "HH:MM:SS" to seconds since midnight
+  //----------------------------------------------------------------------------
+  inline long parse_time_to_seconds(const char* a_tm, int a_sz = -1)
+  {
+    if (a_sz <  0) a_sz = strlen(a_tm);
+    if (a_sz != 8)
+      return -1;
+
+    auto     parse = [](const char* p) { return 10*(p[0]-'0') + (p[1]-'0'); };
+    int  h = parse(a_tm);
+    int  m = parse(a_tm+3);
+    int  s = parse(a_tm+6);
+
+    return  h*3600 + m*60 + s;
+  }
 
 } // namespace utxx
 
