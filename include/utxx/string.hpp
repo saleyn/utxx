@@ -381,7 +381,9 @@ namespace utxx {
         using const_iterator = const Char*;
 
         static constexpr size_t max_size()   { return MaxSz; }
-        static size_t round_size(size_t a)   { return ((a+(1+2*sizeof(void*)))+7)&~7; }
+        static constexpr size_t round_size(size_t a)   {
+            return ((a+(1+2*sizeof(void*)))+7)&~7;
+        }
 
         static const  basic_short_string& null_value() {
             static basic_short_string s_null = init_null();

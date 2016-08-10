@@ -301,11 +301,16 @@ namespace {
 
         const std::string& prefix() const { return m_prefix; }
 
-        iovec operator() (const std::string& a_category, iovec& a_msg) {
-            size_t n = a_msg.iov_len + m_prefix.size();
+        iovec operator() (const char* a_category, iovec& a_msg) {
+            size_t m = strlen(a_category);
+            size_t n = a_msg.iov_len + m_prefix.size() + 2 + m;
             char* p = m_logger.allocate(n);
-            memcpy(p, m_prefix.c_str(), m_prefix.size());
-            memcpy(p + m_prefix.size(), a_msg.iov_base, a_msg.iov_len);
+            auto  q = p;
+            memcpy(q, m_prefix.c_str(), m_prefix.size()); q += m_prefix.size();
+            *q++ = '|';
+            memcpy(q, a_category, m); q += m;
+            *q++ = '|';
+            memcpy(q, a_msg.iov_base, a_msg.iov_len); q += a_msg.iov_len;
             m_logger.deallocate(static_cast<char*>(a_msg.iov_base), a_msg.iov_len);
             UTXX_ASYNC_TRACE(("  rewritten msg(%p, %lu) -> msg(%p, %lu)\n",
                              a_msg.iov_base, a_msg.iov_len, p, n));
@@ -342,7 +347,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
     std::string s = std::string(s_str2) + '\n';
 
     for (int i = 0; i < ITERATIONS; i++) {
-        int n = l_logger.write(l_fd, std::string(), s);
+        int n = l_logger.write(l_fd, "abc", s);
         BOOST_REQUIRE_EQUAL(0, n);
     }
 
@@ -356,7 +361,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
     l_logger.stop();
 
     {
-        std::string st = l_formatter.prefix() + s_str2;
+        std::string st = l_formatter.prefix() + "|abc|" + s_str2;
 
         std::ifstream file(s_filename[0], std::ios::in);
         for (int i = 0; i < ITERATIONS; i++) {

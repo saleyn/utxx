@@ -84,6 +84,8 @@ struct multi_file_async_logger_traits {
     typedef std::allocator<char>      fixed_size_allocator;
     typedef futex                     event_type;
     static const int commit_timeout = 2000;  // commit this number of usec
+    /// Preallocated space for most common category length
+    static constexpr const int category_size() { return short_string::round_size(15); }
 };
 
 /// Multi-stream asynchronous message logger
@@ -107,35 +109,28 @@ struct basic_multi_file_async_logger {
     /// to rewrite the content written to disk and if necessary to reallocate the
     /// message buffer in a_msg using logger's allocate() and deallocate()
     /// functions.  The returned iovec will be used as the content written to disk.
-    typedef std::function<
-        iovec (const std::string& a_category, iovec& a_msg)
-    >                                               msg_formatter;
+    using msg_formatter = std::function<iovec (const char* a_category, iovec& a_msg)>;
 
     /// Callback called on writing scattered array of iovec structures to stream
     /// Implementation defaults to writev(3). On success the function number of
     /// bytes written or -1 or error.
-    typedef std::function<
-        int (stream_info& a_si, const char** a_categories,
-             const iovec* a_data, size_t a_size)
-    >                                               msg_writer;
+    using msg_writer    = std::function<int (stream_info& a_si, const char** a_categories,
+                                             const iovec* a_data, size_t a_size)>;
 
-    typedef std::function<
-        int (stream_info& a_si, int a_errno,
-             const std::string& a_err)>             err_handler;
+    using msg_allocator = typename traits::allocator::template rebind<char>::other;
+
+    using err_handler   = std::function<int (stream_info& a_si, int a_errno,
+                                             const std::string& a_err)>;
 
     /// Callback executed when stream needs to be reconnected
-    typedef std::function<int(stream_info& a_si)>   stream_reconnecter;
+    using stream_reconnecter = std::function<int(stream_info& a_si)>;
 
-    typedef typename traits::event_type             event_type;
-    typedef std::function<
-        int (const std::string& name,
-             stream_state_base* state,
-             std::string& error)
-    >                                               stream_opener;
-    typedef synch::posix_event                      close_event_type;
-    typedef std::shared_ptr<close_event_type>       close_event_type_ptr;
-    typedef typename traits::allocator::template
-        rebind<char>::other                         msg_allocator;
+    using event_type    = typename traits::event_type;
+    using stream_opener = std::function<int (const std::string& name,
+                                             stream_state_base* state,
+                                             std::string& error)>;
+    using close_event_type     = synch::posix_event;
+    using close_event_type_ptr = std::shared_ptr<close_event_type>;
 
 private:
     struct stream_info_eq {
@@ -145,16 +140,14 @@ private:
         bool operator()(const stream_info* a, const stream_info* b) { return a < b; }
     };
 
-    typedef typename traits::fixed_size_allocator::template
-        rebind<stream_info*>::other                 ptr_allocator;
-    typedef std::set<
-        stream_info*, stream_info_lt, ptr_allocator
-    >                                               pending_data_streams_set;
+    using cmd_allocator = typename traits::fixed_size_allocator::template
+        rebind<command_t>::other;
+    using ptr_allocator = typename traits::fixed_size_allocator::template
+        rebind<stream_info*>::other;
 
+    using pending_data_streams_set = std::set<stream_info*, stream_info_lt, ptr_allocator>;
 
-    typedef std::vector<stream_info*>               stream_info_vec;
-    typedef typename traits::fixed_size_allocator::template
-        rebind<command_t>::other                    cmd_allocator;
+    using stream_info_vec = std::vector<stream_info*>;
 
     std::mutex                                      m_mutex;
     std::condition_variable                         m_cond_var;
@@ -198,19 +191,20 @@ private:
     // Enqueues msg to internal queue
     int  internal_enqueue(command_t* a_cmd, const stream_info* a_si);
     // Writes data to internal queue
-    int  internal_write(const file_id& a_id, const std::string& a_category,
+    int  internal_write(const file_id& a_id, const char* a_cat, size_t a_cat_sz,
                         char* a_data, size_t a_sz, bool copied);
 
     void internal_close();
     void internal_close(stream_info* p, int a_errno = 0);
 
-    command_t* allocate_message(const stream_info* a_si, const std::string& a_category,
+    command_t* allocate_message(const stream_info* a_si,
+                                const char* a_cat,  size_t a_cat_sz,
                                 const char* a_data, size_t a_size)
     {
         command_t* p = m_cmd_allocator.allocate(1);
         UTXX_ASYNC_TRACE(("Allocated message (category=%s, size=%lu): %p\n",
-                     a_category.c_str(), a_size, p));
-        new (p) command_t(a_si, a_category, a_data, a_size);
+                          a_cat, a_size, p));
+        new (p) command_t(a_si, a_cat, a_cat_sz, a_data, a_size);
         return p;
     }
 
@@ -386,6 +380,7 @@ public:
     /// The logger will implicitely own the pointer and
     /// will have the deallocation responsibility.
     int write(const file_id& a_id, const std::string& a_category, void* a_data, size_t a_sz);
+    int write(const file_id& a_id, const char*        a_category, void* a_data, size_t a_sz);
 
     /// Allocate a memory block of size \a a_sz and call the writer.
     /// @param a_id  destination file identifier
@@ -404,9 +399,22 @@ public:
         catch (std::exception& ) { deallocate(q, a_sz); throw; }
         return write(a_id, a_cat, q, a_sz);
     }
+    template <typename writer>
+    typename std::enable_if<
+        !std::is_same<writer, char*>::value       &&
+        !std::is_same<writer, std::string>::value
+        , int>::
+    type write(const file_id& a_id, const char* a_cat, const writer& a_fun, size_t a_sz)
+    {
+        char* q = allocate(a_sz);
+        try   { a_fun(q,a_sz); }
+        catch (std::exception& ) { deallocate(q, a_sz); throw; }
+        return write(a_id, a_cat, q, a_sz);
+    }
 
     /// Write a copy of the string a_data to a file.
     int write(const file_id& a_id, const std::string& a_category, const std::string& a_msg);
+    int write(const file_id& a_id, const char*        a_category, const std::string& a_msg);
 
     /// @return max size of the commit queue
     const int   max_queue_size()        const { return m_max_queue_size; }
@@ -439,6 +447,8 @@ typedef basic_multi_file_async_logger<> multi_file_async_logger;
 template<typename traits>
 struct basic_multi_file_async_logger<traits>::
 command_t {
+    using category_string = basic_short_string<char, traits::category_size()>;
+
     static const int MAX_CAT_LEN = 32;
     enum type_t {
         msg,            // Send data message
@@ -453,11 +463,11 @@ command_t {
 
     union udata {
         struct {
-            mutable iovec       data;
-            mutable std::string category;
+            mutable iovec           data;
+            mutable category_string category;
         } msg;
         struct {
-            bool                immediate;
+            bool                    immediate;
         } close;
 
         udata()  {}
@@ -470,11 +480,11 @@ command_t {
     mutable command_t*  next;
     mutable command_t*  prev;
 
-    command_t(const stream_info* a_si, const std::string& a_category,
+    command_t(const stream_info* a_si, const char* a_cat, size_t a_cat_sz,
               const char* a_data, size_t a_size)
         : command_t(msg, a_si)
     {
-        set_category(a_category);
+        set_category(a_cat, a_cat_sz);
         args.msg.data.iov_base = (void*)a_data;
         args.msg.data.iov_len  = a_size;
     }
@@ -485,7 +495,7 @@ command_t {
 
     ~command_t() {
         if (type == msg)
-            args.msg.category.~basic_string();
+            args.msg.category.~category_string();
     }
 
     int fd() const { return stream->fd; }
@@ -495,8 +505,8 @@ command_t {
         if (next) next->prev = prev;
     }
 private:
-    void set_category(const std::string& a_category) {
-        new (&args.msg.category) std::string(a_category);
+    void set_category(const char* a_cat, size_t a_sz) {
+        new (&args.msg.category) category_string(a_cat, a_sz);
     }
 } __attribute__((aligned(UTXX_CL_SIZE)));
 
@@ -1135,7 +1145,7 @@ internal_enqueue(command_t* a_cmd, const stream_info* a_si) {
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-internal_write(const file_id& a_id, const std::string& a_category,
+internal_write(const file_id& a_id, const char* a_cat, size_t a_cat_sz,
                char* a_data, size_t a_sz, bool copied)
 {
     if (unlikely(!a_id.stream() || m_cancel.load(std::memory_order_relaxed))) {
@@ -1144,26 +1154,40 @@ internal_write(const file_id& a_id, const std::string& a_category,
         return -1;
     }
 
-    command_t* p = allocate_message(a_id.stream(), a_category, a_data, a_sz);
+    command_t* p = allocate_message(a_id.stream(), a_cat, a_cat_sz, a_data, a_sz);
     UTXX_ASYNC_TRACE(("->write(%p, %lu) - %s\n", a_data, a_sz, copied ? "allocated" : "no copy"));
     return internal_enqueue(p, a_id.stream());
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-write(const file_id& a_id, const std::string& a_category, void* a_data, size_t a_sz) {
-    return internal_write(a_id, a_category, static_cast<char*>(a_data), a_sz, false);
+write(const file_id& a_id, const std::string& a_cat, void* a_data, size_t a_sz) {
+    return internal_write(a_id, a_cat.c_str(), a_cat.size(), static_cast<char*>(a_data), a_sz, false);
 }
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
-write(const file_id& a_id, const std::string& a_category, const std::string& a_data) {
-    char* q = allocate(a_data.size());
-    memcpy(q, a_data.c_str(), a_data.size());
-
-    return internal_write(a_id, a_category, q, a_data.size(), false);
+write(const file_id& a_id, const char* a_cat, void* a_data, size_t a_sz) {
+    return internal_write(a_id, a_cat, strlen(a_cat), static_cast<char*>(a_data), a_sz, false);
 }
 
+template<typename traits>
+int basic_multi_file_async_logger<traits>::
+write(const file_id& a_id, const std::string& a_cat, const std::string& a_data) {
+    char*  q = allocate(a_data.size());
+    memcpy(q, a_data.c_str(), a_data.size());
+
+    return internal_write(a_id, a_cat.c_str(), a_cat.size(), q, a_data.size(), false);
+}
+
+template<typename traits>
+int basic_multi_file_async_logger<traits>::
+write(const file_id& a_id, const char* a_cat, const std::string& a_data) {
+    char*  q = allocate(a_data.size());
+    memcpy(q, a_data.c_str(), a_data.size());
+
+    return internal_write(a_id, a_cat, strlen(a_cat), q, a_data.size(), false);
+}
 
 template<typename traits>
 int basic_multi_file_async_logger<traits>::
