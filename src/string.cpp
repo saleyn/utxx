@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <utxx/string.hpp>
+#include <utxx/print_opts.hpp>
 
 namespace utxx {
 
@@ -39,30 +40,10 @@ std::string to_bin_string(const char* buf, size_t sz,
 {
     std::stringstream out;
     const char* begin = buf, *end = buf + sz;
-    bool printable = readable;
-    if (!hex && readable)
-        for(const char* p = begin; p != end; ++p)
-            if ((*p < ' ' && *p != '\n' && *p != '\r' && *p != '\t') ||
-                *p == 127 || *p == char(255)) {
-                printable = false;
-                break;
-            }
-    out << "<<" << (printable ? "\"" : "");
-    for(const char* p = begin; p != end; ++p) {
-        out << (p == begin || printable ? "" : ",");
-        if (printable)
-            switch (*p) {
-                case '\n': out << "\\n"; break;
-                case '\r': out << "\\r"; break;
-                case '\t': out << "\\t"; break;
-                default:   out << *p;    break;
-            }
-        else {
-            if (hex) out << std::hex;
-            out << (int)*(uint8_t*)p;
-        }
-    }
-    out << (printable ? "\"" : "") << ">>";
+    print_opts  opts  = hex
+                      ? (readable ? print_opts::printable_or_hex : print_opts::hex)
+                      : (readable ? print_opts::printable_or_dec : print_opts::dec);
+    output(out, begin, end, opts, ",", "", "\"", "<<", ">>");
     if (eol) out << std::endl;
     return out.str();
 }

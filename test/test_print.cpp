@@ -134,6 +134,33 @@ BOOST_AUTO_TEST_CASE( test_print_opts )
         output(ss, s, s+length(s), print_opts::printable_or_dec);
         BOOST_CHECK_EQUAL("", ss.str());
     }
+    {
+        std::stringstream ss;
+        const char s[] = "abc";
+        const char e[] = "";
+        output(ss, e, e, print_opts::dec, ",", "", "\"", "<<", ">>");
+        BOOST_CHECK_EQUAL("<<>>", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::hex, ",", "", "\"", "<<", ">>");
+        BOOST_CHECK_EQUAL("<<61,62,63>>", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::dec, ",", "", "\"", "<<", ">>");
+        BOOST_CHECK_EQUAL("<<97,98,99>>", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_string, ",", "", "\"", "<<", ">>");
+        BOOST_CHECK_EQUAL("<<\"abc\">>", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_hex, ",", "", "\"", "<<", ">>");
+        BOOST_CHECK_EQUAL("<<\"abc\">>", ss.str());
+
+        ss.str(std::string());
+        output(ss, s, s+length(s), print_opts::printable_or_dec, ",", "", "\"", "<<", ">>");
+        BOOST_CHECK_EQUAL("<<\"abc\">>", ss.str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_print )

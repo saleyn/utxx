@@ -44,7 +44,10 @@ enum class print_opts {
 template <class StreamT, class Char = char>
 inline StreamT& output(StreamT& out, const Char* p, const Char* end,
                        print_opts a_opts = print_opts::printable_or_dec,
-                       const char* a_sep = ",", const char* a_hex_prefix = "")
+                       const char* a_sep = ",", const char* a_hex_prefix = "",
+                       const char* a_printable_quote = "",
+                       const char* a_out_prefix = "",
+                       const char* a_out_suffix = "")
 {
     bool printable = true;
     auto hex       = [=, &out](auto ch) {
@@ -52,9 +55,12 @@ inline StreamT& output(StreamT& out, const Char* p, const Char* end,
         uint8_t c = uint8_t(ch);
         out << a_hex_prefix << (s_hex[(c & 0xF0) >> 4]) << (s_hex[(c & 0x0F)]);
     };
-    if  (a_opts == print_opts::hex) goto HEX;
-    if  (a_opts == print_opts::dec) goto DEC;
-    if  (a_opts == print_opts::printable_string) {
+    if (a_out_prefix[0] != '\0')
+        out << a_out_prefix;
+    if (a_opts == print_opts::hex) goto HEX;
+    if (a_opts == print_opts::dec) goto DEC;
+    if (a_opts == print_opts::printable_string) {
+        out << a_printable_quote;
         for (auto q = (const char*)p; q != (const char*)end; ++q)
             switch (*q) {
                 case '\n': out << "\\n"; break;
@@ -64,6 +70,7 @@ inline StreamT& output(StreamT& out, const Char* p, const Char* end,
                     out << ((*q < ' ' || *q > '~') ? '.' : *q);
                     break;
             }
+        out << a_printable_quote;
         goto DONE;
     }
     for (auto q = (const char*)p; q != (const char*)end; ++q)
@@ -74,7 +81,9 @@ inline StreamT& output(StreamT& out, const Char* p, const Char* end,
 
     if (printable && (a_opts == print_opts::printable_or_hex||
                       a_opts == print_opts::printable_or_dec)) {
+        out << a_printable_quote;
         while (p != end) out << *p++;
+        out << a_printable_quote;
         goto  DONE;
     }
     if (a_opts == print_opts::printable_or_hex) goto HEX;
@@ -91,6 +100,8 @@ HEX:
     while (p != end) { out << a_sep; hex(*p++); }
 
 DONE:
+    if (a_out_suffix[0] != '\0')
+        out << a_out_suffix;
     return out;
 }
 
