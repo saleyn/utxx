@@ -54,6 +54,8 @@ struct cstr_wrap {
     /// Returned value may not be NULL-terminated
     const Char* c_str() const { return m_str;  }
     size_t      size()  const { return m_size; }
+
+    explicit operator std::string() const { return std::string(m_str, m_size); }
 private:
     const Char*  m_str;
     const size_t m_size;
