@@ -1,4 +1,5 @@
 #!/usr/bin/python2
+# vim:ts=4:sw=4:et
 """
 config_validator_codegen.py
 ===========================
