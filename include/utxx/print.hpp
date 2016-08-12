@@ -42,7 +42,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+//------------------------------------------------------------------------------
+/// String wrapping class for dealing with possibly non-zero-terminated strings.
+//------------------------------------------------------------------------------
+template <class Char = char>
+struct cstr_wrap {
+    cstr_wrap(const Char* a_str, size_t a_sz)
+        : m_str(a_str), m_size(a_sz)
+    {}
+
+    /// Returned value may not be NULL-terminated
+    const Char* c_str() const { return m_str;  }
+    size_t      size()  const { return m_size; }
+private:
+    const Char*  m_str;
+    const size_t m_size;
+};
+
+//------------------------------------------------------------------------------
 /// Output a float to stream formatted with fixed precision
+//------------------------------------------------------------------------------
 struct fixed {
     fixed(double a_val, int a_digits, int a_precision, char a_fill = ' ')
         : m_value(a_val), m_digits(a_digits), m_precision(a_precision)
@@ -81,7 +100,9 @@ private:
     char   m_fill;
 };
 
+//------------------------------------------------------------------------------
 /// Alignment enumerator
+//------------------------------------------------------------------------------
 template <int Width, alignment Align, class T>
 struct width {
     using TT = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
@@ -200,9 +221,15 @@ private:
     }
 };
 
+//------------------------------------------------------------------------------
+/// Align and pad given argument
+//------------------------------------------------------------------------------
 template <int Width, alignment Align, typename T>
 width<Width,Align,T> make_width(T a, char a_pad = ' ') { return width<Width, Align, T>(a, a_pad); }
 
+//------------------------------------------------------------------------------
+/// Efficient fast printer stream
+//------------------------------------------------------------------------------
 namespace detail {
     template <size_t N = 256, class Alloc = std::allocator<char>>
     class basic_buffered_print : public Alloc
@@ -315,6 +342,12 @@ namespace detail {
             reserve(n);
             memcpy(m_pos, a, n);
             m_pos += n;
+        }
+        template <class Char>
+        void do_print(const cstr_wrap<Char>& a) {
+            reserve(a.size());
+            memcpy(m_pos, a.c_str(), a.size());
+            m_pos += a.size();
         }
         template <int M>
         void do_print(const std::array<char, M>& a) {
