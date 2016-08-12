@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 #include <utxx/get_option.hpp>
+#include <utxx/logger/logger.hpp>
 #include <iostream>
 
 using namespace utxx;
@@ -39,12 +40,13 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_get_option )
 {
     const char* argv[] = {"test", "-a", "10", "--out=file", "-t", "true",
-                          "-f", "-", "-x", "--", "-y", "/temp"};
+                          "-f", "-", "-x", "--", "-y", "/temp", "-l", "debug"};
     int         argc   = std::extent< decltype(argv) >::value;
 
     int         a;
     std::string out;
     bool        t;
+    log_level   ll;
 
     BOOST_CHECK(get_opt(argc, argv, &a, "-a"));
     BOOST_CHECK_EQUAL(10, a);
@@ -57,23 +59,31 @@ BOOST_AUTO_TEST_CASE( test_get_option )
 
     while (opts.next()) {
         if (opts.match("-a", "", &a)) {
-            BOOST_CHECK_EQUAL(10, a); continue;
+            BOOST_CHECK_EQUAL(10, a);
+            continue;
         }
         if (opts.match("", "--out", &out)) {
-            BOOST_CHECK_EQUAL("file", out); continue;
+            BOOST_CHECK_EQUAL("file", out);
+            continue;
         }
         if (opts.match("-t", "", &t)) {
             BOOST_CHECK(t); continue;
         }
         if (opts.match("-f", "", &out)) {
-            BOOST_CHECK_EQUAL("-", out); continue;
+            BOOST_CHECK_EQUAL("-", out);
+            continue;
         }
         if (opts.match("-x", ""))
             continue;
         if (opts() == std::string("--"))
             continue;
         if (opts.match("-y","", &out)) {
-            BOOST_CHECK_EQUAL("/temp", out); continue;
+            BOOST_CHECK_EQUAL("/temp", out);
+            continue;
+        }
+        if (opts.match("-l","",logger::parse_log_level, &ll)) {
+            BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
+            continue;
         }
         BOOST_CHECK(false);
     }

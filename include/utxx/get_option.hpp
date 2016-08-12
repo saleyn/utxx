@@ -183,6 +183,15 @@ public:
         return match(a_short, a_long, setter);
     }
 
+    template <typename Setter, typename T>
+    bool match(const std::string& a_short, const std::string& a_long,
+               const Setter& a_convert, T* a_val) {
+        assert(a_val);
+        auto setter = [&](const char* a) { *a_val = a_convert(a); };
+        return match_opt(m_argc, m_argv, setter, a_short, m_idx)
+            || match_opt(m_argc, m_argv, setter, a_long,  m_idx);
+    }
+
     /// Find an option identified either by \a a_short name or \a a_long name
     ///
     /// Current fundtion doesn't change internal state variables of this class
