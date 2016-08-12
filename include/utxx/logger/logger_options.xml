@@ -16,14 +16,18 @@
                 desc="Process's identifier (can use env variables in the name)"/>
         <option name="timestamp" val-type="string" default="time-usec"
                 desc="Format of the timestamp (case-insensitive)">
+            <value val="no"             desc="No timestamp"/>
             <value val="none"           desc="No timestamp"/>
+            <value val="no-timestamp"   desc="No timestamp"/>
             <value val="time"           desc="HH:MM:DD"/>
             <value val="time-msec"      desc="HH:MM:DD.sss"/>
             <value val="time-usec"      desc="HH:MM:DD.ssssss"/>
+            <value val="time-nsec"      desc="HH:MM:DD.sssssssss"/>
             <value val="date"           desc="YYYYmmdd"/>
             <value val="date-time"      desc="YYYYmmdd-HH:MM:DD"/>
             <value val="date-time-msec" desc="YYYYmmdd-HH:MM:DD.sss"/>
             <value val="date-time-usec" desc="YYYYmmdd-HH:MM:DD.ssssss"/>
+            <value val="date-time-nsec" desc="YYYYmmdd-HH:MM:DD.sssssssss"/>
         </option>
 
         <option name="levels" val-type="string" default=""

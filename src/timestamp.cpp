@@ -62,10 +62,14 @@ namespace {
 }
 
 stamp_type parse_stamp_type(const std::string& a_line) {
-    stamp_type t = find_index<stamp_type>(s_values, a_line, (stamp_type)-1, true);
+    auto t = find_index<stamp_type>(s_values, a_line, (stamp_type)-1, true);
 
-    if (int(t) == -1)
+    if (int(t) == -1) {
+        if (strcasecmp("no", a_line.c_str()) == 0 ||
+            strcasecmp("no-timestamp", a_line.c_str()) == 0)
+            return stamp_type::NO_TIMESTAMP;
         throw badarg_error("parse_stamp_tpe: invalid timestamp type: ", a_line);
+    }
     return t;
 }
 
