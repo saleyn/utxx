@@ -367,11 +367,11 @@ class ConfigGenerator(object):
             if alias:
                 f.write('        static constexpr const char* alias()%s { return "%s"; }\n\n' % (' ' * (max_width - 5), alias))
             f.write("        //---------- Configuration Options ------------\n")
-            for n in names:
+            for n in sorted(set(names)):
                 u = format_name(n)
                 f.write('        static constexpr const char* %s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("        //---------- Configuration Values -------------\n")
-            for n in values:
+            for n in sorted(set(values)):
                 u = format_name(n)
                 f.write('        static constexpr const char* VAL_%s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("\n")
