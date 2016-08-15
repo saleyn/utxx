@@ -225,8 +225,9 @@ struct logger : boost::noncopyable {
     static const std::string& log_level_to_string(log_level level,
                                                   bool merge_trace=true)  noexcept
                               { return utxx::log_level_to_string(level, merge_trace); }
+    [[deprecated]]
     static const char*        log_level_to_str(log_level level, bool merge_trace=true) noexcept
-                              { return utxx::log_level_to_string(level, merge_trace).c_str(); }
+                              { return utxx::log_level_to_cstr(level, merge_trace); }
 
     /// DEPRECATED use logger_util.hpp:log_level_size()
     [[deprecated]]
@@ -236,7 +237,7 @@ struct logger : boost::noncopyable {
     /// DEPRECATED use logger_util.hpp:log_levels_to_str()
     [[deprecated]]
     static std::string        log_levels_to_str(uint32_t a_levels)  noexcept
-                              { return log_levels_to_str(a_levels); }
+                              { return utxx::log_levels_to_str(a_levels); }
 
     /// Convert a `level` to the slot number in the `m_sig_msg` array
     static int                level_to_signal_slot(log_level level) noexcept;

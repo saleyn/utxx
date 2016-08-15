@@ -54,6 +54,10 @@ namespace utxx {
     /// @param merge_trace when true all TRACE1-5 levels are returned as "TRACE"
     const std::string& log_level_to_string(log_level level,
                                            bool merge_trace=true)  noexcept;
+
+    inline const char* log_level_to_cstr(log_level level, bool merge_trace=true) noexcept
+                       { return log_level_to_string(level, merge_trace).c_str(); }
+
     size_t             log_level_size  (log_level level)     noexcept;
     std::string        log_levels_to_str(uint32_t a_levels)  noexcept;
 
