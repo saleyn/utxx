@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <utxx/variant_tree.hpp>
+#include <map>
 
 /// Throw utxx::config_error exception with current source location information
 #define UTXX_THROW_CONFIG_ERROR(...) \
@@ -52,5 +53,8 @@ namespace utxx {
     using config_error      = variant_tree_error;
     using config_bad_data   = variant_tree_bad_data;
     using config_bad_path   = variant_tree_bad_path;
+
+    /// Map of macro names to macro values for replacing macros in a config tree
+    using config_macros     = std::map<std::string, std::string>;
 
 } // namespace utxx

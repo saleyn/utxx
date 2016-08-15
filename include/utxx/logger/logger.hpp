@@ -424,7 +424,8 @@ struct logger : boost::noncopyable {
         on_msg_delegate_t;
 
     // Maps macros to values that can be used in configuration
-    typedef std::map<std::string, std::string> macro_var_map;
+    // DEPRECATED
+    using macro_var_map = config_macros;
 
 private:
     using concurrent_queue = concurrent_mpsc_queue<msg>;
@@ -452,7 +453,7 @@ private:
     bool                            m_silent_finish         = false;
     int                             m_fatal_kill_signal     = 0;
     long                            m_sched_yield_us        = 250;
-    macro_var_map                   m_macro_var_map;
+    config_macros                   m_macro_var_map;
 
     /// Signal set handled by the installed crash signal handler
     static std::atomic<sigset_t*>   m_crash_sigset;
@@ -574,7 +575,7 @@ public:
     // replaces in a future release
 
     /// Macro name->value mapping that can be used in configuration
-    const macro_var_map& macros() const { return m_macro_var_map; }
+    const config_macros& macros() const { return m_macro_var_map; }
     /// Add a macro value
     void  add_macro(const std::string& a_macro, const std::string& a_value);
     /// Replace all macros in a string that are found in macros() dictionary.
