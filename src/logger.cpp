@@ -568,8 +568,7 @@ std::ostream& logger::dump(std::ostream& out) const
 
     // Check the list of registered implementations. If corresponding
     // configuration section is found, initialize the implementation.
-    for(implementations_vector::const_iterator it = m_implementations.begin();
-            it != m_implementations.end(); ++it)
+    for(auto it = m_implementations.begin(); it != m_implementations.end(); ++it)
         (*it)->dump(s, "        ");
 
     return out << s.str();

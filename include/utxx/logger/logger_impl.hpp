@@ -65,15 +65,15 @@ struct logger_impl_mgr {
         return s_instance;
     }
 
-    void register_impl       (const char* config_name, impl_callback_t& factory);
-    void unregister_impl     (const char* config_name);
-    impl_callback_t* get_impl(const char* config_name);
+    void register_impl       (const std::string& config_name, impl_callback_t& factory);
+    void unregister_impl     (const std::string& config_name);
+    impl_callback_t* get_impl(const std::string& config_name);
 
     /// A static instance of the registrar must be created by
     /// each back-end in order to be automatically registered with
     /// the implementation manager.
     struct registrar {
-        registrar(const char* config_name, impl_callback_t& factory)
+        registrar(const std::string& config_name, impl_callback_t& factory)
             : name(config_name)
         {
             instance().register_impl(config_name, factory);
@@ -82,7 +82,7 @@ struct logger_impl_mgr {
             instance().unregister_impl(name);
         }
     private:
-        const char* name;
+        const std::string name;
     };
 
     impl_map_t& implementations()  { return m_implementations; }

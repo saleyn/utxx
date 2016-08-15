@@ -34,21 +34,22 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 void logger_impl_mgr::register_impl(
-    const char* config_name, std::function<logger_impl*(const char*)>& factory)
+    const std::string& config_name, std::function<logger_impl*(const char*)>& factory)
 {
     std::lock_guard<std::mutex> guard(m_mutex);
-    m_implementations[config_name] = factory;
+    auto it =  m_implementations.find(config_name);
+    if  (it == m_implementations.end())
+        m_implementations.insert(std::make_pair(config_name, factory));
 }
 
-void logger_impl_mgr::unregister_impl(const char* config_name)
+void logger_impl_mgr::unregister_impl(const std::string& config_name)
 {
-    BOOST_ASSERT(config_name);
     std::lock_guard<std::mutex> guard(m_mutex);
     m_implementations.erase(config_name);
 }
 
 logger_impl_mgr::impl_callback_t*
-logger_impl_mgr::get_impl(const char* config_name) {
+logger_impl_mgr::get_impl(const std::string& config_name) {
     std::lock_guard<std::mutex> guard(m_mutex);
     impl_map_t::iterator it = m_implementations.find(config_name);
     return (it != m_implementations.end()) ? &it->second : NULL;
