@@ -55,6 +55,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/config_tree.hpp>
 #include <utxx/concurrent_mpsc_queue.hpp>
 #include <utxx/logger/logger_enums.hpp>
+#include <utxx/logger/logger_util.hpp>
 #include <utxx/synch.hpp>
 #include <thread>
 #include <mutex>
@@ -211,20 +212,35 @@ struct logger : boost::noncopyable {
     };
 
     /// Return log level as a 1-char string
-    static const std::string& log_level_to_abbrev(log_level level)  noexcept;
+    /// DEPRECATED use logger_util.hpp:log_level_to_abbrev()
+    [[deprecated]]
+    static const std::string& log_level_to_abbrev(log_level level)  noexcept
+                              { return utxx::log_level_to_abbrev(level); }
 
     /// Convert a log_level to string
     /// @param level level to convert
     /// @param merge_trace when true all TRACE1-5 levels are returned as "TRACE"
+    /// DEPRECATED use logger_util.hpp:log_level_to_string()
+    [[deprecated]]
     static const std::string& log_level_to_string(log_level level,
-                                                  bool merge_trace=true)  noexcept;
+                                                  bool merge_trace=true)  noexcept
+                              { return utxx::log_level_to_string(level, merge_trace); }
     static const char*        log_level_to_str(log_level level, bool merge_trace=true) noexcept
                               { return log_level_to_string(level, merge_trace).c_str(); }
-    static size_t             log_level_size  (log_level level)     noexcept;
-    static std::string        log_levels_to_str(uint32_t a_levels)  noexcept;
-    /// Convert a <level> to the slot number in the <m_sig_msg> array
+
+    /// DEPRECATED use logger_util.hpp:log_level_size()
+    [[deprecated]]
+    static size_t             log_level_size  (log_level level)     noexcept
+                              { return log_level_size(level); }
+
+    /// DEPRECATED use logger_util.hpp:log_levels_to_str()
+    [[deprecated]]
+    static std::string        log_levels_to_str(uint32_t a_levels)  noexcept
+                              { return log_levels_to_str(a_levels); }
+
+    /// Convert a `level` to the slot number in the `m_sig_msg` array
     static int                level_to_signal_slot(log_level level) noexcept;
-    /// Convert a <level> to the slot number in the <m_sig_msg> array
+    /// Convert a `level` to the slot number in the `m_sig_msg` array
     static log_level          signal_slot_to_level(int slot)        noexcept;
 
     typedef boost::shared_ptr<logger_impl>  impl;
@@ -613,11 +629,20 @@ public:
     /// Converts a delimited string to a bitmask of corresponding levels.
     /// This method is used for configuration parsing.
     /// @param a_levels delimited log levels (e.g. "DEBUG | INFO | WARNING").
-    static int parse_log_levels(const std::string& levels) throw(std::runtime_error);
+    [[deprecated]]
+    static int parse_log_levels(const std::string& levels) throw(std::runtime_error)
+        { return utxx::parse_log_levels(levels); }
+
     /// Converts a string (e.g. "INFO") to the corresponding log level.
-    static log_level parse_log_level(const std::string& a_level) throw(std::runtime_error);
+    [[deprecated]]
+    static log_level parse_log_level(const std::string& a_level) throw(std::runtime_error)
+        { return utxx::parse_log_level(a_level); }
+
     /// Convert a string (e.g. "INFO") to the log levels greater or equal to it.
-    static int parse_min_log_level(const std::string& a_level) throw(std::runtime_error);
+    [[deprecated]]
+    static int parse_min_log_level(const std::string& a_level) throw(std::runtime_error)
+        { return utxx::parse_min_log_level(a_level); }
+
     /// String representation of log levels enabled by default.  Used in config
     /// parsing.
     static const char* default_log_levels;

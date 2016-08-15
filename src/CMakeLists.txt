@@ -15,6 +15,7 @@ list(APPEND UTXX_SRCS
   logger_impl_file.cpp
   logger_impl_scribe.cpp
   logger_impl_syslog.cpp
+  logger_util.cpp
   path.cpp
   signal_block.cpp
   string.cpp
