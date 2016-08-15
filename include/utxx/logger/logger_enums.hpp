@@ -67,7 +67,8 @@ enum log_level {
 ///   1 = WARNING, 2 = NOTICE, 3 = INFO, 4 = DEBUG, 5 = TRACE, 6..10 = TRACE1-5
 template <log_level L>
 constexpr int as_int() {
-    return  L >= LEVEL_WARNING                 ? 1 :
+    return  L == LEVEL_NONE                    ? 0 :
+            (L>= LEVEL_WARNING)                ? 1 :
             (L & LEVEL_NOTICE)                 ? 2 :
             (L & LEVEL_INFO)                   ? 3 :
             (L & LEVEL_DEBUG)                  ? 4 :
@@ -82,12 +83,14 @@ constexpr int as_int() {
 /// Function to map log_level into range [1 ... 10].
 /// Same as the static version above, but usable at run-time
 inline int as_int(log_level L) {
+    if (L == utxx::LEVEL_NONE) return 0;
     int level = __builtin_ffs(L);
     return 11 - (level > 10 ? 10 : level);
 };
 
 /// Function to map an integer in range [1 ... 10] to log_level [WARNING ... TRACE5].
 inline log_level as_log_level(uint8_t a) {
+    if (a == 0) return utxx::LEVEL_NONE;
     uint8_t i = 10 - (a > 10 ? 10 : a);
     return log_level(i < 5 ? (1 << 5 | 1 << i) : 1 << i);
 }

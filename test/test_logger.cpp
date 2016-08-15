@@ -32,6 +32,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 {
     variant_tree pt;
 
+    BOOST_CHECK_EQUAL(0, (as_int<LEVEL_NONE>()));
     BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ALERT>()));
     BOOST_CHECK_EQUAL(1, (as_int<LEVEL_FATAL>()));
     BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ERROR>()));
@@ -46,6 +47,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(9, (as_int<LEVEL_TRACE4>()));
     BOOST_CHECK_EQUAL(10,(as_int<LEVEL_TRACE5>()));
 
+    BOOST_CHECK_EQUAL(0, (as_int(LEVEL_NONE)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ALERT)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_FATAL)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ERROR)));
@@ -60,6 +62,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(9, (as_int(LEVEL_TRACE4)));
     BOOST_CHECK_EQUAL(10,(as_int(LEVEL_TRACE5)));
 
+    BOOST_CHECK(LEVEL_NONE    == as_log_level(0 ));
     BOOST_CHECK(LEVEL_ERROR   == as_log_level(0 ));
     BOOST_CHECK(LEVEL_WARNING == as_log_level(1 ));
     BOOST_CHECK(LEVEL_NOTICE  == as_log_level(2 ));
@@ -72,50 +75,52 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK(LEVEL_TRACE4  == as_log_level(9 ));
     BOOST_CHECK(LEVEL_TRACE5  == as_log_level(10));
 
-    BOOST_CHECK(LEVEL_TRACE   == logger::parse_log_level("trace"));
-    BOOST_CHECK(LEVEL_TRACE5  == logger::parse_log_level("trace5"));
-    BOOST_CHECK(LEVEL_TRACE1  == logger::parse_log_level("trace1"));
-    BOOST_CHECK(LEVEL_INFO    == logger::parse_log_level("info"));
-    BOOST_CHECK(LEVEL_WARNING == logger::parse_log_level("warning"));
-    BOOST_CHECK(LEVEL_ERROR   == logger::parse_log_level("error"));
-    BOOST_CHECK(LEVEL_WARNING == logger::parse_log_level("1"));
-    BOOST_CHECK_EQUAL(int(LEVEL_INFO),  int(logger::parse_log_level("3")));
-    BOOST_CHECK_EQUAL(int(LEVEL_DEBUG), int(logger::parse_log_level("4")));
-    BOOST_CHECK_EQUAL(int(LEVEL_TRACE), int(logger::parse_log_level("5")));
-    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(logger::parse_log_level("11")));
-    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(logger::parse_log_level("110")));
+    BOOST_CHECK(LEVEL_TRACE   == parse_log_level("trace"));
+    BOOST_CHECK(LEVEL_TRACE5  == parse_log_level("trace5"));
+    BOOST_CHECK(LEVEL_TRACE1  == parse_log_level("trace1"));
+    BOOST_CHECK(LEVEL_INFO    == parse_log_level("info"));
+    BOOST_CHECK(LEVEL_WARNING == parse_log_level("warning"));
+    BOOST_CHECK(LEVEL_ERROR   == parse_log_level("error"));
+    BOOST_CHECK(LEVEL_WARNING == parse_log_level("1"));
+    BOOST_CHECK(LEVEL_NONE    == parse_log_level("none"));
+    BOOST_CHECK_EQUAL(int(LEVEL_INFO),  int(parse_log_level("3")));
+    BOOST_CHECK_EQUAL(int(LEVEL_DEBUG), int(parse_log_level("4")));
+    BOOST_CHECK_EQUAL(int(LEVEL_TRACE), int(parse_log_level("5")));
+    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(parse_log_level("11")));
+    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(parse_log_level("110")));
     BOOST_CHECK_THROW(logger::parse_log_level("trace6"), std::runtime_error);
 
-    BOOST_CHECK_EQUAL("TRACE5", logger::log_level_to_string(utxx::LEVEL_TRACE5, false));
-    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE5));
-    BOOST_CHECK_EQUAL("TRACE1", logger::log_level_to_string(utxx::LEVEL_TRACE1, false));
-    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE1));
-    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE, false));
-    BOOST_CHECK_EQUAL("TRACE",  logger::log_level_to_string(utxx::LEVEL_TRACE));
-    BOOST_CHECK_EQUAL("DEBUG",  logger::log_level_to_string(utxx::LEVEL_DEBUG, false));
-    BOOST_CHECK_EQUAL("DEBUG",  logger::log_level_to_string(utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL("FATAL",  logger::log_level_to_string(utxx::LEVEL_FATAL));
-    BOOST_CHECK_EQUAL("ALERT",  logger::log_level_to_string(utxx::LEVEL_ALERT));
-    BOOST_CHECK_EQUAL("LOG",    logger::log_level_to_string(utxx::LEVEL_LOG));
+    BOOST_CHECK_EQUAL("TRACE5", log_level_to_string(utxx::LEVEL_TRACE5, false));
+    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE5));
+    BOOST_CHECK_EQUAL("TRACE1", log_level_to_string(utxx::LEVEL_TRACE1, false));
+    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE1));
+    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE, false));
+    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE));
+    BOOST_CHECK_EQUAL("DEBUG",  log_level_to_string(utxx::LEVEL_DEBUG, false));
+    BOOST_CHECK_EQUAL("DEBUG",  log_level_to_string(utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("FATAL",  log_level_to_string(utxx::LEVEL_FATAL));
+    BOOST_CHECK_EQUAL("ALERT",  log_level_to_string(utxx::LEVEL_ALERT));
+    BOOST_CHECK_EQUAL("LOG",    log_level_to_string(utxx::LEVEL_LOG));
 
-    BOOST_CHECK_EQUAL("TRACE5|TRACE|DEBUG", logger::log_levels_to_str(utxx::LEVEL_TRACE5 | utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL("TRACE|DEBUG",        logger::log_levels_to_str(utxx::LEVEL_TRACE  | utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL("DEBUG|INFO",         logger::log_levels_to_str(utxx::LEVEL_INFO   | utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("TRACE5|TRACE|DEBUG", log_levels_to_str(utxx::LEVEL_TRACE5 | utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("TRACE|DEBUG",        log_levels_to_str(utxx::LEVEL_TRACE  | utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("DEBUG|INFO",         log_levels_to_str(utxx::LEVEL_INFO   | utxx::LEVEL_DEBUG));
 
-    BOOST_CHECK_EQUAL("T",                  logger::log_level_to_abbrev(utxx::LEVEL_TRACE1));
-    BOOST_CHECK_EQUAL("T",                  logger::log_level_to_abbrev(utxx::LEVEL_TRACE5));
-    BOOST_CHECK_EQUAL("T",                  logger::log_level_to_abbrev(utxx::LEVEL_TRACE));
-    BOOST_CHECK_EQUAL("D",                  logger::log_level_to_abbrev(utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE1));
+    BOOST_CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE5));
+    BOOST_CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE));
+    BOOST_CHECK_EQUAL("D",                  log_level_to_abbrev(utxx::LEVEL_DEBUG));
 
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_TRACE1));
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_TRACE5));
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_TRACE));
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_ERROR));
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_FATAL));
-    BOOST_CHECK_EQUAL(5u,                   logger::log_level_size(utxx::LEVEL_ALERT));
-    BOOST_CHECK_EQUAL(7u,                   logger::log_level_size(utxx::LEVEL_WARNING));
-    BOOST_CHECK_EQUAL(3u,                   logger::log_level_size(utxx::LEVEL_LOG));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE1));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE5));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_DEBUG));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_ERROR));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_FATAL));
+    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_ALERT));
+    BOOST_CHECK_EQUAL(7u,                   log_level_size(utxx::LEVEL_WARNING));
+    BOOST_CHECK_EQUAL(3u,                   log_level_size(utxx::LEVEL_LOG));
+    BOOST_CHECK_EQUAL(4u,                   log_level_size(utxx::LEVEL_NONE));
 
     pt.put("logger.timestamp",             variant("time-usec"));
     pt.put("logger.min-level-filter",      variant("debug"));

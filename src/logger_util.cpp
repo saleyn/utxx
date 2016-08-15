@@ -61,7 +61,6 @@ const std::string& log_level_to_abbrev(log_level level) noexcept
         case LEVEL_LOG      : return s_levels[8];
         default             : break;
     }
-    assert(false);
     return s_levels[9];
 }
 
@@ -94,7 +93,6 @@ const std::string& log_level_to_string(log_level lvl, bool merge_trace) noexcept
         case LEVEL_LOG      : return s_levels[8];
         default             : break;
     }
-    assert(false);
     return s_levels[9];
 }
 
@@ -109,7 +107,8 @@ size_t log_level_size(log_level level) noexcept
         case LEVEL_TRACE1   :
         case LEVEL_TRACE    :
         case LEVEL_DEBUG    : return 5;
-        case LEVEL_INFO     : return 4;
+        case LEVEL_INFO     :
+        case LEVEL_NONE     : return 4;
         case LEVEL_NOTICE   : return 6;
         case LEVEL_WARNING  : return 7;
         case LEVEL_ERROR    :
