@@ -226,12 +226,12 @@ struct logger : boost::noncopyable {
                                                   bool merge_trace=true)  noexcept
                               { return utxx::log_level_to_string(level, merge_trace); }
     static const char*        log_level_to_str(log_level level, bool merge_trace=true) noexcept
-                              { return log_level_to_string(level, merge_trace).c_str(); }
+                              { return utxx::log_level_to_string(level, merge_trace).c_str(); }
 
     /// DEPRECATED use logger_util.hpp:log_level_size()
     [[deprecated]]
     static size_t             log_level_size  (log_level level)     noexcept
-                              { return log_level_size(level); }
+                              { return utxx::log_level_size(level); }
 
     /// DEPRECATED use logger_util.hpp:log_levels_to_str()
     [[deprecated]]
