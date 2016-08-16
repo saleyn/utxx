@@ -234,7 +234,7 @@ struct logger : boost::noncopyable {
     static size_t             log_level_size  (log_level level)     noexcept
                               { return utxx::log_level_size(level); }
 
-    /// DEPRECATED use logger_util.hpp:log_levels_to_str()
+    /// DEPRECATED use logger_util.hpp:log_levels_to_cstr()
     [[deprecated]]
     static std::string        log_levels_to_str(uint32_t a_levels)  noexcept
                               { return utxx::log_levels_to_str(a_levels); }
