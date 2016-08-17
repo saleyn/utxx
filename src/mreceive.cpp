@@ -881,8 +881,10 @@ int main(int argc, char *argv[])
             // errno == EGAIN means that no more data is available.
             // Action is not to be invoked here if there is no new data:
             if (errno != EAGAIN) {
-                perror("read");
-                terminate = 1;
+                if (!terminate) {
+                    perror("read");
+                    terminate = 1;
+                }
                 close(addr[i].fd);
             }
             break;
