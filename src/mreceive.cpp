@@ -1138,6 +1138,7 @@ void print_report() {
   }
 
   min_pkt_time  = LONG_MAX;
+  max_pkt_time  = 0;
   sum_pkt_time  = 0;
   pkt_time_count= 0;
   last_pkts     = pkts;
