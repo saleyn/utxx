@@ -103,7 +103,7 @@ struct address {
 };
 
 sigjmp_buf  jbuf;
-struct address   addrs[256];
+struct address   addrs[1024];
 struct address*  addrs_idx[1024];   // Maps fd -> addrs*
 struct address** sorted_addrs[4];   // For report stats sorting
 
