@@ -56,7 +56,10 @@ namespace utxx {
         std::string     path;
 
         addr_info() : m_is_ipv4(false) {}
-        addr_info(const std::string& a_url) { parse(a_url); }
+
+        addr_info(addr_info const& a_rhs)   { *this = a_rhs; }
+        addr_info(addr_info&&      a_rhs)   { *this = std::move(a_rhs); }
+        addr_info(const std::string& a_url) { parse(a_url);  }
 
         void operator=(addr_info const&);
         void operator=(addr_info&&);
