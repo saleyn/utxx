@@ -88,6 +88,15 @@ bool addr_info::assign(
     return m_is_ipv4 && a_proto != UNDEFINED;
 }
 
+void addr_info::clear()
+{
+    url.clear();
+    proto = UNDEFINED;
+    addr.clear();
+    port.clear();
+    path.clear();
+}
+
 std::string addr_info::to_string() const
 {
     std::stringstream s;
