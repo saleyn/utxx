@@ -31,11 +31,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <utxx/url.hpp>
+#include <utxx/string.hpp>
 #include <boost/optional.hpp>
 #include <boost/xpressive/xpressive.hpp>
 #include <boost/assign.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 
 namespace utxx {
 
@@ -54,6 +54,23 @@ namespace detail {
     }
 
 } // namespace detail
+
+bool addr_info::assign(
+    connection_type    a_proto, std::string const& a_addr, uint16_t a_port,
+    std::string const& a_path,  std::string const& a_iface)
+{
+    proto = a_proto;
+    addr  = a_addr;
+    port  = std::to_string(a_port);
+    path  = a_path;
+
+    url   = utxx::to_string(detail::connection_type_to_str(proto), "://",
+                      addr, a_iface.empty() ? "" : ";", a_iface, ':', port,
+                      path.empty() || path[0] == '/' ? "" : "/", path);
+    m_is_ipv4 = is_ipv4_addr(addr);
+
+    return m_is_ipv4 && a_proto != UNDEFINED;
+}
 
 std::string addr_info::to_string() const
 {
@@ -80,10 +97,10 @@ bool is_ipv4_addr(const std::string& a_addr)
 
     bool res = boost::xpressive::regex_search(a_addr, l_what, s_re_ip);
     return res 
-        && boost::lexical_cast<int>(l_what[d1]) < 256
-        && boost::lexical_cast<int>(l_what[d2]) < 256
-        && boost::lexical_cast<int>(l_what[d3]) < 256
-        && boost::lexical_cast<int>(l_what[d4]) < 256;
+        && std::stoi(l_what[d1]) < 256
+        && std::stoi(l_what[d2]) < 256
+        && std::stoi(l_what[d3]) < 256
+        && std::stoi(l_what[d4]) < 256;
 }
 
 //----------------------------------------------------------------------------

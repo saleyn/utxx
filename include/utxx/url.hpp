@@ -63,6 +63,11 @@ namespace utxx {
         /// PROTO can be one of "tcp", "udp", "uds", "file", "cmd"
         bool parse(const std::string& a_url);
 
+        /// Update addr_info from given components (PROTO://ADDR[;IFACE][:PORT][/PATH])
+        ///
+        bool assign(connection_type a_proto, std::string const& a_addr, uint16_t a_port,
+                    std::string const& a_path = "", std::string const& a_iface = "");
+
         bool is_ipv4() const { return m_is_ipv4; }
 
         int                 port_int()  const { return atoi(port.c_str()); }

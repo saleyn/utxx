@@ -126,4 +126,18 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89:99999"));
     BOOST_CHECK_THROW(split_addr(ip, true), runtime_error);
     BOOST_CHECK_THROW(split_addr("123.45.67.89:99999", true), runtime_error);
+
+    BOOST_CHECK(!l_url.assign(TCP,       "google.com", 1234));
+    BOOST_CHECK(!l_url.assign(UNDEFINED, "google.com", 1234));
+    BOOST_CHECK( l_url.assign(TCP,       "127.1.2.3",  1234));
+    BOOST_CHECK_EQUAL("tcp://127.1.2.3:1234", l_url.url);
+
+    BOOST_CHECK( l_url.assign(TCP,       "127.1.2.3",  1234, "home"));
+    BOOST_CHECK_EQUAL("tcp://127.1.2.3:1234/home", l_url.url);
+
+    BOOST_CHECK( l_url.assign(TCP,       "127.1.2.3",  1234, "/home"));
+    BOOST_CHECK_EQUAL("tcp://127.1.2.3:1234/home", l_url.url);
+
+    BOOST_CHECK( l_url.assign(TCP,       "127.1.2.3",  1234, "/home", "eth0"));
+    BOOST_CHECK_EQUAL("tcp://127.1.2.3;eth0:1234/home", l_url.url);
 }
