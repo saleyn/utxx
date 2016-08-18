@@ -350,12 +350,11 @@ namespace utxx {
                         throw utxx::runtime_error
                             ("Invalid item size in file ", a_filename,
                              " (expected ", sizeof(T), " got ", h.rec_size, ')');
-                    if (h.recs_offset != offsetof(header, records))
+                    if (h.recs_offset != sizeof(header))
                         throw utxx::runtime_error
                             ("Mismatch in the records offset in ",
                              a_filename, " (expected=",
-                             offsetof(header, records), ", got=",
-                             h.recs_offset, ')');
+                             sizeof(header), ", got=", h.recs_offset, ')');
                     // Increase the file size if instructed to do so.
                     if (h.max_recs < a_max_recs) {
                         h.max_recs = a_max_recs;
@@ -382,7 +381,7 @@ namespace utxx {
                 h.rec_count.store(0, std::memory_order_release);
                 h.max_recs    = a_max_recs;
                 h.rec_size    = sizeof(T);
-                h.recs_offset = offsetof(header, records);
+                h.recs_offset = sizeof(header);
 
                 if (::write(l_fd, &h, sizeof(h)) < 0)
                     throw io_error(errno, "Error writing to file ", a_filename);
@@ -463,10 +462,10 @@ namespace utxx {
                     m_header = reinterpret_cast<header*>(fres.first);
                     m_begin  = m_header->records;
                     m_end    = m_begin + m_header->max_recs;
-                    if (m_header->recs_offset != offsetof(header, records))
+                    if (m_header->recs_offset != sizeof(header))
                         throw runtime_error("Mismatch in the records offset in '",
                                             a_name, "' (expected=",
-                                            offsetof(header, records), ", got=",
+                                            sizeof(header), ", got=",
                                             m_header->recs_offset, ')');
                     BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
                                  reinterpret_cast<char*>(m_header)+fres.second);
@@ -510,7 +509,7 @@ namespace utxx {
             m_header->rec_count.store(0, std::memory_order_release);
             m_header->max_recs    = a_max_recs;
             m_header->rec_size    = sizeof(T);
-            m_header->recs_offset = offsetof(header, records);
+            m_header->recs_offset = sizeof(header);
 
             m_begin  = m_header->records;
             m_end    = m_begin + a_max_recs;

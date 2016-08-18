@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_URL_HPP_
-#define _UTXX_URL_HPP_
+#pragma once
 
 #include <stdlib.h>     /* atoi */
 #include <string>
@@ -122,6 +121,3 @@ namespace utxx {
         return std::make_pair(a_addr.substr(0, n), port);
     }
 } // namespace utxx
-
-#endif // _UTXX_URL_HPP_
-

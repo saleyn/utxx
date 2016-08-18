@@ -33,19 +33,19 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_ROBUST_MUTEX_HPP_
 #define _UTXX_ROBUST_MUTEX_HPP_
 
-#include <boost/noncopyable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/function.hpp>
+#include <mutex>
+#include <functional>
+#include <utxx/error.hpp>
 
 namespace utxx {
     class robust_mutex {
     public:
-        typedef robust_mutex self_type;
-        typedef boost::function<int (robust_mutex&)> make_consistent_functor;
+        using self_type               = robust_mutex;
+        using make_consistent_functor = std::function<int (robust_mutex&)>;
 
-        typedef pthread_mutex_t* native_handle_type;
-        typedef boost::unique_lock<robust_mutex> scoped_lock;
-        typedef boost::detail::try_lock_wrapper<robust_mutex> scoped_try_lock;
+        using native_handle_type      = pthread_mutex_t*;
+        using scoped_lock             = std::lock_guard<robust_mutex>;
+        using scoped_try_lock         = std::unique_lock<robust_mutex>;
 
         make_consistent_functor on_make_consistent;
 
@@ -71,13 +71,13 @@ namespace utxx {
             pthread_mutexattr_init(&attr);
             pthread_mutexattr_t* mutex_attr = a_attr ? a_attr : &attr;
             if (pthread_mutexattr_setpshared(mutex_attr, PTHREAD_PROCESS_SHARED) < 0)
-                boost::throw_exception(boost::lock_error(errno));
+                UTXX_THROW_IO_ERROR(errno);
             if (pthread_mutexattr_setrobust_np(mutex_attr, PTHREAD_MUTEX_ROBUST_NP) < 0)
-                boost::throw_exception(boost::lock_error(errno));
+                UTXX_THROW_IO_ERROR(errno);
             if (pthread_mutexattr_setprotocol(mutex_attr, PTHREAD_PRIO_INHERIT) < 0)
-                boost::throw_exception(boost::lock_error(errno));
+                UTXX_THROW_IO_ERROR(errno);
             if (pthread_mutex_init(m, mutex_attr) < 0)
-                boost::throw_exception(boost::lock_error(errno));
+                UTXX_THROW_IO_ERROR(errno);
         }
 
         ~robust_mutex() {
@@ -86,7 +86,7 @@ namespace utxx {
         }
 
         void lock() {
-            BOOST_ASSERT(m);
+            assert(m);
             int res;
             while (1) {
                 res = pthread_mutex_lock(m);
@@ -100,38 +100,33 @@ namespace utxx {
                                 ? on_make_consistent(*this)
                                 : make_consistent();
                         if (res)
-                            boost::throw_exception(boost::lock_error(res));
+                            UTXX_THROW_IO_ERROR(res);
                         return;
                     default:
                         // If ENOTRECOVERABLE - mutex is not recoverable, must be destroyed.
-                        boost::throw_exception(boost::lock_error(res));
+                        UTXX_THROW_IO_ERROR(res);
                         return;
                 }
             }
         }
 
         void unlock() {
-            BOOST_ASSERT(m);
+            assert(m);
             int ret;
-            do {
-                ret = pthread_mutex_unlock(m);
-            } while (ret == EINTR);
-            BOOST_VERIFY(!ret);
+            do { ret = pthread_mutex_unlock(m); } while (ret == EINTR);
         }
 
         bool try_lock() {
-            BOOST_ASSERT(m);
+            assert(m);
             int res;
-            do {
-                res = pthread_mutex_trylock(m);
-            } while (res == EINTR);
-            if(res && (res!=EBUSY))
-                boost::throw_exception(boost::lock_error(res));
+            do { res = pthread_mutex_trylock(m); } while (res == EINTR);
+            if ( res && (res!=EBUSY) )
+                UTXX_THROW_IO_ERROR(res);
             return !res;
         }
 
         int make_consistent() {
-            BOOST_ASSERT(m);
+            assert(m);
             return pthread_mutex_consistent_np(m);
         }
 

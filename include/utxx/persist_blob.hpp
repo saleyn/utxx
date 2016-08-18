@@ -81,9 +81,9 @@ private:
     Lock                m_lock;
 
 public:
-    typedef T                               value_type;
-    typedef typename Lock::scoped_lock      scoped_lock;
-    typedef typename Lock::scoped_try_lock  scoped_try_lock;
+    using value_type      = T;
+    using scoped_lock     = typename Lock::scoped_lock;
+    using scoped_try_lock = typename Lock::scoped_try_lock;
 
     persist_blob()
         : m_blob(NULL)

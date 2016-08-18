@@ -379,8 +379,8 @@ struct null_lock {
 typedef boost::mutex mutex_lock;
 
 struct null_lock {
-    typedef boost::lock_guard<null_lock> scoped_lock;
-    typedef boost::detail::try_lock_wrapper<null_lock> scoped_try_lock;
+    using scoped_lock     = std::lock_guard<null_lock>;
+    using scoped_try_lock = std::unique_lock<null_lock>;
     void lock()     {}
     int  try_lock() { return 0; }
     void unlock()   {}

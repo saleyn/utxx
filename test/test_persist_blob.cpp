@@ -125,14 +125,14 @@ namespace {
                 test_blob o(i, i<<1);
                 m_logger.set(o);
                 if (i % 5000 == 0) {
-                    std::cerr <<
-                        (to_string("producer", m_instance, " - ", i) +
-                         to_string(" (o1=", o.i1, ", o2=", o.i2, ")\n"));
+                    BOOST_TEST_MESSAGE(
+                        to_string("producer", m_instance, " - ", i) <<
+                        to_string(" (o1=", o.i1, ", o2=", o.i2, ")"));
                 }
                 sched_yield();
             }
             if (verbosity::level() > VERBOSE_NONE)
-                std::cout << to_string("Producer", m_instance, " finished!\n");
+                BOOST_TEST_MESSAGE(to_string("Producer", m_instance, " finished!"));
         }
     };
 
