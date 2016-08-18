@@ -63,6 +63,14 @@ void addr_info::operator=(addr_info const& a_rhs) {
     path  = a_rhs.path;
 }
 
+void addr_info::operator=(addr_info&& a_rhs) {
+    url   = std::move(a_rhs.url);
+    proto = a_rhs.proto;
+    addr  = std::move(a_rhs.addr);
+    port  = std::move(a_rhs.port);
+    path  = std::move(a_rhs.path);
+}
+
 bool addr_info::assign(
     connection_type    a_proto, std::string const& a_addr, uint16_t a_port,
     std::string const& a_path,  std::string const& a_iface)

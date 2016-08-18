@@ -59,6 +59,7 @@ namespace utxx {
         addr_info(const std::string& a_url) { parse(a_url); }
 
         void operator=(addr_info const&);
+        void operator=(addr_info&&);
 
         bool operator==(addr_info const& a_rhs) const { return url == a_rhs.url; }
 
