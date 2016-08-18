@@ -62,6 +62,7 @@ namespace utxx {
         void operator=(addr_info&&);
 
         bool operator==(addr_info const& a_rhs) const { return url == a_rhs.url; }
+        bool operator!=(addr_info const& a_rhs) const { return url != a_rhs.url; }
 
         /// Parse a URL in the form PROTO://ADDRESS[:PORT][/PATH]
         ///
