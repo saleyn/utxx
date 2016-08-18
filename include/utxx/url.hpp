@@ -58,6 +58,10 @@ namespace utxx {
         addr_info() : m_is_ipv4(false) {}
         addr_info(const std::string& a_url) { parse(a_url); }
 
+        void operator=(addr_info const&);
+
+        bool operator==(addr_info const& a_rhs) const { return url == a_rhs.url; }
+
         /// Parse a URL in the form PROTO://ADDRESS[:PORT][/PATH]
         ///
         /// PROTO can be one of "tcp", "udp", "uds", "file", "cmd"
