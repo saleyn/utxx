@@ -19,6 +19,7 @@ list(APPEND TEST_SRCS
     test_config_validator.cpp
     test_convert.cpp
     test_decimal.cpp
+    test_dynamic_config.cpp
     test_enum.cpp
     test_error.cpp
     test_file_reader.cpp

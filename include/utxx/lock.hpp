@@ -49,8 +49,8 @@ namespace utxx {
     struct null_lock {
         typedef robust_mutex::make_consistent_functor make_consistent_functor;
         typedef void* native_handle_type;
-        typedef boost::unique_lock<null_lock> scoped_lock;
-        typedef boost::detail::try_lock_wrapper<null_lock> scoped_try_lock;
+        typedef std::unique_lock<null_lock> scoped_lock;
+        typedef std::unique_lock<null_lock> scoped_try_lock;
 
         struct lock_data {};
 

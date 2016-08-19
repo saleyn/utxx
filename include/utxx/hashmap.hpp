@@ -115,7 +115,7 @@ namespace detail {
     //-----------------------------------------------------------------------------
     // MurmurHash2, 64-bit and 32-bit versions, by Austin Appleby (MIT license)
     //-----------------------------------------------------------------------------
-    uint64_t murmur_hash64(const void* key, int len, unsigned int seed)
+    inline uint64_t murmur_hash64(const void* key, int len, unsigned int seed)
     {
         const uint64_t m = 0xc6a4a7935bd1e995;
         const int r = 47;
@@ -159,7 +159,7 @@ namespace detail {
     } 
 
     // 64-bit hash for 32-bit platforms
-    uint32_t murmur_hash32(const void* key, int len, unsigned int seed)
+    inline uint32_t murmur_hash32(const void* key, int len, unsigned int seed)
     {
         // 'm' and 'r' are mixing constants generated offline.
         // They're not really 'magic', they just happen to work well.
