@@ -87,60 +87,27 @@ namespace utxx {
     struct dynamic_config {
         static const int EXCEEDED_CAPACITY = -2;
 
-        explicit
-        dynamic_config(const std::string& a_file = std::string())
-            : m_last_seen_count(0)
-        {
-            if (!a_file.empty())
-                init(a_file);
-        }
+        explicit dynamic_config(const std::string& a_file = std::string());
 
         ~dynamic_config() { m_storage.close(); }
 
         /// @return true if file didn't exist and was created.
-        bool init(const std::string& a_filename) {
-            if (a_filename.empty())
-                UTXX_THROW_BADARG_ERROR("Invalid filename");
+        bool   init(const std::string& a_filename);
 
-            auto   res = m_storage.init(a_filename.c_str(), nullptr, false);
-            if (res)
-                new (&m_mutex) robust_mutex(m_storage->m_mutex, true);
-            else
-                m_mutex.set(m_storage->m_mutex);
+        void   close();
 
-            update();
-
-            return res;
-        }
-
-        void close() {
-            m_storage.close();
-            m_last_seen_count = 0;
-            m_by_name.clear();
-            m_by_addr.clear();
-        }
-
-        size_t count() const {
-            auto   pcount = (std::atomic<size_t>*)&m_storage->m_count;
-            return pcount->load(std::memory_order_relaxed);
-        }
+        size_t count() const;
 
         /// Update parameter name lookup maps
-        void update() { update(true); }
+        void   update() { update(true); }
 
         /// Get index of a given parameter's address
         /// @return -1 if parameter doesn't exist
-        int index(const void* p) const {
-            auto   it =  m_by_addr.find(p);
-            return it == m_by_addr.end() ? -1 : it->second;
-        }
+        int    index(const void* p) const;
 
         /// Get name of a given parameter's address
         /// @return null if parameter doesn't exist
-        const char* name(const void* p) const {
-            auto   it =  m_by_addr.find(p);
-            return it == m_by_addr.end() ? nullptr : m_storage->name(it->second);
-        }
+        const char* name(const void* p) const;
 
         template <class T>
         typename std::enable_if<
@@ -149,18 +116,7 @@ namespace utxx {
             std::is_same<T, double>::value      ||
             std::is_same<T, dparam_str_t>::value,
             typename std::add_lvalue_reference<T>::type>::type
-        bind(const char* a_name) {
-            lock_guard_t g(m_mutex);
-            update(false);
-
-            static T*   dummy;
-            auto tp  =  type(dummy);
-            auto res =  add(a_name, tp);
-            if  (res == EXCEEDED_CAPACITY)
-                UTXX_THROW_RUNTIME_ERROR("Too many parameters (count=",
-                                         m_storage->m_count, ')');
-            return *reinterpret_cast<T*>(m_storage->data(res));
-        }
+        bind(const char* a_name);
 
     private:
         using mutex_t        = pthread_mutex_t;
@@ -195,44 +151,8 @@ namespace utxx {
         }
 
         /// Add a parameter to storage
-        int add(const char* a_name, dparam_t a_tp) {
-            auto nm = to_name(a_name);
-
-            //lock_guard_t g(m_mutex);
-            auto it = m_by_name.find(nm.c_str());
-            if (it != m_by_name.end()) {
-                auto  idx = it->second;
-                auto& prm = m_storage.dirty_get().get(idx);
-                return (prm.type() == a_tp) ? idx : EXCEEDED_CAPACITY;
-            }
-
-            auto idx = m_storage->add(nm.c_str(), a_tp);
-            if (idx < 0)
-                return idx;
-
-            auto name = m_storage->name(idx);
-            auto data = m_storage->data(idx);
-
-            m_by_name.emplace(std::make_pair(name, idx));
-            m_by_addr.emplace(std::make_pair(data, idx));
-
-            return idx;
-        }
-
-        void update(bool a_with_lock) {
-            auto n =  count();
-            if  (n == m_last_seen_count)
-                return;
-
-            unique_guard_t g(m_mutex, std::defer_lock_t{});
-            if (a_with_lock) g.lock();
-
-            for (auto i = m_last_seen_count; i < m_storage->m_count; ++i) {
-                const char* p = m_storage->name(i);
-                m_by_name.emplace(std::make_pair(p, i));
-                m_by_addr.emplace(std::make_pair(p, i));
-            }
-        }
+        int  add(const char* a_name, dparam_t a_tp);
+        void update(bool a_with_lock);
     };
 
     //--------------------------------------------------------------------------
@@ -344,6 +264,9 @@ namespace utxx {
         str_t       m_data;
     };
 
+    //--------------------------------------------------------------------------
+    /// Memory-mapped file storage
+    //--------------------------------------------------------------------------
     template <int MaxParams>
     struct dynamic_config<MaxParams>::storage {
         typedef char name_t[96];
@@ -387,5 +310,131 @@ namespace utxx {
         name_t  m_names[MaxParams];
         char    m_data[0];
     };
+
+    //==========================================================================
+    // IMPLEMENTATION
+    //==========================================================================
+
+    //--------------------------------------------------------------------------
+    // dynamic_config
+    //--------------------------------------------------------------------------
+    template <int MaxParams>
+    dynamic_config<MaxParams>
+    ::dynamic_config(const std::string& a_file) : m_last_seen_count(0) {
+        if (!a_file.empty())
+            init(a_file);
+    }
+
+    template <int MaxParams>
+    bool dynamic_config<MaxParams>
+    ::init(const std::string& a_filename) {
+        if (a_filename.empty())
+            UTXX_THROW_BADARG_ERROR("Invalid filename");
+
+        auto   res = m_storage.init(a_filename.c_str(), nullptr, false);
+        if (res)
+            new (&m_mutex) robust_mutex(m_storage->m_mutex, true);
+        else
+            m_mutex.set(m_storage->m_mutex);
+
+        update();
+
+        return res;
+    }
+
+    template <int MaxParams>
+    void dynamic_config<MaxParams>
+    ::close() {
+        m_storage.close();
+        m_last_seen_count = 0;
+        m_by_name.clear();
+        m_by_addr.clear();
+    }
+
+    template <int MaxParams>
+    size_t dynamic_config<MaxParams>
+    ::count() const {
+        auto   pcount = (std::atomic<size_t>*)&m_storage->m_count;
+        return pcount->load(std::memory_order_relaxed);
+    }
+
+    template <int MaxParams>
+    int dynamic_config<MaxParams>
+    ::index(const void* p) const {
+        auto   it =  m_by_addr.find(p);
+        return it == m_by_addr.end() ? -1 : it->second;
+    }
+
+    template <int MaxParams>
+    const char* dynamic_config<MaxParams>
+    ::name(const void* p) const {
+        auto   it =  m_by_addr.find(p);
+        return it == m_by_addr.end() ? nullptr : m_storage->name(it->second);
+    }
+
+    template <int MaxParams>
+    template <class T>
+    typename std::enable_if<
+        std::is_same<T, long>::value        ||
+        std::is_same<T, bool>::value        ||
+        std::is_same<T, double>::value      ||
+        std::is_same<T, dparam_str_t>::value,
+        typename std::add_lvalue_reference<T>::type>::type
+    dynamic_config<MaxParams>
+    ::bind(const char* a_name) {
+        lock_guard_t g(m_mutex);
+        update(false);
+
+        static T*   dummy;
+        auto tp  =  type(dummy);
+        auto res =  add(a_name, tp);
+        if  (res == EXCEEDED_CAPACITY)
+            UTXX_THROW_RUNTIME_ERROR("Too many parameters (count=",
+                                        m_storage->m_count, ')');
+        return *reinterpret_cast<T*>(m_storage->data(res));
+    }
+
+    template <int MaxParams>
+    int dynamic_config<MaxParams>
+    ::add(const char* a_name, dparam_t a_tp) {
+        auto nm = to_name(a_name);
+
+        //lock_guard_t g(m_mutex);
+        auto it = m_by_name.find(nm.c_str());
+        if (it != m_by_name.end()) {
+            auto  idx = it->second;
+            auto& prm = m_storage.dirty_get().get(idx);
+            return (prm.type() == a_tp) ? idx : EXCEEDED_CAPACITY;
+        }
+
+        auto idx = m_storage->add(nm.c_str(), a_tp);
+        if (idx < 0)
+            return idx;
+
+        auto name = m_storage->name(idx);
+        auto data = m_storage->data(idx);
+
+        m_by_name.emplace(std::make_pair(name, idx));
+        m_by_addr.emplace(std::make_pair(data, idx));
+
+        return idx;
+    }
+
+    template <int MaxParams>
+    void dynamic_config<MaxParams>
+    ::update(bool a_with_lock) {
+        auto n =  count();
+        if  (n == m_last_seen_count)
+            return;
+
+        unique_guard_t g(m_mutex, std::defer_lock_t{});
+        if (a_with_lock) g.lock();
+
+        for (auto i = m_last_seen_count; i < m_storage->m_count; ++i) {
+            const char* p = m_storage->name(i);
+            m_by_name.emplace(std::make_pair(p, i));
+            m_by_addr.emplace(std::make_pair(p, i));
+        }
+    }
 
 } // namespace utxx
