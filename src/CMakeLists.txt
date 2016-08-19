@@ -62,12 +62,14 @@ add_executable(tailagg   tailagg.cpp)
 target_link_libraries(tailagg utxx)
 target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
+add_executable(ipaddr    ipaddr.c)
+
 # In the install below we split library installation in a separate library clause
 # so that it's possible to build/install both Release and Debug versions of the
 # library and then include that into a package
 
 install(
-  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static mreceive tailagg
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static mreceive tailagg ipaddr
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
