@@ -8,3 +8,5 @@
         node attribute:  regexp=String
         node attribute:  regexp-type=Type
         <type regexp=Type value=Value/>
+7. Add single producer multiple consumer queue
+   (see http://locklessinc.com/articles/obscure_synch/)
