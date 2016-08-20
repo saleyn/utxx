@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
     auto now = time_val(2015, 6, 1, 12, 0, 0, 0);
     time_spacing_throttle thr(10, 1000, now);    // Throttle 10 samples / second
 
-    BOOST_CHECK_EQUAL(100000, thr.step());
+    BOOST_CHECK_EQUAL(100000, thr.step_usec());
     BOOST_CHECK_EQUAL(10u,    thr.available(now));
 
     int n   = thr.add(1,  now);

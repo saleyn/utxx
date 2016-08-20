@@ -63,10 +63,10 @@ template <typename T = uint32_t>
 class basic_time_spacing_throttle {
 public:
     basic_time_spacing_throttle(uint32_t a_rate, uint32_t a_window_msec = 1000,
-                          time_val a_now = now_utc())
+                                time_val a_now = now_utc())
         : m_rate        (a_rate)
-        , m_window_us   (a_window_msec * 1000)
-        , m_step_us     (m_window_us / m_rate)
+        , m_window_ns   (long(a_window_msec) * 1000000)
+        , m_step_ns     (m_window_ns / m_rate)
         , m_next_time   (a_now)
     {}
 
@@ -76,9 +76,9 @@ public:
     /// before the throttles gets reset to accept more samples.
     T add(T a_samples  = 1, time_val a_now = now_utc()) {
         auto next_time = m_next_time;
-        next_time.add_usec(a_samples * m_step_us);
-        auto diff      = next_time.microseconds()
-                       - (a_now.microseconds() + m_window_us);
+        next_time.add_nsec(a_samples * m_step_ns);
+        auto diff      = next_time.nanoseconds()
+                       - (a_now.nanoseconds() + m_window_ns);
         if (diff < 0)  {
             // All samples fit the throttling threshold
             m_next_time = next_time;
@@ -86,27 +86,28 @@ public:
         }
 
         // Figure out how many samples fit the throttling threshold
-        auto n = std::max<T>(0, a_samples - (T(diff) / m_step_us));
-        m_next_time.add_usec(n * m_step_us);
+        auto n = std::max<T>(0, a_samples - (T(diff) / m_step_ns));
+        m_next_time.add_nsec(n * m_step_ns);
         return n;
     }
 
-    T        rate()        const { return m_rate;             }
-    long     step()        const { return m_step_us;          }
-    long     window_msec() const { return m_window_us / 1000; }
-    long     window_usec() const { return m_window_us;        }
-    time_val next_time()   const { return m_next_time;        }
+    T        rate()        const { return m_rate;                }
+    long     step_msec()   const { return m_step_ns   / 1000000; }
+    long     step_usec()   const { return m_step_ns   / 1000;    }
+    long     window_msec() const { return m_window_ns / 1000000; }
+    long     window_usec() const { return m_window_ns;           }
+    time_val next_time()   const { return m_next_time;           }
 
     /// Return the number of available samples given \a a_now current time.
     T        available(time_val a_now = now_utc()) const      {
-        auto   diff = (a_now - m_next_time).microseconds();
-        return diff >= 0 ? m_rate : T(m_window_us + diff) / m_step_us;
+        auto   diff = (a_now - m_next_time).nanoseconds();
+        return diff >= 0 ? m_rate : T(m_window_ns + diff) / m_step_ns;
     }
 
 private:
     T        m_rate;
-    long     m_window_us;
-    T        m_step_us;
+    long     m_window_ns;
+    long     m_step_ns;
     time_val m_next_time;
 };
 
