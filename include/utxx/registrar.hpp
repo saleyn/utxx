@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_REGISTRAR_HPP_
-#define _UTXX_REGISTRAR_HPP_
+#pragma once
 
 #if (__GNUC__ == 4 && __GNUC_MINOR__ >= 9)
 
@@ -296,7 +295,7 @@ public:
         static basic_registrar s_instance;
         return s_instance;
     }
-    
+
     /// Register a class T with the registrar.
     /// The registrar will be able to create instances of T dynamically
     /// using a constructor in the form:
@@ -557,5 +556,3 @@ using concurrent_registrar = basic_registrar<std::mutex>;
 } // namespace utxx
 
 #endif // #if GCC version >= 4.9
-
-#endif // _UTXX_REGISTRAR_HPP_

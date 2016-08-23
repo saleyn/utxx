@@ -501,10 +501,13 @@ public:
                     a_show_braces, a_indent_char, a_indent);
     }
 
+    /// Pretty print with no arguments for invokation in gdb
+    std::basic_string<Ch> to_string() const { return to_string(2); }
+
     /// Pretty print the tree to string
     std::basic_string<Ch> to_string
     (
-        size_t  a_tab_width     = 2,
+        size_t  a_tab_width,
         bool    a_with_types    = false,
         bool    a_with_braces   = true
     ) const {
