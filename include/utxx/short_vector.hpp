@@ -183,8 +183,8 @@ namespace utxx {
         T&   operator[](int n)          { assert(n >= 0 && n < m_sz); return m_val[n]; }
 
         operator const T*()       const { return m_val;          }
-        const T* c_str()          const { return m_val;          }
-        T*       str()                  { return m_val;          }
+        const T* data()           const { return m_val;          }
+        T*       data()                 { return m_val;          }
         int      size()           const { return m_sz;           }
         void     size(size_t n)         { assert(n <= m_max_sz); m_sz = n; }
         void     resize(size_t n)       { reserve(n); m_sz = n;  }
