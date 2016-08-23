@@ -53,7 +53,7 @@ namespace utxx {
     //--------------------------------------------------------------------------
     template <typename T, int MaxItems,
               typename Alloc = std::allocator<T>, int AddItems = 0>
-    class basic_short_vector : private Alloc {
+    class basic_short_vector : private Alloc  {
         using Base           = Alloc;
 
         static_assert(sizeof(T) == sizeof(typename Alloc::value_type), "Wrong size");
@@ -62,7 +62,18 @@ namespace utxx {
         using iterator       = T*;
         using const_iterator = const T*;
 
-        static constexpr size_t MaxCapacity()    { return MaxItems; }
+        static constexpr size_t MaxCapacity() { return MaxItems; }
+
+        /// Helper class used to initialize basic_short_vector.
+        /// Used to wrap an array of objects of type T to avoid an extra copy.
+        struct wrapper {
+            wrapper(const T* a, size_t n) : m_data(a), m_size(n) {}
+
+            friend class basic_short_vector<T, MaxItems, Alloc>;
+        private:
+            const T* m_data;
+            size_t   m_size;
+        };
 
         basic_short_vector(std::initializer_list<T> a_list, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems)
@@ -78,6 +89,8 @@ namespace utxx {
         explicit
         basic_short_vector(const T* a, size_t n, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a, n); }
+        basic_short_vector(wrapper&& a, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a.m_data, a.m_size); }
         explicit
         basic_short_vector(basic_short_vector&& a, const Alloc& ac = Alloc())
             : Base(ac)                                          { assign<false>(std::move(a));}
@@ -147,6 +160,7 @@ namespace utxx {
         }
 
         void operator= (const T*                  a) { set(a); }
+        void operator= (wrapper&&                 a) { set(a.m_data, a.m_size);    }
         void operator= (basic_short_vector&&      a) { assign<true>(std::move(a)); }
         void operator= (const basic_short_vector& a) { set(a); }
         void operator= (const std::vector<T>&     a) { set(a); }
