@@ -64,17 +64,6 @@ namespace utxx {
 
         static constexpr size_t MaxCapacity() { return MaxItems; }
 
-        /// Helper class used to initialize basic_short_vector.
-        /// Used to wrap an array of objects of type T to avoid an extra copy.
-        struct wrapper {
-            wrapper(const T* a, size_t n) : m_data(a), m_size(n) {}
-
-            friend class basic_short_vector<T, MaxItems, Alloc>;
-        private:
-            const T* m_data;
-            size_t   m_size;
-        };
-
         basic_short_vector(std::initializer_list<T> a_list, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems)
         {
@@ -89,8 +78,8 @@ namespace utxx {
         explicit
         basic_short_vector(const T* a, size_t n, const Alloc& ac = Alloc())
             : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a, n); }
-        basic_short_vector(wrapper&& a, const Alloc& ac = Alloc())
-            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(a.m_data, a.m_size); }
+        basic_short_vector(std::tuple<const T*, size_t>&& a, const Alloc& ac = Alloc())
+            : Base(ac), m_val(m_buf),m_sz(0),m_max_sz(MaxItems) { set(std::move(a)); }
         explicit
         basic_short_vector(basic_short_vector&& a, const Alloc& ac = Alloc())
             : Base(ac)                                          { assign<false>(std::move(a));}
@@ -103,8 +92,9 @@ namespace utxx {
 
         ~basic_short_vector() { deallocate(); }
 
-        void set(const std::vector<T>&     a) { set(&a[0],     a.size()); }
-        void set(const basic_short_vector& a) { set(a.begin(), a.size()); }
+        void set(std::tuple<const T*, size_t>&& a) { set(std::get<0>(a), std::get<1>(a)); }
+        void set(const std::vector<T>&          a) { set(&a[0],     a.size()); }
+        void set(const basic_short_vector&      a) { set(a.begin(), a.size()); }
         void set(const T* a, int n) {
             assert(n >= -1);
             if (n > int(m_max_sz))  {
@@ -159,11 +149,11 @@ namespace utxx {
             m_val    = p;
         }
 
-        void operator= (const T*                  a) { set(a); }
-        void operator= (wrapper&&                 a) { set(a.m_data, a.m_size);    }
-        void operator= (basic_short_vector&&      a) { assign<true>(std::move(a)); }
-        void operator= (const basic_short_vector& a) { set(a); }
-        void operator= (const std::vector<T>&     a) { set(a); }
+        void operator= (const T*                       a) { set(a); }
+        void operator= (std::tuple<const T*, size_t>&& a) { set(std::move(a)); }
+        void operator= (basic_short_vector&&           a) { assign<true>(std::move(a)); }
+        void operator= (const basic_short_vector&      a) { set(a); }
+        void operator= (const std::vector<T>&          a) { set(a); }
 
         bool operator==(const std::vector<T>& a) const {
             if (m_sz != int(a.size()) || m_sz < 0) return false;

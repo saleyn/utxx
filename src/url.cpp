@@ -134,8 +134,8 @@ bool is_ipv4_addr(const std::string& a_addr)
 bool addr_info::parse(const std::string& a_url) {
     static std::map<std::string, std::string> proto_to_port =
             boost::assign::map_list_of
-                ("http", "80") ("https", "443") ("file", "")
-                ("uds",  "")   ("cmd",   "");
+                ("http", "80") ("https", "443") ("ssl", "")
+                ("file", "")   ("uds",   "")    ("cmd",   "");
 
     using namespace boost::xpressive;
     // "(http|perc)://(.*?)(:(\\d+))?(/.*)" | "(file|uds)://(.*)"
@@ -163,6 +163,7 @@ bool addr_info::parse(const std::string& a_url) {
     }
 
     if      (m_proto == "tcp"  ||
+             m_proto == "ssl"  ||
              m_proto == "http" ||
              m_proto == "https")    proto = TCP;
     else if (m_proto == "udp")      proto = UDP;

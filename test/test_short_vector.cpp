@@ -173,12 +173,12 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
     {
         using vec = basic_short_vector<char, 5>;
 
-        vec v(vec::wrapper("abc", 3));
+        vec v(std::make_tuple("abc", 3));
 
         BOOST_CHECK(!v.allocated());
         BOOST_CHECK_EQUAL(3, v.size());
 
-        v = vec::wrapper("abcdefg", 7);
+        v = std::make_tuple("abcdefg", 7);
         BOOST_CHECK(v.allocated());
         BOOST_CHECK_EQUAL(7, v.size());
     }
