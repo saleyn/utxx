@@ -68,6 +68,8 @@ namespace utxx {
     private:
         static int  s_print_fun_scopes;        // Initialized in error.cpp
         int         m_scopes;
+
+        static int  def_print_scopes() { return 3; }
     };
 }
 
