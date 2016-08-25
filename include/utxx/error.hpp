@@ -51,15 +51,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
     /// Controls src_info printing defaults
     struct src_info_defaults {
-        static int print_fun_scopes;        // Initialized in error.cpp
-
         src_info_defaults(int a_scopes = -1)
-            : m_scopes(a_scopes < 0 ? print_fun_scopes : a_scopes)
+            : m_scopes(a_scopes < 0 ? s_print_fun_scopes : a_scopes)
         {}
 
         int scopes() const { return m_scopes; }
+
+        /// Get default number of of function scopes to print by `src_info`.
+        static int  print_fun_scopes() { return s_print_fun_scopes; }
+
+        /// Set default number of of function scopes to print by `src_info`.
+        /// Initialized to `3` at startup.
+        static void print_fun_scopes(uint8_t a_scopes) {
+            s_print_fun_scopes = a_scopes;
+        }
     private:
-        int m_scopes;
+        static int  s_print_fun_scopes;        // Initialized in error.cpp
+        int         m_scopes;
     };
 }
 
@@ -302,7 +310,7 @@ public:
             '/';
 #endif
         const int fun_scope_depth = a_fun_scope_depth < 0
-                                  ? src_info_defaults::print_fun_scopes
+                                  ? src_info_defaults::print_fun_scopes()
                                   : a_fun_scope_depth;
         const char* q, *e;
 

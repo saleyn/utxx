@@ -34,6 +34,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
     /// Controls src_info printing defaults
-    int src_info_defaults::print_fun_scopes = 3;
+    int src_info_defaults::s_print_fun_scopes = 3;
 
 } // namespace utxx
