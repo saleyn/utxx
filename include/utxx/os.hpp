@@ -38,10 +38,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 namespace os   {
 
-/// Return environment variable or given default value
+/// Return environment variable's value or given default value
 inline const char* getenv(const char* a_name, const char* a_default = "") {
-    auto var = ::getenv(a_name);
+    auto   var = ::getenv(a_name);
     return var ? var : a_default;
+}
+
+/// Return environment variable or given default value
+inline long getenv(const char* a_name, long a_default) {
+    auto   var = ::getenv(a_name);
+    return var ? atol(var) : a_default;
 }
 
 /// Return effective username

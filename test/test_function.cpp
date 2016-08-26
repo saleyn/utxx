@@ -37,6 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <utxx/function.hpp>
 #include <utxx/time_val.hpp>
+#include <utxx/os.hpp>
 #include <iostream>
 #include <random>
 #include <string>
@@ -46,7 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define BOOST_TEST_MAIN
 
 static const size_t num_allocations = 100;
-static const size_t num_calls = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 100000;
+static const size_t num_calls = utxx::os::getenv("ITERATIONS", 10000);
 
 struct Updateable
 {
