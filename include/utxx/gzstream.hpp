@@ -1,4 +1,4 @@
-// ============================================================================
+//==============================================================================
 // gzstream, C++ iostream classes wrapping the zlib compression library.
 // Copyright (C) 2001  Deepak Bandyopadhyay, Lutz Kettner
 //
@@ -15,8 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-// ============================================================================
-//
+//==============================================================================
 // File          : gzstream.h
 // Revision      : $Revision: 1.5 $
 // Revision_date : $Date: 2002/04/26 23:30:15 $
@@ -24,7 +23,7 @@
 //
 // Standard streambuf implementation following Nicolai Josuttis, "The
 // Standard C++ Library".
-// ============================================================================
+//==============================================================================
 
 #pragma once
 
@@ -38,11 +37,10 @@
 #include <zlib.h>
 #include <assert.h>
 
-namespace utxx {
-
-// ----------------------------------------------------------------------------
+namespace utxx   {
+//------------------------------------------------------------------------------
 // Internal classes to implement gzstream. See below for user classes.
-// ----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 class gzstreambuf : public std::streambuf {
 private:
@@ -77,56 +75,58 @@ public:
     gzFile native_handle() { return file; }
 };
 
-class gzstreambase : virtual public std::ios {
-protected:
-    gzstreambuf  buf;
-public:
-    gzstreambase() { init(&buf); }
-    gzstreambase(const char* name, int mode);
-    gzstreambase(const std::string& name, int mode)
-        : gzstreambase(name.c_str(), mode) {}
-    ~gzstreambase();
-    void open(const char* name, int mode);
-    void open(const std::string& name, int mode) { open(name.c_str(), mode); }
-    void close();
-    gzstreambuf* rdbuf() { return &buf; }
-};
+namespace detail {
+    class gzstreambase : virtual public std::ios {
+    protected:
+        gzstreambuf  buf;
+    public:
+        gzstreambase() { init(&buf); }
+        gzstreambase(const char* name, int mode);
+        gzstreambase(const std::string& name, int mode)
+            : gzstreambase(name.c_str(), mode) {}
+        ~gzstreambase();
+        void open(const char* name, int mode);
+        void open(const std::string& name, int mode) { open(name.c_str(), mode); }
+        void close();
+        gzstreambuf* rdbuf() { return &buf; }
+    };
+} // namespace detail
 
-// ----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 // User classes. Use igzstream and ogzstream analogously to ifstream and
 // ofstream respectively. They read and write files based on the gz*
 // function interface of the zlib. Files are compatible with gzip compression.
-// ----------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-class igzstream : public gzstreambase, public std::istream {
+class igzstream : public detail::gzstreambase, public std::istream {
 public:
     igzstream() : std::istream( &buf) {}
     igzstream(const char* name, int mode = std::ios::in)
-        : gzstreambase(name, mode), std::istream(&buf) {}
+        : detail::gzstreambase(name, mode), std::istream(&buf) {}
     igzstream(const std::string& name, int mode = std::ios::in)
-        : gzstreambase(name, mode), std::istream(&buf) {}
+        : detail::gzstreambase(name, mode), std::istream(&buf) {}
     gzstreambuf* rdbuf() { return gzstreambase::rdbuf(); }
     void open(const char* name, int open_mode = std::ios::in) {
-        gzstreambase::open(name, open_mode);
+        detail::gzstreambase::open(name, open_mode);
     }
     void open(const std::string& name, int mode = std::ios::in) {
-        gzstreambase::open(name, mode);
+        detail::gzstreambase::open(name, mode);
     }
 };
 
-class ogzstream : public gzstreambase, public std::ostream {
+class ogzstream : public detail::gzstreambase, public std::ostream {
 public:
     ogzstream() : std::ostream( &buf) {}
     ogzstream(const char* name, int mode = std::ios::out)
-        : gzstreambase(name, mode), std::ostream( &buf) {}
+        : detail::gzstreambase(name, mode), std::ostream( &buf) {}
     ogzstream(const std::string& name, int mode = std::ios::out)
-        : gzstreambase(name, mode), std::ostream(&buf) {}
+        : detail::gzstreambase(name, mode), std::ostream(&buf) {}
     gzstreambuf* rdbuf() { return gzstreambase::rdbuf(); }
     void open(const char* name, int mode = std::ios::out) {
-        gzstreambase::open(name, mode);
+        detail::gzstreambase::open(name, mode);
     }
     void open(const std::string& name, int mode = std::ios::out) {
-        gzstreambase::open(name, mode);
+        detail::gzstreambase::open(name, mode);
     }
 };
 

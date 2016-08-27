@@ -1,4 +1,4 @@
-// ============================================================================
+//==============================================================================
 // gzstream, C++ iostream classes wrapping the zlib compression library.
 // Copyright (C) 2001  Deepak Bandyopadhyay, Lutz Kettner
 //
@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Lesser General Public
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-// ============================================================================
+//==============================================================================
 //
 // File          : gzstream.C
 // Revision      : $Revision: 1.7 $
@@ -24,7 +24,7 @@
 //
 // Standard streambuf implementation following Nicolai Josuttis, "The
 // Standard C++ Library".
-// ============================================================================
+//==============================================================================
 
 #include <utxx/gzstream.hpp>
 #include <iostream>
@@ -32,14 +32,9 @@
 
 namespace utxx {
 
-// ----------------------------------------------------------------------------
-// Internal classes to implement gzstream. See header file for user classes.
-// ----------------------------------------------------------------------------
-
-// --------------------------------------
+//------------------------------------------------------------------------------
 // class gzstreambuf:
-// --------------------------------------
-
+//------------------------------------------------------------------------------
 gzstreambuf* gzstreambuf::open(const char* name, int open_mode) {
     if (is_open())
         return (gzstreambuf*)0;
@@ -131,28 +126,30 @@ int gzstreambuf::sync() {
     return 0;
 }
 
-// --------------------------------------
+//------------------------------------------------------------------------------
 // class gzstreambase:
-// --------------------------------------
+//------------------------------------------------------------------------------
+namespace detail {
 
-gzstreambase::gzstreambase(const char* name, int mode) {
-    init(&buf);
-    open(name, mode);
-}
+    gzstreambase::gzstreambase(const char* name, int mode) {
+        init(&buf);
+        open(name, mode);
+    }
 
-gzstreambase::~gzstreambase() {
-    buf.close();
-}
+    gzstreambase::~gzstreambase() {
+        buf.close();
+    }
 
-void gzstreambase::open(const char* name, int open_mode) {
-    if (! buf.open(name, open_mode))
-        clear(rdstate() | std::ios::badbit);
-}
-
-void gzstreambase::close() {
-    if (buf.is_open())
-        if (! buf.close())
+    void gzstreambase::open(const char* name, int open_mode) {
+        if (! buf.open(name, open_mode))
             clear(rdstate() | std::ios::badbit);
-}
+    }
 
+    void gzstreambase::close() {
+        if (buf.is_open())
+            if (! buf.close())
+                clear(rdstate() | std::ios::badbit);
+    }
+
+} // namespace detail
 } // namespace utxx
