@@ -31,9 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_ATOMIC_HPP_
-#define _UTXX_ATOMIC_HPP_
+#pragma once
 
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/string.hpp>
@@ -326,5 +324,3 @@ struct cacheline {
 
 } // namespace atomic
 } // namespace utxx
-
-#endif // _UTXX_ATOMIC_HPP_

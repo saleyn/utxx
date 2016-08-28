@@ -30,9 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_ENDIAN_HPP_
-#define _UTXX_ENDIAN_HPP_
+#pragma once
 
 #include <boost/spirit/home/support/detail/endian.hpp>
 #include <boost/static_assert.hpp>
@@ -199,5 +197,3 @@ inline uint64_t cast64le(const Ch* s) { uint64_t n; cast_le(s, n); return n; }
 inline double   cast_double_le(const char* s) { double n; cast_le(s, n); return n; }
 
 } // namespace utxx
-
-#endif // _UTXX_ENDIAN_HPP_

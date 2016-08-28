@@ -54,8 +54,7 @@ public:
     }
 
     ~signal_block() {
-        if (::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0)))
-            UTXX_THROW_IO_ERROR(errno, "sigprocmask(2)");
+        ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
     }
 };
 
@@ -73,8 +72,7 @@ public:
     }
 
     ~signal_unblock() {
-        if (::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0)))
-            UTXX_THROW_IO_ERROR(errno, "sigprocmask(2)");
+        ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
     }
 };
 
