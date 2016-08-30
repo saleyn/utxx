@@ -2,7 +2,10 @@
 /// \file    basic_buffer_queue.hpp
 /// \authors Serge Aleynikov, Dmitriy Kargapolov
 //----------------------------------------------------------------------------
-/// \brief Basic Buffer Queue
+/// \brief Basic queue for buffered output.
+///
+/// The queue provides an ability to commit batches of updates to boost::asio
+/// socket at a time, while active writes can still continue to be buffered.
 //----------------------------------------------------------------------------
 // Created: 2010-09-30
 //----------------------------------------------------------------------------
@@ -20,11 +23,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 
 ***** END LICENSE BLOCK *****
 */
-
-
-
-#ifndef _UTXX_BASIC_BUFFER_QUEUE_HPP_
-#define _UTXX_BASIC_BUFFER_QUEUE_HPP_
+#pragma once
 
 #include <deque>
 #include <boost/system/error_code.hpp>
@@ -126,5 +125,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_BASIC_BUFFER_QUEUE_HPP_

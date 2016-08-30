@@ -29,9 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _ALLOC_FIXED_PAGE_HPP_
-#define _ALLOC_FIXED_PAGE_HPP_
+#pragma once
 
 #include <new>
 #include <boost/noncopyable.hpp>
@@ -127,7 +125,7 @@ public:
     typedef const T&    const_reference;
     typedef size_t      size_type;
     typedef T           value_type;
-    
+
     template <typename U>
     struct rebind {
         typedef aligned_page_allocator<U, PageSize> other;
@@ -148,7 +146,7 @@ public:
             m_page = NULL;
         }
     }
-            
+
     pointer allocate(size_type n, const void *hint = 0) {
         if (m_page->avail_chunk >= reinterpret_cast<pointer>(
                 reinterpret_cast<char*>(m_page) + PageSize))
@@ -186,5 +184,3 @@ public:
 
 } // namespace memory
 } // namespace utxx
-
-#endif // _ALLOC_FIXED_PAGE_HPP_

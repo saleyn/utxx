@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file  variant_tree.hpp
+/// \file  allocator.hpp
 //----------------------------------------------------------------------------
 /// \brief Concurrent shared memory allocator.
 /// \author: Serge Aleynikov
@@ -19,7 +19,7 @@
 /// the same type of size-classes.  It is not
 /// moving or disturbing memory blocks that are currently
 /// used by the application.
-///   The <shmem_allocator> class is fully STL-compatible and
+///   The `shmem_allocator` class is fully STL-compatible and
 /// can be used with standard STL containers. However, those
 /// containers would have to guarantee their own thread safety.
 ///
@@ -52,9 +52,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _SHMEM_ALLOCATOR_HPP_
-#define _SHMEM_ALLOCATOR_HPP_
+#pragma once
 
 #include <stdlib.h>
 #include <fcntl.h>
@@ -544,6 +542,4 @@ void pow2_allocator<MinSize, MaxPow2Size>
 }
 
 } // namespace memory
-} // namespace utxx 
-
-#endif
+} // namespace utxx

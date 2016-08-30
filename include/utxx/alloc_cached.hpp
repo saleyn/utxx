@@ -35,9 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _ALLOC_CACHED_HPP_
-#define _ALLOC_CACHED_HPP_
+#pragma once
 
 #include <boost/type_traits.hpp>
 
@@ -276,5 +274,3 @@ void cached_allocator<T, AllocT, MinSize, SizeClasses>
 
 } // namespace memory
 } // namespace utxx
-
-#endif

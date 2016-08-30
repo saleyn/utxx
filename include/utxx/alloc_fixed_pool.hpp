@@ -31,9 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_ALLOC_FIXED_POOL_HPP_
-#define _UTXX_ALLOC_FIXED_POOL_HPP_
+#pragma once
 
 #include <boost/type_traits.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -376,5 +374,3 @@ void fixed_size_object_pool<PointerType>
 } // namespace detail
 } // namespace memory
 } // namespace utxx
-
-#endif
