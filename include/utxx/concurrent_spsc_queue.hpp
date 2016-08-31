@@ -35,9 +35,8 @@
  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
  ***** END LICENSE BLOCK *****
- */
-#ifndef _UTXX_CONCURRENT_SPSC_QUEUE_HPP_
-#define _UTXX_CONCURRENT_SPSC_QUEUE_HPP_
+*/
+#pragma once
 
 #include <utxx/math.hpp>
 #include <utxx/error.hpp>
@@ -752,5 +751,3 @@ private:
 };
 
 } // namespace utxx
-
-#endif //_UTXX_CONCURRENT_SPSC_QUEUE_HPP_

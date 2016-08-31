@@ -30,9 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _ALLOC_FIXED_PAGE_HPP_
-#define _ALLOC_FIXED_PAGE_HPP_
+#pragma once
 
 #include <new>
 #include <boost/noncopyable.hpp>
@@ -186,5 +184,3 @@ public:
 
 } // namespace memory
 } // namespace utxx
-
-#endif // _ALLOC_FIXED_PAGE_HPP_

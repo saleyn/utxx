@@ -20,9 +20,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_COLLECTIONS_HPP_
-#define _UTXX_COLLECTIONS_HPP_
+#pragma once
 
 #include <list>
 
@@ -164,5 +162,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_COLLECTIONS_HPP_

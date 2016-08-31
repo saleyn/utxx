@@ -2,7 +2,7 @@
 /// \file   buffer.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
-/// \brief This file contains implementation of a buffer class used for 
+/// \brief This file contains implementation of a buffer class used for
 /// storing data for I/O operations.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
@@ -31,8 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_IO_BUFFER_HPP_
-#define _UTXX_IO_BUFFER_HPP_
+#pragma once
 
 #include <boost/static_assert.hpp>
 #include <boost/assert.hpp>
@@ -54,7 +53,7 @@ namespace detail { template <class Alloc> class basic_dynamic_io_buffer; }
  * \brief Basic buffer providing stack space for data up to N bytes and
  *        heap space when reallocation of space over N bytes is needed.
  * A typical use of the buffer is for I/O operations that require tracking
- * of produced and consumed space. 
+ * of produced and consumed space.
  */
 template <int N, typename Alloc = std::allocator<char> >
 class basic_io_buffer
@@ -92,7 +91,7 @@ protected:
     }
 public:
     /// Construct the I/O buffer.
-    /// @param a_lwm is the low-memory watermark that should be set to 
+    /// @param a_lwm is the low-memory watermark that should be set to
     ///         exceed the maximum expected message size to be stored
     ///         in the buffer. When the buffer has less than that amount
     ///         of space left, it'll call the crunch() function.
@@ -180,8 +179,8 @@ public:
     /// Current number of bytes available to write.
     size_t      capacity()  const { return m_end    - m_wr_ptr; }
     /// Returns true if there's no data in the buffer
-    bool        empty()     const { return m_rd_ptr == m_wr_ptr; } 
-    /// Get the low memory watermark indicating when the buffer should be 
+    bool        empty()     const { return m_rd_ptr == m_wr_ptr; }
+    /// Get the low memory watermark indicating when the buffer should be
     /// automatically crunched by the read() call.
     size_t      wr_lwm()    const { return m_wr_lwm; }
 
@@ -209,7 +208,7 @@ public:
     detail::basic_dynamic_io_buffer<Alloc>&       to_dynamic();
     const detail::basic_dynamic_io_buffer<Alloc>& to_dynamic() const;
 
-    /// Set the low memory watermark indicating when the buffer should be 
+    /// Set the low memory watermark indicating when the buffer should be
     /// automatically crunched by the read() call without releasing allocated memory.
     void wr_lwm(size_t a_lwm) {
         if (a_lwm > max_size())
@@ -219,7 +218,7 @@ public:
     }
 
     /// Read \a n bytes from the buffer and increment the rd_ptr() by \a n.
-    /// @returns NULL if there is not enough data in the buffer 
+    /// @returns NULL if there is not enough data in the buffer
     ///         to read \a n bytes or else returns the rd_ptr() pointer's
     ///         value preceeding the increment of its position by \a n.
     /// @param n is the number of bytes to read.
@@ -237,7 +236,7 @@ public:
     /// Do the same action as read(n), and call crunch() function
     /// when the buffer's capacity gets less than the wr_lwm() value.
     /// @param n is the number of bytes to read.
-    /// @returns -1 if there is not enough data in the buffer 
+    /// @returns -1 if there is not enough data in the buffer
     ///         to read \a n bytes.
     int read_and_crunch(int n) {
         if (UNLIKELY(read(n) == NULL))
@@ -280,11 +279,11 @@ public:
 };
 
 /**
- * This class allocates N records of size sizeof(T) on stack, and 
+ * This class allocates N records of size sizeof(T) on stack, and
  * dynamically allocates memory on heap when reserve() is called
  * requsting the number of records greater than N.
  * The content of the buffer can be read and written with read() and
- * write() functions. 
+ * write() functions.
  */
 template <typename T, int N, typename Alloc = std::allocator<char> >
 class record_buffers
@@ -323,11 +322,11 @@ public:
 
     /// Read the next record from the buffer
     T*          read() {
-        if (size() < 1) return NULL; 
+        if (size() < 1) return NULL;
         return reinterpret_cast<T*>(super::read(sizeof(T)));
     }
     const T* read() const {
-        if (size() < 1) return NULL; 
+        if (size() < 1) return NULL;
         return reinterpret_cast<const T*>(super::read(sizeof(T)));
     }
 
@@ -341,7 +340,7 @@ public:
 
     /// Advance the write pointer by \a n records. This doesn't
     /// actually modify the data in the buffer, but adjusts the
-    /// position of wr_ptr(). 
+    /// position of wr_ptr().
     T* write(size_t n = 1) { super::commit(n*sizeof(T)); return wr_ptr(); }
 
     /// Reset the read and write pointers.
@@ -398,7 +397,4 @@ inline const detail::basic_dynamic_io_buffer<Alloc>& basic_io_buffer<N,Alloc>::t
     return *reinterpret_cast<const detail::basic_dynamic_io_buffer<Alloc>*>(this);
 }
 
-} // namespace UTXX_NAMESPACE
-
-#endif // _UTXX_IO_BUFFER_HPP_
-
+} // namespace utxx
