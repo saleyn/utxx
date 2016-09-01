@@ -29,7 +29,7 @@
 /// is "app_config.hpp", and the name of the validating class in the
 /// "app_config.hpp" is "test::app_config_validator":
 ///
-/// <code>
+/// ```
 ///     #include "app_config.hpp" /* Auto-generated from user's app_config.xml */
 ///     ...
 ///     utxx::config_tree cfg;
@@ -48,26 +48,26 @@
 ///                   << std::endl;
 ///         exit(1);
 ///     }
-/// </code>
+/// ```
 ///
 /// The format of the XML file with validation rules is provided below:
 ///
-/// <code>
+/// ```
 ///   <xml>
 ///     <config namespace="NAMESPACE" name="NAME">
 ///       OPTIONS_SECTION
 ///     </config>
 ///   </xml>
-/// </code>
+/// ```
 ///
-/// * <tt>/config@namespace</tt> is the namespace where the class
-///   <tt>/config@name</tt> (derived from utxx::config::validator) will be
+/// * `/config@namespace` is the namespace where the class
+///   `/config@name` (derived from utxx::config::validator) will be
 ///   put.
-/// * <tt>/config/option</tt> is an element that may contain an
-///   optional list of <tt>/config/option/value</tt> values and the
+/// * `/config/option` is an element that may contain an
+///   optional list of `/config/option/value` values and the
 ///   following attributes:
-///     - <tt>name</tt> - the name of an option.
-///     - <tt>type</tt> - the type of the option's name: "string" (default),
+///     - `name`        - the name of an option.
+///     - `type`        - the type of the option's name: "string" (default),
 ///                       "anonymous", "branch", or "defaults". The "anonymous"
 ///                       option permits to have a variable value.  It may be
 ///                       useful to have options where the option's name
@@ -77,23 +77,23 @@
 ///                       serve the purpose of defaults (i.e. other nodes in
 ///                       other branches may point to them via
 ///                       "../path/to/default/node" syntax).
-///     - <tt>val-type</tt> - the type of option's value: "string", "int",
+///     - `val-type`    - the type of option's value: "string", "int",
 ///                       "float", "bool".
-///     - <tt>description</tt> - description of an option (used for
+///     - `description` - description of an option (used for
 ///                       outputting usage details).
-///     - <tt>unique</tt> - true/false value indicating if the option
+///     - `unique`      - true/false value indicating if the option
 ///                       entry by this name must be unique in the current
 ///                       'options' section. Default: true.
-///     - <tt>default</tt> - default value for the option. If an option
+///     - `default`     - default value for the option. If an option
 ///                       doesn't have a default, it is assumed to require
 ///                       a value. Otherwise the option is optional.
-///     - <tt>min</tt> -  min value of the option (valid only for int/float).
-///     - <tt>max</tt> -  max value of the option (valid only for int/float).
-///     - <tt>min_length</tt> - min value length (valid only for string type).
-///     - <tt>max_length</tt> - max value length (valid only for string type).
-///     - <tt>validate</tt>   - boolean "true/false" indicating whether or
-///                             not to perform validation of this node
-/// </code>
+///     - `min`         - min value of the option (valid only for int/float).
+///     - `max`         - max value of the option (valid only for int/float).
+///     - `min_length`  - min value length (valid only for string type).
+///     - `max_length`  - max value length (valid only for string type).
+///     - `validate`    - boolean "true/false" indicating whether or
+///                       not to perform validation of this node
+/// ```
 ///
 /// An option may have an optional 'value' child tag. If provided, the body
 /// of the tag may have at least one 'value' or 'name' entries. The 'name'
