@@ -86,9 +86,7 @@ public:
     decimal(decimal const& a) : m_exp(a.m_exp), m_mant(a.m_mant) {}
 
     /// Construct a decimal from a double.
-    /// @throw runtime_exception if |x| >= 10^250
-    explicit
-    decimal(double x) { from_double(x); }
+    decimal(double x, uint precision = 8)   { from_double(x, precision); }
 
     void operator=(decimal const& a)        { *(long*)this = *(long*)&a; }
     void operator=(decimal&& a)             { *(long*)this = *(long*)&a; }
@@ -104,14 +102,45 @@ public:
     void   set_null()        { *this = null_value();           }
     void   clear()           { *(long*)this = 0l;              }
 
+    /// Construct a decimal from a double.
+    void from_double(double x, int precision)
+    {
+        if (std::isnan(x)) {
+            set_null();
+            return;
+        }
+
+        auto   v = x * pow10(precision);
+        auto   m = (long)(v >= 0 ? v + 0.5 : v - 0.5);
+        int    e = precision;
+
+        // Normalize
+        for(;  m && m%10 == 0; --e, m /= 10);
+        m_exp  = -e;
+        m_mant = m;
+    }
+
     static double pow10(int a_exp) {
-    static constexpr double s_pow10[] = {
-        1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1,
-        1.0,
-        1e+1,  1e+2, 1e+3, 1e+4, 1e+5, 1e+6, 1e+7, 1e+8, 1e+9, 1e+10
-    };
-    return UNLIKELY(a_exp < -10 || a_exp > 10)
-                    ? std::pow(10.0, a_exp) : s_pow10[a_exp + 10];
+        static double s_pow10[] = {
+            1.0e-63, 1.0e-62, 1.0e-61, 1.0e-60, 1.0e-59, 1.0e-58, 1.0e-57, 1.0e-56,
+            1.0e-55, 1.0e-54, 1.0e-53, 1.0e-52, 1.0e-51, 1.0e-50, 1.0e-49, 1.0e-48,
+            1.0e-47, 1.0e-46, 1.0e-45, 1.0e-44, 1.0e-43, 1.0e-42, 1.0e-41, 1.0e-40,
+            1.0e-39, 1.0e-38, 1.0e-37, 1.0e-36, 1.0e-35, 1.0e-34, 1.0e-33, 1.0e-32,
+            1.0e-31, 1.0e-30, 1.0e-29, 1.0e-28, 1.0e-27, 1.0e-26, 1.0e-25, 1.0e-24,
+            1.0e-23, 1.0e-22, 1.0e-21, 1.0e-20, 1.0e-19, 1.0e-18, 1.0e-17, 1.0e-16,
+            1.0e-15, 1.0e-14, 1.0e-13, 1.0e-12, 1.0e-11, 1.0e-10, 1.0e-9,  1.0e-8,
+            1.0e-7,  1.0e-6,  1.0e-5 , 1.0e-4 , 1.0e-3,  1.0e-2 , 1.0e-1,  1.0e0,
+            1.0e+1,  1.0e+2,  1.0e+3,  1.0e+4,  1.0e+5,  1.0e+6,  1.0e+7,  1.0e+8 ,
+            1.0e+9 , 1.0e+10, 1.0e+11, 1.0e+12, 1.0e+13, 1.0e+14, 1.0e+15, 1.0e+16,
+            1.0e+17, 1.0e+18, 1.0e+19, 1.0e+20, 1.0e+21, 1.0e+22, 1.0e+23, 1.0e+24,
+            1.0e+25, 1.0e+26, 1.0e+27, 1.0e+28, 1.0e+29, 1.0e+30, 1.0e+31, 1.0e+32,
+            1.0e+33, 1.0e+34, 1.0e+35, 1.0e+36, 1.0e+37, 1.0e+38, 1.0e+39, 1.0e+40,
+            1.0e+41, 1.0e+42, 1.0e+43, 1.0e+44, 1.0e+45, 1.0e+46, 1.0e+47, 1.0e+48,
+            1.0e+49, 1.0e+50, 1.0e+51, 1.0e+52, 1.0e+53, 1.0e+54, 1.0e+55, 1.0e+56,
+            1.0e+57, 1.0e+58, 1.0e+59, 1.0e+60, 1.0e+61, 1.0e+62, 1.0e+63
+        };
+        return UNLIKELY(a_exp < -63 || a_exp > 63)
+             ? std::pow(10.0, a_exp) : s_pow10[a_exp + 63];
     }
 
     // Addition / Subtraction: performed on the exponent and mantissa separately
@@ -186,97 +215,6 @@ public:
             m_exp = a_const_exp;
         }
         return *this;
-    }
-
-private:
-
-    /// Construct a decimal from a double.
-    /// The problem this function solves is that due to imprecision of doubles
-    /// they may look internally like this:  `1.00000000000000000000000001`, so
-    /// some processing need to happen in order to represent it with a "sane"
-    /// exponent.
-    ///
-    /// At return the decimal's mantissa and exponent satisfy the following:
-    ///
-    /// 1. |x - m * 10^(-e)| <= 0.5 * 10^(-4)
-    /// 2. either x = m = 0 or (m % 10) != 0
-    ///
-    /// @throw runtime_exception if |x| >= 10^250.
-    //
-    void from_double(double x)
-    {
-        if (std::isnan(x)) {
-            set_null();
-            return;
-        }
-
-        int e2;
-        int sign;
-
-        if (x >= 0)
-            sign = 1;
-        else {
-            x = -x;
-            sign = -1;
-        }
-        auto md = frexp(x, &e2);
-        auto n  = (int64_t)scalbln(md, 53);
-
-        // At this point we have x = 2^(e2 - 53) * n (exactly, no rounding)
-        int e;
-        if (e2 < 49) { // n * (2^(e2 - 49) * 5^4 is not an integer
-            int shift  = 49 - e2;
-            if (shift >= 64) { // e.g. in the case of denormals
-                clear();
-                return;
-            }
-
-            n *= 625; // 625 = 5^4 < 2^10 and since n <= 2^53 no overflow here
-            auto mask      = (1l << shift) - 1;
-            auto remainder = n & mask;
-            n >>= shift;
-            if ((remainder << 1) >= mask)
-                n++;
-
-            if (n == 0) {
-                clear();
-                return;
-            }
-            e = 4;
-        } else {
-            // here e2 >= 49 and n > 0.
-            // Since x = 2^(e2-49) * 5^4 * n * 10^-4 : no rounding in this case
-            switch (e2) {
-            case 49: if (n & 1) { m_exp=4; m_mant = 625*n; } n >>= 1; // no break
-            case 50: if (n & 1) { m_exp=3; m_mant = 125*n; } n >>= 1; // no break
-            case 51: if (n & 1) { m_exp=2; m_mant = 25 *n; } n >>= 1; // no break
-            case 52: if (n & 1) { m_exp=1; m_mant = 5  *n; } n >>= 1; // no break
-            case 53: e = 0; break;
-            default: {
-                e = 0; // in the next while we try to divide "n" by 5 instead
-                        // of multiply it by 2 in order to avoid overflow in "n"
-                do {
-                    auto remainder  = (n % 5);
-                    if  (remainder) {
-                        int shift = e2 - 53;
-                        if (n >= (1l << (63 - shift)))
-                            UTXX_THROW_RUNTIME_ERROR
-                            ("Overflow in double to decimal conversion: ", x);
-                        m_exp  = e;
-                        m_mant = sign * (n << shift);
-                    }
-                    --e;
-                    n /= 5;
-                }
-                while (--e2 > 53);
-            }
-            }
-        }
-
-        // normalize "n"
-        for (; (n % 10) == 0; --e, n /= 10);
-        m_exp  = e;
-        m_mant = sign * n;
     }
 };
 

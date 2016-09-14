@@ -56,13 +56,33 @@ BOOST_AUTO_TEST_CASE( test_decimal )
     { decimal d(nullptr);       BOOST_CHECK(d.is_null()); }
     { decimal d(decimal::nan());BOOST_CHECK(d.is_null()); }
     { BOOST_CHECK_EQUAL(decimal(1,1),  decimal(1,1)); }
-    { BOOST_CHECK_NE(   decimal(-1,1), decimal(1,1)); }
-    { BOOST_CHECK_NE(   decimal(2,1),  decimal(1,1)); }
-    { BOOST_CHECK_NE(   decimal(-2,1), decimal(1,1)); }
+    { BOOST_CHECK_NE   (decimal(-1,1), decimal(1,1)); }
+    { BOOST_CHECK_NE   (decimal(2,1),  decimal(1,1)); }
+    { BOOST_CHECK_NE   (decimal(-2,1), decimal(1,1)); }
     { BOOST_CHECK_EQUAL(decimal(127,0),decimal::null_value()); }
     { decimal d( 2,  1);        BOOST_CHECK_EQUAL(100.0, (double)d); }
     { decimal d(-2,  1);        BOOST_CHECK_EQUAL(0.01,  (double)d); }
     { decimal d(-2, -125);      BOOST_CHECK_EQUAL(-1.25, (double)d); }
+    {
+      decimal d(106.55, 2);
+      BOOST_CHECK_EQUAL(106.55,(double)d);
+      BOOST_CHECK_EQUAL(-2,    d.exp());
+      BOOST_CHECK_EQUAL(10655, d.mantissa());
+    }
+    {
+      decimal d(1.253875, 6);
+      BOOST_CHECK(std::abs(1.253875 - (double)d) < 0.0000001);
+      BOOST_CHECK_EQUAL(-6,       d.exp());
+      BOOST_CHECK_EQUAL(1253875,  d.mantissa());
+    }
+    {
+      decimal d(-1.34567, 5);
+      // There is a precision rounding issue with this example.
+      BOOST_CHECK(std::abs(-1.34567 - (double)d) < 0.000001);
+      BOOST_CHECK_EQUAL(-5,      d.exp());
+      BOOST_CHECK_EQUAL(-134567, d.mantissa());
+    }
+    { decimal d(106.55, 2);     BOOST_CHECK_EQUAL(106.55,(double)d); }
     { decimal d(-11,-125678901234);
                                 BOOST_CHECK_EQUAL("-1.25678901234", d.to_string()); }
     { decimal d(-11, 125678901234);
