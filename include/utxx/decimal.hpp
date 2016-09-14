@@ -86,7 +86,7 @@ public:
     decimal(decimal const& a) : m_exp(a.m_exp), m_mant(a.m_mant) {}
 
     /// Construct a decimal from a double.
-    decimal(double x, uint precision = 8)   { from_double(x, precision); }
+    decimal(double x, uint precision)       { from_double(x, precision); }
 
     void operator=(decimal const& a)        { *(long*)this = *(long*)&a; }
     void operator=(decimal&& a)             { *(long*)this = *(long*)&a; }
@@ -101,24 +101,6 @@ public:
     bool   is_null()   const { return *this == null_value();   }
     void   set_null()        { *this = null_value();           }
     void   clear()           { *(long*)this = 0l;              }
-
-    /// Construct a decimal from a double.
-    void from_double(double x, int precision)
-    {
-        if (std::isnan(x)) {
-            set_null();
-            return;
-        }
-
-        auto   v = x * pow10(precision);
-        auto   m = (long)(v >= 0 ? v + 0.5 : v - 0.5);
-        int    e = precision;
-
-        // Normalize
-        for(;  m && m%10 == 0; --e, m /= 10);
-        m_exp  = -e;
-        m_mant = m;
-    }
 
     static double pow10(int a_exp) {
         static double s_pow10[] = {
@@ -194,6 +176,24 @@ public:
 
     template <typename StreamT> inline friend
     StreamT& operator<<(StreamT& out, decimal const& d) { return d.print(out); }
+
+    /// Construct a decimal from a double.
+    void from_double(double x, int precision)
+    {
+        if (std::isnan(x)) {
+            set_null();
+            return;
+        }
+
+        auto   v = x * pow10(precision);
+        auto   m = (long)(v >= 0 ? v + 0.5 : v - 0.5);
+        int    e = precision;
+
+        // Normalize
+        for(;  m && m%10 == 0; --e, m /= 10);
+        m_exp  = -e;
+        m_mant = m;
+    }
 
     /// \param a_const_exp can be either const or initial value of the exponent
     CONSTEXPR

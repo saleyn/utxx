@@ -39,30 +39,30 @@ using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_decimal )
 {
-    BOOST_CHECK_EQUAL(1e-1,     decimal::pow10(-1));
-    BOOST_CHECK_EQUAL(0.1,      decimal::pow10(-1));
-    BOOST_CHECK_EQUAL(0.01,     decimal::pow10(-2));
-    BOOST_CHECK_EQUAL(1e-10,    decimal::pow10(-10));
-    BOOST_CHECK_EQUAL(1e-11,    decimal::pow10(-11));
-    BOOST_CHECK_EQUAL(1e-12,    decimal::pow10(-12));
-    BOOST_CHECK_EQUAL(1.0,      decimal::pow10(0));
-    BOOST_CHECK_EQUAL(1e+1,     decimal::pow10(1));
-    BOOST_CHECK_EQUAL(1e+5,     decimal::pow10(5));
-    BOOST_CHECK_EQUAL(1e+10,    decimal::pow10(10));
-    BOOST_CHECK_EQUAL(1e+11,    decimal::pow10(11));
-    BOOST_CHECK_EQUAL(1e+12,    decimal::pow10(12));
+    BOOST_CHECK_EQUAL(1e-1,       decimal::pow10(-1));
+    BOOST_CHECK_EQUAL(0.1,        decimal::pow10(-1));
+    BOOST_CHECK_EQUAL(0.01,       decimal::pow10(-2));
+    BOOST_CHECK_EQUAL(1e-10,      decimal::pow10(-10));
+    BOOST_CHECK_EQUAL(1e-11,      decimal::pow10(-11));
+    BOOST_CHECK_EQUAL(1e-12,      decimal::pow10(-12));
+    BOOST_CHECK_EQUAL(1.0,        decimal::pow10(0));
+    BOOST_CHECK_EQUAL(1e+1,       decimal::pow10(1));
+    BOOST_CHECK_EQUAL(1e+5,       decimal::pow10(5));
+    BOOST_CHECK_EQUAL(1e+10,      decimal::pow10(10));
+    BOOST_CHECK_EQUAL(1e+11,      decimal::pow10(11));
+    BOOST_CHECK_EQUAL(1e+12,      decimal::pow10(12));
 
     { decimal d; BOOST_CHECK(!d.is_null()); BOOST_CHECK_EQUAL(0.0, (double)d); }
-    { decimal d(nullptr);       BOOST_CHECK(d.is_null()); }
-    { decimal d(decimal::nan());BOOST_CHECK(d.is_null()); }
+    { decimal d(nullptr);         BOOST_CHECK(d.is_null()); }
+    { decimal d(decimal::nan(),0);BOOST_CHECK(d.is_null()); }
     { BOOST_CHECK_EQUAL(decimal(1,1),  decimal(1,1)); }
     { BOOST_CHECK_NE   (decimal(-1,1), decimal(1,1)); }
     { BOOST_CHECK_NE   (decimal(2,1),  decimal(1,1)); }
     { BOOST_CHECK_NE   (decimal(-2,1), decimal(1,1)); }
     { BOOST_CHECK_EQUAL(decimal(127,0),decimal::null_value()); }
-    { decimal d( 2,  1);        BOOST_CHECK_EQUAL(100.0, (double)d); }
-    { decimal d(-2,  1);        BOOST_CHECK_EQUAL(0.01,  (double)d); }
-    { decimal d(-2, -125);      BOOST_CHECK_EQUAL(-1.25, (double)d); }
+    { decimal d( 2,  1);          BOOST_CHECK_EQUAL(100.0, (double)d); }
+    { decimal d(-2,  1);          BOOST_CHECK_EQUAL(0.01,  (double)d); }
+    { decimal d(-2, -125);        BOOST_CHECK_EQUAL(-1.25, (double)d); }
     {
       decimal d(106.55, 2);
       BOOST_CHECK_EQUAL(106.55,(double)d);
@@ -82,13 +82,13 @@ BOOST_AUTO_TEST_CASE( test_decimal )
       BOOST_CHECK_EQUAL(-5,      d.exp());
       BOOST_CHECK_EQUAL(-134567, d.mantissa());
     }
-    { decimal d(106.55, 2);     BOOST_CHECK_EQUAL(106.55,(double)d); }
+    { decimal d(106.55, 2);       BOOST_CHECK_EQUAL(106.55,(double)d); }
     { decimal d(-11,-125678901234);
-                                BOOST_CHECK_EQUAL("-1.25678901234", d.to_string()); }
+                                  BOOST_CHECK_EQUAL("-1.25678901234", d.to_string()); }
     { decimal d(-11, 125678901234);
-                                BOOST_CHECK_EQUAL("1.25678901234", d.to_string()); }
+                                  BOOST_CHECK_EQUAL("1.25678901234", d.to_string()); }
     { decimal d(-15, 1256789012345678);
-                                BOOST_CHECK_EQUAL("1.256789012345678",d.to_string());}
+                                  BOOST_CHECK_EQUAL("1.256789012345678",d.to_string());}
 }
 
 #endif
