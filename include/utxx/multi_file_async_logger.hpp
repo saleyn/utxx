@@ -65,7 +65,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #endif
 
 namespace utxx {
-
 #if DEBUG_ASYNC_LOGGER == 2
 #   include <utxx/timestamp.hpp>
 #   define UTXX_ASYNC_DEBUG_TRACE(x) do { printf x; fflush(stdout); } while(0)
@@ -868,7 +867,7 @@ run() {
 DONE:
     UTXX_ASYNC_TRACE(("Logger loop finished - calling close()\n"));
     internal_close();
-    UTXX_ASYNC_DEBUG_TRACE(("Logger notifying all of exiting (%d) active_files=%d\n",
+    UTXX_ASYNC_DEBUG_TRACE(("Logger notifying all of exiting (%ld) active_files=%d\n",
                        m_thread.use_count(), open_files_count()));
 
     m_thread.reset();
