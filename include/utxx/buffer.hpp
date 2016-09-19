@@ -143,20 +143,22 @@ public:
 
     /// Ensure there's enough total space in the buffer to hold \a n bytes.
     void reserve(size_t n) {
-        size_t old_size = max_size();
-        if (n <= old_size)
+        if (n <= capacity())
             return;
-        size_t rd_offset = m_rd_ptr - m_begin;
-        size_t wr_offset = m_wr_ptr - m_begin;
+        size_t rd_offset = m_rd_ptr  - m_begin;
+        size_t wr_offset = m_wr_ptr  - m_begin;
+        auto   dirty_sz  = wr_offset - rd_offset;
         char*  old_begin = m_begin;
-        m_begin = alloc_t::allocate(n);
-        m_end   = m_begin + n;
-        if (wr_offset > 0)
-            memcpy(m_begin, old_begin, wr_offset);
-        m_rd_ptr = m_begin + rd_offset;
-        m_wr_ptr = m_begin + wr_offset;
+        auto   old_sz    = max_size();
+        auto   new_sz    = dirty_sz + n;
+        m_begin = alloc_t::allocate(new_sz);
+        m_end   = m_begin + new_sz;
+        if (dirty_sz > 0)
+            memcpy(m_begin, old_begin+rd_offset, dirty_sz);
+        m_rd_ptr = m_begin;
+        m_wr_ptr = m_begin + dirty_sz;
         if (old_begin != m_data)
-            alloc_t::deallocate(old_begin, old_size);
+            alloc_t::deallocate(old_begin, old_sz);
     }
 
     /// Make sure there's enough space in the buffer for n additional bytes.

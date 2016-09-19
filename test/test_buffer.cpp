@@ -54,6 +54,14 @@ BOOST_AUTO_TEST_CASE( test_io_buffer )
     BOOST_CHECK_EQUAL(6u,  c.capacity());
     BOOST_CHECK_EQUAL(10u, c.max_size());
     BOOST_REQUIRE(c.allocated());
+
+    b.read(2);
+    b.reserve(16);
+    BOOST_REQUIRE(b.allocated());
+    BOOST_CHECK_EQUAL(18, b.max_size());
+    BOOST_CHECK_EQUAL(16, b.capacity());
+    BOOST_CHECK_EQUAL(2,  b.size());
+    BOOST_CHECK_EQUAL("cd", std::string(b.rd_ptr(), b.size()));
 }
 
 BOOST_AUTO_TEST_CASE( test_bufferred_queue )
