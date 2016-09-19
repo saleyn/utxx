@@ -258,31 +258,31 @@ namespace detail {
                 auto r = s_vals[a]; memcpy(p, r.first, r.second);
                 return r.second;
             };
-            reserve(5);
+            reserve(8);
             m_pos += f(m_pos, a);
         }
         void do_print(uint64_t a) {
-            reserve(31);
+            reserve(32);
             itoa(a, out(m_pos));
         }
         void do_print(long a) {
-            reserve(30);
+            reserve(32);
             itoa(a, out(m_pos));
         }
         void do_print(uint32_t a) {
-            reserve(11);
+            reserve(16);
             itoa(a, out(m_pos));
         }
         void do_print(int a) {
-            reserve(10);
+            reserve(16);
             itoa(a, out(m_pos));
         }
         void do_print(uint16_t a) {
-            reserve(5);
+            reserve(8);
             itoa(a, out(m_pos));
         }
         void do_print(int16_t a) {
-            reserve(6);
+            reserve(8);
             itoa(a, out(m_pos));
         }
         void do_print(double a)

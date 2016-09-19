@@ -1024,7 +1024,10 @@ internal_register_stream(
     stream_info* si =
         new stream_info(this, a_name, a_fd, ++m_last_version, a_writer, a_state);
 
-    internal_update_stream(si, a_fd);
+    if (!internal_update_stream(si, a_fd)) {
+        delete si;
+        return file_id();
+    }
 
     m_active_count.fetch_add(1, std::memory_order_relaxed);
     return file_id(si);
@@ -1099,6 +1102,7 @@ close_file(file_id& a_id, bool a_immediate, int a_wait_secs) {
     } else {
         UTXX_ASYNC_TRACE(( "====> close_file(%d) failed to enqueue cmd or no event (n=%d, %s)\n",
                 fd, n, (ev ? "true" : "false")));
+        deallocate_command(l_cmd);
     }
     a_id.reset();
     return n;
@@ -1308,9 +1312,8 @@ commit(const struct timespec* tsp)
     UTXX_ASYNC_DEBUG_TRACE(("Processed count: %d / %ld. (MaxQsz = %d)\n",
                        count, m_total_msgs_processed.load(), m_max_queue_size));
 
-    for(typename pending_data_streams_set::iterator
-            it = m_pending_data_streams.begin(), e = m_pending_data_streams.end();
-            it != e; ++it)
+    for(auto it = m_pending_data_streams.begin(), e = m_pending_data_streams.end();
+             it != e; ++it)
     {
         stream_info*     si = *it;
         msg_formatter& ffmt = si->on_format;
@@ -1399,13 +1402,13 @@ commit(const struct timespec* tsp)
 
         if (si->error) {
             UTXX_ASYNC_TRACE(("Written total %lu bytes to %p (fd=%d) %s with error: %s\n",
-                         sz, si, si->fd, si->name.c_str(), si->error_msg.c_str()));
+                              sz, si, si->fd, si->name.c_str(), si->error_msg.c_str()));
         } else {
             if (n > 0)
                 do_writev_and_free(si, end, cats, iov, n);
 
             UTXX_ASYNC_TRACE(("Written total %lu bytes to (fd=%d) %s\n",
-                         sz, si->fd, si->name.c_str()));
+                              sz, si->fd, si->name.c_str()));
         }
 
         // Close associated file descriptor
