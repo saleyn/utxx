@@ -226,8 +226,12 @@ namespace detail {
             BOOST_STATIC_ASSERT(sizeof(T) == N && 
                 (sizeof(T) <= 8) && (sizeof(T) & 1) == 0);
             if (IsBigEndian) utxx::store_be(m_data, a);
-            else             utxx::store_le(m_data, a);
-
+            else
+                #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+                *(T*)m_data = a;
+                #else
+                utxx::store_le(m_data, a);
+                #endif
         }
 
         /// Return the result by treating the content as big 
@@ -238,7 +242,12 @@ namespace detail {
                 (sizeof(T) <= 8) && (sizeof(T) & 1) == 0);
             T n;
             if (IsBigEndian) utxx::cast_be(m_data, n);
-            else             utxx::cast_le(m_data, n);
+            else
+                #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+                n = *(T*)m_data;
+                #else
+                utxx::cast_le(m_data, n);
+                #endif
             return n;
         }
 
