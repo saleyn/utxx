@@ -162,15 +162,8 @@ public:
     }
 
     /// Make sure there's enough space in the buffer for n additional bytes.
-    void capacity(size_t n) {
-        if (capacity() >= n)
-            return;
-        crunch();
-        size_t got = capacity();
-        if (got >= n)
-            return;
-        reserve(max_size() + n - got);
-    }
+    [[deprecated]]
+    void capacity(size_t n) { reserve(n); }
 
     /// Address of internal data buffer
     const char* address()   const { return m_begin; }
