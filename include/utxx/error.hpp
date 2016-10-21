@@ -319,6 +319,9 @@ public:
         auto p   = a_buf;
         auto end = a_buf + a_sz - 1;
 
+        if (end - p <= 0)
+            return p;
+
         if (a_sl_len) {
             q = strrchr(a_srcloc, s_sep);
             q = q ? q+1 : a_srcloc;
@@ -327,7 +330,7 @@ public:
             auto len = std::min<size_t>(end - p, e - q + 1);
             p = stpncpy(p, q, len);
         }
-        if (fun_scope_depth && a_sf_len) {
+        if (fun_scope_depth && a_sf_len && p < end) {
             if (a_sl_len) *p++ = ' ';
             // If asked to print function name as-is, just copy it and return
             if (a_fun_verbatim) {
@@ -357,7 +360,7 @@ public:
             //
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
-            for (q = begin, e = q + a_sf_len; q < e; ++q) {
+            for (q = begin, e = std::min<const char*>(end, q + a_sf_len); q < e; ++q) {
                 switch (*q) {
                     case '(':
                         if (inside)
@@ -542,7 +545,7 @@ public:
 
 /**
  * \brief Exception class for I/O related errors.
- * Note that we can't have a noncopyable stringstream as a 
+ * Note that we can't have a noncopyable stringstream as a
  * member if we allow the following use:
  *   <tt>throw io_error(errno, "Test") << 1 << " result:" << 2;</tt>
  * so we choose to reallocate the m_out string instead.
