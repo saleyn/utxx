@@ -851,7 +851,7 @@ int main(int argc, char *argv[])
             // http://man7.org/linux/man-pages/man2/recvmmsg.2.html
             iov[0].iov_base = databuf;
             iov[0].iov_len  = sizeof(databuf);
-            n = ::recvmsg(addr[i].fd, &msg, 0);
+            n = ::recvmsg(addr->fd, &msg, 0);
           } while (n < 0 && errno == EINTR);
 
           if (n > 0) {
@@ -859,11 +859,11 @@ int main(int argc, char *argv[])
             // If it's 0 - on connected sockets this means that it got disconnected.
             // Commit the data into the buffer invoke the Action, and continue.
 
-            addr[i].src_addr = peeraddr.sin_addr.s_addr;
-            addr[i].src_port = peeraddr.sin_port;
-            addr[i].dst_addr = 0;
+            addr->src_addr = peeraddr.sin_addr.s_addr;
+            addr->src_port = peeraddr.sin_port;
+            addr->dst_addr = 0;
             // Dst addr doesn't get sent by PKTINFO. Need to obtain it by getsockname()
-            // addr[i].dst_port = addr[i].port;
+            // addr->dst_port = addr->port;
             // Control messages are always accessed via macros
             // http://www.kernel.org/doc/man-pages/online/pages/man3/cmsg.3.html
             for(auto cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
@@ -872,8 +872,8 @@ int main(int argc, char *argv[])
                   cm->cmsg_type  == IP_PKTINFO)
               {
                 struct in_pktinfo* pi = (struct in_pktinfo*)CMSG_DATA(cm);
-                //addr[i].if_addr   = pi->ipi_spec_dst.s_addr; // Iface addr
-                addr[i].dst_addr  = pi->ipi_addr.s_addr;     // Mcast addr
+                //addr->if_addr   = pi->ipi_spec_dst.s_addr; // Iface addr
+                addr->dst_addr  = pi->ipi_addr.s_addr;     // Mcast addr
                 break;
               }
             }
@@ -885,7 +885,7 @@ int main(int argc, char *argv[])
                     perror("read");
                     terminate = 1;
                 }
-                close(addr[i].fd);
+                close(addr->fd);
             }
             break;
           }
