@@ -32,8 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_FUTEX_HPP_
-#define _UTXX_FUTEX_HPP_
+#pragma once
 
 #if __cplusplus >= 201103L
 
@@ -273,6 +272,3 @@ private:
 } // namespace utxx
 
 #endif // __cplusplus
-
-#endif // _UTXX_FUTEX_HPP_
-
