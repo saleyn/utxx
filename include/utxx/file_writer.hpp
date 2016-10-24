@@ -4,7 +4,8 @@
 //----------------------------------------------------------------------------
 /// \brief Basic UDP packet receiver.
 //----------------------------------------------------------------------------
-// Copyright (c) 2012 Omnibius, LLC
+// Copyright (c) 2012 Serge Aleynikov <saleyn@gmail.com>
+// Copyright (c) 2012 Dmitriy Kargapolov <dmitriy.kargapolov@gmail.com>
 // Created: 2012-08-12
 //----------------------------------------------------------------------------
 /*
@@ -12,17 +13,25 @@
 
 This file is part of the utxx open-source project.
 
-Copyright (c) 2012 Omnibius, LLC
-Author: Dmitriy Kargapolov <dmitriy.kargapolov@gmail.com>
+Copyright (C) 2012 Serge Aleynikov <saleyn@gmail.com>
 
-Use, modification and distribution are subject to the Boost Software
-License, Version 1.0 (See accompanying file LICENSE_1_0.txt or copy
-at http://www.boost.org/LICENSE_1_0.txt)
+This library is free software; you can redistribute it and/or
+modify it under the terms of the GNU Lesser General Public
+License as published by the Free Software Foundation; either
+version 2.1 of the License, or (at your option) any later version.
+
+This library is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public
+License along with this library; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_FILE_WRITER_HPP_
-#define _UTXX_FILE_WRITER_HPP_
+#pragma once
 
 #include <iostream>
 #include <fstream>
@@ -163,5 +172,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_FILE_WRITER_HPP_
