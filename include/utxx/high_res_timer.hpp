@@ -37,9 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-#ifndef _UTXX_HIGH_RES_TIMER_HPP_
-#define _UTXX_HIGH_RES_TIMER_HPP_
+#pragma once
 
 #include <utxx/detail/get_tick_count.hpp>
 #include <utxx/time_val.hpp>
@@ -209,6 +207,4 @@ private:
 
 #ifdef DEBUG_TIMESTAMP
 #include <utxx/../../src/high_res_timer.cpp>
-#endif
-
 #endif
