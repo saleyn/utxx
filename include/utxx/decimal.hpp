@@ -158,10 +158,10 @@ public:
     StreamT& print(StreamT& out) const {
         double v = value();
         if (exp() >= 0) {
-            out << long(v + 0.5);
+            out << long(v >= 0 ? v + 0.5 : v - 0.5);
             return out;
-    }
-    char buf[128];
+        }
+        char buf[128];
         if (ftoa_left<true>(v, buf, sizeof(buf), -m_exp, true) < 0)
             out << v;
         else
@@ -185,9 +185,9 @@ public:
             return;
         }
 
-        auto   v = x * pow10(precision);
-        auto   m = (long)(v >= 0 ? v + 0.5 : v - 0.5);
-        int    e = precision;
+        auto v = x * pow10(precision);
+        auto m = long(v >= 0 ? v + 0.5 : v - 0.5);
+        int  e = precision;
 
         // Normalize
         for(;  m && m%10 == 0; --e, m /= 10);

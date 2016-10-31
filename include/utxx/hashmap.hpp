@@ -43,6 +43,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 
 namespace utxx {
+    struct hash_pair {
+    template <typename T, typename U>
+        std::size_t operator()(const std::pair<T, U> &x) const {
+            return std::hash<T>()(x.first) ^ std::hash<U>()(x.second);
+        }
+    };
+}
+
+namespace utxx {
 namespace detail {
 
     #if defined(__GXX_EXPERIMENTAL_CXX0X__) || __cplusplus >= 201103L
