@@ -470,6 +470,7 @@ private:
     bool                            m_silent_finish         = false;
     int                             m_fatal_kill_signal     = 0;
     long                            m_sched_yield_us        = 250;
+    bool                            m_block_signals         = true;
     config_macros                   m_macro_var_map;
 
     /// Signal set handled by the installed crash signal handler

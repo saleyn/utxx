@@ -45,7 +45,15 @@ namespace utxx
 class signal_block : private boost::noncopyable {
     sigset_t m_orig_mask;
 public:
-    signal_block() {
+    signal_block(bool a_block = true) {
+        if (a_block) {
+            block();
+            return;
+        }
+        ::sigemptyset(&m_orig_mask);
+    }
+   
+    void block() {
         sigset_t block_all;
         if (::sigfillset(&block_all) < 0)
             UTXX_THROW_IO_ERROR(errno, "sigfillset(3)");
@@ -54,7 +62,8 @@ public:
     }
 
     ~signal_block() {
-        ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
+        if (!sigisemptyset(&m_orig_mask))
+            ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
     }
 };
 

@@ -167,6 +167,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
         m_sched_yield_us = a_cfg.get<long>       ("logger.sched-yield-us", -1);
         m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
+        m_block_signals  = a_cfg.get<bool>       ("logger.block-signals",  true);
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
@@ -246,6 +247,8 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
 
 void logger::run()
 {
+    utxx::signal_block block_signals(m_block_signals);
+
     if (m_on_before_run)
         m_on_before_run();
 

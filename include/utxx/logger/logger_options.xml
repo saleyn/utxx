@@ -70,6 +70,9 @@
                     desc="Pipe/comma-delimitted list of signal handlers"/>
         </option>
 
+        <option name="block-signals" val-type="bool" default="true"
+                desc="Block all signals by the logger's writing thread"/>
+
         <option name="file" required="false"
                 desc="Logger's backend for writing data synchronously to file">
             <option name="filename" val-type="string"
