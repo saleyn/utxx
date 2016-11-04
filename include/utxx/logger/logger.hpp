@@ -505,7 +505,7 @@ private:
     void remove(log_level a_lvl, int a_id);
 
     void dolog_msg(const msg& a_msg);
-    void dolog_fatal_msg(char*  buf);
+    void dolog_fatal_msg(const char* buf);
 
     void run();
 

@@ -492,14 +492,14 @@ void logger::dolog_msg(const logger::msg& a_msg) {
     }
 }
 
-void logger::dolog_fatal_msg(char* buf)
+void logger::dolog_fatal_msg(const char* buf)
 {
     // Expecting a Rethrowing signal string of
     // this format
     // (signal number)
 
     int   signum    = fatal_kill_signal(); //DEFAULT SIGNAL SIGABRT
-    char* signo_str = strstr(buf, "(");
+    char* signo_str = strstr(const_cast<char*>(buf), "(");
 
     if (signo_str) {
         signo_str++;
