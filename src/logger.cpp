@@ -448,6 +448,12 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                 p = format_footer(a_msg, p+n,  end);
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, buf, p - buf));
+
+                if (fatal_kill_signal() && a_msg.level() == LEVEL_FATAL) {
+                    m_abort = true;
+                    dolog_fatal_msg(buf, p - buf);
+                }
+
                 break;
             }
             case payload_t::STR_FUN: {
@@ -458,6 +464,12 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                 auto  res = (a_msg.m_fun.sf)(pfx, p - pfx, sfx, q - sfx);
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, res.c_str(), res.size()));
+
+                if (fatal_kill_signal() && a_msg.level() == LEVEL_FATAL) {
+                    m_abort = true;
+                    dolog_fatal_msg(res.c_str(), res.size());
+                }
+
                 break;
             }
             case payload_t::STR: {
@@ -478,8 +490,10 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                 m_sig_slot[level_to_signal_slot(a_msg.level())](
                     on_msg_delegate_t::invoker_type(a_msg, buf.str(), buf.size()));
 
-                if (fatal_kill_signal() && a_msg.level() == LEVEL_FATAL)
-                    dolog_fatal_msg(buf.c_str());
+                if (fatal_kill_signal() && a_msg.level() == LEVEL_FATAL) {
+                    m_abort = true;
+                    dolog_fatal_msg(buf.c_str(), buf.size());
+                }
 
                 break;
             }
@@ -492,26 +506,21 @@ void logger::dolog_msg(const logger::msg& a_msg) {
     }
 }
 
-void logger::dolog_fatal_msg(const char* buf)
+void logger::dolog_fatal_msg(const char* buf, size_t sz)
 {
     // Expecting a Rethrowing signal string of
     // this format
     // (signal number)
 
     int   signum    = fatal_kill_signal(); //DEFAULT SIGNAL SIGABRT
-    char* signo_str = strstr(const_cast<char*>(buf), "(");
+    char* signo_str = (char*)memchr(static_cast<const void*>(buf), '(', sz);
 
     if (signo_str) {
         signo_str++;
-        signum = atoi(signo_str);
-
-        if (signum) {
-            std::cerr << "logger exiting after receiving fatal event " << signum
-                      << std::endl;
-            detail::exit_with_default_sighandler(signum);
-            return;
-        }
+        auto sig = atoi(signo_str);
+        if  (sig)  signum = sig;
     }
+
     std::cerr << "logger exiting from unknown fatal event" << signum << std::endl;
     detail::exit_with_default_sighandler(fatal_kill_signal());
 }
