@@ -479,7 +479,7 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                     on_msg_delegate_t::invoker_type(a_msg, buf.str(), buf.size()));
 
                 if (fatal_kill_signal() && a_msg.level() == LEVEL_FATAL)
-                    dolog_fatal_msg(buf.str());
+                    dolog_fatal_msg(buf.c_str());
 
                 break;
             }
