@@ -139,9 +139,9 @@ inline bool logger::logs(
 
     detail::basic_buffered_print<1024> buf;
     buf.print(std::forward<Args>(a_args)...);
-    bool res = m_queue.emplace(a_level, a_cat,
+    bool res = m_queue.emplace(a_level, a_cat, buf.to_string(),
                                a_si.srcloc(), a_si.srcloc_len(),
-                               a_si.fun(), a_si.fun_len(), buf.to_string());
+                               a_si.fun(), a_si.fun_len());
     m_event.signal_fast();
     return res;
 }
