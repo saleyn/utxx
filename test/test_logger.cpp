@@ -94,7 +94,6 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(10,(as_int(LEVEL_TRACE5)));
 
     BOOST_CHECK(LEVEL_NONE    == as_log_level(0 ));
-    BOOST_CHECK(LEVEL_ERROR   == as_log_level(0 ));
     BOOST_CHECK(LEVEL_WARNING == as_log_level(1 ));
     BOOST_CHECK(LEVEL_NOTICE  == as_log_level(2 ));
     BOOST_CHECK(LEVEL_INFO    == as_log_level(3 ));
@@ -159,6 +158,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     pt.put("logger.show-thread",           true);
     pt.put("logger.show-ident",            true);
     pt.put("logger.ident",                 variant("my-logger"));
+    pt.put("logger.fatal-kill-signal",     0);
     pt.put("logger.silent-finish",         true);
 
     if (utxx::verbosity::level() != utxx::VERBOSE_NONE)
@@ -191,7 +191,7 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
     BOOST_CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
 
-    log.init(pt);
+    log.init(pt, nullptr, false);
 
     auto console = static_cast<const logger_impl_console*>(log.get_impl("console"));
 
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
         if (log.initialized())
             log.finalize();
 
-        log.init(pt);
+        log.init(pt, nullptr, false);
 
         BOOST_REQUIRE(log.initialized());
     }
@@ -270,7 +270,7 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
         if (log.initialized())
             log.finalize();
 
-        log.init(pt);
+        log.init(pt, nullptr, false);
     }
 
     {
@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
             log.finalize();
 
         try {
-            log.init(pt);
+            log.init(pt, nullptr, false);
             BOOST_CHECK(false);
         } catch (utxx::runtime_error& e) {
             auto exp = "Console logger's stdout levels filter "
@@ -357,13 +357,12 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
         perror("sigprocmask");
 
     for (auto& p : sigs)
-        printf("Process has %s handler -> %d\n", p.second.c_str(), sigismember(&mask, p.first));
-
-    fflush(stdout);
+        BOOST_TEST_MESSAGE("Process has " << p.second.c_str() << " handler -> "
+                           << sigismember(&mask, p.first));
 
     bool crash = getenv("UTXX_LOGGER_CRASH") && atoi(getenv("UTXX_LOGGER_CRASH"));
 
-    if (crash) {
+    if  (crash) {
         double* p = nullptr;
         kill(getpid(), SIGABRT);
         *p = 10.0;

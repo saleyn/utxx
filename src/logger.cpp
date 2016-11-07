@@ -66,6 +66,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+void finalize_logger_at_exit()
+{
+    try { logger::instance().finalize(); } catch(...) {}
+}
+
+
 int logger::level_to_signal_slot(log_level level) noexcept
 {
     switch (level) {
@@ -128,14 +134,16 @@ std::string logger::replace_macros(const std::string& a_value) const
     return regex_replace(a_value, re, replace);
 }
 
-void logger::init(const char* filename, const sigset_t* a_ignore_signals)
+void logger::init(const char* filename, const sigset_t* a_ignore_signals,
+                  bool a_install_finalizer)
 {
     config_tree pt;
     read_config(filename, pt);
-    init(pt);
+    init(pt, a_ignore_signals, a_install_finalizer);
 }
 
-void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
+void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
+                  bool a_install_finalier)
 {
     if (m_initialized)
         throw std::runtime_error("Logger already initialized!");
@@ -144,14 +152,14 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
     do_finalize();
 
     try {
-        m_show_location  = a_cfg.get<bool>       ("logger.show-location", m_show_location);
+        m_show_location  = a_cfg.get<bool>       ("logger.show-location",    m_show_location);
         m_show_fun_namespaces = a_cfg.get<int>   ("logger.show-fun-namespaces",
                                                   m_show_fun_namespaces);
-        m_show_category  = a_cfg.get<bool>       ("logger.show-category", m_show_category);
-        m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",    m_show_ident);
-        m_show_thread    = a_cfg.get<bool>       ("logger.show-thread",   m_show_thread);
-        m_fatal_kill_signal = a_cfg.get<int>       ("logger.fatal-kill-signal",   m_fatal_kill_signal);
-        m_ident          = a_cfg.get<std::string>("logger.ident",         m_ident);
+        m_show_category  = a_cfg.get<bool>       ("logger.show-category",    m_show_category);
+        m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",       m_show_ident);
+        m_show_thread    = a_cfg.get<bool>       ("logger.show-thread",      m_show_thread);
+        m_fatal_kill_signal = a_cfg.get<int>     ("logger.fatal-kill-signal",m_fatal_kill_signal);
+        m_ident          = a_cfg.get<std::string>("logger.ident",            m_ident);
         m_ident          = replace_macros(m_ident);
         std::string ts   = a_cfg.get<std::string>("logger.timestamp",     "time-usec");
         m_timestamp_type = parse_stamp_type(ts);
@@ -164,10 +172,10 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
                 ("Either 'levels' or 'min-level-filter' option is permitted!");
         set_min_level_filter(parse_log_level(ls));
         long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 1000);
-        m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 * 1000000L};
-        m_sched_yield_us = a_cfg.get<long>       ("logger.sched-yield-us", -1);
-        m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",  false);
-        m_block_signals  = a_cfg.get<bool>       ("logger.block-signals",  true);
+        m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 *  1000000L};
+        m_sched_yield_us = a_cfg.get<long>       ("logger.sched-yield-us",  -1);
+        m_silent_finish  = a_cfg.get<bool>       ("logger.silent-finish",   false);
+        m_block_signals  = a_cfg.get<bool>       ("logger.block-signals",   true);
 
         if ((int)m_timestamp_type < 0)
             throw std::runtime_error("Invalid timestamp type: " + ts);
@@ -237,6 +245,10 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals)
 
         m_thread.reset(new std::thread([this]() { this->run(); }));
 
+        if (!m_finalizer_installed && a_install_finalier) {
+            atexit(&finalize_logger_at_exit);
+            m_finalizer_installed = true;
+        }
     } catch (std::runtime_error& e) {
         if (m_error)
             m_error(e.what());
@@ -348,12 +360,15 @@ void logger::finalize()
         return;
 
     std::lock_guard<std::mutex> g(m_mutex);
+    if (!m_initialized)
+        return;
+
     m_abort = true;
     if (m_thread)
         m_thread->join();
     m_thread.reset();
     do_finalize();
-    m_abort = false;
+    m_abort       = false;
     m_initialized = false;
 }
 

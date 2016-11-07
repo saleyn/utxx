@@ -471,6 +471,7 @@ private:
     int                             m_fatal_kill_signal     = 0;
     long                            m_sched_yield_us        = 250;
     bool                            m_block_signals         = true;
+    std::atomic<bool>               m_finalizer_installed;
     config_macros                   m_macro_var_map;
 
     /// Signal set handled by the installed crash signal handler
@@ -539,13 +540,17 @@ public:
     /// @param a_file           configuration filename
     /// @param a_ignore_signals optional set of externally handled signals that
     ///                         should be ignored by global signal crash handler.
-    void init(const char* a_file, const sigset_t* a_ignore_signals = nullptr);
+    /// @param a_install_finalier install "at exit" function that calls finalize().
+    void init(const char* a_file, const sigset_t* a_ignore_signals = nullptr,
+              bool a_install_finalizer = true);
 
     /// Call to initialize the logger from a configuration container.
     /// @param a_file           configuration filename
     /// @param a_ignore_signals optional set of externally handled signals that
     ///                         should be ignored by global signal crash handler.
-    void init(const config_tree& a_cfg, const sigset_t* a_ignore_signals = nullptr);
+    /// @param a_install_finalier install "at exit" function that calls finalize().
+    void init(const config_tree& a_cfg, const sigset_t* a_ignore_signals=nullptr,
+              bool a_install_finalizer = true);
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();
