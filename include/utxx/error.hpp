@@ -351,8 +351,8 @@ public:
             int tribrcnt = 0, scope = 1;
             struct { const char* l; const char* r; } tribraces[N];
             const char* scopes[N];
-            scopes[0] = "";
-            auto begin = a_srcfun;
+            scopes[0]   = "";
+            auto begin  = a_srcfun;
             auto matched_open_tribrace = -1;
             auto inside = 0;  // > 0 when we are inside "<...>"
             if (strncmp(begin, "static ",   7)==0) begin += 7;
@@ -360,7 +360,7 @@ public:
             //
             // We search for '(' to signify the end of input, and skip
             // everything prior to the last space:
-            for (q = begin, e = std::min<const char*>(end, q + a_sf_len); q < e; ++q) {
+            for (q = begin, e = a_srcfun+a_sf_len; q < e; ++q) {
                 switch (*q) {
                     case '(':
                         if (inside)

@@ -143,7 +143,7 @@ void logger::init(const char* filename, const sigset_t* a_ignore_signals,
 }
 
 void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
-                  bool a_install_finalier)
+                  bool a_install_finalizer)
 {
     if (m_initialized)
         throw std::runtime_error("Logger already initialized!");
@@ -245,7 +245,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
 
         m_thread.reset(new std::thread([this]() { this->run(); }));
 
-        if (!m_finalizer_installed && a_install_finalier) {
+        if (!m_finalizer_installed && a_install_finalizer) {
             atexit(&finalize_logger_at_exit);
             m_finalizer_installed = true;
         }
@@ -267,10 +267,10 @@ void logger::run()
     if (!m_ident.empty())
         pthread_setname_np(pthread_self(), m_ident.c_str());
 
-    int event_val = 1;
-    while (!m_abort)
+    int event_val;
+    do
     {
-        event_val        = m_event.value();
+        event_val = m_event.value();
         //wakeup_result rc = wakeup_result::TIMEDOUT;
 
         while (!m_abort && m_queue.empty()) {
@@ -341,7 +341,7 @@ void logger::run()
             m_queue.free(item);
             item = next;
         }
-    }
+    } while (!m_abort);
 
 DONE:
     if (!m_silent_finish) {
@@ -498,7 +498,7 @@ void logger::dolog_msg(const logger::msg& a_msg) {
                 buf.sprint(pfx, ps);
                 auto& s = a_msg.m_fun.str;
                 // Remove trailing new lines
-                auto sz = s.size();
+                auto sz = int(s.size());
                 while (sz && s[sz-1] == '\n') --sz;
                 buf.sprint(s.c_str(), sz);
                 buf.sprint(sfx, qs);

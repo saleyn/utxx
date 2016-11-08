@@ -155,7 +155,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define UTXX_IS_GT_ALERT(  Level) utxx::is_gt<utxx::LEVEL_ALERT  >(Level)
 
 //------------------------------------------------------------------------------
-// Shortcut for "__FILE__:__LINE__:__func__" argument passed to the logger
+// Shortcut for "__FILE__:__LINE__", "__func__" argument passed to the logger
 //------------------------------------------------------------------------------
 #define UTXX_LOG_SRCINFO UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION
 
@@ -164,14 +164,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// is to use a macro chooser that takes __VA_ARGS__ to select the
 /// UTXX_LOG_N_ARGS() macro depending on whether it was called with one
 /// or two arguments:
-#define UTXX_LOG_1_ARGS(Level) \
-    utxx::logger::msg_streamer(utxx::LEVEL_##Level, "",  UTXX_LOG_SRCINFO)
-#define UTXX_LOG_2_ARGS(Level, Cat) \
-    utxx::logger::msg_streamer(utxx::LEVEL_##Level, Cat, UTXX_LOG_SRCINFO)
+#define UTXX_LOG_2_ARGS(SI, Level) \
+    utxx::logger::msg_streamer(utxx::LEVEL_##Level, "",  SI)
+#define UTXX_LOG_3_ARGS(SI, Level, Cat) \
+    utxx::logger::msg_streamer(utxx::LEVEL_##Level, Cat, SI)
 
 #define UTXX_GET_3RD_ARG(arg1, arg2, arg3, ...) arg3
 #define UTXX_LOG_MACRO_CHOOSER(...) \
-        UTXX_GET_3RD_ARG(__VA_ARGS__, UTXX_LOG_2_ARGS, UTXX_LOG_1_ARGS)
+        UTXX_GET_3RD_ARG(__VA_ARGS__, UTXX_LOG_3_ARGS, UTXX_LOG_2_ARGS)
 
 //------------------------------------------------------------------------------
 /// In all <LOG_*> macros <FmtArgs> are parameter lists with signature of
@@ -185,7 +185,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// Support for streaming version of the logger
 //------------------------------------------------------------------------------
 #define UTXX_LOG(Level, ...) \
-    UTXX_LOG_MACRO_CHOOSER(Level, ##__VA_ARGS__)(Level, ##__VA_ARGS__)
+    UTXX_LOG_MACRO_CHOOSER(Level, ##__VA_ARGS__)(UTXX_SRC,  Level, ##__VA_ARGS__)
+
+// Use this macro when the function body begins with: UTXX_PRETTY_FUNCTION()
+#define UTXX_XLOG(Level, ...) \
+    UTXX_LOG_MACRO_CHOOSER(Level, ##__VA_ARGS__)(UTXX_SRCX, Level, ##__VA_ARGS__)
 
 namespace utxx {
 
@@ -363,6 +367,12 @@ struct logger : boost::noncopyable {
         const char*                       src_fun;
         size_t                            src_fun_len;
 
+        msg_streamer(log_level a_ll, const std::string& a_cat, src_info&& a_si)
+            : level(a_ll), category(a_cat)
+            , src_loc(a_si.srcloc()), src_loc_len(a_si.srcloc_len())
+            , src_fun(a_si.fun()),    src_fun_len(a_si.fun_len())
+        {}
+
         template <int N, int M>
         msg_streamer(log_level a_ll, const std::string& a_cat,
                      const char (&a_src_loc)[N], const char (&a_src_fun)[M])
@@ -508,8 +518,6 @@ private:
     void dolog_msg(const msg& a_msg);
     void dolog_fatal_msg(const char* buf, size_t sz);
 
-    void run();
-
     template<typename Fun>
     bool dolog(log_level   a_ll, const std::string& a_cat, const Fun& a_fun,
                const char* a_src_loc,  std::size_t  a_src_loc_len,
@@ -519,6 +527,8 @@ private:
                const char* a_buf,      std::size_t  a_size,
                const char* a_src_loc,  std::size_t  a_src_loc_len,
                const char* a_src_fun,  std::size_t  a_src_fun_len);
+
+    void run();
 
     friend class log_msg_info;
 
