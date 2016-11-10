@@ -533,11 +533,13 @@ void logger::dolog_fatal_msg(const char* buf, size_t sz)
     if (signo_str) {
         signo_str++;
         auto sig = atoi(signo_str);
-        if  (sig)  signum = sig;
+        signum = sig;
     }
 
-    std::cerr << "logger exiting from unknown fatal event" << signum << std::endl;
-    detail::exit_with_default_sighandler(fatal_kill_signal());
+    if (signum) {
+        std::cerr << "logger exiting from unknown fatal event" << signum << std::endl;
+        detail::exit_with_default_sighandler(signum);
+    }
 }
 
 void logger::delete_impl(const std::string& a_name)

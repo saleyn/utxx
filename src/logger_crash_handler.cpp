@@ -134,6 +134,19 @@ namespace {
             "\n\n***** FATAL TRIGGER RECEIVED ******* \n"
             "%s\n\n***** RETHROWING SIGNAL %s (%d)\n",
             oss.str().c_str(), sig_name(a_signo), a_signo);
+
+        // Unblock alarm signal in current thread
+        sigset_t sigset;
+        ::sigfillset(&sigset);
+        ::sigdelset(&sigset, SIGALRM);
+        ::sigprocmask(SIG_SETMASK, &sigset, nullptr);
+
+        // Set alarm signal in 10 seconds
+        alarm(10);
+
+        // Sleep for 11 seconds or until the process is killed either by
+        // the alarm signal or by the signal thrown by the FATAL log message
+        sleep(11);
     }
 
 } // end anonymous namespace
