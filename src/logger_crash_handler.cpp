@@ -145,7 +145,7 @@ namespace {
         alarm(10);
 
         // Sleep for 11 seconds or until the process is killed either by
-        // the alarm signal or by the signal thrown by the FATAL log message
+        // the signal thrown by the FATAL log message or by the alarm signal
         sleep(11);
     }
 
