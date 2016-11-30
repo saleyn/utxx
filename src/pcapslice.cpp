@@ -48,16 +48,21 @@ using namespace std;
 //------------------------------------------------------------------------------
 void usage(std::string const& err="")
 {
-    if (!err.empty())
-        std::cerr << "Invalid option: " << err << "\n\n";
+    auto prog = utxx::path::basename(
+        utxx::path::program::name().c_str(),
+        utxx::path::program::name().c_str() + utxx::path::program::name().size()
+    );
 
-    std::cerr <<
-        utxx::path::program::name() <<
+    if (!err.empty())
+        cerr << "Invalid option: " << err << "\n\n";
+    else {
+        cerr << prog <<
         " - Tool for extracting packets from a pcap file\n"
-        "Copyright (c) 2016 Serge Aleynikov\n\n"
-        "Usage: " << utxx::path::program::name() <<
+        "Copyright (c) 2016 Serge Aleynikov\n"  <<
+        VERSION() << "\n\n"                     <<
+        "Usage: " << prog                       <<
         "[-V] [-h] -f InputFile -s StartPktNum -e EndPktNum [-n PktCount]"
-                 " -o OutputFile [-h]\n\n"
+                    " -o|-O OutputFile [-h]\n\n"
         "   -V|--version            - Version\n"
         "   -h|--help               - Help screen\n"
         "   -f InputFile            - Input file name\n"
@@ -67,6 +72,8 @@ void usage(std::string const& err="")
         "   -e|--end   EndPktNum    - Ending packet number (must be >= StartPktNum)\n"
         "   -n|--count PktCount     - Number of packets to save\n"
         "   -r|--raw                - Output raw packet payload only without pcap format\n\n";
+    }
+
     exit(1);
 }
 
@@ -95,20 +102,17 @@ int main(int argc, char *argv[])
     utxx::opts_parser opts(argc, argv);
 
     while (opts.next()) {
-        if (opts.match("-f", "",        &in_file))   continue;
-        if (opts.match("-o", "",        &out_file))  continue;
-        if (opts.match("-O", "",        &out_file)){ overwrite=true; continue; }
-        if (opts.match("-r", "--raw",   &raw_mode))  continue;
-        if (opts.match("-s", "--start", &pk_start))  continue;
-        if (opts.match("-e", "--end",   &pk_end))    continue;
-        if (opts.match("-n", "--count", &pk_cnt))    continue;
-        if (opts.match("-V", "--version")) {
-            std::cerr << VERSION() << '\n';
-            exit(1);
-        }
-        if (opts.is_help())             usage();
+        if (opts.match("-f", "",        &in_file))  continue;
+        if (opts.match("-o", "",        &out_file)) continue;
+        if (opts.match("-O", "",        &out_file)){overwrite=true; continue;}
+        if (opts.match("-r", "--raw",   &raw_mode)) continue;
+        if (opts.match("-s", "--start", &pk_start)) continue;
+        if (opts.match("-e", "--end",   &pk_end))   continue;
+        if (opts.match("-n", "--count", &pk_cnt))   continue;
+        if (opts.match("-V", "--version")) throw std::runtime_error(VERSION());
+        if (opts.is_help())                         usage();
 
-        usage(utxx::to_string("Invalid option: ", opts()));
+        usage(opts());
     }
 
     if (pk_end > 0 && pk_cnt > 0)
