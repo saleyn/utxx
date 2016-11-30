@@ -7,3 +7,4 @@ log
 inst
 build
 include/utxx/logger/logger_options.generated.hpp
+include/utxx/version.hpp
