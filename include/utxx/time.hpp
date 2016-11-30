@@ -33,8 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_TIME_VAL_PTIME_HPP_
-#define _UTXX_TIME_VAL_PTIME_HPP_
+#pragma once
 
 #include <utxx/time_val.hpp>
 #include <utxx/compiler_hints.hpp>
@@ -245,6 +244,3 @@ namespace utxx {
   }
 
 } // namespace utxx
-
-#endif //_UTXX_TIME_HPP_
-

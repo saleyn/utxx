@@ -430,11 +430,13 @@ namespace utxx {
         unique_guard_t g(m_mutex, std::defer_lock_t{});
         if (a_with_lock) g.lock();
 
-        for (auto i = m_last_seen_count; i < m_storage->m_count; ++i) {
+        for (auto i = m_last_seen_count; i < n; ++i) {
             const char* p = m_storage->name(i);
             m_by_name.emplace(std::make_pair(p, i));
             m_by_addr.emplace(std::make_pair(p, i));
         }
+        
+        m_last_seen_count = n;
     }
 
 } // namespace utxx
