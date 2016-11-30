@@ -38,7 +38,7 @@ XML_CFG(UTXX_SRCS ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME}/logger/logger_opti
 add_library(${PROJECT_NAME} SHARED ${UTXX_SRCS})
 add_library(${PROJECT_NAME}_static STATIC ${UTXX_SRCS})
 set_target_properties(${PROJECT_NAME}_static PROPERTIES OUTPUT_NAME ${PROJECT_NAME})
-target_link_libraries(${PROJECT_NAME} ${UTXX_LIBS})
+target_link_libraries(${PROJECT_NAME} ${UTXX_LIBS} ${Boost_LIBRARIES})
 if(ZLIB_FOUND)
   target_link_libraries(${PROJECT_NAME} ${LIBZ_LIBRARIES})
 endif()
@@ -54,22 +54,27 @@ endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES VERSION ${PROJECT_VERSION})
 
+add_dependencies(${PROJECT_NAME} build-version)
+
 add_executable(mreceive  mreceive.cpp)
 set_source_files_properties(mreceive.c PROPERTIES COMPILE_FLAGS -Wno-effc++)
 target_link_libraries(mreceive rt)
 
 add_executable(tailagg   tailagg.cpp)
 target_link_libraries(tailagg utxx)
-target_link_libraries(${PROJECT_NAME} ${Boost_LIBRARIES})
 
 add_executable(ipaddr    ipaddr.c)
+
+add_executable(pcapslice pcapslice.cpp)
+target_link_libraries(pcapslice utxx)
 
 # In the install below we split library installation in a separate library clause
 # so that it's possible to build/install both Release and Debug versions of the
 # library and then include that into a package
 
 install(
-  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static mreceive tailagg ipaddr
+  TARGETS ${PROJECT_NAME} ${PROJECT_NAME}_static
+          mreceive tailagg ipaddr pcapslice
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib

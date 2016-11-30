@@ -186,7 +186,7 @@ struct pcap {
         if (sz < 0)
             return sz;
         if (sz == 0)
-            write_file_header(a_tp);
+            write_file_header(a_tp, m_nsec_time);
         return sz;
     }
 
@@ -419,8 +419,19 @@ struct pcap {
         return write(buf, n);
     }
 
-    int write_packet_header(const packet_header& a_header) {
-        return write(reinterpret_cast<const char*>(&a_header), sizeof(packet_header));
+    int write_packet_header(const packet_header& a_ph) {
+        packet_header        h;
+        const packet_header* ph;
+        if (!m_big_endian)
+            ph = &a_ph;
+        else {
+            h.ts_sec   = htonl(a_ph.ts_sec);
+            h.ts_usec  = htonl(a_ph.ts_usec);
+            h.incl_len = htonl(a_ph.incl_len);
+            h.orig_len = htonl(a_ph.orig_len);
+            ph = &h;
+        }
+        return write(reinterpret_cast<const char*>(ph), sizeof(packet_header));
     }
 
     size_t frame_size(proto a_proto, size_t a_pkt_sz) const {
