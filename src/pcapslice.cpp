@@ -2,8 +2,10 @@
 /// \file  pcapcut.cpp
 //------------------------------------------------------------------------------
 /// \brief Utility for cutting a part of a large pcap file
+/// \see <a href="https://github.com/M0Rf30/xplico/blob/master/system/trigcap">
+///      Alternative implementation using pcap.h</a>
 //------------------------------------------------------------------------------
-// Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
+// Copyright (c) 2016 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2016-11-28
 //------------------------------------------------------------------------------
 /*
@@ -61,7 +63,7 @@ void usage(std::string const& err="")
         "Copyright (c) 2016 Serge Aleynikov\n"  <<
         VERSION() << "\n\n"                     <<
         "Usage: " << prog                       <<
-        "[-V] [-h] -f InputFile -s StartPktNum -e EndPktNum [-n PktCount]"
+        "[-V] [-h] -f InputFile -s StartPktNum -e EndPktNum [-n NumPkts] [-c|--count]"
                     " -o|-O OutputFile [-h]\n\n"
         "   -V|--version            - Version\n"
         "   -h|--help               - Help screen\n"
@@ -70,8 +72,9 @@ void usage(std::string const& err="")
         "   -O OutputFile           - Ouput file name (overwrite if exists)\n"
         "   -s|--start StartPktNum  - Starting packet number (counting from 1)\n"
         "   -e|--end   EndPktNum    - Ending packet number (must be >= StartPktNum)\n"
-        "   -n|--count PktCount     - Number of packets to save\n"
-        "   -r|--raw                - Output raw packet payload only without pcap format\n\n";
+        "   -n|--num   TotNumPkts   - Number of packets to save\n"
+        "   -r|--raw                - Output raw packet payload only without pcap format\n"
+        "   -c|--count              - Count number of packets in the file\n";
     }
 
     exit(1);
@@ -96,6 +99,7 @@ int main(int argc, char *argv[])
     size_t pk_start  = 1, pk_end = 0, pk_cnt = 0;
     bool   overwrite = false;
     bool   raw_mode  = false;
+    bool   count     = false;
 
     set_terminate (&unhandled_exception);
 
@@ -108,7 +112,8 @@ int main(int argc, char *argv[])
         if (opts.match("-r", "--raw",   &raw_mode)) continue;
         if (opts.match("-s", "--start", &pk_start)) continue;
         if (opts.match("-e", "--end",   &pk_end))   continue;
-        if (opts.match("-n", "--count", &pk_cnt))   continue;
+        if (opts.match("-n", "--num",   &pk_cnt))   continue;
+        if (opts.match("-c", "--count", &count))    continue;
         if (opts.match("-V", "--version")) throw std::runtime_error(VERSION());
         if (opts.is_help())                         usage();
 
@@ -117,16 +122,16 @@ int main(int argc, char *argv[])
 
     if (pk_end > 0 && pk_cnt > 0)
         throw std::runtime_error("Cannot specify both -n and -e options!");
-    else if (!pk_end && !pk_cnt)
+    else if (!pk_end && !pk_cnt && !count)
         throw std::runtime_error("Must specify either -n or -e option!");
-    else if (!pk_start)
+    else if (!pk_start && !count)
         throw std::runtime_error("PktStartNumber (-s) must be greater than 0!");
     else if (pk_end && pk_end < pk_start)
         throw std::runtime_error
              ("Ending packet number (-e) must not be less than starting packet number (-s)!");
-    else if (in_file.empty() || out_file.empty())
+    else if (in_file.empty() || (!count && out_file.empty()))
         throw std::runtime_error("Must specify -f and -o options!");
-    else if (utxx::path::file_exists(out_file)) {
+    else if (!count && utxx::path::file_exists(out_file)) {
         if (!overwrite)
             throw std::runtime_error("Found existing output file: " + out_file);
         if (!utxx::path::file_unlink(out_file))
@@ -145,12 +150,15 @@ int main(int argc, char *argv[])
     else if (fin.read_file_header() < 0)
         throw std::runtime_error("File " + in_file + " is not in PCAP format!");
 
-    int n;
+    int n = 0;
     utxx::pcap fout(fin.big_endian(), fin.nsec_time());
-    n = raw_mode ? fout.open(out_file.c_str(), "wb")
-                 : fout.open_write(out_file, false, fin.get_link_type());
-    if (n < 0)
-        throw std::runtime_error("Error creating file " + out_file + ": " + strerror(errno));
+
+    if (!count) {
+        n = raw_mode ? fout.open(out_file.c_str(), "wb")
+                    : fout.open_write(out_file, false, fin.get_link_type());
+        if (n < 0)
+            throw std::runtime_error("Error creating file " + out_file + ": " + strerror(errno));
+    }
 
     utxx::basic_io_buffer<(64*1024)> buf;
 
@@ -170,7 +178,7 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            if (++pk_cnt >= pk_start) {
+            if (++pk_cnt >= pk_start && !count) {
                 if (pk_cnt > pk_end)
                     goto DONE;
 
@@ -196,6 +204,9 @@ int main(int argc, char *argv[])
   DONE:
     fout.close();
     fin.close();
+
+    if (count)
+        cout << pk_cnt << " packets\n";
 
     return 0;
 }
