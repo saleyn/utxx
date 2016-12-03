@@ -105,9 +105,9 @@ namespace utxx {
     }
 
     /// Convert in_addr type to string
-    std::string inet_addr_str(struct in_addr a) { return std::string(inet_ntoa(a)); }
+    inline std::string inet_addr_str(struct in_addr a) { return std::string(inet_ntoa(a)); }
     /// Convert in_addr_t type to string
-    std::string inet_addr_str(in_addr_t      a) { return inet_addr_str(*(struct in_addr*)&a); }
+    inline std::string inet_addr_str(in_addr_t      a) { return inet_addr_str(*(struct in_addr*)&a); }
 
     /// Split a string containing <tt>ADDRESS:PORT</tt> into a pair.
     /// @param a_addr address string to parse
