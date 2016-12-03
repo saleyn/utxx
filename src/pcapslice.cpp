@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
             throw std::runtime_error("Error creating file " + out_file + ": " + strerror(errno));
     }
 
-    utxx::basic_io_buffer<(64*1024)> buf;
+    utxx::basic_io_buffer<(1024*1024)> buf;
 
     while ((n = fin.read(buf.wr_ptr(), buf.capacity())) > 0) {
         buf.commit(n);

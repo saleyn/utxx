@@ -35,6 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdlib.h>     /* atoi */
 #include <string>
 #include <stdexcept>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 namespace utxx {
 
@@ -101,6 +103,11 @@ namespace utxx {
     inline bool parse_url(const std::string& a_url, addr_info& a_info) {
         return a_info.parse(a_url);
     }
+
+    /// Convert in_addr type to string
+    std::string inet_addr_str(struct in_addr a) { return std::string(inet_ntoa(a)); }
+    /// Convert in_addr_t type to string
+    std::string inet_addr_str(in_addr_t      a) { return inet_addr_str(*(struct in_addr*)&a); }
 
     /// Split a string containing <tt>ADDRESS:PORT</tt> into a pair.
     /// @param a_addr address string to parse
