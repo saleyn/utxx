@@ -188,9 +188,9 @@ int main(int argc, char *argv[])
             }
 
             if (verbose)
-                cerr << "Pkt#"     << (pk_cnt+1) << " FrameSz=" << setw(2)    << frame_sz
-                     << " Bytes="  << sz         << " BufSz="   << buf.size()
-                     << endl;
+                cerr << "Pkt#"      << (pk_cnt+1)   << " FrameSz=" << setw(2)    << frame_sz
+                     << " Bytes="   << sz           << " BufSz="   << buf.size()
+                     << " (BufPos=" << buf.rd_ptr() << ')'         << endl;
 
             if (++pk_cnt >= pk_start && !count) {
                 if (pk_cnt > pk_end)
