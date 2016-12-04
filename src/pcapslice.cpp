@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
             // sz - total size of payload including frame_sz
             std::tie(frame_sz, sz, proto) = fin.read_packet_hdr_and_frame(begin, n);
 
-            bool ok = frame_sz > 0 && int(buf.size()) >= sz);
+            bool ok = frame_sz > 0 && int(buf.size()) >= sz;
 
             if (verbose)
                 cerr << "Pkt#"     << (pk_cnt+1) << " FrameSz=" << setw(2)    << frame_sz
