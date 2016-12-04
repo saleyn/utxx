@@ -370,7 +370,7 @@ struct pcap {
         auto p = buf;
         int  n = read_packet_header(p, sz);
         if  (n < 0)
-            return std::make_tuple(-1, -1, proto::undefined);
+            return std::make_tuple(-1, 0, proto::undefined);
 
         static const auto s_pkt_hdr = sizeof(packet_header);
         sz -= s_pkt_hdr;
@@ -380,7 +380,7 @@ struct pcap {
           ?  std::make_pair(read_frame<tcp_frame>(p,sz), n)
           :  std::make_pair(read_frame<udp_frame>(p,sz), n);
         if (n < 0)
-            return std::make_tuple(n, data_len, protocol);
+            return std::make_tuple(n, n < -1 ? -1 : data_len, protocol);
 
         return std::make_tuple(n + s_pkt_hdr, data_len + s_pkt_hdr, protocol);
     }
