@@ -170,12 +170,15 @@ int main(int argc, char *argv[])
         if (verbose)
             cerr << "Read "    << n   << " bytes from source file (offset="
                  << fin.tell() << ") BufPos=" << (buf.rd_ptr()-buf.address())
-                 << " BufSz="  << buf.size()  << endl;
+                 << " BufSz="  << buf.size()  << " BufCap=" << buf.capacity()
+                 << endl;
+
+        int sz = 0;
 
         while (buf.size() > sizeof(utxx::pcap::packet_header)) {
             const char*       header;
             const char*       begin  = header = buf.rd_ptr();
-            int               frame_sz, sz;
+            int               frame_sz;
             utxx::pcap::proto proto;
 
             // sz - total size of payload including frame_sz
@@ -184,7 +187,6 @@ int main(int argc, char *argv[])
             if (frame_sz < 0 || int(buf.size()) < sz) { // Not enough data in the buffer
                 if (verbose && frame_sz < 0)
                     cerr << "Pkt#" << (pk_cnt+1) << ": Cannot read frame size of packet\n";
-                buf.reserve(sz);
                 break;
             }
 
@@ -214,6 +216,7 @@ int main(int argc, char *argv[])
         }
 
         buf.crunch();
+        buf.reserve(sz);
     }
 
   DONE:
