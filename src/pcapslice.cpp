@@ -74,7 +74,8 @@ void usage(std::string const& err="")
         "   -e|--end   EndPktNum    - Ending packet number (must be >= StartPktNum)\n"
         "   -n|--num   TotNumPkts   - Number of packets to save\n"
         "   -r|--raw                - Output raw packet payload only without pcap format\n"
-        "   -c|--count              - Count number of packets in the file\n";
+        "   -c|--count              - Count number of packets in the file\n"
+        "   -v                      - Verbose\n\n";
     }
 
     exit(1);
@@ -100,6 +101,7 @@ int main(int argc, char *argv[])
     bool   overwrite = false;
     bool   raw_mode  = false;
     bool   count     = false;
+    bool   verbose   = false;
 
     set_terminate (&unhandled_exception);
 
@@ -114,6 +116,7 @@ int main(int argc, char *argv[])
         if (opts.match("-e", "--end",   &pk_end))   continue;
         if (opts.match("-n", "--num",   &pk_cnt))   continue;
         if (opts.match("-c", "--count", &count))    continue;
+        if (opts.match("-v", "",        &verbose))  continue;
         if (opts.match("-V", "--version")) throw std::runtime_error(VERSION());
         if (opts.is_help())                         usage();
 
@@ -173,7 +176,14 @@ int main(int argc, char *argv[])
             // sz - total size of payload including frame_sz
             std::tie(frame_sz, sz, proto) = fin.read_packet_hdr_and_frame(begin, n);
 
-            if (frame_sz < 0 || int(buf.size()) < sz) { // Not enough data in the buffer
+            bool ok = (frame_sz < 0 || int(buf.size()) < sz);
+
+            if (verbose)
+                cerr << "Pkt#"     << (pk_cnt+1) << " FrameSz=" << setw(2)    << frame_sz
+                     << " Bytes="  << sz         << " BufSz="   << buf.size()
+                     << " Offset=" << fin.tell() << (ok ? "" : " ***")        << endl;
+
+            if (!ok) { // Not enough data in the buffer
                 buf.reserve(sz);
                 break;
             }
@@ -186,10 +196,10 @@ int main(int argc, char *argv[])
                 if (!raw_mode) {
                     fout.write_packet_header(fin.packet());
                     buf.read(sizeof(utxx::pcap::packet_header));
-                    sz -= sizeof(utxx::pcap::packet_header);
+                    sz    -= sizeof(utxx::pcap::packet_header);
                 } else {
                     buf.read(frame_sz);
-                    sz -= frame_sz;
+                    sz    -= frame_sz;
                 }
                 if (fout.write(buf.rd_ptr(), sz) < 0)
                     throw std::runtime_error(string("Error writing to file: ") + strerror(errno));
