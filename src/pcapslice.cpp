@@ -169,7 +169,8 @@ int main(int argc, char *argv[])
         buf.commit(n);
         if (verbose)
             cerr << "Read "    << n   << " bytes from source file (offset="
-                 << fin.tell() << ')' << endl;
+                 << fin.tell() << ") BufPos=" << (buf.rd_ptr()-buf.address())
+                 << " BufSz="  << buf.size()  << endl;
 
         while (buf.size() > sizeof(utxx::pcap::packet_header)) {
             const char*       header;
