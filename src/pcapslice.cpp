@@ -167,6 +167,10 @@ int main(int argc, char *argv[])
 
     while ((n = fin.read(buf.wr_ptr(), buf.capacity())) > 0) {
         buf.commit(n);
+        if (verbose)
+            cerr << "Read "    << n   << " bytes from source file (offset="
+                 << fin.tell() << ')' << endl;
+
         while (buf.size() > sizeof(utxx::pcap::packet_header)) {
             const char*       header;
             const char*       begin  = header = buf.rd_ptr();
@@ -176,17 +180,17 @@ int main(int argc, char *argv[])
             // sz - total size of payload including frame_sz
             std::tie(frame_sz, sz, proto) = fin.read_packet_hdr_and_frame(begin, n);
 
-            bool ok = frame_sz > 0 && int(buf.size()) >= sz;
+            if (frame_sz < 0 || int(buf.size()) < sz) { // Not enough data in the buffer
+                if (verbose && frame_sz < 0)
+                    cerr << "Pkt#" << (pk_cnt+1) << ": Cannot read frame size of packet\n";
+                buf.reserve(sz);
+                break;
+            }
 
             if (verbose)
                 cerr << "Pkt#"     << (pk_cnt+1) << " FrameSz=" << setw(2)    << frame_sz
                      << " Bytes="  << sz         << " BufSz="   << buf.size()
-                     << " Offset=" << fin.tell() << (ok ? "" : " ***")        << endl;
-
-            if (!ok) { // Not enough data in the buffer
-                buf.reserve(sz);
-                break;
-            }
+                     << endl;
 
             if (++pk_cnt >= pk_start && !count) {
                 if (pk_cnt > pk_end)
