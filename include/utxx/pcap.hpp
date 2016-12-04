@@ -587,7 +587,7 @@ private:
     int read_frame(const char*& buf, size_t sz, int a_proto, size_t a_frame_sz) {
         auto frame_sz = a_frame_sz + m_frame_offset;
         if (sz < frame_sz)
-            return -2;
+            return -1;
         // Read the ethhdr if it's present
         if (m_frame_offset)
             memcpy(&m_eth_header, buf, sizeof(ethhdr));
@@ -603,7 +603,7 @@ private:
             }
         }
 
-        return m_frame.u.ip.protocol != a_proto ? -1 : frame_sz;
+        return m_frame.u.ip.protocol != a_proto ? -2 : frame_sz;
     }
 
     template <typename Frame, bool WithData>
