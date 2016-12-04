@@ -216,7 +216,8 @@ int main(int argc, char *argv[])
         }
 
         buf.crunch();
-        buf.reserve(sz);
+        if (sz >= 0)
+            buf.reserve(sz);
     }
 
   DONE:
