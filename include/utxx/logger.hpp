@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_LOGGER_HPP_
-#define _UTXX_LOGGER_HPP_
+#pragma once
 
 namespace utxx {
 
@@ -40,5 +39,3 @@ struct logger;
 } // namespace utxx
 
 #include <utxx/logger/logger.hpp>
-
-#endif // _UTXX_LOGGER_HPP_
