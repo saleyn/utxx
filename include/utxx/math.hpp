@@ -29,8 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_MATH_HPP_
-#define _UTXX_MATH_HPP_
+#pragma once
 
 #include <boost/assert.hpp>
 #include <boost/cstdint.hpp>
@@ -107,6 +106,3 @@ inline long lcm(long x, long y) { return (x*y)/gcd(x, y); }
 
 } // namespace math
 } // namespace utxx
-
-#endif // _UTXX_MATH_HPP_
-
