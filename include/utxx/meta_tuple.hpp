@@ -32,8 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_META_TUPLE_HPP_
-#define _UTXX_META_TUPLE_HPP_
+#pragma once
 
 #include <type_traits>
 
@@ -103,5 +102,3 @@ auto tuple_eval(Func&& f, TArgs&& t_args)
 }
 
 } // namespace utxx
-
-#endif // _UTXX_META_TUPLE_HPP_
