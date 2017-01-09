@@ -35,8 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_MT_QUEUE_HPP_
-#define _UTXX_MT_QUEUE_HPP_
+#pragma once
 
 #include <boost/thread.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -178,5 +177,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_MT_QUEUE_HPP_
