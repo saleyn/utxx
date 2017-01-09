@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_NCHAR_HPP_
-#define _UTXX_NCHAR_HPP_
+#pragma once
 
 #include <boost/static_assert.hpp>
 #include <boost/assert.hpp>
@@ -304,6 +303,3 @@ template <int N>
 }
 
 } // namespace utxx
-
-#endif // _UTXX_NCHAR_HPP_
-
