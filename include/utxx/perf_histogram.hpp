@@ -33,8 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_PERF_HISTOGRAM_HPP_
-#define _UTXX_PERF_HISTOGRAM_HPP_
+#pragma once
 
 #include <string>
 #include <cstring>
@@ -197,5 +196,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif  // _UTXX_PERF_HISTOGRAM_HPP_
