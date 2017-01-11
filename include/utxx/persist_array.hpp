@@ -32,8 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 
-#ifndef _UTXX_PERSISTENT_ARRAY_HPP_
-#define _UTXX_PERSISTENT_ARRAY_HPP_
+#pragma once
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -538,5 +537,3 @@ namespace utxx {
         return created;
     }
 } // namespace utxx
-
-#endif // _UTXX_PERSISTENT_ARRAY_HPP_
