@@ -31,8 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_PERSIST_BLOB_HPP_
-#define _UTXX_PERSIST_BLOB_HPP_
+#pragma once
 
 #include <utxx/config.h>
 
@@ -247,5 +246,3 @@ template<typename T, typename L>
 const uint32_t persist_blob<T,L>::blob_t::s_version;
 
 } // namespace utxx
-
-#endif
