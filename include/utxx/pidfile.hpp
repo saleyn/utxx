@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_PIDFILE_HPP_
-#define _UTXX_PIDFILE_HPP_
+#pragma once
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -74,6 +73,3 @@ private:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_PIDFILE_HPP_
-
