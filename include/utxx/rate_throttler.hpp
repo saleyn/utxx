@@ -42,8 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_THROTTLER_HPP_
-#define _UTXX_THROTTLER_HPP_
+#pragma once
 
 #include <utxx/error.hpp>
 #include <utxx/meta.hpp>
@@ -303,5 +302,3 @@ dump(std::ostream& out, time_val a_time)
 }
 
 } // namespace utxx
-
-#endif // _UTXX_THROTTLER_HPP_
