@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_ROBUST_MUTEX_HPP_
-#define _UTXX_ROBUST_MUTEX_HPP_
+#pragma once
 
 #include <mutex>
 #include <functional>
@@ -147,5 +146,3 @@ namespace utxx {
     };
 
 } // namespace utxx
-
-#endif // _UTXX_ROBUST_MUTEX_HPP_
