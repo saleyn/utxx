@@ -22,8 +22,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_SHARED_BUFFER_QUEUE_HPP_
-#define _UTXX_SHARED_BUFFER_QUEUE_HPP_
+#pragma once
 
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
@@ -96,5 +95,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_SHARED_BUFFER_QUEUE_HPP_
