@@ -32,8 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_SYNCH_HPP_
-#define _UTXX_SYNCH_HPP_
+#pragma once
 
 #include <pthread.h>
 #include <utxx/futex.hpp>
@@ -390,6 +389,3 @@ struct null_lock {
 
 } // namespace synch
 } // namespace utxx
-
-#endif // _UTXX_SYNCH_HPP_
-
