@@ -30,10 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-
-
-#ifndef _UTXX_VARIANT_HPP_
-#define _UTXX_VARIANT_HPP_
+#pragma once
 
 #include <boost/variant.hpp>
 #include <boost/lexical_cast.hpp>
@@ -323,5 +320,3 @@ static inline std::ostream& operator<< (std::ostream& out, const variant& a) {
 }
 
 } // namespace utxx
-
-#endif // _UTXX_VARIANT_HPP_
