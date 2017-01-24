@@ -29,8 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#ifndef _UTXX_VARIANT_TREE_FWD_HPP_
-#define _UTXX_VARIANT_TREE_FWD_HPP_
+#pragma once
 
 #include <boost/property_tree/ptree.hpp>
 
@@ -49,6 +48,4 @@ namespace utxx {
     typedef basic_variant_tree_base<char> variant_tree_base;
     typedef basic_variant_tree<char>      variant_tree;
 
-}
-
-#endif // _UTXX_VARIANT_TREE_FWD_HPP_
+} // namespace utxx
