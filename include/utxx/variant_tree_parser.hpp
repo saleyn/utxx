@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_VARIANT_TREE_PARSER_HPP_
-#define _UTXX_VARIANT_TREE_PARSER_HPP_
+#pragma once
 
 #include <utxx/detail/variant_tree_parser_impl.hpp>
 
@@ -244,5 +243,3 @@ namespace utxx {
     }
 
 } // namespace utxx
-
-#endif // _UTXX_VARIANT_TREE_PARSER_HPP_
