@@ -30,8 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#ifndef _UTXX_VARIANT_TREE_PATH_HPP_
-#define _UTXX_VARIANT_TREE_PATH_HPP_
+#pragma once
 
 #include <boost/property_tree/string_path.hpp>
 #include <utxx/variant_translator.hpp>
@@ -129,7 +128,5 @@ tree_path& operator/=(tree_path& a,
     const std::pair<const char*,const char*>& a_option_with_value);
 
 } // namespace utxx
-
-#endif // _UTXX_VARIANT_TREE_PATH_HPP_
 
 #include <utxx/variant_tree_path.ipp>
