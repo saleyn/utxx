@@ -33,8 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 
-#ifndef _UTXX_VERBOSITY_HPP_
-#define _UTXX_VERBOSITY_HPP_
+#pragma once
 
 #include <stdlib.h>
 #include <utxx/compiler_hints.hpp>
@@ -107,6 +106,3 @@ public:
 };
 
 } // namespace utxx
-
-#endif // _UTXX_VERBOSITY_HPP_
-
