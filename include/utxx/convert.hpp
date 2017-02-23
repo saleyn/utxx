@@ -843,7 +843,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         *p++ = '0';
     } else {
         while (int_part != 0) {
-            int j = int_part / 10;
+            int64_t j = int_part / 10;
             *p++ = (char)(int_part - ((j << 3) + (j << 1)) + '0');
             int_part = j;
         }
