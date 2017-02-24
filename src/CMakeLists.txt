@@ -80,7 +80,7 @@ install(
   ARCHIVE DESTINATION lib
 )
 
-if (${CMAKE_BUILD_TYPE} STREQUAL "release")
+if (${CMAKE_BUILD_TYPE} STREQUAL "Release")
   install(
     FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so.${PROJECT_VERSION}
     DESTINATION lib
