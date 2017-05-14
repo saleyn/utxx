@@ -48,7 +48,7 @@ class bitmap_low {
 
     void valid(unsigned int i) const { BOOST_ASSERT(i <= max); }
 public:
-    typedef T value_type;
+    using value_type = T;
 
     bitmap_low() : m_data(0) {
         BOOST_STATIC_ASSERT(1 <= N && N <= sizeof(long)*8);
@@ -104,7 +104,7 @@ public:
 
 template <int N, typename T = unsigned long>
 class bitmap_high: protected bitmap_low<sizeof(long)*8, T> {
-    typedef bitmap_low<sizeof(long)*8, T> base;
+    using base = bitmap_low<sizeof(long)*8, T>;
 public:
     // the following static members are made public just for testing
     static const int s_lo_dim  = base::max + 1;
@@ -213,20 +213,14 @@ public:
     }
 };
 
-typedef bitmap_low<16>    bitmap16;
-typedef bitmap_low<32>    bitmap32;
-typedef
-    boost::mpl::if_c<sizeof(long)==8,
-                     bitmap_low<48>,
-                     bitmap_high<48> >::type bitmap48;
-typedef
-    boost::mpl::if_c<sizeof(long)==8,
-                     bitmap_low<64>,
-                     bitmap_high<64> >::type bitmap64;
-typedef bitmap_high<128>  bitmap128;
-typedef bitmap_high<256>  bitmap256;
-typedef bitmap_high<512>  bitmap512;
-typedef bitmap_high<1024> bitmap1024;
-typedef bitmap_high<4096> bitmap4096;
+using bitmap16   = bitmap_low<16>;
+using bitmap32   = bitmap_low<32>;
+using bitmap48   = boost::mpl::if_c<sizeof(long)==8, bitmap_low<48>, bitmap_high<48> >::type;
+using bitmap64   = boost::mpl::if_c<sizeof(long)==8, bitmap_low<64>, bitmap_high<64> >::type;
+using bitmap128  = bitmap_high<128>;
+using bitmap256  = bitmap_high<256>;
+using bitmap512  = bitmap_high<512>;
+using bitmap1024 = bitmap_high<1024>;
+using bitmap4096 = bitmap_high<4096>;
 
 } // namespace utxx
