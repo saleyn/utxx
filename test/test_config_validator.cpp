@@ -86,6 +86,29 @@ int main() {
 
 using namespace utxx;
 
+BOOST_AUTO_TEST_CASE( test_config_hash )
+{
+    variant_tree l_config;
+    std::stringstream l_stream; l_stream
+        << "def {\n"
+        << "  k1 = \"abc\\#123\"\n"
+        << "  k2 = \"abc123\\#\"\n"
+        << "  k3 = \"\\#abc123\"\n"
+        << "}\n";
+
+    try {
+        read_config(l_stream, l_config, FORMAT_SCON);
+        BOOST_REQUIRE_EQUAL("abc#123", l_config.get("def.k1", ""));
+        BOOST_REQUIRE_EQUAL("abc123#", l_config.get("def.k2", ""));
+        BOOST_REQUIRE_EQUAL("#abc123", l_config.get("def.k3", ""));
+    } catch (variant_tree_error& e) {
+        std::cerr << e.str() << std::endl;
+        BOOST_REQUIRE(false);
+    }
+
+    BOOST_REQUIRE(true); // Just to avoid a warning that there are no tests
+}
+
 BOOST_AUTO_TEST_CASE( test_config_validator2 )
 {
     variant_tree l_config;

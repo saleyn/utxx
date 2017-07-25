@@ -610,8 +610,9 @@ namespace detail {
                     else if (*b == Ch('v')) result << Ch('\v');
                     else if (*b == Ch('"')) result << Ch('"');
                     else if (*b == Ch('$')) result << Ch('$');
-                    else if (*b == Ch('\'')) result << Ch('\'');
-                    else if (*b == Ch('\\')) result << Ch('\\');
+                    else if (*b == Ch('\''))result << Ch('\'');
+                    else if (*b == Ch('\\'))result << Ch('\\');
+                    else if (*b == Ch('#')) result << Ch('#');
                     else
                         BOOST_PROPERTY_TREE_THROW(boost::property_tree::file_parser_error(
                             std::string("unknown escape sequence: ") + b,
@@ -644,9 +645,10 @@ namespace detail {
             return result.str();
         }
 
-        bool iscomment() const { return *text == Ch('#'); }
-        bool iseol()     const { return *text == Ch('\0') || iscomment(); }
-        bool isquote()   const { return *text == Ch('\"') || *text == Ch('\''); }
+        bool iscomment()            const { return *text == Ch('#'); }
+        bool iseol()                const { return *text == Ch('\0') || iscomment();       }
+        bool iseol(bool is_str)     const { return *text == Ch('\0') || (!is_str && iscomment()); }
+        bool isquote()              const { return *text == Ch('\"') || *text == Ch('\''); }
 
 
         // Advance pointer past whitespace
@@ -688,10 +690,10 @@ namespace detail {
             ++text;
 
             // Find end of string, but skip escaped "
-            bool escaped = false;
-            const Ch *start = text;
+            bool      escaped = false;
+            const Ch* start   = text;
 
-            for(; (escaped || *text != qchar) && !iseol(); ++text)
+            for(; (escaped || *text != qchar) && !iseol(true); ++text)
                 escaped = !escaped && *text == Ch('\\');
 
             // If end of string found
