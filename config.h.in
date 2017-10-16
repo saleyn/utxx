@@ -8,8 +8,12 @@
 #cmakedefine UTXX_HAVE_THRIFT_H
 
 // This is needed for Thrift:
+#ifndef HAVE_INTTYPES_H
 #cmakedefine HAVE_INTTYPES_H
+#endif
+#ifndef HAVE_NETINET_IN_H
 #cmakedefine HAVE_NETINET_IN_H
+#endif
 
 // Define to 1 if enum.h and enumx.h should be friends of boost::serialization::access
 #cmakedefine UTXX_ENUM_SUPPORT_SERIALIZATION

@@ -245,7 +245,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_access_all_threads_counter ) {
     std::atomic<int> totalAtomic(0);
     std::vector<std::thread> threads;
     for (int i = 0; i < kNumThreads; ++i)
-        threads.push_back(std::thread([&,i]() {
+        threads.push_back(std::thread([&]() {
             stci.add(1);
             totalAtomic.fetch_add(1);
             while (run.load()) { usleep(100); }

@@ -284,7 +284,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     auto v = timestamp::to_string(nsecs(1466441912363349876), utxx::DATE_TIME_WITH_NSEC, false, true);
     BOOST_CHECK_EQUAL("20160620-12:58:32.363349876", v);
 
-    sprintf(expected, "%d%02d%02d-%02d:%02d:%02d",
+    sprintf(expected, "%d%02d%02d-%02ld:%02ld:%02ld",
         (unsigned short) now_local.date().year(),
         (unsigned short) now_local.date().month(),
         (unsigned short) now_local.date().day(),
@@ -292,7 +292,7 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
         now_local.time_of_day().minutes(),
         now_local.time_of_day().seconds());
 
-    sprintf(expected_utc, "%d%02d%02d-%02d:%02d:%02d",
+    sprintf(expected_utc, "%d%02d%02d-%02ld:%02ld:%02ld",
         (unsigned short) now_utc.date().year(),
         (unsigned short) now_utc.date().month(),
         (unsigned short) now_utc.date().day(),

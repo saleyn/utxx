@@ -200,7 +200,7 @@ public:
     std::ostream& print(std::ostream& out, const char* sep = "\n") const {
         std::stringstream s;
         for(int i=s_hi_dim-1; i >= 0; --i) {
-            char buf[9];
+            char buf[24];
             if (i != s_lo_dim-1 && (i+1)%8 != 0 && i != s_hi_dim-1) s << '-';
             if ((i+1)%8 == 0 || (s_hi_dim < 8 && i == (s_hi_dim-1))) {
                 sprintf(buf, "%s%02d: ", sep, i+1);

@@ -294,7 +294,7 @@ void validator::validate
 void validator::internal_fill_fallback_defaults
     (stack_t& stack, option_map& a_scope, std::string const& a_def_branch)
 {
-    auto thrower = [&, this](std::string const& a_opt, std::string const& a_path, int n) {
+    auto thrower = [&](std::string const& a_opt, std::string const& a_path, int n) {
         auto  joiner = [](auto& pair){ return pair.first; };
         auto  path   = join(stack, string("/"), joiner) + a_opt;
         throw runtime_error("Config option '", path,
@@ -302,7 +302,7 @@ void validator::internal_fill_fallback_defaults
                             n, "): ", a_path);
     };
 
-    auto get_def_branch = [&, this](std::string const& a_path, const option_map& a_scope) {
+    auto get_def_branch = [&](std::string const& a_path, const option_map& a_scope) {
         const option* res = nullptr;
         if (a_path.empty()) return res;
 

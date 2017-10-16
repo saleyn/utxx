@@ -109,11 +109,11 @@ bool read_values(std::istream& in, T* a_output, int* a_fields, int a_cnt,
 }
 
 struct indent_t {
-    indent_t(size_t a_level = 0) : m_level(a_level) {}
+    indent_t(int a_level = 0) : m_level(a_level) {}
 
-    size_t level() const { return m_level; }
+    int level() const { return m_level; }
 private:
-    size_t m_level;
+    int m_level;
 };
 
 template <typename Stream = std::stringstream>
@@ -123,7 +123,7 @@ public:
         : m_level(0), m_indent_width(a_indent_width)
     {}
 
-    size_t level()                    const { return m_level;           }
+    int    level()                    const { return m_level;           }
     size_t indent_width()             const { return m_indent_width;    }
     void   indent_width(size_t a_width)     { m_indent_width = a_width; }
 
@@ -150,7 +150,7 @@ public:
     indented_stream& operator<<(const T& t) { *((Stream*)this) << t; return *this; }
 
 private:
-    size_t m_level;
+    int    m_level;
     size_t m_indent_width;
 };
 

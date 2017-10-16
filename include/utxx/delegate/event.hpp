@@ -116,7 +116,7 @@ namespace utxx
             TSink sink;
 
             wrapper(int a_id, TSink a_sink) : id(a_id), sink(a_sink) {}
-            void operator==(const wrapper& a_rhs) const { return id == a_rhs.id; }
+            bool operator==(const wrapper& a_rhs) const { return id == a_rhs.id; }
         };
 
         typedef std::list<wrapper> sink_list_type;

@@ -89,7 +89,7 @@ XML_CFG(TEST_SRCS test_config_validator2.xml)
 
 # This must be AFTER link_directories
 add_executable(test_utxx ${TEST_SRCS})
-target_compile_definitions(test_utxx PRIVATE -DBOOST_TEST_DYN_LINK)
+target_compile_definitions(test_utxx PRIVATE -DBOOST_ALL_DYN_LINK)
 target_include_directories(test_utxx PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(
   test_utxx

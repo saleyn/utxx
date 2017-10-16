@@ -5,7 +5,7 @@ project(utxx VERSION 1.4.1)
 #===============================================================================
 # CMAKE options customization
 #===============================================================================
-option(WITH_THRIFT             "Enable to compile UTXX with Thrift"          ON)
+option(WITH_THRIFT             "Enable to compile UTXX with Thrift"         OFF)
 option(VERBOSE                 "Turn verbosity on|off"                      OFF)
 option(WITH_ENUM_SERIALIZATION "Turn enum serialization support on|off"     OFF)
 
@@ -164,7 +164,7 @@ set(Boost_USE_MULTITHREAD ON)
 set(Boost_NO_SYSTEM_PATHS ON)
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build")
 
-find_package(Boost 1.55.0 REQUIRED COMPONENTS
+find_package(Boost 1.58.0 REQUIRED COMPONENTS
              system filesystem date_time program_options thread regex
              unit_test_framework timer)
 
