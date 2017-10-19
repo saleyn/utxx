@@ -62,11 +62,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #if BOOST_VERSION < 105900
 #  define BOOST_LOG_LEVEL boost::unit_test::runtime_config::log_level()
 #elif BOOST_VERSION < 106200
-#  define BOOST_LOGLEVEL \
+#  define BOOST_LOG_LEVEL \
     boost::unit_test::runtime_config::get<boost::unit_test::log_level>( \
         boost::unit_test::runtime_config::LOG_LEVEL )
 #else
-#  define BOOST_LOGLEVEL \
+#  define BOOST_LOG_LEVEL \
     boost::unit_test::runtime_config::get<boost::unit_test::log_level>( \
         boost::unit_test::runtime_config::btrt_log_level )
 #endif
