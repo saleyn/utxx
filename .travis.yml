@@ -44,8 +44,8 @@ before_install:
       cd ${BOOST_VER}
       chmod +x bootstrap.sh
       ./bootstrap.sh --prefix="${INSTALL}"
-      ./b2 headers
-      ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release --without-mpi install -d0
+      travis_wait ./b2 headers
+      travis_wait ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release --without-mpi install -d0
     fi
   - cd ${INSTALL} && export BOOST_ROOT="${PWD}"
   - popd  
