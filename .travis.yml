@@ -45,22 +45,23 @@ before_install:
       chmod +x bootstrap.sh
       ./bootstrap.sh --prefix="${INSTALL}"
       ./b2 headers
-      ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release --without-mpi install -d1
+      ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release --without-mpi install -d0
     fi
   - cd ${INSTALL} && export BOOST_ROOT="${PWD}"
   - popd  
 
 before_script:
-  - echo "DIR:BUILD=/tmp/${USER}/utxx"                           > .cmake-args.$(hostname)
-  - echo "DIR:INSTALL=/tmp/${USER}/install/@PROJECT@/@VERSION@" >> .cmake-args.$(hostname)
-  - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.$(hostname)
-  - echo "WITH_THRIFT=OFF"                                      >> .cmake-args.$(hostname)
-  #- echo "BOOST_INCLUDEDIR=/usr/include"                       >> .cmake-args.$(hostname)
-  #- echo "BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu"          >> .cmake-args.$(hostname)
-  - echo "BOOST_INCLUDEDIR=${BOOST_ROOT}/include"               >> .cmake-args.$(hostname)
-  - echo "BOOST_LIBRARYDIR=${BOOST_ROOT}/lib"                   >> .cmake-args.$(hostname)
-  - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.$(hostname)
+  - echo "DIR:BUILD=/tmp/${USER}/utxx"                           > .cmake-args.${HOSTNAME}
+  - echo "DIR:INSTALL=/tmp/${USER}/install/@PROJECT@/@VERSION@" >> .cmake-args.${HOSTNAME}
+  - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.${HOSTNAME}
+  - echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
+  #- echo "BOOST_INCLUDEDIR=/usr/include"                       >> .cmake-args.${HOSTNAME}
+  #- echo "BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu"          >> .cmake-args.${HOSTNAME}
+  - echo "BOOST_INCLUDEDIR=${BOOST_ROOT}/include"               >> .cmake-args.${HOSTNAME}
+  - echo "BOOST_LIBRARYDIR=${BOOST_ROOT}/lib"                   >> .cmake-args.${HOSTNAME}
+  - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
   - g++ --version
+  - cat .cmake-args.${HOSTNAME}
 script:
   ############################################################################
   # All the dependencies are installed in ${TRAVIS_BUILD_DIR}/deps/
