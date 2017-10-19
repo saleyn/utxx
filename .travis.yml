@@ -22,8 +22,8 @@ before_install:
   - uname -a
   - sudo apt-add-repository -y "deb http://archive.ubuntu.com/ubuntu/ trusty main restricted"
   - sudo add-apt-repository -y "deb http://ppa.launchpad.net/dns/gnu/ubuntu precise main"
-  - sudo add-apt-repository -y "deb http://ppa.launchpad.net/wnoronha/thrift/ubuntu precise main"
-  - sudo add-apt-repository -y "deb http://ppa.launchpad.net/devel/boost/ubuntu utopic main"
+  #- sudo add-apt-repository -y "deb http://ppa.launchpad.net/wnoronha/thrift/ubuntu precise main"
+  #- sudo add-apt-repository -y "deb http://ppa.launchpad.net/devel/boost/ubuntu utopic main"
   - sudo add-apt-repository ppa:george-edison55/precise-backports --yes
   - sudo apt-get update -qq
   - #sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
@@ -35,7 +35,7 @@ before_install:
   - cd deps
   - INSTALL=${PWD}/boost-install
   - |
-    if (( REBUILD_BOOST )); then
+    if [ ! -d boost-install/lib ]; then
       rm -rf boost && rm -rf boost-install
       TARBALL=boost_1_65_1.tar.gz
       wget http://downloads.sourceforge.net/boost/${TARBALL}
