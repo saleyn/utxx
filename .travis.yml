@@ -45,7 +45,7 @@ before_install:
       chmod +x bootstrap.sh
       ./bootstrap.sh --prefix="${INSTALL}"
       ./b2 headers
-      ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release link=static --with-filesystem --with-system install -d0
+      ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release install -d0
     fi
   - cd ${INSTALL} && export BOOST_ROOT="${PWD}"
   - popd  
