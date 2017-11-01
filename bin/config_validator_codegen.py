@@ -329,7 +329,7 @@ class ConfigGenerator(object):
             exit(5)
 
         if not root.attrib.get('namespace'):
-            print >> sys.stderr, "Missing 'namespace' attribute of <config/> tag!\n"
+            print >> sys.stderr, "ERROR in file '" + outfile + "': missing 'namespace' attribute of <config/> tag!\n"
             exit(6)
 
         with RenamedTemporaryFile(outfile) as f:
