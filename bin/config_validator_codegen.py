@@ -328,6 +328,10 @@ class ConfigGenerator(object):
             print >> sys.stderr, "No config option names are found in XML!\n"
             exit(5)
 
+        if not root.attrib.get('namespace'):
+            print >> sys.stderr, "Missing 'namespace' attribute of <config/> tag!\n"
+            exit(6)
+
         with RenamedTemporaryFile(outfile) as f:
             f.write("//%s\n" % ("-" * 78))
             f.write("// %s\n" % outname)
