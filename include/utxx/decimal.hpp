@@ -88,8 +88,8 @@ public:
     /// Construct a decimal from a double.
     decimal(double x, uint precision)       { from_double(x, precision); }
 
-    void operator=(decimal const& a)        { *(long*)this = *(long*)&a; }
-    void operator=(decimal&& a)             { *(long*)this = *(long*)&a; }
+    void operator=(decimal const& a)        { m_exp = a.m_exp; m_mant = a.m_mant; }
+    void operator=(decimal&& a)             { m_exp = a.m_exp; m_mant = a.m_mant; }
 
     bool operator==(decimal const& a) const { return *(long*)this==*(long*)&a; }
     bool operator!=(decimal const& a) const { return !operator==(a);           }
