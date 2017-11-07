@@ -91,7 +91,7 @@ public:
     void operator=(decimal const& a)        { m_exp = a.m_exp; m_mant = a.m_mant; }
     void operator=(decimal&& a)             { m_exp = a.m_exp; m_mant = a.m_mant; }
 
-    bool operator==(decimal const& a) const { return *(long*)this==*(long*)&a; }
+    bool operator==(decimal const& a) const { return m_exp==a.m_exp && m_mant==a.m_mant; }
     bool operator!=(decimal const& a) const { return !operator==(a);           }
 
     int    exp()       const { return m_exp;  }
@@ -100,7 +100,7 @@ public:
 
     bool   is_null()   const { return *this == null_value();   }
     void   set_null()        { *this = null_value();           }
-    void   clear()           { *(long*)this = 0l;              }
+    void   clear()           { m_exp = 0; m_mant = 0l;         }
 
     static double pow10(int a_exp) {
         static double s_pow10[] = {

@@ -82,6 +82,15 @@ BOOST_AUTO_TEST_CASE( test_decimal )
       BOOST_CHECK_EQUAL(-5,      d.exp());
       BOOST_CHECK_EQUAL(-134567, d.mantissa());
     }
+    {
+      decimal d1(0, 1345);
+      decimal d2(-2,  -1);
+      auto    d3 = d1 + d2;
+      decimal d4(-2,1344);
+      BOOST_CHECK_EQUAL(d4, d3);
+      d1 += d2;
+      BOOST_CHECK_EQUAL(d4, d1);
+    }
     { decimal d(106.55, 2);       BOOST_CHECK_EQUAL(106.55,(double)d); }
     { decimal d(-11,-125678901234);
                                   BOOST_CHECK_EQUAL("-1.25678901234", d.to_string()); }
