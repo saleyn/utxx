@@ -40,13 +40,27 @@ using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
 {
-    auto now = time_val(2015, 6, 1, 12, 0, 0, 0);
+    auto now = time_val(2015, 6, 1, 11,59,58, 900000);
     time_spacing_throttle thr(10, 1000, now);    // Throttle 10 samples / second
 
     BOOST_CHECK_EQUAL(100000, thr.step_usec());
     BOOST_CHECK_EQUAL(10u,    thr.available(now));
 
     int n   = thr.add(1,  now);
+    BOOST_CHECK_EQUAL(1,  n);
+    BOOST_CHECK_EQUAL(9u, thr.available(now));
+
+    now     = time_val(2015, 6, 1, 11,59,58, 999999);
+    BOOST_CHECK_EQUAL(9u, thr.available(now));
+
+    now     = time_val(2015, 6, 1, 11,59,59, 0);
+    BOOST_CHECK_EQUAL(10u, thr.available(now));
+
+    now     = time_val(2015, 6, 1, 12, 0, 0, 0);
+    BOOST_CHECK_EQUAL(10u, thr.available(now));
+
+    // 1 second elapsed, the throttler's interval is reset, and 10 samples are available
+    n       = thr.add(1,  now);
     BOOST_CHECK_EQUAL(1,  n);
     BOOST_CHECK_EQUAL(9u, thr.available(now));
 

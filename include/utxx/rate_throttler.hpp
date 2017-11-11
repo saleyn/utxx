@@ -76,9 +76,12 @@ public:
     T add(T a_samples  = 1, time_val a_now = now_utc()) {
         auto next_time = m_next_time;
         next_time.add_nsec(a_samples * m_step_ns);
-        auto diff      = next_time.nanoseconds()
-                       - (a_now.nanoseconds() + m_window_ns);
-        if (diff < 0)  {
+        auto now_next  = a_now + nsecs(m_window_ns);
+        auto diff      = next_time.nanoseconds() - now_next.nanoseconds();
+        if  (diff < -m_window_ns) {
+            m_next_time = a_now + nsecs(m_step_ns);
+            return a_samples;
+        } else if (diff < 0)  {
             // All samples fit the throttling threshold
             m_next_time = next_time;
             return a_samples;
@@ -100,7 +103,8 @@ public:
     /// Return the number of available samples given \a a_now current time.
     T        available(time_val a_now = now_utc()) const      {
         auto   diff = (a_now - m_next_time).nanoseconds();
-        return diff >= 0 ? m_rate : T(m_window_ns + diff) / m_step_ns;
+        return diff >= 0
+             ? m_rate : T(std::max<long>(0, (m_window_ns+diff) / m_step_ns));
     }
 
 private:
@@ -222,7 +226,7 @@ add(time_val a_time, int a_count)
         m_buckets[l_bucket] = a_count;
         m_sum = a_count;
     } else {
-        // Calculate sum of buckets from 
+        // Calculate sum of buckets from
         int l_valid_buckets = m_interval - l_time_diff;
         int l_start, l_end;
         if (l_valid_buckets <= (m_interval>>1)) {
