@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
-/// \file  test_raw_char.cpp
+/// \file  test_convert.cpp
 //----------------------------------------------------------------------------
-/// \brief Test cases for raw_char class.
+/// \brief Test cases for integer to/from string conversion classes.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2010-09-30
@@ -9,7 +9,7 @@
 /*
 ***** BEGIN LICENSE BLOCK *****
 
-This file is part of the REPLOG project.
+This file is part of the utxx project.
 
 Copyright (C) 2010 Serge Aleynikov <saleyn@gmail.com>
 
@@ -35,6 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define BOOST_TEST_MODULE test_convert
 #include <boost/test/unit_test.hpp>
 #include <utxx/convert.hpp>
+#include <utxx/fast_itoa.hpp>
 #include <utxx/verbosity.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/format.hpp>

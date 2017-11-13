@@ -22,6 +22,7 @@ list(APPEND TEST_SRCS
     test_dynamic_config.cpp
     test_enum.cpp
     test_error.cpp
+    test_fast_itoa.cpp
     test_file_reader.cpp
     test_futex.cpp
     test_function.cpp

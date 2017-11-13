@@ -673,14 +673,14 @@ char* itoa(T value, char*& result, int base = 10) {
     BOOST_ASSERT(base >= 2 || base <= 36);
 
     char* p = result, *q = p;
-    T tmp;
+    T     tmp;
 
     do {
-        tmp = value;
+        tmp    = value;
         value /= base;
-        *p++ = "zyxwvutsrqponmlkjihgfedcba987654321"
-              "0123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp - value * base)];
-    } while ( value );
+        *p++   = "zyxwvutsrqponmlkjihgfedcba987654321"
+                "0123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp - value * base)];
+    } while (value);
 
     if (tmp < 0) *p++ = '-';
 
@@ -692,8 +692,8 @@ char* itoa(T value, char*& result, int base = 10) {
     // Reverse the string
     while(q < p) {
         char c = *p;
-        *p--= *q;
-        *q++ = c;
+        *p--   = *q;
+        *q++   =  c;
     }
 
     return begin;
@@ -892,7 +892,6 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
 /// @param precision is the number of digits past the decimal point
 /// @param lpad      is the left-padding character
 inline void ftoa_right(double f, char* buffer, int width, int precision, char lpad = ' ')
-    throw (std::invalid_argument)
 {
     using detail::FTOA;
     bool neg;
