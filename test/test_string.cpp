@@ -184,6 +184,8 @@ BOOST_AUTO_TEST_CASE( test_string_wildcard )
     TEST_WILDCARD("a12b12", "*12*23", false);
     TEST_WILDCARD("a12b12", "a12b", false);
     TEST_WILDCARD("a12b12", "*12*12*", true);
+    TEST_WILDCARD("some same crazy address address",          "*address",  true);
+    TEST_WILDCARD("some same crazy address address",          "*address*", true);
     TEST_WILDCARD("some same crazy address address\naddress", "*address",  true);
     TEST_WILDCARD("some same crazy address address\nAddress", "*address", false);
     TEST_WILDCARD("some same crazy address address\nAddress", "*address*", true);
