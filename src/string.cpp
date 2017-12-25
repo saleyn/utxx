@@ -55,7 +55,7 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
     for(const char* ip = nullptr, *pp = nullptr; *a_input;)
         if (*a_pattern == '*') {
             if (!*++a_pattern)
-                return true;
+                return true;    // Reached end of pattern
             // Store state after '*':
             pp = a_pattern;
             ip = a_input+1;
@@ -64,12 +64,10 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
             a_pattern++;
             a_input++;
         } else if (!pp) {
-            // No match before the first '*'
-            return false;
+            return false;       // Match failed before the first wildcard is found
         } else {
-            // Match failed - restore state of pattern after '*':
-            a_pattern = pp;
-            a_input = ip++;
+            a_pattern = pp;     // Match failed - restore state of pattern after '*':
+            a_input   = ip++;
         }
 
     // Skip trailing '*' in the pattern, since they don't affect the outcome:
