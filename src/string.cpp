@@ -50,11 +50,6 @@ std::string to_bin_string(const char* buf, size_t sz,
 
 bool wildcard_match(const char* a_input, const char* a_pattern)
 {
-    // Match until the first '*' or '?':
-    for(; *a_input && *a_pattern != '*'; ++a_pattern, ++a_input)
-        if ((*a_pattern != *a_input) && (*a_pattern != '?'))
-            return false;
-
     const char* ip = nullptr, *pp = nullptr;
 
     // Pattern match on everything that follows '*', and exit
@@ -70,6 +65,9 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
             // Continue successful match
             a_pattern++;
             a_input++;
+        } else if (!pp) {
+            // No match before the first '*'
+            return false;
         } else {
             // Match failed - restore state of pattern after '*':
             a_pattern = pp;
