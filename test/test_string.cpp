@@ -184,6 +184,8 @@ BOOST_AUTO_TEST_CASE( test_string_wildcard )
     TEST_WILDCARD("a12b12", "*12*23", false);
     TEST_WILDCARD("a12b12", "a12b", false);
     TEST_WILDCARD("a12b12", "*12*12*", true);
+    TEST_WILDCARD("some same crazy address address\naddress", "*address", true);
+    TEST_WILDCARD("some same crazy address address\nAddress", "*address", false);
 
     // Additional cases where the '*' char appears in the tame string.
     TEST_WILDCARD("*", "*", true);
