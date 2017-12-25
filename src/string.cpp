@@ -56,12 +56,11 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
         if (*a_pattern == '*') {
             if (!*++a_pattern)
                 return true;    // Reached end of pattern
-            // Store state after '*':
-            pp = a_pattern;
+            
+            pp = a_pattern;     // Store state after '*':
             ip = a_input+1;
         } else if ((*a_pattern == *a_input) || (*a_pattern == '?')) {
-            // Continue successful match
-            a_pattern++;
+            a_pattern++;        // Continue successful match
             a_input++;
         } else if (!pp) {
             return false;       // Match failed before the first wildcard is found
