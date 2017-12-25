@@ -50,11 +50,9 @@ std::string to_bin_string(const char* buf, size_t sz,
 
 bool wildcard_match(const char* a_input, const char* a_pattern)
 {
-    const char* ip = nullptr, *pp = nullptr;
-
     // Pattern match on everything that follows '*', and exit
     // at the end of the input string
-    while (*a_input) {
+    for(const char* ip = nullptr, *pp = nullptr; *a_input;)
         if (*a_pattern == '*') {
             if (!*++a_pattern)
                 return true;
@@ -73,7 +71,6 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
             a_pattern = pp;
             a_input = ip++;
         }
-    }
 
     // Skip trailing '*' in the pattern, since they don't affect the outcome:
     while (*a_pattern == '*') a_pattern++;
