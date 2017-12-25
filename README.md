@@ -147,6 +147,9 @@ if (...) {
    ...
 }
 ```
+* Name function arguments by prefixing with "a_" (e.g. `int fun(int a_count)`)
+* Name class members by prefixing with "m_" (e.g. `class Test { int m_count; };`)
+
 ## Author ##
 * Serge Aleynikov `<saleyn at gmail dot com>`
 * (see AUTHORS.md for a list of contributors)
