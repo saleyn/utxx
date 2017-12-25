@@ -62,12 +62,11 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
         } else if ((*a_pattern == *a_input) || (*a_pattern == '?')) {
             a_pattern++;        // Continue successful match
             a_input++;
-        } else if (!pp) {
-            return false;       // Match failed before the first wildcard is found
-        } else {
+        } else if (pp) {
             a_pattern = pp;     // Match failed - restore state of pattern after '*':
             a_input   = ip++;
-        }
+        } else
+            return false;       // Match failed before the first wildcard is found
 
     // Skip trailing '*' in the pattern, since they don't affect the outcome:
     while (*a_pattern == '*') a_pattern++;
