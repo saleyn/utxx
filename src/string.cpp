@@ -50,28 +50,30 @@ std::string to_bin_string(const char* a_buf, size_t a_sz,
 
 bool wildcard_match(const char* a_input, const char* a_pattern)
 {
-    // Pattern match on everything that follows '*', and exit
+    // Pattern match a_input against a_pattern, and exit
     // at the end of the input string
     for(const char* ip = nullptr, *pp = nullptr; *a_input;)
         if (*a_pattern == '*') {
             if (!*++a_pattern)
-                return true;    // Reached end of pattern
+                return true;    // Reached '*' at the end of pattern
             
-            pp = a_pattern;     // Store state after '*'
+            pp = a_pattern;     // Store matching state right after '*'
             ip = a_input+1;
         } else if ((*a_pattern == *a_input) || (*a_pattern == '?')) {
-            a_pattern++;        // Continue successful match
+            a_pattern++;        // Continue successful input match
             a_input++;
         } else if (pp) {
             a_pattern = pp;     // Match failed - restore state of pattern after '*'
             a_input   = ip++;
         } else
-            return false;       // Match failed before the first wildcard is found
+            return false;       // Match failed before the first '*' is found
 
     // Skip trailing '*' in the pattern, since they don't affect the outcome:
     while (*a_pattern == '*') a_pattern++;
 
-    // Are both input and pattern complete?
+    // This point is reached only when the a_input string was fully
+    // exhaused. If at this point the a_pattern is exhaused too ('\0'),
+    // there's a match, otherwise pattern match is incomplete.
     return !*a_pattern;
 }
 
