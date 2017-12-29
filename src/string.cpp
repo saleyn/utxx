@@ -52,7 +52,7 @@ bool wildcard_match(const char* a_input, const char* a_pattern)
 {
     // Pattern match a_input against a_pattern, and exit
     // at the end of the input string
-    for(const char* ip = nullptr, *pp = nullptr; *a_input;)
+    for (const char* ip = nullptr, *pp = nullptr; *a_input;)
         if (*a_pattern == '*') {
             if (!*++a_pattern)
                 return true;    // Reached '*' at the end of pattern
