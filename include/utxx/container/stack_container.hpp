@@ -244,14 +244,15 @@ private:
 //   foo[0] = 10;         // as well as operator[]
 template<typename T, size_t stack_capacity>
 class basic_stack_vector : public stack_container<
-    std::vector<T, stack_allocator<T, stack_capacity> >,
+    std::vector<T, stack_allocator<T, stack_capacity>>,
     stack_capacity>
 {
+    using vector_t = std::vector<T, stack_allocator<T, stack_capacity>>;
 public:
-    basic_stack_vector() : stack_container<
-        std::vector<T, stack_allocator<T, stack_capacity> >,
-        stack_capacity>()
-    {}
+    using iterator       = typename vector_t::iterator;
+    using const_iterator = typename vector_t::const_iterator;
+
+    basic_stack_vector() : stack_container<vector_t, stack_capacity>() {}
 
     // We need to put this in STL containers sometimes, which requires a copy
     // constructor. We can't call the regular copy constructor because that will
@@ -276,6 +277,19 @@ public:
     // operator-> (using "->at()" does exception stuff we don't want).
     T&       operator[](size_t i)       { return this->container().operator[](i); }
     const T& operator[](size_t i) const { return this->container().operator[](i); }
+
+    bool     empty() const { return this->container().empty(); }
+    size_t   size()  const { return this->container().size();  }
+
+    T&       first()       { return (*this)[0];                }
+    T const& first() const { return (*this)[0];                }
+    T&       last()        { return (*this)[size()-1];         }
+    T const& last()  const { return (*this)[size()-1];         }
+
+    iterator        begin()       { return this->container().begin(); }
+    const_iterator  begin() const { return this->container().begin(); }
+    iterator        end()         { return this->container().end();   }
+    const_iterator  end()   const { return this->container().end();   }
 };
 
 } // namespace utxx
