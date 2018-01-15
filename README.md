@@ -5,12 +5,13 @@ complement C++ and boost with functionality needed by many
 applications.
 
 The library is free to use under LGPLv2 license for
-non-commercial projects, and has a commercial open source licence
+non-commercial projects, and has a commercial open source license
 for commercial use (contact the author for commercial
 licensing details).
 
 The components include:
 
+* Logging framework with pluggable back-ends using Inversion of Control design pattern 
 * Custom allocators (including atomic pool allocator, stack allocator)
 * Atomic functions
 * Bitmap mask with fast iteration
@@ -23,7 +24,6 @@ The components include:
 * Exception error classes with dynamic number of arguments
 * Hashmap abstraction
 * UDP receiver
-* Logging framework with pluggable back-ends using Inversion of Control design pattern 
 * Ultra-low latency async logger
 * Math functions
 * Metaprogramming functions
