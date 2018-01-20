@@ -170,11 +170,11 @@ int main(int argc, char *argv[])
     utxx::basic_io_buffer<(1024*1024)> buf;
 
     if (print || verbose) {
-        fprintf(stderr, "# Time                   %-20s %-20s %10s %7s %10s"
-                      , "Source", "Destination", "Pkt", "FrameSz", "Bytes");
+        printf("# Time                   %-20s %-20s %10s %7s %10s",
+               "Source", "Destination", "Pkt", "FrameSz", "Bytes");
         if (verbose)
-            fprintf(stderr, " %10s %10s", "BufSz", "BufPos");
-        putc('\n', stderr);
+            printf(" %10s %10s", "BufSz", "BufPos");
+        putchar('\n');
     }
 
     while ((n = fin.read(buf.wr_ptr(), buf.capacity())) > 0) {
@@ -211,19 +211,19 @@ int main(int argc, char *argv[])
                     fin.tframe().src(src);
                     fin.tframe().dst(dst);
                 }
-                cerr << utxx::time_val(fin.packet().ts_sec,fin.packet().ts_usec)
+                cout << utxx::time_val(fin.packet().ts_sec,fin.packet().ts_usec)
                      << ' ' << setw(20) << std::left  << src
                      << ' ' << setw(20) << std::left  << dst
                      << ' ' << setw(10) << std::right << (pk_cnt+1)
                      << ' ' << setw(7)  << frame_sz
                      << ' ' << setw(10) << sz;
                 if (verbose)
-                    cerr << ' '  << setw(10) << buf.size()
+                    cout << ' '  << setw(10) << buf.size()
                          << ' '  << setw(10) << (buf.rd_ptr()-buf.address());
-                cerr << endl;
+                cout << endl;
             }
 
-            if (++pk_cnt >= pk_start && !count) {
+            if (++pk_cnt >= pk_start && (!count && !print)) {
                 if (pk_cnt > pk_end)
                     goto DONE;
 
