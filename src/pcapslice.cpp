@@ -43,6 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/path.hpp>
 #include <utxx/get_option.hpp>
 #include <utxx/buffer.hpp>
+#include <utxx/timestamp.hpp>
 #include <utxx/version.hpp>
 
 using namespace std;
@@ -75,6 +76,7 @@ void usage(std::string const& err="")
         "   -n|--num   TotNumPkts   - Number of packets to save\n"
         "   -r|--raw                - Output raw packet payload only without pcap format\n"
         "   -c|--count              - Count number of packets in the file\n"
+        "   -p                      - Print packet source, destination, size\n"
         "   -v                      - Verbose\n\n";
     }
 
@@ -102,6 +104,7 @@ int main(int argc, char *argv[])
     bool   raw_mode  = false;
     bool   count     = false;
     bool   verbose   = false;
+    bool   print     = false;
 
     set_terminate (&unhandled_exception);
 
@@ -117,6 +120,7 @@ int main(int argc, char *argv[])
         if (opts.match("-n", "--num",   &pk_cnt))   continue;
         if (opts.match("-c", "--count", &count))    continue;
         if (opts.match("-v", "",        &verbose))  continue;
+        if (opts.match("-p", "",        &print))    continue;
         if (opts.match("-V", "--version")) throw std::runtime_error(VERSION());
         if (opts.is_help())                         usage();
 
@@ -125,16 +129,16 @@ int main(int argc, char *argv[])
 
     if (pk_end > 0 && pk_cnt > 0)
         throw std::runtime_error("Cannot specify both -n and -e options!");
-    else if (!pk_end && !pk_cnt && !count)
+    else if (!pk_end && !pk_cnt && !count && !print)
         throw std::runtime_error("Must specify either -n or -e option!");
     else if (!pk_start && !count)
         throw std::runtime_error("PktStartNumber (-s) must be greater than 0!");
     else if (pk_end && pk_end < pk_start)
         throw std::runtime_error
              ("Ending packet number (-e) must not be less than starting packet number (-s)!");
-    else if (in_file.empty() || (!count && out_file.empty()))
+    else if (in_file.empty() || (!count && !print && out_file.empty()))
         throw std::runtime_error("Must specify -f and -o options!");
-    else if (!count && utxx::path::file_exists(out_file)) {
+    else if (!count && !out_file.empty() && utxx::path::file_exists(out_file)) {
         if (!overwrite)
             throw std::runtime_error("Found existing output file: " + out_file);
         if (!utxx::path::file_unlink(out_file))
@@ -156,7 +160,7 @@ int main(int argc, char *argv[])
     int n = 0;
     utxx::pcap fout(fin.big_endian(), fin.nsec_time());
 
-    if (!count) {
+    if (!count && !out_file.empty()) {
         n = raw_mode ? fout.open(out_file.c_str(), "wb")
                     : fout.open_write(out_file, false, fin.get_link_type());
         if (n < 0)
@@ -164,6 +168,14 @@ int main(int argc, char *argv[])
     }
 
     utxx::basic_io_buffer<(1024*1024)> buf;
+
+    if (print || verbose) {
+        fprintf(stderr, "# Time                   %-20s %-20s %10s %7s %10s"
+                      , "Source", "Destination", "Pkt", "FrameSz", "Bytes");
+        if (verbose)
+            fprintf(stderr, " %10s %10s", "BufSz", "BufPos");
+        putc('\n', stderr);
+    }
 
     while ((n = fin.read(buf.wr_ptr(), buf.capacity())) > 0) {
         buf.commit(n);
@@ -190,10 +202,26 @@ int main(int argc, char *argv[])
                 break;
             }
 
-            if (verbose)
-                cerr << "Pkt#"      << (pk_cnt+1)   << " FrameSz="  << setw(2) << frame_sz
-                     << " Bytes="   << sz           << " BufSz="    << buf.size()
-                     << " (BufPos=" << (buf.rd_ptr()-buf.address()) << ')'     << endl;
+            if (print || verbose) {
+                char src[32], dst[32];
+                if (fin.uframe().ip.protocol == IPPROTO_UDP) {
+                    fin.uframe().src(src);
+                    fin.uframe().dst(dst);
+                } else {
+                    fin.tframe().src(src);
+                    fin.tframe().dst(dst);
+                }
+                cerr << utxx::time_val(fin.packet().ts_sec,fin.packet().ts_usec)
+                     << ' ' << setw(20) << std::left  << src
+                     << ' ' << setw(20) << std::left  << dst
+                     << ' ' << setw(10) << std::right << (pk_cnt+1)
+                     << ' ' << setw(7)  << frame_sz
+                     << ' ' << setw(10) << sz;
+                if (verbose)
+                    cerr << ' '  << setw(10) << buf.size()
+                         << ' '  << setw(10) << (buf.rd_ptr()-buf.address());
+                cerr << endl;
+            }
 
             if (++pk_cnt >= pk_start && !count) {
                 if (pk_cnt > pk_end)

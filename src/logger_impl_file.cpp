@@ -61,7 +61,6 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
 }
 
 bool logger_impl_file::init(const variant_tree& a_config)
-    throw(badarg_error, io_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);
     finalize();
@@ -175,7 +174,6 @@ public:
 };
 
 void logger_impl_file::log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
-    throw(io_error)
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.
     // Note that since the use of mutex is conditional, we can't use the

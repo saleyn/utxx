@@ -446,8 +446,7 @@ struct logger : boost::noncopyable {
     };
 
     typedef delegate
-        <void (const msg& a_msg, const char* a_buf, size_t a_size)
-               throw(io_error)>
+        <void (const msg& a_msg, const char* a_buf, size_t a_size)>
         on_msg_delegate_t;
 
     // Maps macros to values that can be used in configuration
@@ -647,17 +646,17 @@ public:
     /// This method is used for configuration parsing.
     /// @param a_levels delimited log levels (e.g. "DEBUG | INFO | WARNING").
     [[deprecated]]
-    static int parse_log_levels(const std::string& levels) throw(std::runtime_error)
+    static int parse_log_levels(const std::string& levels)
         { return utxx::parse_log_levels(levels); }
 
     /// Converts a string (e.g. "INFO") to the corresponding log level.
     [[deprecated]]
-    static log_level parse_log_level(const std::string& a_level) throw(std::runtime_error)
+    static log_level parse_log_level(const std::string& a_level)
         { return utxx::parse_log_level(a_level); }
 
     /// Convert a string (e.g. "INFO") to the log levels greater or equal to it.
     [[deprecated]]
-    static int parse_min_log_level(const std::string& a_level) throw(std::runtime_error)
+    static int parse_min_log_level(const std::string& a_level)
         { return utxx::parse_min_log_level(a_level); }
 
     /// String representation of log levels enabled by default.  Used in config
@@ -829,8 +828,7 @@ struct logger_impl {
     /// Name of the logger
     virtual const std::string& name() const = 0;
 
-    virtual bool init(const variant_tree& a_config)
-        throw(badarg_error, io_error) = 0;
+    virtual bool init(const variant_tree& a_config) = 0;
 
     /// Dump all settings to stream
     virtual std::ostream& dump(std::ostream& out, const std::string& a_prefix) const = 0;

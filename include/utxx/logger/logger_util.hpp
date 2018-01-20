@@ -64,12 +64,12 @@ namespace utxx {
     /// Converts a delimited string to a bitmask of corresponding levels.
     /// This method is used for configuration parsing.
     /// @param a_levels delimited log levels (e.g. "DEBUG | INFO | WARNING").
-    int parse_log_levels(const std::string& levels) throw(std::runtime_error);
+    int parse_log_levels(const std::string& levels);
 
     /// Converts a string (e.g. "INFO") to the corresponding log level.
-    log_level parse_log_level(const std::string& a_level) throw(std::runtime_error);
+    log_level parse_log_level(const std::string& a_level);
 
     /// Convert a string (e.g. "INFO") to the log levels greater or equal to it.
-    int parse_min_log_level(const std::string& a_level) throw(std::runtime_error);
+    int parse_min_log_level(const std::string& a_level);
 
 } // namespace utxx

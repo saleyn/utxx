@@ -124,7 +124,7 @@ variant option::default_subst_value() const {
 }
 
 tree_path validator::
-strip_root(const tree_path& a_path, const tree_path& a_root) const throw(variant_tree_error)
+strip_root(const tree_path& a_path, const tree_path& a_root) const
 {
     /// Example: m_root = a.b.c
     ///          a_path = a.b.c.d.e
@@ -220,7 +220,7 @@ const variant_tree_base& validator::def
     const tree_path& a_path,
     const tree_path& a_root_path
 )
-    const throw (variant_tree_error)
+    const
 {
     return get(a_path, a_root_path).default_value;
 }
@@ -247,7 +247,7 @@ void validator::validate
     bool                    a_fill_defaults,
     const custom_validator& a_custom_validator
 )
-    const throw(variant_tree_error)
+    const
 {
     validate(a_config, m_options, a_fill_defaults, a_custom_validator);
 }
@@ -257,14 +257,14 @@ void validator::validate
     const variant_tree&     a_config,
     const custom_validator& a_custom_validator
 )
-    const throw(variant_tree_error)
+    const
 {
     variant_tree l_config(a_config);
     validate(l_config, false, a_custom_validator);
 }
 
 void validator::validate(const custom_validator& a_custom_validator)
-    const throw(variant_tree_error)
+    const
 {
     if (!m_config || m_config->empty())
         throw variant_tree_error(std::string(), "validator: unassigned field 'config()'!");
@@ -284,7 +284,7 @@ void validator::validate
     bool                    a_fill_defaults,
     const custom_validator& a_custom_validator
 )
-    const throw(variant_tree_error)
+    const
 {
     config_level_list stack;
     stack.push(a_config.root_path(), a_config.to_base(), nullptr, a_opts);
@@ -420,7 +420,7 @@ void validator::recursive_validate
     bool                    a_fill_defaults,
     const custom_validator& a_custom_validator
 )
-    const throw (variant_tree_error)
+    const
 {
     const tree_path&         a_root   = a_stack.back().path();
     const variant_tree_base& a_config = a_stack.back().cfg();
@@ -496,7 +496,7 @@ void validator::recursive_validate
 }
 
 void validator::check_required(config_level_list& a_stack)
-    const throw (missing_required_option_error, variant_tree_error)
+    const
 {
     const tree_path&         root = a_stack.back().path();
     const variant_tree_base& cfg  = a_stack.back().cfg();
@@ -674,7 +674,7 @@ check_option
     bool                                    a_fill_defaults,
     const custom_validator&                 a_custom_validator
 )
-    const throw(std::invalid_argument, variant_tree_error)
+    const
 {
     assert(a_stack.back().opt());
     const tree_path& root =  a_stack.back().path();
@@ -926,7 +926,8 @@ void validator::check_unique
     const tree_path& a_root,
     const variant_tree_base& a_config,
     const option_map& a_opts
-) const throw(variant_tree_error) {
+) const
+{
     string_set l_names;
     BOOST_ASSERT(a_opts.size() > 0);
     for (auto& vt : a_config) {

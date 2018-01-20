@@ -99,6 +99,19 @@ struct pcap {
         }
 
         template <int N>
+        char* src(char (&buf)[N]) const {
+            char* p = fmt(buf, src_ip());
+            assert(p-buf <= N);
+            return p;
+        }
+        template <int N>
+        char* dst(char (&buf)[N]) const {
+            char* p = fmt(buf, dst_ip());
+            assert(p-buf <= N);
+            return p;
+        }
+
+        template <int N>
         static char* fmt(char (&p)[N], uint32_t ip) {
             static_assert(N >= 16, "Buffer too small!");
             int n = sprintf(p, "%u.%u.%u.%u",
@@ -115,12 +128,25 @@ struct pcap {
         uint16_t dst_port() const { return ntohs(udp.dest);   }
 
         std::string src() const {
-            char buf[32]; fmt(ip_frame::fmt(buf, src_ip()), src_port());
+            char buf[32]; src(buf);
             return std::string(buf);
         }
         std::string dst() const {
-            char buf[32]; fmt(ip_frame::fmt(buf, dst_ip()), dst_port());
+            char buf[32]; dst(buf);
             return std::string(buf);
+        }
+
+        template <int N>
+        char* src(char (&buf)[N]) const {
+            char* p = fmt(ip_frame::fmt(buf, src_ip()), src_port());
+            assert(p-buf <= N);
+            return p;
+        }
+        template <int N>
+        char* dst(char (&buf)[N]) const {
+            char* p = fmt(ip_frame::fmt(buf, dst_ip()), dst_port());
+            assert(p-buf <= N);
+            return p;
         }
 
     private:
@@ -138,12 +164,25 @@ struct pcap {
         uint16_t dst_port() const { return ntohs(tcp.dest);   }
 
         std::string src() const {
-            char buf[32]; fmt(ip_frame::fmt(buf, src_ip()), src_port());
+            char buf[32]; src(buf);
             return std::string(buf);
         }
         std::string dst() const {
-            char buf[32]; fmt(ip_frame::fmt(buf, dst_ip()), dst_port());
+            char buf[32]; dst(buf);
             return std::string(buf);
+        }
+
+        template <int N>
+        char* src(char (&buf)[N]) const {
+            char* p = fmt(ip_frame::fmt(buf, src_ip()), src_port());
+            assert(p-&buf[0] <= N);
+            return p;
+        }
+        template <int N>
+        char* dst(char (&buf)[N]) const {
+            char* p = fmt(ip_frame::fmt(buf, dst_ip()), dst_port());
+            assert(p-&buf[0] <= N);
+            return p;
         }
 
     private:

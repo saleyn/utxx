@@ -139,7 +139,6 @@ std::string log_levels_to_str(uint32_t a_levels) noexcept
 
 //------------------------------------------------------------------------------
 int parse_log_levels(const std::string& a_levels)
-    throw(std::runtime_error)
 {
     std::vector<std::string> str_levels;
     boost::split(str_levels, a_levels, boost::is_any_of(" |,;"),
@@ -153,7 +152,6 @@ int parse_log_levels(const std::string& a_levels)
 
 //------------------------------------------------------------------------------
 log_level parse_log_level(const std::string& a_level)
-    throw(std::runtime_error)
 {
     if (a_level.empty()) return LEVEL_NONE;
 
@@ -180,7 +178,7 @@ log_level parse_log_level(const std::string& a_level)
 }
 
 //------------------------------------------------------------------------------
-int parse_min_log_level(const std::string& a_level) throw(std::runtime_error) {
+int parse_min_log_level(const std::string& a_level) {
     auto l = parse_log_level(a_level);
     return detail::mask_bsf(l);
 }

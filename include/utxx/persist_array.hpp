@@ -110,7 +110,7 @@ namespace utxx {
         T*      m_begin;
         T*      m_end;
 
-        void check_range(size_t a_id) const throw (badarg_error) {
+        void check_range(size_t a_id) const {
             size_t n = m_header->max_recs;
             if (likely(a_id < n))
                 return;
@@ -158,7 +158,7 @@ namespace utxx {
         /// @return true if the storage file didn't exist and was created
         bool init(const char* a_filename, size_t a_max_recs, bool a_read_only = false,
             int a_mode = default_file_mode(), void const* a_map_address = nullptr,
-            int a_map_options = 0) throw (io_error, utxx::runtime_error);
+            int a_map_options = 0);
 
         /// Initialize the storage in shared memory.
         /// @param a_segment  the shared memory segment
@@ -168,8 +168,7 @@ namespace utxx {
         /// @param a_max_recs max capacity of the storage in the number of records
         /// @return true if the shared memory object didn't exist and was created
         bool init(bip::fixed_managed_shared_memory& a_segment,
-                  const char* a_name, persist_attach_type a_flag, size_t a_max_recs)
-                  throw (utxx::runtime_error);
+                  const char* a_name, persist_attach_type a_flag, size_t a_max_recs);
 
         size_t count()    const { return m_header->rec_count.load(std::memory_order_relaxed); }
         size_t capacity() const { return m_header->max_recs; }
@@ -180,7 +179,7 @@ namespace utxx {
 
         /// Allocate next record and return its ID.
         /// @return
-        size_t allocate_rec() throw(utxx::runtime_error) {
+        size_t allocate_rec() {
             auto error = [this]() {
                 throw utxx::runtime_error
                     ("persist_array: Out of storage capacity (", this->m_storage_name, ")!");
@@ -235,10 +234,10 @@ namespace utxx {
         /// @return id of the given object in the storage
         size_t id_of(const T* a_rec) const { return a_rec - m_begin; }
 
-        const T& operator[] (size_t a_id) const throw(badarg_error) {
+        const T& operator[] (size_t a_id) const {
             check_range(a_id); return *get(a_id);
         }
-        T& operator[] (size_t a_id) throw(badarg_error) {
+        T& operator[] (size_t a_id) {
             check_range(a_id); return *get(a_id);
         }
 
@@ -314,8 +313,8 @@ namespace utxx {
 
     template <typename T, size_t NLocks, typename Lock, typename Ext>
     bool persist_array<T,NLocks,Lock,Ext>::
-    init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode, void const* a_map_address, int a_map_options)
-        throw (io_error, utxx::runtime_error)
+    init(const char* a_filename, size_t a_max_recs, bool a_read_only, int a_mode,
+         void const* a_map_address, int a_map_options)
     {
         auto sz = total_size(a_max_recs);
 
@@ -439,7 +438,6 @@ namespace utxx {
     bool persist_array<T,NLocks,Lock,Ext>::
     init(bip::fixed_managed_shared_memory& a_segment,
          const char* a_name, persist_attach_type a_flag, size_t a_max_recs)
-        throw(utxx::runtime_error)
     {
         std::pair<char*, size_t> fres = a_segment.find<char>(a_name);
 

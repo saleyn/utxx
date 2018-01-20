@@ -49,7 +49,6 @@ static logger_impl_mgr::impl_callback_t f = &logger_impl_syslog::create;
 static logger_impl_mgr::registrar reg("syslog", f);
 
 static int parse_syslog_facility(const std::string& facility) 
-    throw(std::runtime_error)
 {
     std::string s = facility;
     boost::to_lower(s);
@@ -90,7 +89,6 @@ std::ostream& logger_impl_syslog::dump(std::ostream& out,
 }
 
 bool logger_impl_syslog::init(const variant_tree& a_config)
-    throw(badarg_error, io_error) 
 {
     BOOST_ASSERT(this->m_log_mgr);
     finalize();
@@ -121,7 +119,7 @@ bool logger_impl_syslog::init(const variant_tree& a_config)
 }
 
 void logger_impl_syslog::log_msg
-    (const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
+    (const logger::msg& a_msg, const char* a_buf, size_t a_size)
 {
     int priority = get_priority(a_msg.level());
     if (priority)

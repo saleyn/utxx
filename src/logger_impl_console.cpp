@@ -52,7 +52,6 @@ std::ostream& logger_impl_console::dump(std::ostream& out,
 }
 
 bool logger_impl_console::init(const variant_tree& a_config)
-    throw(badarg_error, io_error)
 {
     using boost::property_tree::ptree;
     BOOST_ASSERT(this->m_log_mgr);
@@ -106,7 +105,7 @@ bool logger_impl_console::init(const variant_tree& a_config)
 }
 
 void logger_impl_console::log_msg(
-    const logger::msg& a_msg, const char* a_buf, size_t a_size) throw(io_error)
+    const logger::msg& a_msg, const char* a_buf, size_t a_size)
 {
     if (a_msg.level() & m_stdout_levels) {
         colorize(a_msg.level(), m_stdout_is_tty, std::cout, std::string(a_buf, a_size));

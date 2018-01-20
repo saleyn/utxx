@@ -72,11 +72,9 @@ public:
     /// Dump all settings to stream
     std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
 
-    bool init(const variant_tree& a_config)
-        throw(badarg_error, io_error);
+    bool init(const variant_tree& a_config);
 
-    void log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
-         throw  (io_error);
+    void log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size);
 };
 
 } // namespace utxx

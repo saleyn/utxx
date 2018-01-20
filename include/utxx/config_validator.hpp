@@ -351,7 +351,7 @@ namespace config {
         const variant_tree_base& def(
              const tree_path& a_path,
              const tree_path& a_root_path  = tree_path()
-         ) const throw (variant_tree_error);
+         ) const;
  
         /// Get default value for a named option.
         /// @return default value for a given option's path.
@@ -359,7 +359,7 @@ namespace config {
         T def_value(
             const tree_path& a_path,
             const tree_path& a_root_path  = tree_path()
-        ) const throw (variant_tree_error)
+        ) const
         {
             return def(a_path, a_root_path).data().get<T>();
         }
@@ -388,15 +388,14 @@ namespace config {
 
         void validate(variant_tree& a_config, bool a_fill_defaults,
             const custom_validator& a_custom_validator = NULL
-        ) const throw(variant_tree_error);
+        ) const;
 
         void validate(const variant_tree& a_config,
             const custom_validator& a_custom_validator = NULL
-        ) const throw(variant_tree_error);
+        ) const;
 
         // Validate configuration tree stored in config()
-        void validate(const custom_validator& a_custom_validator = NULL)
-            const throw(variant_tree_error);
+        void validate(const custom_validator& a_custom_validator = NULL) const;
 
     protected:
         mutable tree_path                m_root;   // Path from configuration root
@@ -412,7 +411,7 @@ namespace config {
         void validate(variant_tree& a_config,
             const option_map& a_opts, bool fill_defaults,
             const custom_validator& a_custom_validator
-        ) const throw(variant_tree_error);
+        ) const;
 
         static void add_option(option_map& a, const option& a_opt) {
             a.insert(std::make_pair(a_opt.name, a_opt));
@@ -459,20 +458,19 @@ namespace config {
             config_level_list&      a_stack,
             bool                    a_fill_defaults,
             const custom_validator& a_custom_validator
-        ) const throw(variant_tree_error);
+        ) const;
 
         void check_option(
             config_level_list&                      a_stack,
             typename variant_tree_base::value_type& a_vt,
             bool                                    a_fill_defaults,
             const custom_validator&                 a_custom_validator
-        ) const throw(std::invalid_argument, variant_tree_error);
+        ) const;
 
         void check_unique(const tree_path& a_root, const variant_tree_base& a_config,
-            const option_map& a_opts) const throw(variant_tree_error);
+            const option_map& a_opts) const;
 
-        void check_required(config_level_list& a_stack) const
-            throw (missing_required_option_error, variant_tree_error);
+        void check_required(config_level_list& a_stack) const;
 
         static option_type_t to_option_type(variant::value_type a_type);
 
@@ -495,8 +493,7 @@ namespace config {
         }
 
         tree_path strip_root(const tree_path& a_root_path,
-                             const tree_path& a_root = tree_path()) const
-            throw(variant_tree_error);
+                             const tree_path& a_root = tree_path()) const;
 
         static const option* find(tree_path& a_suffix, const option_map& a_options)
             throw ();
