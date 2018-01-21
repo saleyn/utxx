@@ -42,22 +42,25 @@
 #include <unistd.h>
 #include <utxx/time_val.hpp>
 #include <utxx/pcap.hpp>
+#include <vector>
+#include <map>
+#include <string>
 
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr)   __builtin_expect(!!(expr), 1)
 
-typedef enum {
+enum data_fmt_t {
   UNDEFINED = 0,
   FORTS     = 'f',
   MICEX     = 'm'
-} data_fmt_t;
+};
 
-typedef enum {
+enum src_state_t {
   OK = 0,
   NODATA_OFF    =  1, NODATA_ON = 2,
   OOO_OFF       =  4, OOO_ON    = 8,
   GAP_OFF       = 16, GAP_ON    = 32
-} src_state_t;
+};
 
 const int MEGABYTE = 1024*1024;
 //const int MILLION  = 1000000;
@@ -99,16 +102,51 @@ struct address {
   int                   last_crep_pkt_changed;
 
   src_state_t           state;          /* state of gap detector */
-  struct epoll_event    event;
 };
 
-sigjmp_buf  jbuf;
-struct address   addrs[1024];
-struct address*  addrs_idx[4096];   // Maps fd -> addrs*
-struct address** sorted_addrs[4];   // For report stats sorting
+struct listener {
+  int                   fd;
+  in_addr_t             iface;          /* ip address listening on           */
+  std::string           iface_name;     /* ip address listening on           */
+  uint16_t              iface_port;     /* destination port on the interface */
+  std::vector<address*> addresses;
+  struct epoll_event    event;
+  long                  skipped_packets;/* number of skipped mcast packets   */
+
+  listener(in_addr_t addr, std::string ifname, uint16_t port)
+    : fd(-1), iface(addr), iface_name(std::move(ifname)), iface_port(port)
+    , skipped_packets(0)
+  {}
+};
+
+struct addr_port {
+  addr_port() : addr(0), port(0) {}
+  addr_port(in_addr_t addr, uint16_t port) : addr(addr), port(port) {}
+
+  in_addr_t             addr;
+  uint16_t              port;
+};
+
+struct cmp_addr_port {
+  bool operator()(addr_port const& a, addr_port const& b) const {
+    return a.addr < b.addr || (a.addr == b.addr && a.port < b.port);
+  }
+};
+
+using addr_map_t = std::map<addr_port, address*, cmp_addr_port>;
+
+sigjmp_buf              jbuf;
+struct address          addrs[1024];
+std::vector<listener*>  listener_idx;     // Maps fd -> listener*
+addr_map_t              address_idx;      // Maps {mcast_addr,port} -> address*
+struct address**        sorted_addrs[4];  // For report stats sorting
+
+std::map<uint16_t, listener>     listeners;
+std::map<std::string, in_addr_t> ifmap;   // Maps IfName -> IfAddr
+
 
 int         wfd           = -1;
-const char* label         = NULL;
+const char* label         = nullptr;
 int         addrs_count   = 0;
 int         verbose       = 0;
 int         terminate     = 0;
@@ -121,6 +159,7 @@ long        min_pkt_time=LONG_MAX, max_pkt_time=0, sum_pkt_time=0;
 long        pkt_time_count=0, pkt_ooo_count=0;
 long        tot_ooo_count = 0, tot_gap_count = 0;
 long        ooo_count     = 0, gap_count = 0;
+long        tot_skipped   = 0;
 long        tot_bytes     = 0, tot_pkts      = 0, max_pkts = LONG_MAX;
 int         last_bytes    = 0, bytes         = 0, pkts     = 0, last_pkts = 0;
 int         output_lines_count        = 0;
@@ -129,10 +168,10 @@ int         next_sock_report_lines    = 5;
 int         max_channel_report_lines  = 10;
 int         display_packets           = 0;
 int         display_packets_hex       = 0;
-const char* output_file               = NULL;
-const char* write_file                = NULL;
-bool        pcap_format   = 0;
-auto        pcap_file     = utxx::pcap(true, true);
+const char* output_file               = nullptr;
+const char* write_file                = nullptr;
+bool        pcap_format               = false;
+auto        pcap_file                 = utxx::pcap(true, true);
 
 void usage(const char* program) {
   printf("Listen to multicast traffic from a given (source addr) address:port\n\n"
@@ -230,7 +269,7 @@ char* data_fmt_string(data_fmt_t fmt, char* pfx, char* sfx, char* def) {
 }
 
 void print_report();
-void process_packet(struct address* addr, const char* buf, int n);
+void process_packet(address* addr, const char* buf, long n);
 
 double scale(long n, long multiplier) {
   long g = multiplier*multiplier*multiplier;
@@ -243,24 +282,24 @@ double scale(long n, long multiplier) {
          r;
 }
 
-const char* scale_suffix(long n, long multiplier) {
+char scale_suffix(long n, long multiplier) {
   long g = multiplier*multiplier*multiplier;
   long m = multiplier*multiplier;
   long k = multiplier;
-  return n > g ? (multiplier == 1000 ? "B" : "G") :
-         n > m ? "M" :
-         n > k ? "K" :
-         " ";
+  return n > g ? (multiplier == 1000 ? 'B' : 'G') :
+         n > m ? 'M' :
+         n > k ? 'K' : ' ';
 }
 
 long get_time() {
-  struct timespec ts;
+  timespec ts;
   clock_gettime(CLOCK_REALTIME, &ts);
   return long(ts.tv_sec) * 1000000000l + ts.tv_nsec;
 }
 
-void test_forts_decode();
-uint32_t decode_forts_seqno(const char* buf, int n, long last_seqno, int* seq_reset);
+void      test_forts_decode();
+uint32_t  decode_forts_seqno(const char* buf, int n, long last_seqno, int* seq_reset);
+in_addr_t get_ifaddr(int fd, const std::string& addr);
 
 long get_seqno(struct address* addr, const char* buf, int n, long last_seqno, int* seq_reset) {
   switch (addr->data_format) {
@@ -310,6 +349,8 @@ void parse_addr(char* s) {
   *port                         = -1;
   paddr->last_crep_pkt_changed  = -1;
 
+  addr[0] = '\0';
+
   snprintf(a,   sizeof(a), "%s", s);
   snprintf(url, sizeof(((struct address*)0)->url), "%s", s);
 
@@ -348,7 +389,7 @@ void parse_addr(char* s) {
     }
     s = label+1;
   }
-  if (strncmp(s, "udp://", 6)) {
+  if (strncmp(s, "udp://", 6) != 0) {
     strncpy(addr, s, 64);
   } else {
     s += 6;
@@ -383,7 +424,7 @@ void parse_addr(char* s) {
 
     if (verbose > 2) {
       printf("Adding iface=%s, mcast=%x, src=%x, port=%d\n",
-        *addr ? addr : "any",
+        addr[0] ? addr : "any",
         paddr->mcast_addr,
         paddr->src_addr,
         paddr->port);
@@ -394,17 +435,17 @@ void parse_addr(char* s) {
 
 int main(int argc, char *argv[])
 {
-  struct ip_mreq        group;
-  struct ip_mreq_source group_s;
-  struct epoll_event    events[256];
-  int                   bsize = 0;
-  int                   use_epoll = 1, efd = -1, tfd = -1;
-  struct epoll_event    timer_event;
+  ip_mreq        group = {};
+  ip_mreq_source group_s = {};
+  epoll_event    events[256];
+  int            bsize = 0;
+  int            use_epoll = 1, efd = -1, tfd = -1;
+  epoll_event    timer_event = {};
 
-  char*                 imcast_addr = NULL;
-  char*                 isrc_addr   = NULL;
-  int                   iport       = 0;
-  int                   i;
+  char*          imcast_addr = nullptr;
+  char*          isrc_addr   = nullptr;
+  int            iport       = 0;
+  int            i;
 
   signal(SIGINT,  sig_handler);
   signal(SIGTERM, sig_handler);
@@ -413,7 +454,6 @@ int main(int argc, char *argv[])
   if (argc < 3)
     usage(argv[0]);
 
-  memset(addrs_idx,    0, sizeof(addrs_idx));
   memset(sorted_addrs, 0, sizeof(sorted_addrs));
 
   /* Parse command-line arguments */
@@ -493,10 +533,44 @@ int main(int argc, char *argv[])
       usage(argv[0]);
     addrs[addrs_count].mcast_addr = inet_addr(imcast_addr);
     addrs[addrs_count].src_addr   = inet_addr(isrc_addr);
-    addrs[addrs_count].port       = iport;
+    addrs[addrs_count].port       = static_cast<uint16_t>(iport);
     addrs[addrs_count].fd         = -1;
 
     inc_addrs();
+  }
+
+  int max_mcast_addr_wid = 0;
+
+  /* Initialize unique list of listeners composed of unique iface:port */
+  for (int i=0; i < addrs_count; ++i) {
+    if (addrs[i].mcast_addr == INADDR_NONE || addrs[i].port < 0) {
+      fprintf(stderr, "Invalid mcast address or port specified (addr #%d of %d): %s:%d\n",
+        i+1, addrs_count, inet_ntoa(*(in_addr*)&addrs[i].mcast_addr), addrs[i].port);
+      exit(1);
+    }
+
+    char mcast[32];
+    snprintf(mcast, sizeof(mcast), "%s", inet_ntoa(*((struct in_addr*)&addrs[i].mcast_addr)));
+    max_mcast_addr_wid = std::max(max_mcast_addr_wid, int(strlen(mcast)));
+
+    // Note that mcast listening sockets must bind to the INADDR_ANY address
+    // or else no packets will be directed to this socket (kernel bug/feature?):
+    auto it       = listeners.end();
+    auto inserted = false;
+    auto listen   = listener(INADDR_ANY,
+                             addrs[i].iface_name,
+                             addrs[i].iface_port);
+    std::tie(it,inserted) = listeners.emplace
+      (std::make_pair(addrs[i].port, listen));
+    it->second.addresses.push_back(&addrs[i]);
+
+    auto key = addr_port(addrs[i].iface, addrs[i].port);
+    address_idx.emplace(std::make_pair(key, &addrs[i]));
+
+    if (inserted && verbose > 1)
+      printf("Preparing listener address %s:%d on %s\n",
+             inet_ntoa(*(in_addr*)&listen.iface), addrs[i].port,
+             addrs[i].iface_name);
   }
 
   /* Setup output */
@@ -559,29 +633,28 @@ int main(int argc, char *argv[])
   }
 
   /* Initialize all sockets */
-  for (i=0; i < addrs_count; i++) {
-    if (addrs[i].mcast_addr == INADDR_NONE || addrs[i].port < 0) {
-      fprintf(stderr, "Invalid mcast address or port specified (addr #%d of %d): %d, %d\n",
-        i+1, addrs_count, addrs[i].mcast_addr, addrs[i].port);
-      exit(1);
-    }
+  for (auto& ls : listeners) {
+    auto& listener = ls.second;
 
     /* Create a datagram socket on which to receive. */
-    addrs[i].fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (addrs[i].fd < 0) {
+    listener.fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listener.fd < 0) {
         perror("opening datagram socket");
         exit(1);
     } else if (verbose > 2) {
-      printf(" Addr#%d opened fd = %d\n", i, addrs[i].fd);
+      printf(" Opened listener fd=%d with %lu mcast addresses\n",
+             listener.fd, listener.addresses.size());
     }
 
-    assert(addrs[i].fd < (int)(sizeof(addrs_idx)/sizeof(addrs_idx[0])));
-    addrs[i].event.data.fd = addrs[i].fd;
-    addrs[i].event.events  = EPOLLIN | EPOLLET; // Edge-triggered
-    addrs_idx[addrs[i].fd] = addrs + i;
+    assert(listener.fd >= 0);
+    listener.event.data.fd = listener.fd;
+    listener.event.events  = EPOLLIN | EPOLLET; // Edge-triggered
+    while(listener_idx.size() <= size_t(listener.fd))
+      listener_idx.push_back(nullptr);
+    listener_idx[listener.fd] = &listener;
 
     if (use_epoll) {
-      if (epoll_ctl(efd, EPOLL_CTL_ADD, addrs[i].fd, &addrs[i].event) < 0) {
+      if (epoll_ctl(efd, EPOLL_CTL_ADD, listener.fd, &listener.event) < 0) {
         perror("epoll_ctl(add)");
         exit(1);
       }
@@ -593,91 +666,33 @@ int main(int argc, char *argv[])
     */
     {
       int reuse=1;
-      if (setsockopt(addrs[i].fd, SOL_SOCKET, SO_REUSEADDR,
+      if (setsockopt(listener.fd, SOL_SOCKET, SO_REUSEADDR,
                     (char *)&reuse, sizeof(reuse)) < 0) {
         perror("setting SO_REUSEADDR");
-        close(addrs[i].fd);
+        close(listener.fd);
         exit(1);
       }
     }
 
     /* Set receive buffer size */
-    if (bsize && setsockopt(addrs[i].fd, SOL_SOCKET, SO_RCVBUF, &bsize, sizeof(bsize))) {
+    if (bsize && setsockopt(listener.fd, SOL_SOCKET, SO_RCVBUF, &bsize, sizeof(bsize))) {
         perror("setting SO_RCVBUF");
         exit(1);
     }
 
-    /* Figure out which network interface to use */
-    if (addrs[i].iface_name[0] == '\0') {
-      addrs[i].iface = INADDR_ANY;
-      if (verbose > 2)
-        printf("Using INADDR_ANY interface\n");
-    } else if (strlen(addrs[i].iface_name) == 0) {
-      char buf[256], obuf[256], mc[32], via[32], src[32];
-      FILE* file;
-      snprintf(buf, sizeof(buf), "ip -o -4 route get %s",
-        inet_ntoa(*(struct in_addr*)&addrs[i].mcast_addr));
-      file = popen(buf, "r");
-      if (!file) {
-        perror("ip route get");
-        exit(1);
-      }
-      if (!fgets(obuf, sizeof(obuf), file)) {
-        perror("ip route get | fgets()");
-        exit(1);
-      }
-      fclose(file);
-      if (verbose > 2)
-        printf("Executed: '%s' ->\n  %s\n", buf, obuf);
-      if ((sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
-                  mc, via, addrs[i].iface_name, src) != 4) &&
-          (sscanf(obuf, "multicast %16s dev %16s src %16s ",
-                  mc, addrs[i].iface_name, src) != 3)) {
-        fprintf(stderr, "Couldn't parse output of 'ip route get: %s'\n", obuf);
-        exit(2);
-      }
-      if (inet_aton(src, (struct in_addr*)&addrs[i].iface) == 0) {
-        fprintf(stderr, "Cannot parse address of interface '%s' %s\n",
-          addrs[i].iface_name, src);
-        exit(3);
-      }
-    } else {
-      struct ifreq ifr;
-      ifr.ifr_addr.sa_family = AF_INET;
-      strncpy(ifr.ifr_name, addrs[i].iface_name, IFNAMSIZ-1);
-
-
-      if (ioctl(addrs[i].fd, SIOCGIFADDR, &ifr) >= 0) {
-        addrs[i].iface = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
-        if (verbose)
-          printf("Looked up interface '%s' address: %s\n",
-            addrs[i].iface_name,
-            inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
-      } else {
-        int e = errno;
-        if (inet_aton(addrs[i].iface_name, (struct in_addr*)&addrs[i].iface) == 0) {
-          fprintf(stderr, "Can't get interface '%s' address: %s\n",
-            addrs[i].iface_name, strerror(e));
-          exit(1);
-        }
-
-        if (verbose)
-          printf("Using %s interface (%x)\n", addrs[i].iface_name, addrs[i].iface);
-      }
-
-    }
+    listener.iface = get_ifaddr(listener.fd, listener.iface_name);
 
     /* Bind to the proper port number with the IP address */
     {
       struct sockaddr_in local_s;
       memset((char *) &local_s, 0, sizeof(local_s));
       local_s.sin_family        = AF_INET;
-      local_s.sin_port          = htons(addrs[i].port);
+      local_s.sin_port          = htons(listener.iface_port);
       // Note that mcast listening sockets must bind to the INADDR_ANY address
       // or else no packets will be directed to this socket (kernel bug/feature?):
       local_s.sin_addr.s_addr   = INADDR_ANY;
 
-      if (bind(addrs[i].fd, (struct sockaddr*)&local_s, sizeof(local_s))) {
+      if (bind(listener.fd, (struct sockaddr*)&local_s, sizeof(local_s))) {
           perror("binding datagram socket");
           exit(1);
       }
@@ -686,9 +701,36 @@ int main(int argc, char *argv[])
     {
       // Set IP_PKTINFO to receive mcast source addr/port
       int on = 1;
-      if (setsockopt(addrs[i].fd, SOL_IP, IP_PKTINFO, &on, sizeof(on)) < 0) {
+      if (setsockopt(listener.fd, SOL_IP, IP_PKTINFO, &on, sizeof(on)) < 0) {
         perror("cannot set pktinfo");
         exit(1);
+      }
+
+      // Activate the filter to receive messages only of joined groups
+      // rather than of all the groups that have been joined globally on the
+      // whole system
+      on = 0;
+      if ((setsockopt(listener.fd, IPPROTO_IP, IP_MULTICAST_ALL, &on, sizeof(on))) < 0) {
+        perror("setsockopt(IP_MULTICAST_ALL) failed");
+        exit(1);
+      }
+    }
+
+    if (use_epoll)
+      non_blocking(listener.fd);
+
+    {
+      // NOTE: even with IP_PKTINFO enabled recvmsg() doesn't provide sin_port
+      // so we have to retrieve it using getsockname():
+      struct sockaddr_in   si = {0};
+      static socklen_t si_len = sizeof(si);
+      auto   dst_port = getsockname(listener.fd, (struct sockaddr*)&si, &si_len) < 0
+                      ? htons(listener.iface_port) : si.sin_port;
+      for (auto& a : listener.addresses) {
+        a->dst_port = dst_port;
+        a->iface    = a->iface_name == listener.iface_name
+                    ? listener.iface
+                    : get_ifaddr(listener.fd, a->iface_name);
       }
     }
 
@@ -698,53 +740,39 @@ int main(int argc, char *argv[])
     * called for each local interface over which the multicast
     * datagrams are to be received.
     */
+    for (auto& a : listener.addresses) {
+      if (!quiet && verbose) {
+        char iface[32], mcast[32], src[32];
+        snprintf(iface, sizeof(iface), "%s", inet_ntoa(*((struct in_addr*)&a->iface)));
+        snprintf(mcast, sizeof(mcast), "%s", inet_ntoa(*((struct in_addr*)&a->mcast_addr)));
+        snprintf(src,   sizeof(src),   "%s", inet_ntoa(*((struct in_addr*)&a->src_addr)));
 
-    if (!quiet && verbose) {
-      char iface[32], mcast[32], src[32];
-      snprintf(iface, sizeof(iface), "%s", inet_ntoa(*((struct in_addr*)&addrs[i].iface)));
-      snprintf(mcast, sizeof(mcast), "%s", inet_ntoa(*((struct in_addr*)&addrs[i].mcast_addr)));
-      snprintf(src,   sizeof(src),   "%s", inet_ntoa(*((struct in_addr*)&addrs[i].src_addr)));
-
-      printf("#%02d Join %smcast %s%s%s on iface %s:%d %s\n", addrs[i].id,
-        addrs[i].src_addr != INADDR_NONE ? "src-spec " : "",
-        addrs[i].src_addr != INADDR_NONE ? src : "",
-        addrs[i].src_addr ? "@" : "",
-        mcast, iface, addrs[i].port,
-        addrs[i].title);
-    }
-
-    if (addrs[i].src_addr != INADDR_NONE) {
-      group_s.imr_multiaddr.s_addr  = addrs[i].mcast_addr;
-      group_s.imr_sourceaddr.s_addr = addrs[i].src_addr;
-      group_s.imr_interface.s_addr  = addrs[i].iface;
-
-      if (setsockopt(addrs[i].fd, IPPROTO_IP, IP_ADD_SOURCE_MEMBERSHIP,
-                  (char *)&group_s, sizeof(group_s)) < 0) {
-        perror("adding source multicast group");
-        exit(1);
+        printf("#%02d Join %smcast %s%s%-*s on iface %s %s:%d %s\n", a->id,
+          a->src_addr != INADDR_NONE ? "src-spec " : "",
+          a->src_addr != INADDR_NONE ? src         : "",
+          a->src_addr                ? "@"         : "",
+          max_mcast_addr_wid, mcast, a->iface_name, iface, a->port, a->title);
       }
-    } else {
-      group.imr_multiaddr.s_addr = addrs[i].mcast_addr;
-      group.imr_interface.s_addr = addrs[i].iface;
-      if (setsockopt(addrs[i].fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                  (char *)&group, sizeof(group)) < 0) {
-        perror("adding multicast group");
-        exit(1);
+
+      if (a->src_addr != INADDR_NONE) {
+        group_s.imr_multiaddr.s_addr  = a->mcast_addr;
+        group_s.imr_sourceaddr.s_addr = a->src_addr;
+        group_s.imr_interface.s_addr  = a->iface;
+
+        if (setsockopt(listener.fd, IPPROTO_IP, IP_ADD_SOURCE_MEMBERSHIP,
+                    (char *)&group_s, sizeof(group_s)) < 0) {
+          perror("adding source multicast group");
+          exit(1);
+        }
+      } else {
+        group.imr_multiaddr.s_addr = a->mcast_addr;
+        group.imr_interface.s_addr = a->iface;
+        if (setsockopt(listener.fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                    (char *)&group, sizeof(group)) < 0) {
+          perror("adding multicast group");
+          exit(1);
+        }
       }
-    }
-
-    if (use_epoll)
-      non_blocking(addrs[i].fd);
-
-    {
-      // NOTE: even with IP_PKTINFO enabled recvmsg() doesn't provide sin_port
-      // so we have to retrieve it using getsockname():
-      struct sockaddr_in   si = {0};
-      static socklen_t si_len = sizeof(si);
-      if (getsockname(addrs[i].fd, (struct sockaddr*)&si, &si_len) < 0)
-        addrs[i].dst_port = htons(addrs[i].port);
-      else
-        addrs[i].dst_port = si.sin_port;
     }
   }
 
@@ -773,8 +801,8 @@ int main(int argc, char *argv[])
         timeout.it_value.tv_sec - start_time/1000000000l);
 
     for (i=0; i < (int)(sizeof(sorted_addrs) / sizeof(sorted_addrs[0])); i++) {
-      int j, sz = addrs_count * sizeof(struct address*);
-      sorted_addrs[i] = (address**)malloc(sz);
+      int j, sz = addrs_count * sizeof(address*);
+      sorted_addrs[i] = (address**)malloc(static_cast<size_t>(sz));
       for (j=0; j < addrs_count; j++)
         sorted_addrs[i][j] = &addrs[j];
     }
@@ -789,12 +817,13 @@ int main(int argc, char *argv[])
 
   while (!terminate) {
     char databuf[16*1024];
-    int events_count, n = -1, i;
+    int  events_count;
+    long n;
 
     if (use_epoll) {
-      if (verbose > 4) printf("  Calling epoll(%d)...\n", efd);
+      if (verbose  > 4) printf("  Calling epoll(%d)...\n", efd);
       events_count = epoll_wait(efd, events, sizeof(events)/sizeof(events[0]), -1);
-      if (verbose > 4) printf("  epoll() -> %d\n", events_count);
+      if (verbose  > 4) printf("  epoll() -> %d\n", events_count);
 
       if (events_count < 0) {
         if (errno == EINTR)
@@ -802,12 +831,11 @@ int main(int argc, char *argv[])
         perror("epoll_wait");
         exit(1);
       }
-      n = 0;
     } else {
       int fd = addrs[0].fd;
       if (verbose > 4) printf("  Calling read(%d, size=%ld)...\n", fd, sizeof(databuf));
       n = read(fd, databuf, sizeof(databuf));
-      if (verbose > 4) printf("  Got %d bytes\n", n);
+      if (verbose > 4) printf("  Got %ld bytes\n", n);
       events_count = 1;
       events[0].data.fd = fd;
       events[0].events  = EPOLLIN;
@@ -817,7 +845,7 @@ int main(int argc, char *argv[])
       if (events[i].data.fd == tfd) {
         // Reporting timeout
         uint64_t exp;
-        while ((n = read(tfd, &exp, sizeof(exp))) > 0 || errno == EINTR);
+        while (read(tfd, &exp, sizeof(exp)) > 0 || errno == EINTR);
         if (errno != EAGAIN) {
           perror("read(timerfd-descriptor)");
           exit(1);
@@ -826,12 +854,14 @@ int main(int argc, char *argv[])
         continue;
       }
 
-      struct address* addr = addrs_idx[events[i].data.fd];
+      assert(events[i].data.fd < int(listener_idx.size()));
+      auto   listener = listener_idx[events[i].data.fd];
+      assert(listener->fd == events[i].data.fd);
 
-      char   ctlbuf[256];
-      struct iovec iov[1];
-      struct msghdr msg;
-      struct sockaddr_in peeraddr;        // Remote/src addr goes here
+      char        ctlbuf[256];
+      iovec       iov[1];
+      msghdr      msg = {};
+      sockaddr_in peeraddr = {}; // Remote/src addr goes here
 
       if (use_epoll) {
         msg.msg_name        = (void*)&peeraddr;
@@ -845,25 +875,22 @@ int main(int argc, char *argv[])
 
       do {
         if (!use_epoll)
-          n = read(addr->fd, databuf, sizeof(databuf));
+          n = read(listener->fd, databuf, sizeof(databuf));
         else {
           do {
             // http://man7.org/linux/man-pages/man2/recvmmsg.2.html
             iov[0].iov_base = databuf;
             iov[0].iov_len  = sizeof(databuf);
-            n = ::recvmsg(addr->fd, &msg, 0);
+            n = ::recvmsg(listener->fd, &msg, 0);
           } while (n < 0 && errno == EINTR);
 
-          if (n > 0) {
-            // Otherwise: successful read returning 0 or more bytes read.
-            // If it's 0 - on connected sockets this means that it got disconnected.
-            // Commit the data into the buffer invoke the Action, and continue.
+          auto      src_addr = peeraddr.sin_addr.s_addr;
+          auto      src_port = peeraddr.sin_port;
+          in_addr_t dst_addr = 0;
 
-            addr->src_addr = peeraddr.sin_addr.s_addr;
-            addr->src_port = peeraddr.sin_port;
-            addr->dst_addr = 0;
+          if (n > 0) {
+            // Successful read returning 0 or more bytes read.
             // Dst addr doesn't get sent by PKTINFO. Need to obtain it by getsockname()
-            // addr->dst_port = addr->port;
             // Control messages are always accessed via macros
             // http://www.kernel.org/doc/man-pages/online/pages/man3/cmsg.3.html
             for(auto cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
@@ -871,13 +898,14 @@ int main(int argc, char *argv[])
               if (cm->cmsg_level == IPPROTO_IP &&
                   cm->cmsg_type  == IP_PKTINFO)
               {
-                struct in_pktinfo* pi = (struct in_pktinfo*)CMSG_DATA(cm);
-                //addr->if_addr   = pi->ipi_spec_dst.s_addr; // Iface addr
-                addr->dst_addr  = pi->ipi_addr.s_addr;     // Mcast addr
+                in_pktinfo* pi = (in_pktinfo*)CMSG_DATA(cm);
+                //addr->if_addr = pi->ipi_spec_dst.s_addr; // Iface addr
+                dst_addr  = pi->ipi_addr.s_addr;     // Mcast addr
                 break;
               }
             }
           } else {
+            // If it's 0 - on connected sockets this means that it got disconnected.
             // errno == EGAIN means that no more data is available.
             // Action is not to be invoked here if there is no new data:
             if (errno != EAGAIN) {
@@ -885,10 +913,24 @@ int main(int argc, char *argv[])
                     perror("read");
                     terminate = 1;
                 }
-                close(addr->fd);
+                close(listener->fd);
             }
             break;
           }
+
+          auto it = address_idx.find(addr_port(dst_addr, listener->iface_port));
+
+          if (it == address_idx.end()) {
+            // Skip this packet
+            listener->skipped_packets++;
+            tot_skipped++;
+            continue;
+          }
+
+          auto addr      = it->second;
+          addr->src_addr = src_addr;
+          addr->src_port = src_port;
+          addr->dst_addr = dst_addr;     // Mcast addr
 
           process_packet(addr, databuf, n);
         }
@@ -902,12 +944,12 @@ int main(int argc, char *argv[])
   if (!quiet) {
     double sec = (get_time() - start_time)/1000000000l;
     if (sec == 0.0) sec = 1.0;
-    printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %sB %9ld %spkts | OutOfSeq %ld | Lost: %ld\n",
+    printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %cB %9ld %cpkts | OutOfSeq %ld | Lost: %ld | Skipped: %ld\n",
       label ? label : "TOTAL",
       tot_bytes / 1024 / sec, (int)(tot_pkts / sec),
       (long)scale(tot_bytes, 1024), scale_suffix(tot_bytes, 1024),
       (long)scale(tot_pkts,  1000), scale_suffix(tot_pkts,  1000),
-      tot_ooo_count, tot_gap_count);
+      tot_ooo_count, tot_gap_count, tot_skipped);
   }
 
   for (i=0; i < (int)(sizeof(sorted_addrs) / sizeof(sorted_addrs[0])); i++)
@@ -1152,7 +1194,78 @@ void print_report() {
   fflush(stdout);
 }
 
-void process_packet(struct address* addr, const char* buf, int n) {
+in_addr_t get_ifaddr(int fd, const std::string& addr) {
+  /* Figure out which network interface to use */
+  if (addr == "any" || addr.empty())
+    return INADDR_ANY;
+  auto it = ifmap.find(addr);
+  if (it != ifmap.end())
+    return it->second;
+
+  /*
+  else if (listener.iface_name.empty()) {
+    char buf[256], obuf[256], mc[32], via[32], src[32];
+    FILE* file;
+    assert(listener.addresses.size());
+    snprintf(buf, sizeof(buf), "ip -o -4 route get %s",
+      inet_ntoa(*(in_addr*)&listener.addresses[0]->mcast_addr));
+    file = popen(buf, "r");
+    if (!file) {
+      perror("ip route get");
+      exit(1);
+    }
+    if (!fgets(obuf, sizeof(obuf), file)) {
+      perror("ip route get | fgets()");
+      exit(1);
+    }
+    fclose(file);
+    if (verbose > 2)
+      printf("Executed: '%s' ->\n  %s\n", buf, obuf);
+    char ifname[128];
+    if ((sscanf(obuf, "multicast %16s via %16s dev %16s src %16s ",
+                mc, via, ifname, src) != 4) &&
+        (sscanf(obuf, "multicast %16s dev %16s src %16s ",
+                mc, ifname, src) != 3)) {
+      fprintf(stderr, "Couldn't parse output of 'ip route get: %s'\n", obuf);
+      exit(2);
+    }
+    listener.iface_name = ifname;
+    if (inet_aton(src, (in_addr*)&listener.iface) == 0) {
+      fprintf(stderr, "Cannot parse address of interface '%s' %s\n",
+        listener.iface_name.c_str(), src);
+      exit(3);
+    }
+  } */
+  ifreq ifr = {};
+  ifr.ifr_addr.sa_family = AF_INET;
+  strncpy(ifr.ifr_name, addr.c_str(), IFNAMSIZ-1);
+
+
+  if (ioctl(fd, SIOCGIFADDR, &ifr) >= 0) {
+    if (verbose)
+      printf("Looked up interface '%s' address: %s\n",
+        addr.c_str(),
+        inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr));
+    auto res = ((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr.s_addr;
+    ifmap[addr] = res;
+    return res;
+  }
+  int     e = errno;
+  in_addr a = {};
+  if (inet_aton(addr.c_str(), &a) == 0) {
+    fprintf(stderr, "Can't get interface '%s' address: %s\n",
+      addr.c_str(), strerror(e));
+    exit(1);
+  }
+
+  if (verbose)
+    printf("Using %s interface (%s)\n", addr.c_str(),
+           inet_ntoa(*(in_addr*)&a.s_addr));
+  ifmap[addr] = a.s_addr;
+  return a.s_addr;
+}
+
+void process_packet(address* addr, const char* buf, long n) {
   long seqno;
 
   now_time = get_time();
@@ -1181,9 +1294,9 @@ void process_packet(struct address* addr, const char* buf, int n) {
   seqno = get_seqno(addr, buf, n, addr->last_seqno, &seq_reset);
 
   if (display_packets) {
-    fprintf(stderr, "  %02d (fmt=%c) seqno=%ld (pkt size=%d):\n   {",
+    fprintf(stderr, "  %02d (fmt=%c) seqno=%ld (pkt size=%ld):\n   {",
       addr->id, addr->data_format, seqno, n);
-    int i = 0, e = n > display_packets ? display_packets : n;
+    int i = 0, e = static_cast<int>(n > display_packets ? display_packets : n);
     if (display_packets_hex)
       for (; i < e; i++) {
         fprintf(stderr, "%s0x%02x", i ? "," : "", (uint8_t)buf[i]);
@@ -1251,7 +1364,7 @@ void process_packet(struct address* addr, const char* buf, int n) {
     terminate = 1;
 
   if (verbose > 2)
-    printf("Received %6d bytes, %ld packets (%s)\n", n, tot_pkts, addr->title);
+    printf("Received %6ld bytes, %ld packets (%s)\n", n, tot_pkts, addr->title);
 }
 
 /*

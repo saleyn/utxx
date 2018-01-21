@@ -65,7 +65,7 @@ void usage(std::string const& err="")
         VERSION() << "\n\n"                     <<
         "Usage: " << prog                       <<
         "[-V] [-h] -f InputFile -s StartPktNum -e EndPktNum [-n NumPkts] [-c|--count]"
-                    " -o|-O OutputFile [-h]\n\n"
+                    " [-p|--print] [-o|-O OutputFile] [-h]\n\n"
         "   -V|--version            - Version\n"
         "   -h|--help               - Help screen\n"
         "   -f InputFile            - Input file name\n"
@@ -76,7 +76,7 @@ void usage(std::string const& err="")
         "   -n|--num   TotNumPkts   - Number of packets to save\n"
         "   -r|--raw                - Output raw packet payload only without pcap format\n"
         "   -c|--count              - Count number of packets in the file\n"
-        "   -p                      - Print packet source, destination, size\n"
+        "   -p|--print              - Print packet source, destination, size\n"
         "   -v                      - Verbose\n\n";
     }
 
@@ -120,7 +120,7 @@ int main(int argc, char *argv[])
         if (opts.match("-n", "--num",   &pk_cnt))   continue;
         if (opts.match("-c", "--count", &count))    continue;
         if (opts.match("-v", "",        &verbose))  continue;
-        if (opts.match("-p", "",        &print))    continue;
+        if (opts.match("-p", "--print", &print))    continue;
         if (opts.match("-V", "--version")) throw std::runtime_error(VERSION());
         if (opts.is_help())                         usage();
 
@@ -170,10 +170,10 @@ int main(int argc, char *argv[])
     utxx::basic_io_buffer<(1024*1024)> buf;
 
     if (print || verbose) {
-        printf("# Time                   %-20s %-20s %10s %7s %10s",
-               "Source", "Destination", "Pkt", "FrameSz", "Bytes");
+        printf("# Time                   %-20s %-20s %10s %10s",
+               "Source", "Destination", "Pkt", "Bytes");
         if (verbose)
-            printf(" %10s %10s", "BufSz", "BufPos");
+            printf(" %7s %10s %10s", "FrameSz", "BufSz", "BufPos");
         putchar('\n');
     }
 
