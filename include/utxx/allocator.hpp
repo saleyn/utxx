@@ -96,8 +96,7 @@ public:
     ///            will be deleted on destruction of this instance.
     shmem_manager(const char* filename, size_t sz = 0,
                   init_mode mode = ATTACH_SHARED_MEMORY,
-                  bool remove_on_destruct = false)
-        throw(std::runtime_error);
+                  bool remove_on_destruct = false);
 
     ~shmem_manager();
 
@@ -247,8 +246,7 @@ private:
 public:
     /// Initialize shared memory allocator
     /// @param <total_mem_size> is the total memory managed by the allocator
-    pow2_allocator(void* base_addr, size_t total_mem_size, bool initialize=false)
-        throw(badarg_error);
+    pow2_allocator(void* base_addr, size_t total_mem_size, bool initialize=false);
 
     pow2_allocator( const pow2_allocator& a )
         : m_header(a.m_header)
@@ -420,7 +418,6 @@ inline bool operator!= (const shmem_allocator<T,Policy>& a, const shmem_allocato
 template <int MinSize, int MaxPow2Size>
 pow2_allocator<MinSize, MaxPow2Size>
 ::pow2_allocator(void* base_addr, size_t total_mem_size, bool initialize)
-    throw(badarg_error)
     : m_header(static_cast<header*>(base_addr))
     , m_pid_id(::getpid())
     #ifdef ALLOC_STATS

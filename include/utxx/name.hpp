@@ -128,9 +128,7 @@ namespace utxx {
             return begin;
         }
 
-        void set_and_check(const char* a_buf, size_t a_size, bool a_no_case)
-            throw (badarg_error)
-        {
+        void set_and_check(const char* a_buf, size_t a_size, bool a_no_case) {
             int rc = set(a_buf, a_size, a_no_case);
             if (rc)
                 UTXX_THROW_BADARG_ERROR("Invalid character at position ",
@@ -151,12 +149,12 @@ namespace utxx {
         static constexpr size_t size() { return Size; }
 
         template <int N>
-        void set(const char (&a_buf)[N], bool a_no_case = false) throw (badarg_error) {
+        void set(const char (&a_buf)[N], bool a_no_case = false) {
             BOOST_STATIC_ASSERT(N <= Size);
             set_and_check(a_buf, N, a_no_case);
         }
 
-        void set(const std::string& a_val, bool a_no_case = false) throw (badarg_error) {
+        void set(const std::string& a_val, bool a_no_case = false) {
             set_and_check(a_val.c_str(), a_val.size(), a_no_case);
         }
 

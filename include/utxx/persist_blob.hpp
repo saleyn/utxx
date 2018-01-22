@@ -96,8 +96,7 @@ public:
 
     /// @return true if file didn't exist and was created.
     bool init(const char* a_file, const T* a_init_val = NULL,
-        bool a_read_only = true, int a_mode = default_file_mode())
-        throw (io_error);
+              bool a_read_only = true, int a_mode = default_file_mode());
 
     bool is_open() const { return m_blob; }
 
@@ -128,7 +127,7 @@ public:
 
 template<typename T, typename L>
 bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
-    bool a_read_only, int a_mode) throw (io_error)
+                             bool a_read_only, int a_mode)
 {
     BOOST_ASSERT(a_file);
 

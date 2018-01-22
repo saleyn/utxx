@@ -152,9 +152,7 @@ public:
 
     /// Initialize the internal buffer setting the throttling interval
     /// measured in seconds.
-    void init(int a_throttle_interval)
-        throw(badarg_error)
-    {
+    void init(int a_throttle_interval) {
         if (a_throttle_interval == m_interval)
             return;
         m_interval = a_throttle_interval << s_log_buckets_sec;

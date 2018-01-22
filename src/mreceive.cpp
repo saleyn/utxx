@@ -24,7 +24,6 @@
 #include <limits.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include <netinet/in.h>
 #include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
@@ -33,10 +32,8 @@
 #include <sys/epoll.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/timerfd.h>
-#include <sys/types.h>
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>
@@ -56,13 +53,6 @@ enum data_fmt_t {
   MICEX     = 'm'
 };
 
-enum src_state_t {
-  OK = 0,
-  NODATA_OFF    =  1, NODATA_ON = 2,
-  OOO_OFF       =  4, OOO_ON    = 8,
-  GAP_OFF       = 16, GAP_ON    = 32
-};
-
 const int MEGABYTE = 1024*1024;
 //const int MILLION  = 1000000;
 
@@ -72,7 +62,6 @@ struct address {
   char*                 title;
   char                  iface_name[64];
   in_addr_t             iface;
-  uint16_t              iface_port;     /* destination port on the interface */
   in_addr_t             mcast_addr;
   in_addr_t             src_addr;
   in_addr_t             dst_addr;
@@ -101,8 +90,6 @@ struct address {
   int                   last_crep_ooo_count;
   int                   last_crep_gap_count;
   int                   last_crep_pkt_changed;
-
-  src_state_t           state;          /* state of gap detector */
 };
 
 struct listener {
@@ -1201,7 +1188,7 @@ void print_report() {
         (double)tot_bytes / MEGABYTE, (long)(tot_pkts / 1000),
         tot_ooo_count,  tot_gap_count,
         pkt_time_count, avg_lat,
-        pkt_time_count ? min_pkt_time/1000 : 0,
+        pkt_time_count ? min_pkt_time/1000 : 0l,
         max_pkt_time/1000);
   }
 

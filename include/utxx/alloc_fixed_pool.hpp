@@ -80,8 +80,7 @@ class fixed_size_object_pool {
     size_t             volatile m_free_list;
     long               volatile m_available;   // only valid when compiled with DEBUG
 
-    fixed_size_object_pool(size_t bytes, size_t object_size)
-        throw(badarg_error);
+    fixed_size_object_pool(size_t bytes, size_t object_size);
 
     size_t object_idx(const pointer_type& p) const {
         return (1 + (p - m_begin) / m_object_size) & s_index_mask;
@@ -105,17 +104,13 @@ class fixed_size_object_pool {
     }
 public:
     /// Initialize the pool of fixed size objects.
-    static fixed_size_object_pool& create(void* storage, size_t bytes, size_t object_size)
-        throw(badarg_error)
-    {
+    static fixed_size_object_pool& create(void* storage, size_t bytes, size_t object_size) {
         return *new (static_cast<fixed_size_object_pool*>(storage))
             fixed_size_object_pool(bytes, object_size);
     }
 
     /// Attach a client to the pool pointed by storage
-    static fixed_size_object_pool& attach(void* storage, size_t bytes, size_t object_size)
-        throw(badarg_error)
-    {
+    static fixed_size_object_pool& attach(void* storage, size_t bytes, size_t object_size) {
         fixed_size_object_pool* pool = static_cast<fixed_size_object_pool*>(storage);
         if (storage == NULL)
             throw badarg_error("Empty storage provided!");
@@ -183,7 +178,6 @@ namespace detail {
 template <class PointerType>
 fixed_size_object_pool<PointerType>
 ::fixed_size_object_pool(size_t bytes, size_t object_size)
-    throw(badarg_error)
     : m_magic(s_magic)
     , m_object_size(object_size + sizeof(object_t))
     , m_begin((char*)this + m_object_size * (sizeof(fixed_size_object_pool)/m_object_size + 1))
