@@ -775,6 +775,8 @@ int main(int argc, char *argv[])
           max_mcast_addr_wid, mcast, a->iface_name, iface, a->port, a->title);
       }
 
+      a->fd = listener.fd;
+
       if (a->src_addr != INADDR_NONE) {
         group_s.imr_multiaddr.s_addr  = a->mcast_addr;
         group_s.imr_sourceaddr.s_addr = a->src_addr;
