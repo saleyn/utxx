@@ -44,6 +44,7 @@
 #include <utxx/pcap.hpp>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <string>
 
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
@@ -128,12 +129,26 @@ struct addr_port {
 };
 
 struct cmp_addr_port {
+  // Comparator for std::map
   bool operator()(addr_port const& a, addr_port const& b) const {
     return a.addr < b.addr || (a.addr == b.addr && a.port < b.port);
   }
 };
 
-using addr_map_t = std::map<addr_port, address*, cmp_addr_port>;
+namespace std {
+  template <> struct hash<addr_port> {
+    size_t operator()(const addr_port& a) const {
+      return hash<in_addr_t>()(a.addr) ^ hash<uint16_t>()(a.port);
+    }
+  };
+  template <> struct equal_to<addr_port> {
+    bool operator()(addr_port const& a, addr_port const& b) const {
+      return a.addr == b.addr && a.port < b.port;
+    }
+  };
+}
+
+using addr_map_t = std::unordered_map<addr_port, address*>;
 
 sigjmp_buf              jbuf;
 struct address          addrs[1024];
@@ -141,8 +156,8 @@ std::vector<listener*>  listener_idx;     // Maps fd -> listener*
 addr_map_t              address_idx;      // Maps {mcast_addr,port} -> address*
 struct address**        sorted_addrs[4];  // For report stats sorting
 
-std::map<uint16_t, listener>     listeners;
-std::map<std::string, in_addr_t> ifmap;   // Maps IfName -> IfAddr
+std::unordered_map<uint16_t, listener>     listeners;
+std::unordered_map<std::string, in_addr_t> ifmap;   // Maps IfName -> IfAddr
 
 
 int         wfd           = -1;
@@ -151,7 +166,7 @@ int         addrs_count   = 0;
 int         verbose       = 0;
 int         terminate     = 0;
 long        interval      = 5;
-long        sock_interval = 50;
+int         sock_interval = 50;
 int         quiet         = 0;
 int         max_title_width = 0;
 int         ip_mcast_all  = 0;
@@ -374,7 +389,7 @@ void parse_addr(char* s) {
           *p = '\0';
           break;
         }
-      int n = strlen(*title);
+      int n = int(strlen(*title));
       if (n > max_title_width) max_title_width = n;
     }
   }
@@ -418,7 +433,7 @@ void parse_addr(char* s) {
     if (pif)
       snprintf(addr, sizeof(((struct address*)0)->iface_name), "%s", pif);
     *mcast_addr = inet_addr(q);
-    *port = atoi(p);
+    *port = static_cast<uint16_t>(atoi(p));
     if (verbose > 2) {
       printf("  %d: mcast=%s port=%d iface=%s title='%s'\n",
         addrs_count, q, *port, pif ? pif : "any", *title);
@@ -510,7 +525,7 @@ int main(int argc, char *argv[])
       pcap_format = argv[i][1] == 'W';
       write_file  = argv[++i];
     } else if (!strcmp(argv[i], "-d") && i < argc-1) {
-      alarm(atoi(argv[++i]));
+      alarm(static_cast<unsigned int>(atoi(argv[++i])));
     } else if (!strncmp(argv[i], "-v", 2))
       (void)0;
     else if (!strncmp(argv[i], "-e", 2)) {
@@ -531,7 +546,7 @@ int main(int argc, char *argv[])
       usage(argv[0]);
   }
 
-  /* No "-c" and "-a" options given: obtain address from other parameters */
+  // No "-c" and "-a" options given: obtain address from other parameters
   if (!addrs_count) {
     if (!imcast_addr || !iport)
       usage(argv[0]);
@@ -545,7 +560,7 @@ int main(int argc, char *argv[])
 
   int max_mcast_addr_wid = 0;
 
-  /* Initialize unique list of listeners composed of unique iface:port */
+  // Initialize unique list of listeners listening on iface:port
   for (int i=0; i < addrs_count; ++i) {
     if (addrs[i].mcast_addr == INADDR_NONE || addrs[i].port < 0) {
       fprintf(stderr, "Invalid mcast address or port specified (addr #%d of %d): %s:%d\n",
@@ -561,9 +576,8 @@ int main(int argc, char *argv[])
     // or else no packets will be directed to this socket (kernel bug/feature?):
     auto it       = listeners.end();
     auto inserted = false;
-    auto listen   = listener(INADDR_ANY,
-                             addrs[i].iface_name,
-                             addrs[i].port);
+    auto listen   = listener(INADDR_ANY, addrs[i].iface_name, addrs[i].port);
+    // NOTE: listener hash is based on port in HOST byte order
     std::tie(it,inserted) = listeners.emplace
       (std::make_pair(addrs[i].port, listen));
     it->second.addresses.push_back(&addrs[i]);
@@ -577,7 +591,7 @@ int main(int argc, char *argv[])
              addrs[i].iface_name);
   }
 
-  /* Setup output */
+  // Setup output
   if (output_file) {
     fflush(stdout);
     efd = open(output_file, O_CREAT | O_APPEND | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP);
@@ -636,11 +650,11 @@ int main(int argc, char *argv[])
     }
   }
 
-  /* Initialize all sockets */
+  // Initialize all sockets
   for (auto& ls : listeners) {
     auto& listener = ls.second;
 
-    /* Create a datagram socket on which to receive. */
+    // Create a datagram socket on which to receive.
     listener.fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (listener.fd < 0) {
         perror("opening datagram socket");
@@ -774,7 +788,7 @@ int main(int argc, char *argv[])
         group.imr_multiaddr.s_addr = a->mcast_addr;
         group.imr_interface.s_addr = a->iface;
         if (setsockopt(listener.fd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                    (char *)&group, sizeof(group)) < 0) {
+                      (char *)&group, sizeof(group)) < 0) {
           perror("adding multicast group");
           exit(1);
         }
@@ -818,7 +832,7 @@ int main(int argc, char *argv[])
    * Main data loop
    *--------------------------------------------------------------------*/
 
-  srand(time(NULL));
+  srand(static_cast<unsigned int>(time(NULL)));
   setjmp(jbuf);
 
   while (!terminate) {
@@ -924,7 +938,7 @@ int main(int argc, char *argv[])
             break;
           }
 
-          auto it = address_idx.find(addr_port(dst_addr, listener->port));
+          auto it = address_idx.find(addr_port(ntohl(dst_addr), listener->port));
 
           if (it == address_idx.end()) {
             // Skip this packet
@@ -1328,7 +1342,7 @@ void process_packet(address* addr, const char* buf, long n) {
                                   addr->dst_addr, addr->dst_port,
                                   buf, n);
     } else
-      rc = write(wfd, buf, n);
+      rc = static_cast<int>(write(wfd, buf, n));
 
     if (rc < 0) {
       fprintf(stderr, "Error writing to the output file %s: %s\n",
@@ -1339,7 +1353,7 @@ void process_packet(address* addr, const char* buf, long n) {
 
   if (seqno) {
     if (addr->last_seqno) {
-      int diff = seqno - addr->last_seqno;
+      int diff = static_cast<int>(seqno - addr->last_seqno);
       if (!seq_reset) {
         if (diff < 0) {
           if (verbose > 1)
