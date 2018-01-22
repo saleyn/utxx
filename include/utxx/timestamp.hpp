@@ -271,7 +271,8 @@ public:
 //---------------------------------------------------------------------------
 template <typename Stream>
 inline Stream& operator<< (Stream& out, time_val a) {
-    return out << timestamp::to_string(a, DATE_TIME_WITH_USEC, false);
+    out << timestamp::to_string(a, DATE_TIME_WITH_USEC, false);
+    return out;
 }
 
 //---------------------------------------------------------------------------
