@@ -108,13 +108,13 @@ struct listener {
   int                   fd;
   in_addr_t             iface;          /* ip address listening on           */
   std::string           iface_name;     /* ip address listening on           */
-  uint16_t              iface_port;     /* destination port on the interface */
+  uint16_t              port;           /* destination port on the interface */
   std::vector<address*> addresses;
   struct epoll_event    event;
   long                  skipped_packets;/* number of skipped mcast packets   */
 
   listener(in_addr_t addr, std::string ifname, uint16_t port)
-    : fd(-1), iface(addr), iface_name(std::move(ifname)), iface_port(port)
+    : fd(-1), iface(addr), iface_name(std::move(ifname)), port(port)
     , skipped_packets(0)
   {}
 };
@@ -563,7 +563,7 @@ int main(int argc, char *argv[])
     auto inserted = false;
     auto listen   = listener(INADDR_ANY,
                              addrs[i].iface_name,
-                             addrs[i].iface_port);
+                             addrs[i].port);
     std::tie(it,inserted) = listeners.emplace
       (std::make_pair(addrs[i].port, listen));
     it->second.addresses.push_back(&addrs[i]);
@@ -691,7 +691,7 @@ int main(int argc, char *argv[])
       struct sockaddr_in local_s;
       memset((char *) &local_s, 0, sizeof(local_s));
       local_s.sin_family        = AF_INET;
-      local_s.sin_port          = htons(listener.iface_port);
+      local_s.sin_port          = htons(listener.port);
       // Note that mcast listening sockets must bind to the INADDR_ANY address
       // or else no packets will be directed to this socket (kernel bug/feature?):
       local_s.sin_addr.s_addr   = INADDR_ANY;
@@ -731,7 +731,7 @@ int main(int argc, char *argv[])
       struct sockaddr_in   si = {0};
       static socklen_t si_len = sizeof(si);
       auto   dst_port = getsockname(listener.fd, (struct sockaddr*)&si, &si_len) < 0
-                      ? htons(listener.iface_port) : si.sin_port;
+                      ? htons(listener.port) : si.sin_port;
       for (auto& a : listener.addresses) {
         a->dst_port = dst_port;
         a->iface    = a->iface_name == listener.iface_name
@@ -924,7 +924,7 @@ int main(int argc, char *argv[])
             break;
           }
 
-          auto it = address_idx.find(addr_port(dst_addr, listener->iface_port));
+          auto it = address_idx.find(addr_port(dst_addr, listener->port));
 
           if (it == address_idx.end()) {
             // Skip this packet
