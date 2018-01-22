@@ -154,6 +154,7 @@ long        interval      = 5;
 long        sock_interval = 50;
 int         quiet         = 0;
 int         max_title_width = 0;
+int         ip_mcast_all  = 0;
 long        start_time, now_time, last_time, pkt_time;
 long        min_pkt_time=LONG_MAX, max_pkt_time=0, sum_pkt_time=0;
 long        pkt_time_count=0, pkt_ooo_count=0;
@@ -202,6 +203,7 @@ void usage(const char* program) {
          "      -n MaxCount - Terminate after receiving this number of packets\n"
          "      -P [Size]   - Print packet up to Size bytes in ASCII format\n"
          "      -X [Size]   - Print packet up to Size bytes in HEX format\n"
+         "      -A          - Don't set IP_MULTICAST_ALL\n"
          "      -q          - Quiet (no output)\n"
          "      -o Filename - Output log file\n"
          "      -w Filename - Write packets to file (raw data)\n\n"
@@ -501,6 +503,8 @@ int main(int argc, char *argv[])
       max_pkts = atoi(argv[++i]);
     else if (!strcmp(argv[i], "-o") && i < argc-1)
       output_file = argv[++i];
+    else if (!strncmp(argv[i], "-A", 2))
+      ip_mcast_all = 1;
     else if((!strcmp(argv[i], "-w")   ||
              !strcmp(argv[i], "-W"))  && i < argc-1) {
       pcap_format = argv[i][1] == 'W';
@@ -709,10 +713,12 @@ int main(int argc, char *argv[])
       // Activate the filter to receive messages only of joined groups
       // rather than of all the groups that have been joined globally on the
       // whole system
-      on = 0;
-      if ((setsockopt(listener.fd, IPPROTO_IP, IP_MULTICAST_ALL, &on, sizeof(on))) < 0) {
-        perror("setsockopt(IP_MULTICAST_ALL) failed");
-        exit(1);
+      if (ip_mcast_all == 0) {
+        on = 0;
+        if ((setsockopt(listener.fd, IPPROTO_IP, IP_MULTICAST_ALL, &on, sizeof(on))) < 0) {
+          perror("setsockopt(IP_MULTICAST_ALL) failed");
+          exit(1);
+        }
       }
     }
 
