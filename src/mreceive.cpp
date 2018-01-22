@@ -950,7 +950,8 @@ int main(int argc, char *argv[])
   if (!quiet) {
     double sec = (get_time() - start_time)/1000000000l;
     if (sec == 0.0) sec = 1.0;
-    printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %cB %9ld %cpkts | OutOfSeq %ld | Lost: %ld | Skipped: %ld\n",
+    printf("%-30s| %6.1f KB/s %6d pkts/s| %9ld %cB %9ld %cpkts | OutOfSeq %ld |"
+           " Lost: %ld | Skipped: %ld\n",
       label ? label : "TOTAL",
       tot_bytes / 1024 / sec, (int)(tot_pkts / sec),
       (long)scale(tot_bytes, 1024), scale_suffix(tot_bytes, 1024),
