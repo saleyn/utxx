@@ -143,7 +143,7 @@ namespace std {
   };
   template <> struct equal_to<addr_port> {
     bool operator()(addr_port const& a, addr_port const& b) const {
-      return a.addr == b.addr && a.port < b.port;
+      return a.addr == b.addr && a.port == b.port;
     }
   };
 }
@@ -582,7 +582,8 @@ int main(int argc, char *argv[])
       (std::make_pair(addrs[i].port, listen));
     it->second.addresses.push_back(&addrs[i]);
 
-    auto key = addr_port(addrs[i].iface, addrs[i].port);
+    // NOTE: address lookup map is based on the NETWORK address byte order
+    auto key = addr_port(addrs[i].mcast_addr, addrs[i].port);
     address_idx.emplace(std::make_pair(key, &addrs[i]));
 
     if (inserted && verbose > 1)
@@ -938,7 +939,7 @@ int main(int argc, char *argv[])
             break;
           }
 
-          auto it = address_idx.find(addr_port(ntohl(dst_addr), listener->port));
+          auto it = address_idx.find(addr_port(dst_addr, listener->port));
 
           if (it == address_idx.end()) {
             // Skip this packet
