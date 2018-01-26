@@ -1,5 +1,7 @@
 # utxx - an open-source collection of C++ utility components #
 
+[![Build Status](https://travis-ci.org/saleyn/utxx.svg?branch=master)](https://travis-ci.org/saleyn/utxx)
+
 This dual-licensed library provides a set of classes that
 complement C++ and boost with functionality needed by many
 applications.
