@@ -17,8 +17,6 @@ addons:
     - libxslt1.1
     - python-lxml
     - doxygen
-  env:
-    - MATRIX_EVAL=""
 cache:
   directories:
     - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
@@ -69,10 +67,11 @@ before_install:
   - popd  
 
 before_script:
-  - echo "PKG_ROOT_DIR=/usr/local"                               > .cmake-args.${HOSTNAME}
-  - echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
-  - echo "ENV:BOOST_ROOT=${BOOST_ROOT}"                         >> .cmake-args.${HOSTNAME}
-  - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
+  - |
+    echo "PKG_ROOT_DIR=/usr/local"                               > .cmake-args.${HOSTNAME}
+    echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
+    echo "ENV:BOOST_ROOT=${BOOST_ROOT}"                         >> .cmake-args.${HOSTNAME}
+    echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
   - g++ --version
 
 script:
