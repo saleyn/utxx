@@ -149,9 +149,10 @@ if (...) {
    ...
 }
 ```
-* Name function arguments by prefixing with "a_" (e.g. `int fun(int a_count)`)
-* Name class member variables by prefixing with "m_" (e.g. `class Test { int m_count; };`)
-* Name class static variables by prefixing with "s_" (e.g. `class Test { static const int s_ok = 1; };`)
+* Name functions and classes using lower case letters with underscores (e.g. `class my_class { int this_my_fun(); };`)
+* Name function arguments by prefixing with "a_" (e.g. `int my_fun(int a_count)`)
+* Name class member variables by prefixing with "m_" (e.g. `class test { int m_count; };`)
+* Name class static variables by prefixing with "s_" (e.g. `class test { static const int s_ok = 1; };`)
 
 ## Author ##
 * Serge Aleynikov `<saleyn at gmail dot com>`
