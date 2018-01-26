@@ -3,8 +3,14 @@ gmon.out
 *.swp
 *.iml
 .cmake-args*
+.kdev*
+install.log
+src/generated
+tags
 log
 inst
 build
+.build
+.idea
 include/utxx/logger/logger_options.generated.hpp
 include/utxx/version.hpp
