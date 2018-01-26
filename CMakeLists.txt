@@ -274,7 +274,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}.pc.in"
 #-------------------------------------------------------------------------------
 # Srcs and Targets:
 #-------------------------------------------------------------------------------
-list(APPEND UTXX_LIBS ${Thrift_LIBRARIES} rt pthread)
+list(APPEND UTXX_LIBS ${Thrift_LIBRARIES} pthread)
 
 add_subdirectory(src)
 add_subdirectory(test)

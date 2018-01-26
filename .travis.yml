@@ -2,88 +2,86 @@
 
 language: cpp
 compiler: g++
+dist:     trusty
 addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
     #- boost-latest
     packages:
-    - gcc-5
-    - g++-5
-    # - libboost1.65-all-dev
-    - cmake
-    - cmake-data
+    - gcc-7
+    - g++-7
+    #- libboost1.65-all-dev
+    #- cmake
+    #- cmake-data
     - libxslt1.1
     - python-lxml
     - doxygen
+  env:
+    - MATRIX_EVAL=""
+cache:
+  directories:
+    - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
 
 before_install:
-  - lsb_release -a
-  - uname -a
-  - sudo apt-add-repository -y "deb http://archive.ubuntu.com/ubuntu/ trusty main restricted"
-  - sudo add-apt-repository -y "deb http://ppa.launchpad.net/dns/gnu/ubuntu precise main"
-  #- sudo add-apt-repository -y "deb http://ppa.launchpad.net/wnoronha/thrift/ubuntu precise main"
-  #- sudo add-apt-repository -y "deb http://ppa.launchpad.net/devel/boost/ubuntu utopic main"
-  #- sudo add-apt-repository ppa:george-edison55/precise-backports --yes
-  - sudo apt-get update -qq
-  - #sudo apt-get install -qq libthrift-dev libthrift0 thrift-compiler
-  - ls -1 /usr/bin/g++*
-  - sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-5 90
+  - export CC=gcc-7
+  - export CXX=g++-7
+  - lsb_release -a && uname -a
+  - nproc
+  #- sudo apt-get -y install cmake
+  #- sudo apt-get update -qq
+  #- sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-7 90
   # Build Boost
   - pushd .
-  - if [ ! -d "deps/boost-install/lib" ]; then export REBUILD_BOOST=1; else export REBUILD_BOOST=0; fi
-  - mkdir -p deps && cd deps
+  - mkdir -p deps
+  - cd deps
+  - CMAKE_URL="http://www.cmake.org/files/v3.10/cmake-3.10.2-Linux-x86_64.tar.gz"
+  - mkdir -p cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+  - export PATH=${PWD}/cmake/bin:${PATH}
+  - which cmake
+  - cmake --version
   - INSTALL=${PWD}/boost-install
+  - mkdir -p ${INSTALL}
   - |
-    if [ ! -d boost-install/lib ]; then
-      rm -rf boost && rm -rf boost-install
-      BOOST_VER=boost_1_65_1
-      TARBALL=${BOOST_VER}.tar.gz
-      wget http://downloads.sourceforge.net/boost/${TARBALL}
+    if [ ! -f "boost-tarball/boost.tgz" ]; then
+      rm -rf boost_* boost-tarball
+      TARBALL=boost_1_65_1.tar.gz
+      wget -q http://downloads.sourceforge.net/boost/${TARBALL}
       tar zxf ${TARBALL}
-      cd ${BOOST_VER}
+      cd ${TARBALL%.tar.gz}
+      pwd
       chmod +x bootstrap.sh
+      #./bootstrap.sh --prefix="${INSTALL}" --with-libraries="program_options,filesystem,system,chrono,date_time,unit_test_framework"
       ./bootstrap.sh --prefix="${INSTALL}"
-      travis_wait ./b2 headers
-      travis_wait ./b2 toolset=gcc-5 cxxflags="-std=c++14" variant=release --without-mpi install -d0
+      ./b2 headers
+      #./b2 toolset=gcc-7 cxxflags="-std=c++14" variant=release link=static --with-filesystem --with-system --with-regex --with-date_time --with-chrono --with-program_options --with-thread --with-unit_test_framework --with-timer install -d1
+      ./b2 toolset=gcc-7 cxxflags="-std=c++14" variant=release link=shared install -d1
+      mkdir -p ../boost-tarball
+      cd ${INSTALL}
+      tar zcf ../boost-tarball/boost.tgz .
+    else
+      echo "Using cached BOOST from ${TRAVIS_BUILD_DIR}/deps/boost-tarball/boost.tgz"
+      cd ${INSTALL}
+      tar zxf ../boost-tarball/boost.tgz
     fi
-  - cd ${INSTALL} && export BOOST_ROOT="${PWD}"
+  - export BOOST_ROOT="${INSTALL}"
+  - ls -l ${BOOST_ROOT}/lib
   - popd  
 
 before_script:
-  - echo "DIR:BUILD=/tmp/${USER}/utxx"                           > .cmake-args.${HOSTNAME}
-  - echo "DIR:INSTALL=/tmp/${USER}/install/@PROJECT@/@VERSION@" >> .cmake-args.${HOSTNAME}
-  - echo "PKG_ROOT_DIR=/usr/local"                              >> .cmake-args.${HOSTNAME}
+  - echo "PKG_ROOT_DIR=/usr/local"                               > .cmake-args.${HOSTNAME}
   - echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
-  #- echo "BOOST_INCLUDEDIR=/usr/include"                       >> .cmake-args.${HOSTNAME}
-  #- echo "BOOST_LIBRARYDIR=/usr/lib/x86_64-linux-gnu"          >> .cmake-args.${HOSTNAME}
-  - echo "BOOST_INCLUDEDIR=${BOOST_ROOT}/include"               >> .cmake-args.${HOSTNAME}
-  - echo "BOOST_LIBRARYDIR=${BOOST_ROOT}/lib"                   >> .cmake-args.${HOSTNAME}
+  - echo "ENV:BOOST_ROOT=${BOOST_ROOT}"                         >> .cmake-args.${HOSTNAME}
   - echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
   - g++ --version
-  - cat .cmake-args.${HOSTNAME}
-script:
-  ############################################################################
-  # All the dependencies are installed in ${TRAVIS_BUILD_DIR}/deps/
-  ############################################################################
-  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-  - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
 
+script:
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
-  - |
-    if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then
-      CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
-      mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-      export PATH=${DEPS_DIR}/cmake/bin:${PATH}
-    else
-      if ! brew ls --version cmake &>/dev/null; then brew install cmake; fi
-    fi
-
   - cd ${TRAVIS_BUILD_DIR}      # Go back to the root of the project and bootstrap
-  - make bootstrap generator=make build=debug
-  - make
+  - make bootstrap toolchain=gcc generator=make build=debug
+  - make jobs=$(nproc)
 
 branches:
   only: master

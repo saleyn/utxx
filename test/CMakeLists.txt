@@ -99,6 +99,8 @@ target_link_libraries(
   boost_thread
   boost_unit_test_framework
   boost_timer
+  boost_chrono
+  rt
 )
 
 install(TARGETS test_utxx RUNTIME DESTINATION test)
@@ -106,10 +108,10 @@ install(TARGETS test_utxx RUNTIME DESTINATION test)
 add_executable(fast_read example_fast_read.cpp)
 
 add_executable(example_repeating_timer example_repeating_timer.cpp)
-target_link_libraries(example_repeating_timer utxx ${Boost_LIBRARIES} boost_timer)
+target_link_libraries(example_repeating_timer utxx ${Boost_LIBRARIES} boost_timer boost_chrono rt)
 
 add_executable(example_delegate example_delegate.cpp)
-target_link_libraries(example_delegate utxx ${Boost_LIBRARIES} boost_timer)
+target_link_libraries(example_delegate utxx boost_timer boost_chrono rt)
 
 install(
   TARGETS fast_read example_repeating_timer example_delegate
