@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <cmath>
 #include <boost/assert.hpp>
 #include <boost/cstdint.hpp>
 #include <utxx/error.hpp>
@@ -103,6 +104,21 @@ inline long gcd(long x, long y) {
 /// Calculate least common multiple of x and y.
 /// E.g. gcd(18, 4) = 36
 inline long lcm(long x, long y) { return (x*y)/gcd(x, y); }
+
+/// Check if a number is prime
+inline bool is_prime(long x) {
+    // 0, 1 are not prime numbers, but 2, 3 are:
+    if (x <= 3)
+        return x > 1;
+    // Even numbers and those divisible by 3 are not primes
+    if ((x & 1) == 0 || (x % 3) == 0)
+        return false;
+    // Iterate by skipping all of 2 and 3 multipliers (2*3 = 6)
+	for (long i = 5, n = std::sqrt(x); i <= n; i += 6)
+		if ((x % i) == 0 || x % (i+2) == 0)
+			return false;
+	return true;
+}
 
 } // namespace math
 } // namespace utxx

@@ -87,3 +87,21 @@ BOOST_AUTO_TEST_CASE( test_math_gcd_lcm )
     BOOST_REQUIRE_EQUAL(4,      math::gcd(4,  0));
     BOOST_REQUIRE_EQUAL(0,      math::lcm(4,  0));
 }
+
+BOOST_AUTO_TEST_CASE( test_math_is_prime )
+{
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(0));
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(1));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(2));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(3));
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(4));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(5));
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(6));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(7));
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(8));
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(9));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(11));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(13));
+    BOOST_REQUIRE_EQUAL(false,  math::is_prime(49));
+    BOOST_REQUIRE_EQUAL(true ,  math::is_prime(101));
+}
