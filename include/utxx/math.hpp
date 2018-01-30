@@ -133,7 +133,7 @@ namespace {
         if (x < 0) return 0;
 
         // Use sqrt whenever possible, however the largest int value a double
-        // can hold is 1 << 53. So we only use sqrt() for small ints.
+        // can hold is 1 << 53. So use sqrt() only for smaller ints:
         if (x <= 1l << 53)
             return long(std::sqrt(x));
 
@@ -143,13 +143,11 @@ namespace {
         // sqrt(n) = sqrt(x) * sqrt(2^32) + z, where
         //   z - some value to account for the "y" portion of the equation
         //   (x+1) << 32 is always greater than (x<<32) | y, hence get sqrt(x+1)
-        //   and multiply the result by 2^16, getting a slightly greater sqrt:
+        //   and multiply the result by 2^16 giving a slightly greater sqrt:
         auto   ux    = size_t(x);
         size_t shift = 0;
 
-        static const size_t TWO32 = 1ULL << 32;
-
-        for(; ux >= TWO32; ux >>= 32, shift += 32);
+        for(; ux >= (1ul << 32); ux >>= 32, shift += 32);
 
         return long(ceil(sqrt((double)(ux + 1)))) << (shift / 2);
     }
@@ -164,7 +162,7 @@ inline bool is_prime(long x)
     if (x < 4 || x == 5 || x == 7)
         return true;
 
-    if (div_by(x, 2) || div_by(x, 3) || div_by(x, 5) || div_by(x, 7))
+    if ((x&1) == 0 || div_by(x, 3) || div_by(x, 5) || div_by(x, 7))
         return false;
 
     // The remaining primes are in the form 6*k-1 and 6*k+1:
