@@ -105,19 +105,84 @@ inline long gcd(long x, long y) {
 /// E.g. gcd(18, 4) = 36
 inline long lcm(long x, long y) { return (x*y)/gcd(x, y); }
 
+/*
 /// Check if a number is prime
 inline bool is_prime(long x) {
     // 0, 1 are not prime numbers, but 2, 3 are:
     if (x <= 3)
         return x > 1;
-    // Even numbers and those divisible by 3 are not primes
+    // Even numbers and those divisible by 3 are not primes.
     if ((x & 1) == 0 || (x % 3) == 0)
         return false;
-    // Iterate by skipping all of 2 and 3 multipliers (2*3 = 6)
-	for (long i = 5, n = std::sqrt(x); i <= n; i += 6)
-		if ((x % i) == 0 || x % (i+2) == 0)
-			return false;
-	return true;
+    // Note that all remaining primes are in the form of:
+    //  (6*k - 1) or (6*k + 1):  5, 7
+    // Iterate through all numbers checking that they are not
+    // divisible by the prime numbers in the form stated above:
+    for (long i = 5, n = std::sqrt(x); i <= n; i += 6)
+        if ((x % i) == 0 || x % (i+2) == 0)
+            return false;
+    return true;
+}
+*/
+
+namespace {
+    bool div_by(long x, int y) { return x % y == 0; }
+
+    long sqrt_helper(long x)
+    {
+        if (x < 0) return 0;
+
+        // Use sqrt whenever possible, however the largest int value a double
+        // can hold is 1 << 53. So we only use sqrt() for small ints.
+        if (x <= 1l << 53)
+            return long(std::sqrt(x));
+
+        // Approximate sqrt that is >= the actual square root.
+        // Any 64 bit number can be expressed in terms of x and y as follows:
+
+        // sqrt(n) = sqrt(x) * sqrt(2^32) + z, where
+        //   z - some value to account for the "y" portion of the equation
+        //   (x+1) << 32 is always greater than (x<<32) | y, hence get sqrt(x+1)
+        //   and multiply the result by 2^16, getting a slightly greater sqrt:
+        auto   ux    = size_t(x);
+        size_t shift = 0;
+
+        static const size_t TWO32 = 1ULL << 32;
+
+        for(; ux >= TWO32; ux >>= 32, shift += 32);
+
+        return long(ceil(sqrt((double)(ux + 1)))) << (shift / 2);
+    }
+}
+
+/// Check if a number is prime
+inline bool is_prime(long x)
+{
+    if (x <= 1)
+        return false;
+
+    if (x < 4 || x == 5 || x == 7)
+        return true;
+
+    if (div_by(x, 2) || div_by(x, 3) || div_by(x, 5) || div_by(x, 7))
+        return false;
+
+    // The remaining primes are in the form 6*k-1 and 6*k+1:
+    //   11,13,17,19,23..29,31,..37,41,43...
+    // Note that from these we need to eliminate those divisible by 2,3,5.
+    // The pattern of divisibility by 3 or 5 repeats from 15 every 30.
+
+    //   03|05|07|09|11|13|15|17|19|21|23|25|27|29|31|33|35|37|39|41|43
+    // 0        0     4  6    10 12    16       22 24       30
+    // 3        x        x        x        x        x        x        x
+    // 5        x              x              x              x
+
+    // NOTE: for end value use +1 to compensate for round-off errors
+    for(long d=7, e=sqrt_helper(x)+1; d <= e; d += 30)
+        if (div_by(x,d)    || div_by(x,d+4)  || div_by(x,d+6)  || div_by(x,d+10) ||
+            div_by(x,d+12) || div_by(x,d+16) || div_by(x,d+22) || div_by(x,d+24))
+            return false;
+    return true;
 }
 
 } // namespace math
