@@ -188,8 +188,8 @@ public:
 class src_info {
     const char* m_srcloc;
     const char* m_fun;
-    int16_t     m_srcloc_len;
-    int16_t     m_fun_len;
+    uint16_t    m_srcloc_len;
+    uint16_t    m_fun_len;
     bool        m_fun_verbatim;
 public:
     constexpr src_info()
@@ -197,7 +197,7 @@ public:
         , m_fun_verbatim(false)
     {}
 
-    template <int N, int M>
+    template <uint16_t N, uint16_t M>
     constexpr src_info(const char (&a_srcloc)[N], const char (&a_fun)[M],
                        bool a_fun_verbatim = false) noexcept
         : m_srcloc(a_srcloc), m_fun(a_fun)
@@ -218,7 +218,7 @@ public:
         static_assert(N >= 1, "Invalid string literal! Length is zero!");
     }
 
-    src_info(const char* a_srcloc, size_t N, const char* a_fun, size_t M,
+    src_info(const char* a_srcloc, uint16_t N, const char* a_fun, uint16_t M,
              bool  a_fun_verbatim = false) noexcept
         : m_srcloc(a_srcloc), m_fun(a_fun)
         , m_srcloc_len(N),    m_fun_len(M)
@@ -236,8 +236,8 @@ public:
     const char* srcloc()       const { return m_srcloc;       }
     const char* fun()          const { return m_fun;          }
 
-    int         srcloc_len()   const { return m_srcloc_len;   }
-    int         fun_len()      const { return m_fun_len;      }
+    uint16_t    srcloc_len()   const { return m_srcloc_len;   }
+    uint16_t    fun_len()      const { return m_fun_len;      }
     bool        fun_verbatim() const { return m_fun_verbatim; }
     bool        empty()        const { return !m_srcloc_len;  }
 
@@ -273,7 +273,8 @@ public:
     {
         const char* end = a_buf + a_sz-1;
         char* p = stpncpy(a_buf, a_pfx, end - a_buf);
-        p = to_string(p, end - p, m_srcloc, m_srcloc_len, m_fun, m_fun_len,
+        p = to_string(p, end - p, m_srcloc, size_t(m_srcloc_len),
+                      m_fun, size_t(m_fun_len),
                       a_fun_scope_depth, m_fun_verbatim);
         p = stpncpy(p, a_sfx, end - p);
         return p;
@@ -368,7 +369,7 @@ public:
                         // This is a rare lambda case, e.g.:
                         //      xxx::(anonymous class)::yyy()
                         // replace with "<lambda>" scope
-                        if (strncmp(q+1, "anonymous class)", std::min<int>(16,e-q-1)) == 0 && scope<N) {
+                        if (strncmp(q+1, "anonymous class)", std::min<size_t>(16,e-q-1)) == 0 && scope<N) {
                             q += 16;
                             continue;
                         }
