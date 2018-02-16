@@ -86,6 +86,35 @@ int main() {
 
 using namespace utxx;
 
+BOOST_AUTO_TEST_CASE( test_config_find )
+{
+    variant_tree cfg;
+    std::stringstream ss; ss <<
+    "oe cme_oe0 {\n"
+    "    env = \"test\""
+    "}\n"
+    "oe cme_oe1 {\n"
+    "    env = \"test\""
+    "}\n";
+    read_config(ss, cfg, FORMAT_SCON);
+
+    auto oe = cfg.get_child_optional("oe[cme_oe1]");
+
+    BOOST_REQUIRE(oe);
+
+    std::stringstream ss1; ss1 <<
+    "interface \"NDA\" {\n"
+    "    address = \"value\"\n"
+    "    enabled = false\n"
+    "}\n";
+    variant_tree cfg1;
+    read_config(ss1, cfg1, FORMAT_SCON);
+    oe->put_child("interface", cfg1.get_child("interface"));
+
+    //std::cout << cfg.to_string() << std::endl;
+    BOOST_REQUIRE(cfg.get_child_optional("oe[cme_oe1].interface.enabled"));
+}
+
 BOOST_AUTO_TEST_CASE( test_config_hash )
 {
     variant_tree l_config;
