@@ -484,6 +484,11 @@ public:
         return *c;
     }
 
+    bool exists(const path_type& path) const {
+        path_type p(path);
+        return !!navigate(this, p, (const int*)NULL, false);
+    }
+
     template <class Stream>
     Stream& dump
     (
