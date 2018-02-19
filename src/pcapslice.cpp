@@ -77,6 +77,8 @@ void usage(std::string const& err="")
         "   -r|--raw                - Output raw packet payload only without pcap format\n"
         "   -c|--count              - Count number of packets in the file\n"
         "   -p|--print              - Print packet source, destination, size\n"
+        "   -P                      - Print decimal payload\n"
+        "   -X                      - Print hexadecimal payload\n"
         "   -v                      - Verbose\n\n";
     }
 
@@ -99,12 +101,14 @@ int main(int argc, char *argv[])
 {
     string in_file;
     string out_file;
-    size_t pk_start  = 1, pk_end = 0, pk_cnt = 0;
-    bool   overwrite = false;
-    bool   raw_mode  = false;
-    bool   count     = false;
-    bool   verbose   = false;
-    bool   print     = false;
+    size_t pk_start    = 1, pk_end = 0, pk_cnt = 0;
+    bool   overwrite   = false;
+    bool   raw_mode    = false;
+    bool   count       = false;
+    bool   verbose     = false;
+    bool   print       = false;
+    bool   payload     = false;
+    bool   payload_hex = false;
 
     set_terminate (&unhandled_exception);
 
@@ -121,6 +125,8 @@ int main(int argc, char *argv[])
         if (opts.match("-c", "--count", &count))    continue;
         if (opts.match("-v", "",        &verbose))  continue;
         if (opts.match("-p", "--print", &print))    continue;
+        if (opts.match("-P", "",        &print))  { payload=true; continue; }
+        if (opts.match("-X", "",        &print))  { payload=payload_hex=true; continue; }
         if (opts.match("-V", "--version")) throw std::runtime_error(VERSION());
         if (opts.is_help())                         usage();
 
@@ -216,11 +222,15 @@ int main(int argc, char *argv[])
                      << ' ' << setw(20) << std::left  << dst
                      << ' ' << setw(10) << std::right << (pk_cnt+1)
                      << ' ' << setw(7)  << frame_sz
-                     << ' ' << setw(10) << sz;
+                     << ' ' << setw(10) << (sz-frame_sz);
                 if (verbose)
                     cout << ' '  << setw(10) << buf.size()
                          << ' '  << setw(10) << (buf.rd_ptr()-buf.address());
                 cout << endl;
+                if (payload) {
+                    cout << utxx::to_bin_string(buf.rd_ptr()+frame_sz, sz-frame_sz, payload_hex, true, true);
+                }
+
             }
 
             if (++pk_cnt >= pk_start && (!count && !print)) {
