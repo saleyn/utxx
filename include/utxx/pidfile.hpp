@@ -50,7 +50,6 @@ namespace utxx {
  */
 struct pid_file {
     explicit pid_file(const char* a_filename, mode_t a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
-        throw (io_error)
         : m_filename(a_filename)
     {
         m_fd = open(a_filename, O_CREAT | O_RDWR | O_TRUNC, a_mode);

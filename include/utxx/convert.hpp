@@ -443,16 +443,28 @@ namespace detail {
       return p;
     }
 
-    constexpr double cs_rnd = 0.55555555555555555;
+    //constexpr double cs_rnd = 0.55555555555555555;
+    constexpr double cs_rnd = 0.5;
 
     constexpr double cs_pow10_rnd[] = {
-      cs_rnd / 1ll, cs_rnd / 10ll, cs_rnd / 100ll, cs_rnd / 1000ll,
-      cs_rnd / 10000ll, cs_rnd / 100000ll, cs_rnd / 1000000ll,
-      cs_rnd / 10000000ll, cs_rnd / 100000000ll, cs_rnd / 1000000000ll,
-      cs_rnd / 10000000000ll, cs_rnd / 100000000000ll,
-      cs_rnd / 1000000000000ll, cs_rnd / 10000000000000ll,
-      cs_rnd / 100000000000000ll, cs_rnd / 1000000000000000ll,
-      cs_rnd / 10000000000000000ll, cs_rnd / 100000000000000000ll,
+      cs_rnd / 1ll,
+	  cs_rnd / 10ll,
+      cs_rnd / 100ll,
+      cs_rnd / 1000ll,
+      cs_rnd / 10000ll,
+      cs_rnd / 100000ll,
+      cs_rnd / 1000000ll,
+      cs_rnd / 10000000ll,
+      cs_rnd / 100000000ll,
+      cs_rnd / 1000000000ll,
+      cs_rnd / 10000000000ll,
+      cs_rnd / 100000000000ll,
+      cs_rnd / 1000000000000ll,
+      cs_rnd / 10000000000000ll,
+      cs_rnd / 100000000000000ll,
+      cs_rnd / 1000000000000000ll,
+      cs_rnd / 10000000000000000ll,
+      cs_rnd / 100000000000000000ll,
       cs_rnd / 1000000000000000000ll
     };
 
@@ -830,11 +842,14 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         return p - buffer;
     } else if (exp >= FTOA::FRAC_SIZE) {
         int_part  = mantissa << (exp - FTOA::FRAC_SIZE);
+        exp       = 0;
     } else if (exp >= 0) {
         int_part  = mantissa >> (FTOA::FRAC_SIZE - exp);
         frac_part = (mantissa << (exp + 1)) & FTOA::FRAC_MASK2;
+        exp       = 0;
     } else /* if (exp < 0) */ {
-        frac_part = (mantissa & FTOA::FRAC_MASK2) >> -(exp + 1);
+        frac_part = mantissa;
+        exp       = -(exp+1);
     }
 
     if (!int_part) {
@@ -869,9 +884,20 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
             max = precision;
 
         for (int i = 0; i < max; i++) {
-            frac_part = (frac_part << 3) + (frac_part << 1);  /* equiv. *= 10; */
-            *p++      = (char)((frac_part >> (FTOA::FRAC_SIZE + 1)) + '0');
-            frac_part &= FTOA::FRAC_MASK2;
+            if (frac_part > long(UINT64_MAX/16)) {
+                frac_part /= 16;
+                exp -= 4;
+            }
+            if (FTOA::FRAC_SIZE + 1 + exp >= 64) {
+                *p++ = '0';
+                frac_part *= 5;
+                exp--;
+            } else {
+                frac_part *= 10;
+
+                *p++ = (char)((frac_part >> (FTOA::FRAC_SIZE + 1 + exp)) + '0');
+                frac_part &= (1ll << (FTOA::FRAC_SIZE + 1 + exp)) - 1;
+            }
         }
 
         /* Delete trailing zeroes */
