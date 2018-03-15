@@ -14,7 +14,6 @@
  * Created: 2014-01-27
  * License: BSD open source
  *
- * TODO: use IP_PKTINFO for getting mcast src addr/port
  */
 
 #include <arpa/inet.h>

@@ -1,4 +1,4 @@
-0. mreceive: use IP_PKTINFO for getting mcast src addr/port
+0. Sync ftoa_right() implementation with ftoa_left()
 1. Add method to access default values in the config_validator.hpp
 2. Add test cases for testing "include" options file feature in config_validator.
 3. Add test cases for testing concurrent multi_async_file_logger.
