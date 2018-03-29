@@ -266,14 +266,10 @@ program::program()
     size_t n   = m_rel_path.rfind('/');
     if (n != std::string::npos)
         m_rel_path.erase(n);
-    char exe[256];
-    n = readlink("/proc/self/exe", exe, sizeof(exe));
-    for (char* p=exe+n; p > exe; --p)
-        if (*p == '/') {
-            *p = '\0';
-            m_abs_path = exe;
-            return;
-        }
+    char exe[1024];
+    n = readlink("/proc/self/exe", exe, sizeof(exe)-1);
+    m_abs_path = std::string(exe, n);
+
 #elif defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
     EXTERN_C IMAGE_DOS_HEADER __ImageBase;
     TCHAR str_dll_path[MAX_PATH];
@@ -309,6 +305,10 @@ program::program()
     }
     m_rel_path = m_abs_path;
 #endif
+    m_fullname = m_abs_path;
+    n = m_abs_path.rfind('/');
+    if (n != std::string::npos)
+        m_abs_path.erase(n);
 }
 
 } // namespace path

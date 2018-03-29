@@ -188,6 +188,7 @@ BOOST_AUTO_TEST_CASE( test_path_filename_with_backup )
 BOOST_AUTO_TEST_CASE( test_path_program )
 {
     const std::string& name     = path::program::name();
+    const std::string& fullname = path::program::full_name();
     const std::string& rel_path = path::program::rel_path();
     const std::string& abs_path = path::program::abs_path();
 
@@ -196,9 +197,10 @@ BOOST_AUTO_TEST_CASE( test_path_program )
     BOOST_REQUIRE(abs_path.size() > 0 && abs_path.c_str()[0] == path::slash());
 #endif
     if (verbosity::level() > VERBOSE_NONE) {
-        std::cout << "  Program name : " << name << std::endl;
-        std::cout << "  Relative path: " << rel_path << std::endl;
-        std::cout << "  Absolute path: " << abs_path << std::endl;
+        std::cout << "  Program name      : " << name << std::endl;
+        std::cout << "  Program full name : " << fullname << std::endl;
+        std::cout << "  Relative path     : " << rel_path << std::endl;
+        std::cout << "  Absolute path     : " << abs_path << std::endl;
     }
 }
 

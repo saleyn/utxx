@@ -291,6 +291,7 @@ extern "C" {
 /// Return the short name, full name, or full pathname of current program.
 class program {
     std::string m_exe;
+    std::string m_fullname;
     std::string m_rel_path;
     std::string m_abs_path;
 
@@ -304,6 +305,8 @@ class program {
 public:
     /// Return name of current program
     static const std::string& name()        { return instance().m_exe; }
+    /// Return full name of current program with absolute path
+    static const std::string& full_name()   { return instance().m_fullname; }
     /// Return relative path of current program
     static const std::string& rel_path()    { return instance().m_rel_path; }
     /// Return name of current program
