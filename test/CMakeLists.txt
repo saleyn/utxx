@@ -7,6 +7,7 @@ list(APPEND TEST_SRCS
     test_assoc_vector.cpp
     test_async_file_logger.cpp
     test_basic_udp_receiver.cpp
+    test_base64.cpp
     test_buffer.cpp
     test_call_speed.cpp
     test_clustered_map.cpp

@@ -169,6 +169,32 @@ namespace utxx {
         return join(a_vec.begin(), a_vec.end(), a_delim, a_convert);
     }
 
+	// Trim from start (in place)
+	static inline void ltrim(std::string& s, char c = ' ') {
+		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [c](int ch) {
+			return ch != c;
+		}));
+	}
+
+	// Trim from end (in place)
+	static inline void rtrim(std::string& s, char c = ' ') {
+		s.erase(std::find_if(s.rbegin(), s.rend(), [c](int ch) {
+			return ch != c;
+		}).base(), s.end());
+	}
+
+	// Trim from both ends (in place)
+	static inline void trim(std::string &s) { ltrim(s); rtrim(s); }
+
+	// Trim from start (copying)
+	static inline std::string ltrim_copy(std::string s) { ltrim(s); return s; }
+
+	// Trim from end (copying)
+	static inline std::string rtrim_copy(std::string s) { rtrim(s); return s; }
+
+	// Trim from both ends (copying)
+	static inline std::string trim_copy(std::string s)  { trim(s);  return s; }
+
     /// Convert a string to an integer value
     /// \code
     /// std::cout << to_int64("\1\2") << std::endl;
