@@ -726,3 +726,246 @@ BOOST_AUTO_TEST_CASE( test_convert_itoa_bits )
     BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,2>(0xabcdef1234ul)));
     BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,7>(0xabcdef1234ul)));
 }
+
+
+/* For internal use by sys_double_to_chars_fast() */
+static char* find_first_trailing_zero(char* p)
+{
+    for (; *(p-1) == '0'; --p);
+    if (*(p-1) == '.') ++p;
+    return p;
+}
+
+/* Convert float to string
+ *   decimals must be >= 0
+ *   if compact != 0, the trailing 0's will be truncated
+ */
+int
+sys_double_to_chars_fast(double f, char *buffer, int buffer_size, int decimals,
+			 int compact)
+{
+    static const double pow10v[] = {
+        1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8, 1e9,
+        1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18
+    };
+
+    static constexpr const int    FRAC_SIZE    = 52;
+    static constexpr const size_t MAX_DECIMALS = (sizeof(pow10v) / sizeof(pow10v[0]));
+    static constexpr const size_t MAX_FLOAT    = ((size_t)1 << (FRAC_SIZE+1));
+
+    double af;
+    size_t int_part, frac_part;
+    int neg;
+    char *p = buffer;
+
+    if (decimals < 0)
+        return -1;
+
+    if (f < 0) {
+        neg = 1;
+        af = -f;
+    }
+    else {
+        neg = 0;
+        af = f;
+    }
+
+    /* Don't bother with optimizing too large numbers or too large precision */
+    if (af > MAX_FLOAT || decimals >= long(MAX_DECIMALS)) {
+        int len = snprintf(buffer, buffer_size, "%.*f", decimals, f);
+        char* p = buffer + len;
+        if (len >= buffer_size)
+            return -1;
+        /* Delete trailing zeroes */
+        if (compact)
+            p = find_first_trailing_zero(p);
+        *p = '\0';
+        return p - buffer;
+    }
+
+    if (decimals) {
+        double int_f = floor(af);
+        double frac_f = round((af - int_f) * pow10v[decimals]);
+
+        int_part = (size_t)int_f;
+        frac_part = (size_t)frac_f;
+
+        if (frac_f >= pow10v[decimals]) {
+            /* rounding overflow carry into int_part */
+            int_part++;
+            frac_part = 0;
+        }
+
+        do {
+            if (!frac_part) {
+                do {
+                    *p++ = '0';
+                } while (--decimals);
+                break;
+            }
+            *p++ = (char)((frac_part % 10) + '0');
+            frac_part /= 10;
+        } while (--decimals);
+
+        *p++ = '.';
+    }
+    else
+        int_part = (size_t)lround(af);
+
+    if (!int_part) {
+        *p++ = '0';
+    } else {
+        do {
+            *p++ = (char)((int_part % 10) + '0');
+            int_part /= 10;
+        }while (int_part);
+    }
+    if (neg)
+        *p++ = '-';
+
+    {/* Reverse string */
+        int i = 0;
+        int j = p - buffer - 1;
+        for ( ; i < j; i++, j--) {
+            char tmp = buffer[i];
+            buffer[i] = buffer[j];
+            buffer[j] = tmp;
+        }
+    }
+
+    /* Delete trailing zeroes */
+    if (compact)
+        p = find_first_trailing_zero(p);
+    *p = '\0';
+    return p - buffer;
+}
+
+BOOST_AUTO_TEST_CASE( test_convert_ftoa2 )
+{
+    char buf[32];
+    int n = sys_double_to_chars_fast(0.6, buf, sizeof(buf), 3, false);
+    BOOST_CHECK_EQUAL("0.600", buf);
+    BOOST_CHECK_EQUAL(5, n);
+
+    n = sys_double_to_chars_fast(123.19, buf, sizeof(buf), 3, true);
+    BOOST_CHECK_EQUAL("123.19", buf);
+    BOOST_CHECK_EQUAL(6, n);
+
+    n = sys_double_to_chars_fast(0.999, buf, sizeof(buf), 2, false);
+    BOOST_CHECK_EQUAL("1.00", buf);
+    BOOST_CHECK_EQUAL(4, n);
+
+    // Note that 1.005 is really 1.0049999999...
+    n = sys_double_to_chars_fast(1.005, buf, sizeof(buf), 2, false);
+    BOOST_CHECK_EQUAL("1.00", buf);
+    BOOST_CHECK_EQUAL(4, n);
+
+    // Note that 1.005 is really 1.0049999999...
+    n = sys_double_to_chars_fast(1.005, buf, sizeof(buf), 2, true);
+    BOOST_CHECK_EQUAL("1.0", buf);
+    BOOST_CHECK_EQUAL(3, n);
+
+    n = sys_double_to_chars_fast(-1.005, buf, sizeof(buf), 2, false);
+    BOOST_CHECK_EQUAL("-1.00", buf);
+    BOOST_CHECK_EQUAL(5, n);
+
+    n = sys_double_to_chars_fast(-1.005, buf, sizeof(buf), 2, true);
+    BOOST_CHECK_EQUAL("-1.0", buf);
+    BOOST_CHECK_EQUAL(4, n);
+
+    n = sys_double_to_chars_fast(0.145, buf, sizeof(buf), 1, true);
+    BOOST_CHECK_EQUAL("0.1", buf);
+    BOOST_CHECK_EQUAL(3, n);
+
+    n = sys_double_to_chars_fast(-1.0, buf, sizeof(buf), 20, false);
+    BOOST_CHECK_EQUAL("-1.00000000000000000000", buf);
+    BOOST_CHECK_EQUAL(23, n);
+
+    union {double d; int64_t i;} f;
+    f.i = 0x7ff0000000000000ll;
+    n = sys_double_to_chars_fast(f.d, buf, sizeof(buf), 29, true);
+    BOOST_CHECK_EQUAL("inf", buf);
+    BOOST_CHECK_EQUAL(3, n);
+
+    f.i = 0xfff0000000000000ll;
+    n = sys_double_to_chars_fast(f.d, buf, sizeof(buf), 29, true);
+    BOOST_CHECK_EQUAL("-inf", buf);
+    BOOST_CHECK_EQUAL(4, n);
+
+    f.i = 0x7ff0000000000001ll;
+    n = sys_double_to_chars_fast(f.d, buf, sizeof(buf), 29, true);
+    BOOST_CHECK_EQUAL("nan", buf);
+    BOOST_CHECK_EQUAL(3, n);
+
+    f.i = 0xfff0000000000001ll;
+    n = sys_double_to_chars_fast(f.d, buf, sizeof(buf), 29, true);
+    BOOST_CHECK_EQUAL("-nan", buf);
+    BOOST_CHECK_EQUAL(4, n);
+
+    n = sys_double_to_chars_fast(1.0, buf, sizeof(buf), 29, true);
+    BOOST_CHECK_EQUAL("1.0", buf);
+    BOOST_CHECK_EQUAL(3, n);
+
+    n = sys_double_to_chars_fast(1.0, buf, sizeof(buf), 30, true);
+    BOOST_CHECK_EQUAL(-1, n);
+
+    using boost::timer::cpu_timer;
+    using boost::timer::cpu_times;
+    using boost::timer::nanosecond_type;
+
+    const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
+    {
+        std::vector<double> data;
+        char buf1[256], buf2[256], buf3[256];
+
+        for (int i=0; i < 100000; ++i)
+            data.push_back(double(rand()) / (double(RAND_MAX)/100000));
+        
+        {
+            cpu_timer t;
+            for (int i=0, j=-1; i < ITERATIONS; i++) {
+                if (++j == data.size()) j = 0;
+                auto n1 = sys_double_to_chars_fast(data[j], buf1, sizeof(buf1), 10, true);
+            }
+            cpu_times elapsed_times(t.elapsed());
+            nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+            std::stringstream s;
+            s << boost::format("         new: %.3fs (%.3fus/call)")
+                % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+            BOOST_TEST_MESSAGE(s.str());
+        }
+        {
+            cpu_timer t;
+            for (int i=0, j=-1; i < ITERATIONS; i++) {
+                if (++j == data.size()) j = 0;
+                auto n1 = ftoa_left(data[j], buf2, sizeof(buf2), 10, true);
+            }
+            cpu_times elapsed_times(t.elapsed());
+            nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+            std::stringstream s;
+            s << boost::format("         old: %.3fs (%.3fus/call)")
+                % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+            BOOST_TEST_MESSAGE(s.str());
+        }
+        {
+            cpu_timer t;
+            for (int i=0, j=-1; i < ITERATIONS; i++) {
+                if (++j == data.size()) j = 0;
+                auto n1 = snprintf(buf3, sizeof(buf3), "%.*f", 10, data[j]);
+            }
+            cpu_times elapsed_times(t.elapsed());
+            nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+            std::stringstream s;
+            s << boost::format("         prn: %.3fs (%.3fus/call)")
+                % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+            BOOST_TEST_MESSAGE(s.str());
+        }
+
+        BOOST_CHECK_EQUAL(buf1, buf2);
+        BOOST_CHECK_EQUAL(buf1, buf3);
+        BOOST_CHECK_EQUAL(buf2, buf3);
+    }
+}
