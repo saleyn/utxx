@@ -792,26 +792,24 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         return -1;
 
     double af;
-    size_t int_part, frac_part;
-    int neg;
-    char *p = buffer;
+    bool   neg;
+    auto   p = buffer;
 
     if (f < 0) {
-        neg = 1;
+        neg = true;
         af  = -f;
-    }
-    else {
-        neg = 0;
+    } else {
+        neg = false;
         af  = f;
     }
 
-    /* Don't bother with optimizing too large numbers or too large precision */
+    // Don't bother with optimizing too large numbers or too large precision
     if (af > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
         int len = snprintf(buffer, buffer_size, "%.*f", precision, f);
-        char* p = buffer + len;
+        p += len;
         if (len >= buffer_size)
             return -1;
-        /* Delete trailing zeroes */
+        // Delete trailing zeroes
         if (compact)
             p = detail::find_first_trailing_zero(p);
         if (WithTerminator)
@@ -819,12 +817,14 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         return p - buffer;
     }
 
-    if (precision) {
-        double int_f  = std::floor(af);
-        double frac_f = std::round((af - int_f) * detail::s_pow10v[precision]);
+    size_t int_part;
 
-        int_part = (size_t)int_f;
-        frac_part = (size_t)frac_f;
+    if (precision) {
+        double int_f   = std::floor(af);
+        double frac_f  = std::round((af - int_f) * detail::s_pow10v[precision]);
+
+        int_part       = size_t(int_f);
+        auto frac_part = size_t(frac_f);
 
         if (frac_f >= detail::s_pow10v[precision]) {
             // rounding overflow carry into int_part
@@ -845,7 +845,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         *p++ = '.';
     }
     else
-        int_part = (size_t)std::lround(af);
+        int_part = size_t(std::lround(af));
 
     if (!int_part)
         *p++ = '0';
@@ -865,7 +865,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         buffer[j] = tmp;
     }
 
-    /* Delete trailing zeroes */
+    // Delete trailing zeroes
     if (compact)
         p = detail::find_first_trailing_zero(p);
     if (WithTerminator)
@@ -884,21 +884,19 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
 {
     using detail::FTOA;
 
-    int  int_width = width - (precision ? precision+1 : 0);
+    int int_width = width - (precision ? precision+1 : 0);
     if (unlikely(precision < 0))
         throw std::invalid_argument("ftoa_right: incorrect precision");
     if (unlikely(int_width < 0))
         throw std::invalid_argument("ftoa_right: incorrect width");
 
     double af;
-    size_t int_part, frac_part;
     int neg;
 
     if (f < 0) {
         neg = 1;
         af  = -f;
-    }
-    else {
+    } else {
         neg = 0;
         af  = f;
     }
@@ -907,7 +905,7 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
     if (af > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
         int len = snprintf(buffer, width+1, "%*.*f", width, precision, f);
         if (len >= width)
-            throw std::invalid_argument("Incorrect width or precision");
+            throw std::invalid_argument("ftoa_right: incorrect width or precision");
         // Add padding
         if (lpad != ' ')
             for (auto p = buffer; *p == ' '; p++)
@@ -916,13 +914,14 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
     }
 
     auto p = buffer + width - 1;
+    size_t int_part;
 
     if (precision) {
-        double int_f  = std::floor(af);
-        double frac_f = std::round((af - int_f) * detail::s_pow10v[precision]);
+        double int_f   = std::floor(af);
+        double frac_f  = std::round((af - int_f) * detail::s_pow10v[precision]);
 
-        int_part  = (size_t)int_f;
-        frac_part = (size_t)frac_f;
+        int_part       = size_t(int_f);
+        auto frac_part = size_t(frac_f);
 
         if (frac_f >= detail::s_pow10v[precision]) {
             // rounding overflow carry into int_part
@@ -943,7 +942,7 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
         *p-- = '.';
     }
     else
-        int_part = (size_t)std::lround(af);
+        int_part = size_t(std::lround(af));
 
     if (!int_part) {
         if (p >= buffer) *p-- = '0';
@@ -955,12 +954,12 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
 
     if (neg) {
       if (p < buffer)
-        throw std::invalid_argument("Insufficient width for '-' sign");
+        throw std::invalid_argument("ftoa_right: insufficient width for '-' sign");
       *p-- = '-';
     }
 
     if (unlikely(++p < buffer))
-        throw std::invalid_argument("Insufficient width");
+        throw std::invalid_argument("ftoa_right: insufficient width");
     // Left-pad
     for (char* q = buffer; q != p; *q++ = lpad);
 }
