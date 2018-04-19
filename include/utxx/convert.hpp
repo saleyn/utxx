@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/assert.hpp>
 #include <string>
 #include <stdexcept>
+#include <cmath>
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
 #include <utxx/types.hpp>
@@ -443,12 +444,23 @@ namespace detail {
       return p;
     }
 
+    constexpr const double s_pow10v[] = {
+        1e0,  1e1,  1e2,  1e3,  1e4,  1e5,  1e6,  1e7,  1e8, 1e9,
+        1e10, 1e11, 1e12, 1e13, 1e14, 1e15, 1e16, 1e17, 1e18
+    };
+
+    enum FTOA : size_t {
+          FRAC_SIZE    = 52
+        , MAX_DECIMALS = (sizeof(s_pow10v) / sizeof(s_pow10v[0]))
+        , MAX_FLOAT    = ((size_t)1 << (FRAC_SIZE+1))
+    };
+/*
     //constexpr double cs_rnd = 0.55555555555555555;
     constexpr double cs_rnd = 0.5;
 
     constexpr double cs_pow10_rnd[] = {
       cs_rnd / 1ll,
-	  cs_rnd / 10ll,
+      cs_rnd / 10ll,
       cs_rnd / 100ll,
       cs_rnd / 1000ll,
       cs_rnd / 10000ll,
@@ -468,7 +480,7 @@ namespace detail {
       cs_rnd / 1000000000000000000ll
     };
 
-    enum FTOA {
+    enum FTOA : size_t {
           FRAC_SIZE     = 52
         , EXP_SIZE      = 11
         , EXP_MASK      = (1ll << EXP_SIZE) - 1
@@ -477,6 +489,7 @@ namespace detail {
         , MAX_FLOAT     = 1ll << (FRAC_SIZE+1)
         , MAX_DECIMALS  = sizeof(cs_pow10_rnd) / sizeof(cs_pow10_rnd[0])
     };
+    */
 } // namespace detail
 
 /// This function converts a fixed-length string to integer.
@@ -774,62 +787,26 @@ template <bool WithTerminator = true, char Terminator = '\0'>
 inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, bool compact = true)
 {
     using detail::FTOA;
-    bool neg;
-    double fr;
-    union { long long L; double F; } x;
-    char *p = buffer;
 
-    if (unlikely(precision < 0))
+    if (precision < 0)
         return -1;
 
-    /* Round the number to given decimal places. The number of 5's in the
-     * constant 0.55... is chosen such that adding any more 5's doesn't
-     * change the double precision of the number, i.e.:
-     * 1> term_to_binary(0.55555555555555555, [{minor_version, 1}]).
-     * <<131,70,63,225,199,28,113,199,28,114>>
-     * 2> term_to_binary(0.555555555555555555, [{minor_version, 1}]).
-     * <<131,70,63,225,199,28,113,199,28,114>>
-     */
-    if (f >= 0) {
-        neg = false;
-        fr  = (precision < FTOA::MAX_DECIMALS)
-              ? (f + detail::cs_pow10_rnd[precision])
-              : f;
-        x.F = fr;
-    } else {
-        neg = true;
-        fr  = (precision < FTOA::MAX_DECIMALS)
-              ? (f - detail::cs_pow10_rnd[precision])
-              : f;
-        x.F = -fr;
+    double af;
+    size_t int_part, frac_part;
+    int neg;
+    char *p = buffer;
+
+    if (f < 0) {
+        neg = 1;
+        af  = -f;
     }
-
-    short exp = (x.L >> FTOA::FRAC_SIZE) & FTOA::EXP_MASK;
-    int64_t mantissa  = x.L & FTOA::FRAC_MASK;
-
-    if (unlikely(exp == FTOA::EXP_MASK)) {
-        if (mantissa == 0) {
-            if (neg)
-                *p++ = '-';
-            *p++ = 'i';
-            *p++ = 'n';
-            *p++ = 'f';
-        } else {
-            *p++ = 'n';
-            *p++ = 'a';
-            *p++ = 'n';
-        }
-        if (WithTerminator)
-            *p = Terminator;
-        return p - buffer;
+    else {
+        neg = 0;
+        af  = f;
     }
-
-    exp      -= FTOA::EXP_MASK >> 1;
-    mantissa |= (1ll << FTOA::FRAC_SIZE);
-    int64_t int_part = 0, frac_part = 0;
 
     /* Don't bother with optimizing too large numbers or too large precision */
-    if (unlikely(x.F > FTOA::MAX_FLOAT || precision >= FTOA::MAX_DECIMALS)) {
+    if (af > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
         int len = snprintf(buffer, buffer_size, "%.*f", precision, f);
         char* p = buffer + len;
         if (len >= buffer_size)
@@ -840,73 +817,59 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         if (WithTerminator)
             *p = Terminator;
         return p - buffer;
-    } else if (exp >= FTOA::FRAC_SIZE) {
-        int_part  = mantissa << (exp - FTOA::FRAC_SIZE);
-        exp       = 0;
-    } else if (exp >= 0) {
-        int_part  = mantissa >> (FTOA::FRAC_SIZE - exp);
-        frac_part = (mantissa << (exp + 1)) & FTOA::FRAC_MASK2;
-        exp       = 0;
-    } else /* if (exp < 0) */ {
-        frac_part = mantissa;
-        exp       = -(exp+1);
     }
 
-    if (!int_part) {
-        if (neg)
-            *p++ = '-';
-        *p++ = '0';
-    } else {
-        while (int_part != 0) {
-            int64_t j = int_part / 10;
-            *p++ = (char)(int_part - ((j << 3) + (j << 1)) + '0');
-            int_part = j;
-        }
-        if (neg)
-            *p++ = '-';
-        /* Reverse string */
-        int ret = p - buffer;
-        for (int i = 0, n = ret >> 1; i < n; i++) {
-            int64_t j = ret - i - 1;
-            char    c = buffer[i];
-            buffer[i] = buffer[j];
-            buffer[j] = c;
-        }
-    }
+    if (precision) {
+        double int_f  = std::floor(af);
+        double frac_f = std::round((af - int_f) * detail::s_pow10v[precision]);
 
-    if (precision > 0) {
+        int_part = (size_t)int_f;
+        frac_part = (size_t)frac_f;
+
+        if (frac_f >= detail::s_pow10v[precision]) {
+            // rounding overflow carry into int_part
+            int_part++;
+            frac_part = 0;
+        }
+
+        do {
+            if (!frac_part) {
+                do { *p++ = '0'; } while (--precision);
+                break;
+            }
+            size_t n = frac_part / 10;
+            *p++ = (char)((frac_part - n*10) + '0');
+            frac_part = n;
+        } while (--precision);
+
         *p++ = '.';
-
-        int max = buffer_size - (p - buffer)
-                - (WithTerminator ? 1 : 0) /* leave room for trailing '\0' */;
-
-        if (precision < max)
-            max = precision;
-
-        for (int i = 0; i < max; i++) {
-            if (frac_part > long(UINT64_MAX/16)) {
-                frac_part /= 16;
-                exp -= 4;
-            }
-            if (FTOA::FRAC_SIZE + 1 + exp >= 64) {
-                *p++ = '0';
-                frac_part *= 5;
-                exp--;
-            } else {
-                frac_part *= 10;
-
-                *p++ = (char)((frac_part >> (FTOA::FRAC_SIZE + 1 + exp)) + '0');
-                frac_part &= (1ll << (FTOA::FRAC_SIZE + 1 + exp)) - 1;
-            }
-        }
-
-        /* Delete trailing zeroes */
-        if (compact)
-            p = detail::find_first_trailing_zero(p);
     }
+    else
+        int_part = (size_t)std::lround(af);
+
+    if (!int_part)
+        *p++ = '0';
+    else do {
+        size_t n = int_part / 10;
+        *p++ = (char)((int_part - n*10) + '0');
+        int_part = n;
+    } while (int_part);
+
+    if (neg)
+        *p++ = '-';
+
+    // Reverse string
+    for (int i=0, j=p-buffer-1; i < j; ++i, --j) {
+        char  tmp = buffer[i];
+        buffer[i] = buffer[j];
+        buffer[j] = tmp;
+    }
+
+    /* Delete trailing zeroes */
+    if (compact)
+        p = detail::find_first_trailing_zero(p);
     if (WithTerminator)
         *p = Terminator;
-
     return p - buffer;
 }
 
@@ -920,117 +883,83 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
 inline void ftoa_right(double f, char* buffer, int width, int precision, char lpad = ' ')
 {
     using detail::FTOA;
-    bool neg;
-    double fr;
-    union { long long L; double F; } x;
+
     int  int_width = width - (precision ? precision+1 : 0);
-    if (unlikely(precision < 0 || int_width < 0))
-        throw std::invalid_argument("Incorrect width or precision");
+    if (unlikely(precision < 0))
+        throw std::invalid_argument("ftoa_right: incorrect precision");
+    if (unlikely(int_width < 0))
+        throw std::invalid_argument("ftoa_right: incorrect width");
 
-    /* Round the number to given decimal places. The number of 5's in the
-     * constant 0.55... is chosen such that adding any more 5's doesn't
-     * change the double precision of the number, i.e.:
-     * 1> term_to_binary(0.55555555555555555, [{minor_version, 1}]).
-     * <<131,70,63,225,199,28,113,199,28,114>>
-     * 2> term_to_binary(0.555555555555555555, [{minor_version, 1}]).
-     * <<131,70,63,225,199,28,113,199,28,114>>
-     */
-    if (f >= 0) {
-        neg = false;
-        fr  = (precision < FTOA::MAX_DECIMALS)
-              ? (f + detail::cs_pow10_rnd[precision])
-              : f;
-        x.F = fr;
-    } else {
-        neg = true;
-        fr  = (precision < FTOA::MAX_DECIMALS)
-              ? (f - detail::cs_pow10_rnd[precision])
-              : f;
-        x.F = -fr;
+    double af;
+    size_t int_part, frac_part;
+    int neg;
+
+    if (f < 0) {
+        neg = 1;
+        af  = -f;
+    }
+    else {
+        neg = 0;
+        af  = f;
     }
 
-    short exp = (x.L >> FTOA::FRAC_SIZE) & FTOA::EXP_MASK;
-    int64_t mantissa  = x.L & FTOA::FRAC_MASK;
-
-    if (unlikely(exp == FTOA::EXP_MASK)) {
-        char* end = buffer + width - (neg ? 4 : 3);
-        if (unlikely(end < buffer))
-            throw std::invalid_argument("Insufficient width");
-
-        for (char* q = buffer; q < end; *q++ = lpad);
-        if (mantissa == 0) {
-            if (neg)
-                *end++ = '-';
-            *end++ = 'i';
-            *end++ = 'n';
-            *end++ = 'f';
-        } else {
-            *end++ = 'n';
-            *end++ = 'a';
-            *end++ = 'n';
-        }
-        return;
-    }
-
-    exp      -= FTOA::EXP_MASK >> 1;
-    mantissa |= (1ll << FTOA::FRAC_SIZE);
-    int64_t int_part = 0, frac_part = 0;
-
-    /* Don't bother with optimizing too large numbers or too large precision */
-    if (unlikely(x.F > FTOA::MAX_FLOAT || precision >= FTOA::MAX_DECIMALS)) {
+    // Don't bother with optimizing too large numbers or too large precision
+    if (af > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
         int len = snprintf(buffer, width+1, "%*.*f", width, precision, f);
         if (len >= width)
             throw std::invalid_argument("Incorrect width or precision");
+        // Add padding
+        if (lpad != ' ')
+            for (auto p = buffer; *p == ' '; p++)
+              *p = lpad;
         return;
-    } else if (exp >= FTOA::FRAC_SIZE) {
-        int_part  = mantissa << (exp - FTOA::FRAC_SIZE);
-    } else if (exp >= 0) {
-        int_part  = mantissa >> (FTOA::FRAC_SIZE - exp);
-        frac_part = (mantissa << (exp + 1)) & FTOA::FRAC_MASK2;
-    } else /* if (exp < 0) */ {
-        frac_part = (mantissa & FTOA::FRAC_MASK2) >> -(exp + 1);
     }
 
-    char* p = buffer + int_width;
+    auto p = buffer + width - 1;
 
-    // Write fractional part
     if (precision) {
-        char* q = p;
-        *q++ = '.';
+        double int_f  = std::floor(af);
+        double frac_f = std::round((af - int_f) * detail::s_pow10v[precision]);
 
-        for (int i = 0; i < precision; i++) {
-            frac_part = (frac_part << 3) + (frac_part << 1);  /* equiv. *= 10; */
-            *q++      = (char)((frac_part >> (FTOA::FRAC_SIZE + 1)) + '0');
-            frac_part &= FTOA::FRAC_MASK2;
+        int_part  = (size_t)int_f;
+        frac_part = (size_t)frac_f;
+
+        if (frac_f >= detail::s_pow10v[precision]) {
+            // rounding overflow carry into int_part
+            int_part++;
+            frac_part = 0;
         }
-    }
 
-    // Write decimal part
+        do {
+            if (!frac_part) {
+                do { *p-- = '0'; } while (--precision);
+                break;
+            }
+            size_t n = frac_part / 10;
+            *p-- = (char)((frac_part - n*10) + '0');
+            frac_part = n;
+        } while (--precision);
+
+        *p-- = '.';
+    }
+    else
+        int_part = (size_t)std::lround(af);
+
     if (!int_part) {
-        *(--p) = '0';
-        if (neg)
-            *(--p) = '-';
-    } else {
-        //char* end = p;
-        while (int_part) {
-            int j = int_part / 10;
-            *(--p) = (char)(int_part - ((j << 3) + (j << 1)) + '0');
-            int_part = j;
-        }
-        /* Reverse string */
-        /*
-        int wid = end - p;
-        for (int i = 0, n = wid >> 1; i < n; i++) {
-            int64_t j = wid - i - 1;
-            char    c = buffer[i];
-            buffer[i] = buffer[j];
-            buffer[j] = c;
-        }
-        */
-        if (neg)
-            *(--p) = '-';
+        if (p >= buffer) *p-- = '0';
+    } else do {
+        size_t n = int_part / 10;
+        *p-- = (char)((int_part - n*10) + '0');
+        int_part = n;
+    } while (int_part && p >= buffer);
+
+    if (neg) {
+      if (p < buffer)
+        throw std::invalid_argument("Insufficient width for '-' sign");
+      *p-- = '-';
     }
-    if (unlikely(p < buffer))
+
+    if (unlikely(++p < buffer))
         throw std::invalid_argument("Insufficient width");
     // Left-pad
     for (char* q = buffer; q != p; *q++ = lpad);
