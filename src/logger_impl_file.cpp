@@ -69,7 +69,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
         m_filename = a_config.get<std::string>("logger.file.filename");
         m_filename = m_log_mgr->replace_macros(m_filename);
     } catch (boost::property_tree::ptree_bad_data&) {
-        throw badarg_error("logger.file.filename not specified");
+        UTXX_THROW_BADARG_ERROR("logger.file.filename not specified");
     }
 
     m_append        = a_config.get<bool>("logger.file.append", true);
@@ -81,6 +81,17 @@ bool logger_impl_file::init(const variant_tree& a_config)
     m_no_header     = a_config.get("logger.file.no-header", false);
     m_mode          = a_config.get("logger.file.mode",       0644);
     m_symlink       = a_config.get("logger.file.symlink",      "");
+    m_split_file    = a_config.get("logger.file.split-file",false);
+    if (m_split_file) {
+        m_split_size    = a_config.get("logger.file.split-size",    0);
+        if (m_split_size <= 0)
+            UTXX_THROW_BADARG_ERROR("logger.file.split-size is not supplied or is negative or zero ");
+        m_orig_filename = m_filename;
+        m_split_filename_index = m_orig_filename.find_last_of('.');
+        if(m_split_filename_index==std::string::npos)
+            UTXX_THROW_RUNTIME_ERROR("Invalid file name format. Filename must have extension for file split feature.");
+        modify_file_name();
+    }
     auto levels     = a_config.get("logger.file.levels",       "");
 
     m_levels = levels.empty()
@@ -100,15 +111,11 @@ bool logger_impl_file::init(const variant_tree& a_config)
         m_fd = open(m_filename.c_str(),
                     O_CREAT|O_WRONLY|O_LARGEFILE | (m_append ? O_APPEND : 0),
                     m_mode);
+
         if (m_fd < 0)
             UTXX_THROW_IO_ERROR(errno, "Error opening file ", m_filename);
 
-        if (!m_symlink.empty()) {
-            m_symlink = m_log_mgr->replace_macros(m_symlink);
-            if (!utxx::path::file_symlink(m_filename, m_symlink, true))
-                UTXX_THROW_IO_ERROR(errno, "Error creating symlink ", m_symlink,
-                                    " -> ", m_filename, ": ");
-        }
+        create_symbolic_link();
 
         // Write field information
         if (!m_no_header) {
@@ -173,13 +180,44 @@ public:
     }
 };
 
+void logger_impl_file::modify_file_name()
+{
+    m_filename = m_orig_filename;
+    auto multi_part_suffix = utxx::to_string("_", ++m_split_part);
+    m_filename.insert(m_split_filename_index,multi_part_suffix);
+}
+
+void logger_impl_file::create_symbolic_link()
+{
+    if (!m_symlink.empty()) {
+        m_symlink = m_log_mgr->replace_macros(m_symlink);
+        if (!utxx::path::file_symlink(m_filename, m_symlink, true))
+            UTXX_THROW_IO_ERROR(errno, "Error creating symlink ", m_symlink,
+                    " -> ", m_filename, ": ");
+    }
+}
 void logger_impl_file::log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size)
 {
     // See begining-of-file comment on thread-safety of the concurrent write(2) call.
     // Note that since the use of mutex is conditional, we can't use the
     // boost::lock_guard<boost::mutex> guard and roll out our own.
     guard g(m_mutex, m_use_mutex);
-
+    if (m_split_file) {
+        struct stat stat_buf;
+        int rc = fstat(m_fd, &stat_buf);
+        if (rc < 0)
+            UTXX_THROW_RUNTIME_ERROR("Unable to read file size for file "+m_filename);
+        if ((size_t)stat_buf.st_size >= m_split_size) {
+            finalize();
+            modify_file_name();
+            m_fd = open(m_filename.c_str(),
+                    O_CREAT|O_WRONLY|O_LARGEFILE | (m_append ? O_APPEND : 0),
+                    m_mode);
+            if (m_fd < 0)
+                UTXX_THROW_IO_ERROR(errno, "Error opening file ", m_filename);
+            create_symbolic_link();
+        }
+    }
     if (write(m_fd, a_buf, a_size) < 0)
         throw io_error(errno, "Error writing to file: ", m_filename, ' ', a_msg.src_location());
 }
