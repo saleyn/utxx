@@ -285,65 +285,24 @@ void logger::run()
         }
 
         // When running with maximum priority, occasionally excessive use of
-        // sched_yield may use to system slowdown, so this option is
+        // sched_yield may cause a system slowdown, so this option is
         // configurable by m_sched_yield_us:
         if (m_queue.empty() && m_sched_yield_us >= 0) {
             time_val deadline(rel_time(0, m_sched_yield_us));
-            while (m_queue.empty()) {
-                if (m_abort)
-                    goto DONE;
+            while (!m_abort && m_queue.empty()) {
                 if (now_utc() > deadline)
                     break;
                 sched_yield();
             }
         }
 
-        // Get all pending items from the queue
-        for (auto* item = m_queue.pop_all(), *next=item; item; item = next) {
-            next = item->next();
+        // Lastly, flush the queue of pending messages
+    } while (!m_abort && flush());
 
-            try   { dolog_msg(item->data()); }
-            catch ( std::exception const& e  )
-            {
-                // Unhandled error writing data to some destination
-                // Print error report to stderr (can't do anything better --
-                // the error happened in the m_on_error callback!)
-                const msg msg(LEVEL_INFO, "",
-                              std::string("Fatal exception in logger"),
-                              UTXX_LOG_SRCINFO);
-                detail::basic_buffered_print<1024> buf;
-                char  pfx[256], sfx[256];
-                char* p = format_header(msg, pfx, pfx + sizeof(pfx));
-                char* q = format_footer(msg, sfx, sfx + sizeof(sfx));
-                auto ps = p - pfx;
-                auto qs = q - sfx;
-                buf.reserve(msg.m_fun.str.size() + ps + qs + 1);
-                buf.sprint(pfx, ps);
-                buf.print(msg.m_fun.str);
-                buf.sprint(sfx, qs);
-                std::cerr << buf.str() << std::endl;
+    // Flush the queue in case the logger is aborted while there are some
+    // pending messages since last call to flush above
+    flush();
 
-                m_abort = true;
-
-                // TODO: implement attempt to store transient messages to some
-                // other medium
-
-                // Free all pending messages
-                while (item) {
-                    m_queue.free(item);
-                    item = next;
-                    next = item->next();
-                }
-
-                goto DONE;
-            }
-
-            m_queue.free(item);
-            item = next;
-        }
-    } while (!m_abort);
-
-DONE:
     if (!m_silent_finish) {
         const msg msg(LEVEL_INFO, "", std::string("Logger thread finished"),
                       UTXX_LOG_SRCINFO);
@@ -352,6 +311,55 @@ DONE:
 
     if (m_on_after_run)
         m_on_after_run();
+}
+
+bool logger::flush()
+{
+    // Get all pending items from the queue
+    for (auto* item = m_queue.pop_all(), *next=item; item; item = next) {
+        next = item->next();
+
+        try   { dolog_msg(item->data()); }
+        catch ( std::exception const& e  )
+        {
+            // Unhandled error writing data to some destination
+            // Print error report to stderr (can't do anything better --
+            // the error happened in the m_on_error callback!)
+            const msg msg(LEVEL_INFO, "",
+                          std::string("Fatal exception in logger"),
+                          UTXX_LOG_SRCINFO);
+            detail::basic_buffered_print<1024> buf;
+            char  pfx[256], sfx[256];
+            char* p = format_header(msg, pfx, pfx + sizeof(pfx));
+            char* q = format_footer(msg, sfx, sfx + sizeof(sfx));
+            auto ps = p - pfx;
+            auto qs = q - sfx;
+            buf.reserve(msg.m_fun.str.size() + ps + qs + 1);
+            buf.sprint(pfx, ps);
+            buf.print(msg.m_fun.str);
+            buf.sprint(sfx, qs);
+            std::cerr << buf.str() << std::endl;
+
+            m_abort = true;
+
+            // TODO: implement attempt to store transient messages to some
+            // other medium
+
+            // Free all pending messages
+            while (item) {
+                m_queue.free(item);
+                item = next;
+                next = item->next();
+            }
+
+            return false;
+        }
+
+        m_queue.free(item);
+        item = next;
+    }
+
+    return true;
 }
 
 void logger::finalize()

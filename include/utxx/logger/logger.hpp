@@ -528,6 +528,7 @@ private:
                const char* a_src_fun,  std::size_t  a_src_fun_len);
 
     void run();
+    bool flush();
 
     friend class log_msg_info;
 
