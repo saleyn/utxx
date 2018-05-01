@@ -267,9 +267,10 @@ void logger::run()
     if (!m_ident.empty())
         pthread_setname_np(pthread_self(), m_ident.c_str());
 
-    int event_val;
-    do
-    {
+    int  event_val;
+    bool ok = true;
+
+    while (!m_abort && ok) {
         event_val = m_event.value();
         //wakeup_result rc = wakeup_result::TIMEDOUT;
 
@@ -297,11 +298,13 @@ void logger::run()
         }
 
         // Lastly, flush the queue of pending messages
-    } while (!m_abort && flush());
+        ok = flush();
+    }
 
     // Flush the queue in case the logger is aborted while there are some
     // pending messages since last call to flush above
-    flush();
+    if (ok)
+        flush();
 
     if (!m_silent_finish) {
         const msg msg(LEVEL_INFO, "", std::string("Logger thread finished"),
