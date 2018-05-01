@@ -240,6 +240,73 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_REQUIRE(true); // to remove run-time warning
 }
 
+BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
+{
+    variant_tree pt;
+    const std::string filename_prefix = "logger.file";
+    const char* filename = "/tmp/logger.file.log";
+    pt.put("logger.timestamp",          variant("none"));
+    pt.put("logger.show-ident",         variant(false));
+    pt.put("logger.show-location",      variant(false));
+    pt.put("logger.silent-finish",      variant(true));
+    pt.put("logger.file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename",      variant(filename));
+    pt.put("logger.file.append",        variant(false));
+    pt.put("logger.file.no-header",     variant(true));
+    pt.put("logger.file.split-file",    variant(true));
+    pt.put("logger.file.split-size",    1000);//size in bytes
+
+    logger& log = logger::instance();
+    log.init(pt);
+
+    int countFiles = 0;
+    std::set<std::string> file_names_in_dir;
+    std::set<std::string> file_names_built;
+
+    for(int i=0; i <100;i++)
+    {
+        auto temp_data = utxx::to_string("write count: ",i);
+        LOG_INFO ("%s",temp_data.c_str());
+    }
+
+    log.finalize();
+
+    //retrieve file names created in the directory
+    DIR *dir;
+    struct dirent *t;
+    dir = opendir ("/tmp");
+    if (dir != NULL) {
+        while ((t = readdir (dir)) != NULL) {
+            std::string f_name(t->d_name);
+            if(f_name.find(filename_prefix) != std::string::npos) {
+                ++countFiles;
+                file_names_in_dir.insert(f_name);
+            }
+        }
+        closedir (dir);
+    } else {
+        perror ("");
+    }
+    // build file names and compare with files created in directory
+    for (int i=1;i <= countFiles; i++) {
+        auto name = utxx::to_string(filename_prefix,"_", i,".log");
+        file_names_built.insert(name);
+    }
+    BOOST_CHECK(file_names_in_dir == file_names_built);
+    // compare each line in each file with total data supplied
+    int line_count = 0;
+    for(auto& file: file_names_in_dir) {
+        auto f = utxx::to_string("/tmp/",file);
+        std::ifstream in(f);
+        std::string s, exp;
+        while(getline(in, s) && line_count < 100) {
+            char buf[128];
+            sprintf(buf, "I|log_tester|write count: %d",line_count++); exp = buf;
+            BOOST_REQUIRE_EQUAL(exp, s);
+        }
+        ::unlink(f.c_str());
+    }
+}
 
 BOOST_AUTO_TEST_CASE( test_logger2 )
 {

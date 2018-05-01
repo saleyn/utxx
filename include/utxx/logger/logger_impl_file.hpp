@@ -73,16 +73,27 @@ class logger_impl_file: public logger_impl {
     int          m_fd;
     boost::mutex m_mutex;
     bool         m_no_header;
+    std::string  m_orig_filename;
+    bool         m_split_file;
+    size_t       m_split_size;
+    int          m_split_part;
+    size_t       m_split_filename_index;
 
     logger_impl_file(const char* a_name)
         : m_name(a_name), m_append(true), m_use_mutex(false)
         , m_levels(LEVEL_NO_DEBUG)
         , m_mode(0644), m_fd(-1), m_no_header(false)
+        , m_split_file(false), m_split_size(0), m_split_part(0), m_split_filename_index(-1)
     {}
 
     void finalize() {
         if (m_fd > -1) { close(m_fd); m_fd = -1; }
     }
+
+    void modify_file_name();
+
+    void create_symbolic_link();
+
 public:
     static logger_impl_file* create(const char* a_name) {
         return new logger_impl_file(a_name);
@@ -100,6 +111,8 @@ public:
     bool init(const variant_tree& a_config);
 
     void log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size);
+
+
 };
 
 } // namespace utxx
