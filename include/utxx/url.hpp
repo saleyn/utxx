@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   path.hpp
+/// \file   url.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Collection of general purpose functions for path manipulation.
