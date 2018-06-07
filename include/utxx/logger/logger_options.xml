@@ -93,6 +93,10 @@
                     desc="Overrides logger.show-indent option"/>
             <option name="no-header" val-type="bool" default="false"
                     desc="When enabled, no field definition header is written to file at startup"/>
+            <option name="split-file" val-type="bool" default="false"
+                    desc="If true, writes to a new log file everytime log file size exceeds split-size"/>
+            <option name="split-size" val-type="int" default="0"
+                    desc="If greater than 0 and split-file is true, describes the split size in bytes for log file"/>        
         </option>
 
         <option name="scribe" required="false"
