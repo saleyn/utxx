@@ -41,6 +41,28 @@ enum class print_opts {
     printable_or_dec
 };
 
+//----------------------------------------------------------------------------
+/// Output buffer between \a p and \a end to stream using formatting options.
+/// @param out                  Output stream
+/// @param p                    Beginning of buffer
+/// @param end                  End of buffer
+/// @param a_opts               Formatting options:
+///                               * dec - output each char as decimal int
+///                               * hex - output each char as hex int
+///                               * printable_string - output ascii chars and
+///                                       replace non-printable chars with '.'
+///                               * printable_or_hex - output as printable str
+///                                       or hex string if non-printable chars
+///                                       are found
+///                               * printable_or_dec - output as printable str
+///                                       or dec string if non-printable chars
+///                                       are found
+/// @param a_sep                Character delimiter
+/// @param a_hex_prefix         Prefix used for hex numbers (e.g. "0x")
+/// @param @a_printable_quote   Quote to use in the beginning/end of output
+/// @param @a_out_prefix        Prefix to output
+/// @param @a_out_suffix        Suffix to output
+//----------------------------------------------------------------------------
 template <class StreamT, class Char = char>
 inline StreamT& output(StreamT& out, const Char* p, const Char* end,
                        print_opts a_opts = print_opts::printable_or_dec,
