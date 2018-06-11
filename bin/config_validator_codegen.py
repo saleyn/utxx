@@ -78,7 +78,7 @@ def print_element(e, stream = sys.stdout, with_offset=True, ids=None):
     print >> stream, node_to_string(e, with_offset=with_offset, ids=ids)
 
 def format_name(name):
-    return re.sub('[-.,;: ]', '_', name.upper())
+    return re.sub('[-.,;: ]', '_', re.sub('[()]', "", name.upper()))
 
 class RenamedTemporaryFile(object):
     """
