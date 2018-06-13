@@ -269,14 +269,18 @@ template <typename T, typename... Ts>
 struct has_type<T, std::tuple<T, Ts...>> : std::true_type {};
 
 //-----------------------------------------------------------------------------
-/// Same as has_type but ignors const/volatile/reference decorators.
+/// Same as has_type but ignores const/volatile/reference decorators.
 /// Example:
 /// ```
 /// if (has_type_nocvref<SomeT, std::tuple<int, uint, bool>>::value) return;
 /// ```
 //-----------------------------------------------------------------------------
 template <typename T, typename... Ts>
-struct has_type_nocvref : has_type<typename std::remove_cv
-                                   <typename std::remove_reference<T>::type>::type,
-                                   Ts...> {};
+struct has_type_nocvref
+     : has_type<
+        typename std::remove_cv<typename std::remove_reference<T>::type>::type,
+        Ts...
+       >
+{};
+
 } // namespace utxx
