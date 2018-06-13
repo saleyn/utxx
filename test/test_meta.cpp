@@ -151,4 +151,18 @@ BOOST_AUTO_TEST_CASE( test_meta )
         BOOST_CHECK( check3<B>());
         BOOST_CHECK(!check3<C>());
     }
+
+    BOOST_CHECK(( has_type<int,        std::tuple<int, long, const char*>>::value));
+    BOOST_CHECK(( has_type<int64_t,    std::tuple<int, long, const char*>>::value));
+    BOOST_CHECK((!has_type<double,     std::tuple<int, long, const char*>>::value));
+    BOOST_CHECK((!has_type<const int&, std::tuple<int, long, const char*>>::value));
+
+    BOOST_CHECK(( has_type_nocvref<int,        std::tuple<int, long, const char*>>::value));
+    BOOST_CHECK(( has_type_nocvref<int64_t,    std::tuple<int, long, const char*>>::value));
+    BOOST_CHECK(( std::is_same<typename std::remove_reference<int&>::type, int>::value));
+    BOOST_CHECK(( std::is_same<typename std::remove_const
+                              <typename std::remove_reference<const int&>::type>::type, int>::value));
+    BOOST_CHECK((!std::is_same<typename std::remove_reference
+                              <typename std::remove_const<const int&>::type>::type, int>::value));
+    BOOST_CHECK(( has_type_nocvref<const int&, std::tuple<int, long, const char*>>::value));
 }
