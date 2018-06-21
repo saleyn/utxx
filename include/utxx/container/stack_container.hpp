@@ -177,6 +177,8 @@ public:
     ContainerType*       operator->()       { return &m_container; }
     const ContainerType* operator->() const { return &m_container; }
 
+    const Allocator&     allocator()  const { return m_allocator; }
+
 #ifdef UNIT_TEST
     // Retrieves the stack source so that that unit tests can verify that the
     // buffer is being used properly.
