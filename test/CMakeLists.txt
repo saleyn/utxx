@@ -48,6 +48,7 @@ list(APPEND TEST_SRCS
     test_print.cpp
     test_persist_array.cpp
     test_persist_blob.cpp
+    test_polynomial.cpp
     test_pidfile.cpp
     test_rate_throttler.cpp
     test_registrar.cpp
