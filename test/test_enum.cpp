@@ -245,8 +245,11 @@ BOOST_AUTO_TEST_CASE( test_enum_flags )
 {
     static_assert(5 == mm_flags::size(), "Invalid size");
 
-    mm_flags v;
+    mm_flags v(3);
+    BOOST_CHECK(int(v) == 3);
+    BOOST_CHECK(v.has_all(mm_flags::A | mm_flags::B));
 
+    v.clear();
     BOOST_CHECK(v.empty());
     BOOST_CHECK(v == mm_flags::NONE);
 

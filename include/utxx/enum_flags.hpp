@@ -106,8 +106,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         };                                                                     \
                                                                                \
     public:                                                                    \
-        constexpr ENUM()                 : m_val(0)         {}                 \
-        explicit constexpr ENUM(type v)  : m_val(size_t(v)) {}                 \
+        constexpr ENUM()                 : m_val(0)       {}                   \
+        explicit constexpr ENUM(TYPE v)  : m_val(v)       {}                   \
+        explicit constexpr ENUM(type v)  : m_val(TYPE(v)) {}                   \
         template <typename... Args>                                            \
         constexpr ENUM(type a, Args... args) : m_val(bor(a, args...)) {}       \
                                                                                \
@@ -123,9 +124,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static constexpr bool is_flags()       { return true;   }              \
                                                                                \
         void               clear()             { m_val = 0;     }              \
-        void               clear(type  a)      { m_val &= ~size_t(a); }        \
+        void               clear(type  a)      { m_val &= ~TYPE(a); }          \
         void               clear(ENUM  a)      { m_val &= ~a.m_val;   }        \
-        void               clear(size_t a)     { m_val &= ~a;   }              \
+        void               clear(TYPE  a)      { m_val &= ~a;   }              \
                                                                                \
         std::string        names()       const { return to_string("|",true); } \
         std::string        values()      const { return to_string("|",false);} \
@@ -134,20 +135,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static const std::string& value(type n){ return meta(n).second;      } \
                                                                                \
         explicit                                                               \
-        constexpr operator size_t()      const { return m_val;  }              \
+        constexpr operator TYPE()        const { return m_val;  }              \
         explicit                                                               \
         constexpr operator uint()        const { return m_val;  }              \
         constexpr operator type()        const { return type(m_val); }         \
         constexpr bool     empty()       const { return !m_val; }              \
-        constexpr bool     has(type   a) const { return m_val & size_t(a); }   \
-        constexpr bool has_any(size_t a) const { return m_val & a;         }   \
-        constexpr bool has_all(size_t a) const { return (m_val & a) == a;  }   \
-        static constexpr bool   valid(size_t a){ return a < _END_;    }        \
-        static constexpr size_t size()         { return s_size;       }        \
+        constexpr bool     has(type   a) const { return m_val & TYPE(a); }     \
+        constexpr bool has_any(TYPE   a) const { return m_val & a;         }   \
+        constexpr bool has_all(TYPE   a) const { return (m_val & a) == a;  }   \
+        static constexpr bool   valid(TYPE a)  { return a < _END_;    }        \
+        static constexpr TYPE   size()         { return s_size;       }        \
                                                                                \
-        ENUM operator=  (type   a) { m_val  = size_t(a); return *this; }       \
-        ENUM operator=  (size_t a) { m_val  = a;         return *this; }       \
-        ENUM operator|= (type   a) { m_val |= size_t(a); return *this; }       \
+        ENUM operator=  (type   a) { m_val  = TYPE(a);   return *this; }       \
+        ENUM operator=  (TYPE   a) { m_val  = a;         return *this; }       \
+        ENUM operator|= (type   a) { m_val |= TYPE(a);   return *this; }       \
                                                                                \
         friend constexpr ENUM operator| (ENUM a, ENUM b)  {                    \
             return ENUM(type(a.m_val | b.m_val));                              \
@@ -156,7 +157,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         template <typename StreamT> StreamT&                                   \
         print(StreamT& out, const char* a_delim="|", bool as_name=true) const {\
             bool bp=false;                                                     \
-            for (size_t i=0; i < s_size; ++i)                                  \
+            for (TYPE i=0; i < s_size; ++i)                                    \
                 if (m_val & (1ul << i)) {                                      \
                     if (bp) out << a_delim;                                    \
                     out << (as_name ? meta(i+1).first : meta(i+1).second);     \
@@ -184,11 +185,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             const auto f     = [=](auto& s1, auto& s2) {                       \
                 return (a_nocase ? &strcasecmp:&strcmp)(s1.c_str(),s2.c_str());\
             };                                                                 \
-            std::vector<std::string> v; size_t val = 0;                        \
+            std::vector<std::string> v; TYPE val = 0;                          \
             boost::split(v, a, sep, boost::token_compress_on);                 \
             for (auto& s : v) {                                                \
-              size_t n = 0;                                                    \
-              for (size_t i=1; i <= s_size; i++)                               \
+              TYPE n = 0;                                                      \
+              for (TYPE i=1; i <= s_size; i++)                                 \
                 if (!f((as_names ? meta(i).first : meta(i).second), s)) {      \
                   n |= (1ul << (i-1));                                         \
                   break;                                                       \
@@ -230,14 +231,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         template <typename Visitor>                                            \
         void for_each(const Visitor& a_fun) {                                  \
-            for (size_t i=0; i < s_size; i++) {                                \
+            for (TYPE i=0; i < s_size; i++) {                                  \
                 type v = type(1ul << i);                                       \
                 if ((m_val & v) && !a_fun(v))                                  \
                     break;                                                     \
             }                                                                  \
         }                                                                      \
     private:                                                                   \
-        static const size_t s_size =                                           \
+        static const TYPE s_size =                                             \
             BOOST_PP_SEQ_SIZE(BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__));      \
         static const std::pair<std::string,std::string>* metas() {             \
             static const std::pair<std::string,std::string> s_metas[] = {      \
@@ -255,7 +256,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return meta(TYPE(n));                                              \
         };                                                                     \
         static const std::pair<std::string,std::string>& meta(TYPE n) {        \
-            assert(size_t(n) <= s_size);                                       \
+            assert(TYPE(n) <= s_size);                                         \
             return metas()[n];                                                 \
         };                                                                     \
         static constexpr type bor()       { return NONE; }                     \
@@ -263,11 +264,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         template <typename... Args>                                            \
         static constexpr type bor(type a, Args... args)                        \
-        { return type(size_t(a) | size_t(bor(args...))); }                     \
+        { return type(TYPE(a) | TYPE(bor(args...))); }                         \
                                                                                \
         UTXX__ENUM_FRIEND_SERIALIZATION__;                                     \
                                                                                \
-        size_t m_val;                                                          \
+        TYPE m_val;                                                            \
     }
 
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
