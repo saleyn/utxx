@@ -48,6 +48,6 @@ BOOST_AUTO_TEST_CASE( test_quad_polynomial )
     auto calc = [=](double x) { return a + b * x + c * x * x; };
 
     for (int i=0; i < n; ++i)
-        BOOST_REQUIRE(std::abs(y[i] - calc(x[i])) < 0.000001);
+        BOOST_REQUIRE(std::abs<double>(y[i] - calc(x[i])) < 0.000001);
 }
 
