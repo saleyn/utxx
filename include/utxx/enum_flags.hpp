@@ -136,8 +136,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         explicit                                                               \
         constexpr operator TYPE()        const { return m_val;  }              \
-        explicit                                                               \
-        constexpr operator uint()        const { return m_val;  }              \
         constexpr operator type()        const { return type(m_val); }         \
         constexpr bool     empty()       const { return !m_val; }              \
         constexpr bool     has(type   a) const { return m_val & TYPE(a); }     \
