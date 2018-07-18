@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
+#include <cmath>
 #include <boost/test/unit_test.hpp>
 #include <utxx/polynomial.hpp>
 
@@ -48,6 +49,6 @@ BOOST_AUTO_TEST_CASE( test_quad_polynomial )
     auto calc = [=](double x) { return a + b * x + c * x * x; };
 
     for (int i=0; i < n; ++i)
-        BOOST_REQUIRE(std::abs<double>(y[i] - calc(x[i])) < 0.000001);
+        BOOST_REQUIRE(std::fabs(y[i] - calc(x[i])) < 0.000001);
 }
 
