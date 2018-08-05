@@ -37,11 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/xpressive/xpressive.hpp>
 #include <utxx/path.ipp>
 #include <utxx/error.hpp>
-#include <utxx/string.hpp>
-#include <utxx/scope_exit.hpp>
 #include <string.h>
-#include <dirent.h>
-#include <regex>
 
 #if defined(_WIN32) || defined (_WIN64) || defined(_MSC_VER)
 #include <fstream>
@@ -200,62 +196,6 @@ filename_with_backup(const char* a_filename,
             ptm->tm_year+1900, ptm->tm_mon+1, ptm->tm_mday,
             ptm->tm_hour, ptm->tm_min, ptm->tm_sec, l_ext.c_str());
     return std::make_pair(l_filename, buf);
-}
-
-std::pair<bool, std::list<std::string>>
-list_files(std::string const& a_dir, std::string const& a_filter,
-           FileMatchT a_match_type, bool a_join_dir)
-{
-    DIR*           dir;
-    struct dirent  ent;
-    struct dirent* res;
-    std::regex     filter;
-
-    if (a_match_type == FileMatchT::REGEX)
-        filter = a_filter.c_str();
-
-    std::list<std::string> out;
-
-    if ((dir = ::opendir(a_dir.c_str())) == nullptr)
-        return std::make_pair(false, out);
-
-    char buf[512];
-
-    getcwd(buf, sizeof(buf));
-    chdir(a_dir.c_str());
-
-    scope_exit se([dir, &buf]() { closedir(dir); chdir(buf); });
-
-    while (::readdir_r(dir, &ent, &res) == 0 && res != nullptr) {
-        struct stat s;
-        std::string file(ent.d_name);
-
-        if (stat(ent.d_name, &s) < 0 || !S_ISREG(s.st_mode))
-            continue;
-
-        if (!a_filter.empty()) {
-            bool matched;
-            // Skip if no match
-            switch (a_match_type) {
-                case FileMatchT::REGEX:
-                    matched = std::regex_match(file, filter);
-                    break;
-                case FileMatchT::PREFIX:
-                    matched = strncmp(file.c_str(), a_filter.c_str(), a_filter.size()) == 0;
-                    break;
-                case FileMatchT::WILDCARD:
-                    matched = wildcard_match(file.c_str(), a_filter.c_str());
-                    break;
-                default:
-                    matched = false;
-            }
-            if (!matched)
-                continue;
-        }
-        out.push_back(a_join_dir ? join(a_dir, file) : file);
-    }
-
-    return std::make_pair(true, out);
 }
 
 program::program()

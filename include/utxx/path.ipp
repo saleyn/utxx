@@ -31,9 +31,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <utxx/path.hpp>
 #include <sys/stat.h>
 #include <assert.h>
+#include <dirent.h>
+#include <regex>
+#include <utxx/path.hpp>
+#include <utxx/scope_exit.hpp>
+#include <utxx/string.hpp>
 
 namespace utxx {
 namespace path {
@@ -176,6 +180,67 @@ inline bool create_directories(const std::string& a_path, int a_access) {
 inline std::string username() {
     char buf[L_cuserid];
     return unlikely(cuserid(buf) == nullptr) ? buf : "";
+}
+
+template <typename T, typename Fun>
+inline std::pair<bool, std::list<T>>
+list_files(Fun         const& a_on_file,
+           std::string const& a_dir,
+           std::string const& a_filter,
+           FileMatchT         a_match_type,
+           bool               a_join_dir)
+{
+    DIR*           dir;
+    struct dirent  ent;
+    struct dirent* res;
+    std::regex     filter;
+
+    if (a_match_type == FileMatchT::REGEX)
+        filter = a_filter.c_str();
+
+    std::list<T> out;
+
+    if ((dir = ::opendir(a_dir.c_str())) == nullptr)
+        return std::make_pair(false, out);
+
+    char buf[512];
+
+    getcwd(buf, sizeof(buf));
+    chdir(a_dir.c_str());
+
+    scope_exit se([dir, &buf]() { closedir(dir); chdir(buf); });
+
+    while (::readdir_r(dir, &ent, &res) == 0 && res != nullptr) {
+        struct stat s;
+        std::string file(ent.d_name);
+
+        if (stat(ent.d_name, &s) < 0 || !S_ISREG(s.st_mode))
+            continue;
+
+        if (!a_filter.empty()) {
+            bool matched;
+            // Skip if no match
+            switch (a_match_type) {
+                case FileMatchT::REGEX:
+                    matched = std::regex_match(file, filter);
+                    break;
+                case FileMatchT::PREFIX:
+                    matched = strncmp(file.c_str(), a_filter.c_str(), a_filter.size()) == 0;
+                    break;
+                case FileMatchT::WILDCARD:
+                    matched = wildcard_match(file.c_str(), a_filter.c_str());
+                    break;
+                default:
+                    matched = false;
+            }
+            if (!matched)
+                continue;
+        }
+        auto res = a_on_file(a_dir, file, s, a_join_dir);
+        out.emplace_back(std::move(res));
+    }
+
+    return std::make_pair(true, out);
 }
 
 } // namespace path

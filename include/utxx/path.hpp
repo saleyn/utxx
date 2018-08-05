@@ -200,18 +200,44 @@ inline std::string join(std::vector<std::string>&& a_dirs) {
 }
 
 /// List files in a directory
+/// @param a_on_file is a functor accepting three arguments:
+///                  (filename, stat, join_dir_name) -> T
 /// @param a_dir directory to check
 /// @param a_filter is a regular expression/prefix/wildcard used to match filename
 /// @param a_match_type type of matching to perform on filenames
+template <typename T, typename Fun>
+std::pair<bool, std::list<T>>
+list_files(Fun         const& a_on_file,
+           std::string const& a_dir,
+           std::string const& a_filter,
+           FileMatchT         a_match_type = FileMatchT::WILDCARD,
+           bool               a_join_dir   = false);
+
+template <typename T, typename Fun>
+std::pair<bool, std::list<T>>
+list_files(Fun         const& a_on_file,
+           std::string const& a_dir_with_file_mask,
+           FileMatchT         a_match_type = FileMatchT::WILDCARD,
+           bool               a_join_dir   = true) {
+    auto   res = split(a_dir_with_file_mask);
+    return list_files<T, Fun>(a_on_file, res.first, res.second, a_match_type, a_join_dir);
+}
+
 std::pair<bool, std::list<std::string>>
-list_files(std::string const& a_dir, std::string const& a_filter = "",
-           FileMatchT a_match_type = FileMatchT::WILDCARD, bool a_join_dir = false);
+inline list_files(std::string const& a_dir, std::string const& a_filter,
+                  FileMatchT a_match_type = FileMatchT::WILDCARD, bool a_join_dir = false) {
+    auto   fun = [](auto& dir, auto& file, auto& stat, bool join_dir)
+                   { return join_dir ? join(dir, file) : file;      };
+    return list_files<std::string>(fun, a_dir, a_filter, a_match_type, a_join_dir);
+};
 
 std::pair<bool, std::list<std::string>>
 inline list_files(std::string const& a_dir_with_file_mask,
-                  FileMatchT a_match_type = FileMatchT::WILDCARD) {
+                  FileMatchT         a_match_type = FileMatchT::WILDCARD) {
     auto   res = split(a_dir_with_file_mask);
-    return list_files(res.first, res.second, a_match_type, true);
+    auto   fun = [](auto& dir, auto& file, auto& stat, bool join_dir)
+                   { return join_dir ? join(dir, file) : file;      };
+    return list_files<std::string>(fun, res.first, res.second, a_match_type, true);
 }
 
 /// Return portable value of the home path

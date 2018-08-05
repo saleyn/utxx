@@ -93,10 +93,16 @@
                     desc="Overrides logger.show-indent option"/>
             <option name="no-header" val-type="bool" default="false"
                     desc="When enabled, no field definition header is written to file at startup"/>
-            <option name="split-file" val-type="bool" default="false"
-                    desc="If true, writes to a new log file everytime log file size exceeds split-size"/>
             <option name="split-size" val-type="int" default="0"
-                    desc="If greater than 0 and split-file is true, describes the split size in bytes for log file"/>        
+                    desc="If greater than 0 describes the split size in bytes for log file"/>
+            <option name="split-parts" val-type="int" default="10"
+                    desc="If greater than 0, only that many files will be created. Oldest part is erased."/>
+            <option name="split-order" val-type="string" default="first"
+                    desc="Order of split file parts">
+                <value val="first"   desc="Current file is first (i.e. has '1' in its suffix)"/>
+                <value val="last"    desc="Current file is last  (has greatest value in its suffix)"/>
+                <value val="rotate"  desc="File suffix is rotated from 1 to the value of split-parts"/>
+            </option>
         </option>
 
         <option name="scribe" required="false"

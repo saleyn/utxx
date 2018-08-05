@@ -1,24 +1,12 @@
 //----------------------------------------------------------------------------
-/// \file   logger_impl_syslog.hpp
+/// \file   logger_impl_file.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Back-end plugin implementating synchronous file writer for the
 /// <logger> class.
 ///
 /// This implementation allows multiple threads to call the <LOG_*> 
-/// logging macros concurrently.  However, its performance is dependent upon
-/// the file writing mode.  Linux has a bug ("feature"?) that if a file is
-/// open without O_APPEND option, making write(2) calls on a file descriptor
-/// is not thread-safe in a way that content written by one thread can be 
-/// overwriten by the content written by another thread before that data is
-/// written by kernel to the filesystem.  Consequently, concurrent writes
-/// to a file descriptor open without O_APPEND flag must be protected by a 
-/// mutex.  In our testing it seemed that the Linux kernel implementation of 
-/// the write(2) function in presence of the O_APPEND flag is using proper
-/// synchronization.  As a workaround for this oddity, the <logger_impl_file>
-/// uses a mutex to guard the write(2) call when "logger.file.append" option
-/// is <false> and doesn't use the mutex otherwise.  This has a rather drastic
-/// impact on performance (up to 10x in latency hit).
+/// logging macros concurrently.
 /// Use the following test cases to see performance impact of using a mutex:
 /// <code>
 /// "THREAD=3 VERBOSE=1 test_logger --run_test=test_file_perf_overwrite
@@ -56,6 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_LOGGER_FILE_HPP_
 
 #include <utxx/logger.hpp>
+#include <utxx/enum.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <boost/thread.hpp>
@@ -63,37 +52,50 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 class logger_impl_file: public logger_impl {
+    UTXX_ENUM(split_ord, int,
+      FIRST,
+      LAST,
+      ROTATE
+    );
+
     std::string  m_name;
     std::string  m_filename;
     bool         m_append;
     std::string  m_symlink;
-    bool         m_use_mutex;
     uint32_t     m_levels;
     mode_t       m_mode;
     int          m_fd;
     boost::mutex m_mutex;
     bool         m_no_header;
     std::string  m_orig_filename;
-    bool         m_split_file;
     size_t       m_split_size;
+    int          m_split_parts;
+    split_ord    m_split_order;
+    char         m_split_delim;
     int          m_split_part;
+    int          m_split_part_last;
+    int          m_split_parts_digits;
     size_t       m_split_filename_index;
 
     logger_impl_file(const char* a_name)
-        : m_name(a_name), m_append(true), m_use_mutex(false)
+        : m_name(a_name), m_append(true)
         , m_levels(LEVEL_NO_DEBUG)
         , m_mode(0644), m_fd(-1), m_no_header(false)
-        , m_split_file(false), m_split_size(0), m_split_part(0), m_split_filename_index(-1)
+        , m_split_size(0), m_split_parts(0), m_split_order(split_ord::FIRST)
+        , m_split_delim('_')
+        , m_split_part(0), m_split_part_last(0)
+        , m_split_parts_digits(0), m_split_filename_index(-1)
     {}
 
     void finalize() {
         if (m_fd > -1) { close(m_fd); m_fd = -1; }
     }
 
-    void modify_file_name();
+    void        modify_file_name(bool increment = true);
+    int         parse_file_index(std::string const& a_filename) const;
 
-    void create_symbolic_link();
-
+    void        create_symbolic_link();
+    bool        open_file();
 public:
     static logger_impl_file* create(const char* a_name) {
         return new logger_impl_file(a_name);
@@ -104,6 +106,9 @@ public:
     }
 
     const std::string& name() const { return m_name; }
+
+    /// Get full file name of the give part or a wildcard if part < 0
+    std::string get_file_name(int part, bool with_dir = true) const;
 
     /// Dump all settings to stream
     std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;

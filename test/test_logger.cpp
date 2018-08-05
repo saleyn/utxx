@@ -242,70 +242,201 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 
 BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
 {
+    logger& log = logger::instance();
+
+    auto write_test_data = [&log](auto& config) {
+        log.init(config);
+        for(int i=0; i < 100;i++) {
+            auto temp_data = utxx::to_string("write count: ",i);
+            LOG_INFO ("%s",temp_data.c_str());
+        }
+        log.finalize();
+        return path::list_files("/tmp", "logger.file_*.log");
+    };
+
+    auto cleanup = [] (std::list<std::string> const& files = std::list<std::string>()) {
+        std::list<std::string> list(files);
+        if (list.empty())
+            list = path::list_files("/tmp", "logger.file_*.log").second;
+        for (auto& f : list)
+            path::file_unlink(path::join("/tmp", f));
+        path::file_unlink("/tmp/logger.log"); // delete symlink
+    };
+
+    auto check = [] (auto& title, auto& files, uint n) {
+        // Check that "/tmp/logger.file_{1..n}.log" are created
+        if (files.size() != n)
+          std::cerr << title << " has wrong number of files ("
+                    << files.size() << ", expected: " << n << ')' << std::endl;
+        BOOST_CHECK_EQUAL(n, files.size());
+        auto pad_wid = static_cast<int>(std::ceil(std::log10(n))) + ((n%10 == 0) ? 1 : 0);
+        for (uint i=1; i <= n; ++i) {
+            //auto file  = static_cast<logger_impl_file*>(log.get_impl("file"))->get_file_name(i, false);
+            char file[128];
+            sprintf(file, "logger.file_%0*d.log", pad_wid, i);
+            auto found = std::find(files.begin(), files.end(), file) != files.end();
+            if (!found)
+                std::cerr << title << ": file " << file << " is missing!" << std::endl;
+            BOOST_CHECK(found);
+        }
+    };
+
+    // Initial directory cleanup
+    cleanup();
+
     variant_tree pt;
     const std::string filename_prefix = "logger.file";
-    const char* filename = "/tmp/logger.file.log";
+    const char*       filename        = "/tmp/logger.file.log";
     pt.put("logger.timestamp",          variant("none"));
-    pt.put("logger.show-ident",         variant(false));
-    pt.put("logger.show-location",      variant(false));
-    pt.put("logger.silent-finish",      variant(true));
+    pt.put("logger.show-ident",         false);
+    pt.put("logger.show-location",      false);
+    pt.put("logger.silent-finish",      true);
     pt.put("logger.file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
     pt.put("logger.file.filename",      variant(filename));
-    pt.put("logger.file.append",        variant(false));
-    pt.put("logger.file.no-header",     variant(true));
-    pt.put("logger.file.split-file",    variant(true));
-    pt.put("logger.file.split-size",    1000);//size in bytes
+    pt.put("logger.file.append",        false);
+    pt.put("logger.file.no-header",     true);
+    pt.put("logger.file.split-file",    true);
+    pt.put("logger.file.split-order",   variant("first"));
+    pt.put("logger.file.split-size",    250); //size in bytes
+    pt.put("logger.file.symlink",       variant("/tmp/logger.log"));
 
-    logger& log = logger::instance();
+    //--------------------------------------------------------------------------
+    // Check FIRST part order (unrestricted)
+    //--------------------------------------------------------------------------
+    auto res = write_test_data(pt);
+
+    // Check that "/tmp/logger.file_{1..8}.log" are created
+    check("first unrestricted", res.second, 8);
+
+    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_1.log"));
+    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_8.log")
+                                      .find("I|write count: 0\n") == 0);
+
+    // Reopen the log
+    pt.put("logger.file.append",        true);
     log.init(pt);
-
-    int countFiles = 0;
-    std::set<std::string> file_names_in_dir;
-    std::set<std::string> file_names_built;
-
-    for(int i=0; i <100;i++)
-    {
-        auto temp_data = utxx::to_string("write count: ",i);
-        LOG_INFO ("%s",temp_data.c_str());
-    }
-
+    LOG_INFO("write count: 100");
     log.finalize();
 
-    //retrieve file names created in the directory
-    DIR *dir;
-    struct dirent *t;
-    dir = opendir ("/tmp");
-    if (dir != NULL) {
-        while ((t = readdir (dir)) != NULL) {
-            std::string f_name(t->d_name);
-            if(f_name.find(filename_prefix) != std::string::npos) {
-                ++countFiles;
-                file_names_in_dir.insert(f_name);
-            }
-        }
-        closedir (dir);
-    } else {
-        perror ("");
-    }
-    // build file names and compare with files created in directory
-    for (int i=1;i <= countFiles; i++) {
-        auto name = utxx::to_string(filename_prefix,"_", i,".log");
-        file_names_built.insert(name);
-    }
-    BOOST_CHECK(file_names_in_dir == file_names_built);
-    // compare each line in each file with total data supplied
-    int line_count = 0;
-    for(auto& file: file_names_in_dir) {
-        auto f = utxx::to_string("/tmp/",file);
-        std::ifstream in(f);
-        std::string s, exp;
-        while(getline(in, s) && line_count < 100) {
-            char buf[128];
-            sprintf(buf, "I|log_tester|write count: %d",line_count++); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
-        }
-        ::unlink(f.c_str());
-    }
+    BOOST_CHECK_EQUAL("I|write count: 99\n"
+                      "I|write count: 100\n",
+                      utxx::path::read_file("/tmp/logger.file_1.log"));
+
+    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", path::file_readlink("/tmp/logger.log"));
+
+    cleanup(res.second);
+
+    //--------------------------------------------------------------------------
+    // Check FIRST part order (restricted to 3 parts)
+    //--------------------------------------------------------------------------
+    pt.put("logger.file.split-parts", 3);
+
+    res = write_test_data(pt);
+
+    // Check that "/tmp/logger.file_{1..3}.log" are created
+    check("first restricted 3", res.second, 3);
+
+    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_1.log"));
+
+    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", path::file_readlink("/tmp/logger.log"));
+
+    cleanup(res.second);
+
+    // Restrict to 11 parts, the names < 10 should be padded with '0'
+    pt.put("logger.file.split-size",    120); //size in bytes
+    pt.put("logger.file.split-parts",    11);
+
+    res = write_test_data(pt);
+
+    // Check that "/tmp/logger.file_{01..11}.log" are created (note zero padding)
+    check("first restricted 11", res.second, 11);
+
+    BOOST_CHECK_EQUAL("/tmp/logger.file_01.log", path::file_readlink("/tmp/logger.log"));
+
+    cleanup(res.second);
+
+    //--------------------------------------------------------------------------
+    // Check LAST part order (unrestricted)
+    //--------------------------------------------------------------------------
+    pt.put("logger.file.split-order",   variant("last"));
+    pt.put("logger.file.append",        false);
+    pt.put("logger.file.split-parts",   0);
+    pt.put("logger.file.split-size",    250); //size in bytes
+
+    res = write_test_data(pt);
+
+    // Check that "/tmp/logger.file_{1..8}.log" are created
+    check("last unrestricted", res.second, 8);
+
+    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_8.log"));
+    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_1.log")
+                                      .find("I|write count: 0\n") == 0);
+    // Reopen the log
+    pt.put  ("logger.file.append", true);
+    log.init(pt);
+    LOG_INFO("write count: 100");
+    log.finalize();
+
+    BOOST_CHECK_EQUAL("I|write count: 99\n"
+                      "I|write count: 100\n",
+                      utxx::path::read_file("/tmp/logger.file_8.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_8.log", path::file_readlink("/tmp/logger.log"));
+
+    cleanup(res.second);
+
+    //--------------------------------------------------------------------------
+    // Check LAST part order (restricted to 3 parts)
+    //--------------------------------------------------------------------------
+    pt.put("logger.file.split-parts", 3);
+
+    res = write_test_data(pt);
+
+    // Check that "/tmp/logger.file_{1..3}.log" are created
+    check("last restricted", res.second, 3);
+
+    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_3.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", path::file_readlink("/tmp/logger.log"));
+
+    cleanup(res.second);
+
+    //--------------------------------------------------------------------------
+    // Check ROTATE part order (restricted to 5 parts)
+    //--------------------------------------------------------------------------
+    pt.put("logger.file.split-parts", 5);
+    pt.put("logger.file.split-order", variant("rotate"));
+
+    res = write_test_data(pt);
+
+    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_3.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_4.log")
+                                      .find("I|write count: 43\n") == 0);
+
+    cleanup(res.second);
+
+    // Create one log file and ensure that rotation starts off with it
+    pt.put("logger.file.split-parts", 10);
+    path::write_file("/tmp/logger.file_05.log", "I|write count: -1\n");
+
+    res = write_test_data(pt);
+
+    BOOST_CHECK_EQUAL("I|write count: 98\n"
+                      "I|write count: 99\n", path::read_file("/tmp/logger.file_02.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_01.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_02.log"));
+    BOOST_CHECK      (!path::file_exists("/tmp/logger.file_03.log"));
+    BOOST_CHECK      (!path::file_exists("/tmp/logger.file_04.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_05.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_06.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_07.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_08.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_09.log"));
+    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_10.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_02.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_05.log")
+                                      .find("I|write count: -1\n"
+                                            "I|write count: 0\n") == 0);
+    cleanup(res);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger2 )
