@@ -436,7 +436,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_05.log")
                                       .find("I|write count: -1\n"
                                             "I|write count: 0\n") == 0);
-    cleanup(res);
+    cleanup(res.second);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger2 )
