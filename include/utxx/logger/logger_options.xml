@@ -103,7 +103,7 @@
                 <value val="last"    desc="Current file is last  (has greatest value in its suffix)"/>
                 <value val="rotate"  desc="File suffix is rotated from 1 to the value of split-parts"/>
             </option>
-            <option name="split-delim" val-type="char" default="_"
+            <option name="split-delim" val-type="string" default="_"
                     desc="Delimiting char used before the part number in a file name (e.g. 'output_5.log')."/>
         </option>
 
