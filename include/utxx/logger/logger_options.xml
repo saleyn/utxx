@@ -95,14 +95,16 @@
                     desc="When enabled, no field definition header is written to file at startup"/>
             <option name="split-size" val-type="int" default="0"
                     desc="If greater than 0 describes the split size in bytes for log file"/>
-            <option name="split-parts" val-type="int" default="10"
+            <option name="split-parts" val-type="int" default="0"
                     desc="If greater than 0, only that many files will be created. Oldest part is erased."/>
-            <option name="split-order" val-type="string" default="first"
+            <option name="split-order" val-type="string" default="last"
                     desc="Order of split file parts">
                 <value val="first"   desc="Current file is first (i.e. has '1' in its suffix)"/>
                 <value val="last"    desc="Current file is last  (has greatest value in its suffix)"/>
                 <value val="rotate"  desc="File suffix is rotated from 1 to the value of split-parts"/>
             </option>
+            <option name="split-delim" val-type="char" default="_"
+                    desc="Delimiting char used before the part number in a file name (e.g. 'output_5.log')."/>
         </option>
 
         <option name="scribe" required="false"
@@ -140,7 +142,7 @@
             <option name="show-location" val-type="bool" default="false"
                     desc="overrides logger.show-location option"/>
             <option name="show-ident" val-type="bool" default="false"
-                    desc="overrides logger.show-indent option"/>
+                    desc="overrides logger.show-ident option"/>
         </option>
 
         <option name="syslog" required="false"
@@ -154,7 +156,7 @@
                 <value val="alert"/>
             </option>
             <option name="facility" val-type="string" default="log-local6"
-                    desc="Filter of log severity levels">
+                    desc="Syslog facility to use">
                 <value val="log-user"/>
                 <value val="log-local0"/>
                 <value val="log-local1"/>
