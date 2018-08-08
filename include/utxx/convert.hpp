@@ -804,7 +804,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
     }
 
     // Don't bother with optimizing too large numbers or too large precision
-    if (af > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
+    if (size_t(af) > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
         int len = snprintf(buffer, buffer_size, "%.*f", precision, f);
         p += len;
         if (len >= buffer_size)

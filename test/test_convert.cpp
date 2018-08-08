@@ -574,7 +574,33 @@ BOOST_AUTO_TEST_CASE( test_convert_skip_left )
 BOOST_AUTO_TEST_CASE( test_convert_ftoa )
 {
     char buf[32];
-    int n = ftoa_left(0.6, buf, sizeof(buf), 3, false);
+    union {double d; int64_t i;} f;
+
+    f.d   = std::numeric_limits<double>::quiet_NaN();
+    int n = ftoa_left(f.d, buf, sizeof(buf), 3, false);
+    BOOST_CHECK_EQUAL("nan", buf);
+    BOOST_CHECK_EQUAL(0x7ff8000000000000, f.i);
+    BOOST_CHECK_EQUAL(3, n);
+
+    f.d = -std::numeric_limits<double>::quiet_NaN();
+    n   = ftoa_left(f.d, buf, sizeof(buf), 3, false);
+    BOOST_CHECK_EQUAL("-nan", buf);
+    BOOST_CHECK_EQUAL(0xfff8000000000000, f.i);
+    BOOST_CHECK_EQUAL(4, n);
+
+    f.d = std::numeric_limits<double>::signaling_NaN();
+    n   = ftoa_left(f.d, buf, sizeof(buf), 3, false);
+    BOOST_CHECK_EQUAL("nan", buf);
+    BOOST_CHECK_EQUAL(0x7ff4000000000000, f.i);
+    BOOST_CHECK_EQUAL(3, n);
+
+    f.d = -std::numeric_limits<double>::signaling_NaN();
+    n   = ftoa_left(f.d, buf, sizeof(buf), 3, false);
+    BOOST_CHECK_EQUAL("-nan", buf);
+    BOOST_CHECK_EQUAL(0xfff4000000000000, f.i);
+    BOOST_CHECK_EQUAL(4, n);
+
+    n = ftoa_left(0.6, buf, sizeof(buf), 3, false);
     BOOST_CHECK_EQUAL("0.600", buf);
     BOOST_CHECK_EQUAL(5, n);
 
@@ -612,7 +638,6 @@ BOOST_AUTO_TEST_CASE( test_convert_ftoa )
     BOOST_CHECK_EQUAL("-1.00000000000000000000", buf);
     BOOST_CHECK_EQUAL(23, n);
 
-    union {double d; int64_t i;} f;
     f.i = 0x7ff0000000000000ll;
     n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
     BOOST_CHECK_EQUAL("inf", buf);
