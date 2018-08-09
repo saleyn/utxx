@@ -894,19 +894,20 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
     if (unlikely(int_width < 0))
         throw std::invalid_argument("ftoa_right: incorrect width");
 
-    double af;
+    union {double f; size_t i;} a;
     int neg;
 
     if (f < 0) {
         neg = 1;
-        af  = -f;
+        a.f = -f;
     } else {
         neg = 0;
-        af  = f;
+        a.f = f;
     }
 
     // Don't bother with optimizing too large numbers or too large precision
-    if (af > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
+    if (a.f > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS) ||
+        ((a.i >> 52) >= 0x7ff)) {
         int len = snprintf(buffer, width+1, "%*.*f", width, precision, f);
         if (len >= width)
             throw std::invalid_argument("ftoa_right: incorrect width or precision");
@@ -921,8 +922,8 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
     size_t int_part;
 
     if (precision) {
-        double int_f   = std::floor(af);
-        double frac_f  = std::round((af - int_f) * detail::s_pow10v[precision]);
+        double int_f   = std::floor(a.f);
+        double frac_f  = std::round((a.f - int_f) * detail::s_pow10v[precision]);
 
         int_part       = size_t(int_f);
         auto frac_part = size_t(frac_f);
@@ -946,7 +947,7 @@ inline void ftoa_right(double f, char* buffer, int width, int precision, char lp
         *p-- = '.';
     }
     else
-        int_part = size_t(std::lround(af));
+        int_part = size_t(std::lround(a.f));
 
     if (!int_part) {
         if (p >= buffer) *p-- = '0';
