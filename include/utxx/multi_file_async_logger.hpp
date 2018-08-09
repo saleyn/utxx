@@ -1374,9 +1374,9 @@ commit(const struct timespec* tsp)
                 cats[n] = p->args.msg.category.c_str();
                 sz     += iov[n].iov_len;
                 UTXX_ASYNC_TRACE(("FD=%d (stream %p) cmd %p (#%lu) next(%p), "
-                             "write(%p, %lu) free(%p, %lu)\n",
-                             si->fd, si, p, n, p->next, iov[n].iov_base, iov[n].iov_len,
-                             p->args.msg.data.iov_base, p->args.msg.data.iov_len));
+                                  "write(%p, %lu) free(%p, %lu)\n",
+                                  si->fd, si, p, n, p->next, iov[n].iov_base, iov[n].iov_len,
+                                  p->args.msg.data.iov_base, p->args.msg.data.iov_len));
                 assert(n < si->max_batch_sz);
 
                 if (++n == si->max_batch_sz) {
@@ -1393,8 +1393,8 @@ commit(const struct timespec* tsp)
                 si->erase(const_cast<command_t*>(p));
             } else {
                 UTXX_ASYNC_TRACE(("Command %p has invalid message type: %s "
-                             "(stream=%p, prev=%p, next=%p)\n",
-                             p, p->type_str(), p->stream, p->prev, p->next));
+                                  "(stream=%p, prev=%p, next=%p)\n",
+                                  p, p->type_str(), p->stream, p->prev, p->next));
                 si->erase(const_cast<command_t*>(p));
                 BOOST_ASSERT(false); // This should never happen!
             }

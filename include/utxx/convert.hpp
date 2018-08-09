@@ -791,20 +791,24 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
     if (precision < 0)
         return -1;
 
-    double af;
+    union {double f; size_t i;} a;
     bool   neg;
     auto   p = buffer;
 
     if (f < 0) {
         neg = true;
-        af  = -f;
+        a.f = -f;
     } else {
         neg = false;
-        af  = f;
+        a.f = f;
     }
 
     // Don't bother with optimizing too large numbers or too large precision
-    if (size_t(af) > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS)) {
+    // Note that a.i>>52 test below is a faster check for NAN and INF than
+    // calling std::isnan() and std::isinf()
+    if (a.f > FTOA::MAX_FLOAT || precision >= long(FTOA::MAX_DECIMALS) ||
+       ((a.i >> 52) >= 0x7ff))
+    {
         int len = snprintf(buffer, buffer_size, "%.*f", precision, f);
         p += len;
         if (len >= buffer_size)
@@ -820,8 +824,8 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
     size_t int_part;
 
     if (precision) {
-        double int_f   = std::floor(af);
-        double frac_f  = std::round((af - int_f) * detail::s_pow10v[precision]);
+        double int_f   = std::floor(a.f);
+        double frac_f  = std::round((a.f - int_f) * detail::s_pow10v[precision]);
 
         int_part       = size_t(int_f);
         auto frac_part = size_t(frac_f);
@@ -845,7 +849,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
         *p++ = '.';
     }
     else
-        int_part = size_t(std::lround(af));
+        int_part = size_t(std::lround(a.f));
 
     if (!int_part)
         *p++ = '0';
