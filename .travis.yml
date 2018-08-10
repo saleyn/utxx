@@ -9,8 +9,8 @@ addons:
     - ubuntu-toolchain-r-test
     #- boost-latest
     packages:
-    - gcc-7
-    - g++-7
+    - gcc-8
+    - g++-8
     #- libboost1.65-all-dev
     #- cmake
     #- cmake-data
@@ -22,8 +22,8 @@ cache:
     - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
 
 before_install:
-  - export CC=gcc-7
-  - export CXX=g++-7
+  - export CC=gcc-8
+  - export CXX=g++-8
   - lsb_release -a && uname -a
   - nproc
   #- sudo apt-get -y install cmake
@@ -52,8 +52,8 @@ before_install:
       #./bootstrap.sh --prefix="${INSTALL}" --with-libraries="program_options,filesystem,system,chrono,date_time,unit_test_framework"
       ./bootstrap.sh --prefix="${INSTALL}"
       ./b2 headers
-      #./b2 toolset=gcc-7 cxxflags="-std=c++14" variant=release link=static --with-filesystem --with-system --with-regex --with-date_time --with-chrono --with-program_options --with-thread --with-unit_test_framework --with-timer install -d1
-      ./b2 toolset=gcc-7 cxxflags="-std=c++14" variant=release link=shared install -d1
+      #./b2 toolset=gcc-8 cxxflags="-std=c++14" variant=release link=static --with-filesystem --with-system --with-regex --with-date_time --with-chrono --with-program_options --with-thread --with-unit_test_framework --with-timer install -d1
+      ./b2 toolset=gcc-8 cxxflags="-std=c++14" variant=release link=shared install -d1
       mkdir -p ../boost-tarball
       cd ${INSTALL}
       tar zcf ../boost-tarball/boost.tgz .
