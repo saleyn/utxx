@@ -58,8 +58,11 @@ struct test_blob {
     long i2;
 
     test_blob() : i1(0), i2(0) {}
+    test_blob(test_blob&& a)      : i1(a.i1), i2(a.i2) {}
+    test_blob(test_blob const& a) : i1(a.i1), i2(a.i2) {}
     test_blob(long i, long j) : i1(i), i2(j) {}
     bool operator== (const test_blob& rhs) { return rhs.i1 == i1 && rhs.i2 == i2; }
+    constexpr void operator=(const test_blob& rhs) { i1 = rhs.i1; i2 = rhs.i2; }
 };
 
 //-----------------------------------------------------------------------------

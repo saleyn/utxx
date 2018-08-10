@@ -83,7 +83,7 @@ BOOST_AUTO_TEST_CASE( test_name )
     }
     {
         char expect[5];
-        strncpy(expect, "ABC  ", 5);
+        memcpy(expect, "ABC  ", 5);
         { BOOST_REQUIRE_THROW(name_t s(expect), badarg_error); }
         name_t s;
         int rc;
@@ -100,7 +100,7 @@ BOOST_AUTO_TEST_CASE( test_name )
         s.write(result, ' ');
         result[5] = '\0';
         BOOST_REQUIRE_EQUAL(std::string(expect), result);
-        strncpy(expect, "ABCDE", 5);
+        memcpy(expect, "ABCDE", 5);
         s.set(expect, 5);
         std::string exp(expect, 5);
         std::string res = s.to_string();

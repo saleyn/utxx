@@ -45,6 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/unistd.h>
 //#include <sys/mman.h>
 #include <string>
+#include <type_traits>
 #include <string.h>
 #include <utxx/atomic.hpp>
 #include <utxx/meta.hpp>
@@ -68,6 +69,23 @@ private:
         typename Lock::lock_data lock_data;
         uint32_t version;
         T        data;
+        blob_t() { init(); }
+
+        void init() {
+            version = blob_t::s_version;
+            init(typename std::conditional<std::is_trivially_copyable<T>::value,
+                                           std::true_type, std::false_type>::type());
+        }
+
+    private:
+        void init(std::true_type) {
+            bzero(&data, sizeof(T));
+        }
+
+        void init(std::false_type) {
+            data = T();
+        }
+
     } __attribute__((aligned(UTXX_CL_SIZE)));
 
     BOOST_STATIC_ASSERT(sizeof(blob_t) % atomic::cacheline::size == 0);
@@ -187,11 +205,11 @@ bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
     }
     */
     if (l_initialized) {
-        if (a_init_val) {
+        if (a_init_val)
             m_blob->data = *a_init_val;
-        } else
-            bzero(m_blob, sizeof(T));
-        m_blob->version = blob_t::s_version;
+        else
+            m_blob->init();
+
         m_lock.init(m_blob->lock_data);
     } else if (blob_t::s_version != m_blob->version) {
         // Wrong software version

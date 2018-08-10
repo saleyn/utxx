@@ -122,16 +122,18 @@ auto worker = [](int id, int iterations, boost::barrier* barrier,
     timer tm;
 
     for (int i=0; i < iterations; i++) {
-        char* p = logger->allocate(sizeof(s_str1)-1);
-        char* q = logger->allocate(sizeof(s_str3)-1);
-        strncpy(p, s_str1, sizeof(s_str1)-1);
-        strncpy(q, s_str3, sizeof(s_str3)-1);
+        constexpr const size_t n1 = sizeof(s_str1);
+        constexpr const size_t n2 = sizeof(s_str3);
+        char* p = logger->allocate(n1);
+        char* q = logger->allocate(n2);
+        strncpy(p, s_str1, n1);
+        strncpy(q, s_str3, n2);
         if (!no_histogram) histogram->start();
-        logger->write(files[0], std::string(), p, sizeof(s_str1)-1);
+        logger->write(files[0], std::string(), p, sizeof(s_str1));
         if (!no_histogram) histogram->stop();
         //BOOST_REQUIRE_EQUAL(0, n);
         if (!no_histogram) histogram->start();
-        logger->write(files[1], std::string(), q, sizeof(s_str3)-1);
+        logger->write(files[1], std::string(), q, sizeof(s_str3));
         if (!no_histogram) histogram->stop();
         //BOOST_REQUIRE_EQUAL(0, m);
     }

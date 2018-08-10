@@ -320,6 +320,9 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     if (verbosity::level() > VERBOSE_NONE)
         std::cerr << "UTC Offset: " << timestamp::utc_offset() << std::endl;
 
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wformat-truncation"
+
     time_val tt(tv);
     timestamp::format(TIME, tt, buf);
     strncpy(temp, expected+9, 9);
@@ -372,6 +375,8 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
     timestamp::format(DATE_TIME_WITH_NSEC, tt, buf, true);
     snprintf(temp, 28, "%s.%09d", expected_utc, (int)tv.tv_nsec);
     BOOST_REQUIRE_EQUAL(temp, buf);
+
+    #pragma GCC diagnostic pop
 
     tv = utxx::now_utc().timespec();
     std::string str = timestamp::to_string(tt, DATE_TIME);
