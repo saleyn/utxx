@@ -617,6 +617,18 @@ BOOST_AUTO_TEST_CASE( test_convert_ftoa )
     BOOST_CHECK_EQUAL("1.00", buf);
     BOOST_CHECK_EQUAL(4, n);
 
+    n = ftoa_left(10.0, buf, sizeof(buf), 2, false);
+    BOOST_CHECK_EQUAL("10.00", buf);
+    BOOST_CHECK_EQUAL(5, n);
+
+    n = ftoa_left(10.0, buf, sizeof(buf), 0, false);
+    BOOST_CHECK_EQUAL("10", buf);
+    BOOST_CHECK_EQUAL(2, n);
+
+    n = ftoa_left(10.0, buf, sizeof(buf), 0, true);
+    BOOST_CHECK_EQUAL("10", buf);
+    BOOST_CHECK_EQUAL(2, n);
+
     // Note that 1.005 is really 1.0049999999...
     n = ftoa_left(1.005, buf, sizeof(buf), 2, true);
     BOOST_CHECK_EQUAL("1.0", buf);

@@ -822,6 +822,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
     }
 
     size_t int_part;
+    bool   had_precision = precision != 0;
 
     if (precision) {
         double int_f   = std::floor(a.f);
@@ -870,7 +871,7 @@ inline int ftoa_left(double f, char* buffer, int buffer_size, int precision, boo
     }
 
     // Delete trailing zeroes
-    if (compact)
+    if (compact && had_precision)
         p = detail::find_first_trailing_zero(p);
     if (WithTerminator)
         *p = Terminator;
