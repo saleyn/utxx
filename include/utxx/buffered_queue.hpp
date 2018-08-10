@@ -57,17 +57,19 @@ namespace detail {
      */
     template <bool False, typename Alloc>
     struct basic_buffered_queue {
-        typedef boost::asio::const_buffer buf_t;
-        typedef std::deque<buf_t, Alloc>  deque;
+        using buf_t     = boost::asio::const_buffer;
+        using buf_alloc = typename Alloc::template rebind<buf_t>::other;
+        using deque     = std::deque<buf_t, buf_alloc>;
         basic_buffered_queue(const Alloc&) {}
         void deallocate(deque *) {}
     };
 
     template <typename Alloc>
     struct basic_buffered_queue<true, Alloc> {
-        typedef boost::asio::const_buffer buf_t;
-        typedef std::deque<buf_t, Alloc>  deque;
-        typedef typename Alloc::template  rebind<char>::other alloc_t;
+        using buf_t     = boost::asio::const_buffer;
+        using buf_alloc = typename Alloc::template rebind<buf_t>::other;
+        using deque     = std::deque<buf_t, buf_alloc>;
+        using alloc_t   = typename Alloc::template rebind<char>::other;
         alloc_t m_allocator;
 
         basic_buffered_queue(const Alloc& a_alloc) : m_allocator(a_alloc) {}

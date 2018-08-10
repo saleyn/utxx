@@ -35,8 +35,9 @@ namespace utxx {
 
 template <typename BufferType, typename Alloc = std::allocator<char> >
 class basic_buffer_queue {
-    typedef BufferType buf_t;
-    typedef std::deque<buf_t, Alloc> deque;
+    using buf_t = BufferType;
+    using alloc = typename Alloc::template rebind<buf_t>::other;
+    using deque = std::deque<buf_t, alloc>;
 
     deque  m_q1, m_q2;
     deque* m_out_queues[2];     ///< Queues of outgoing data

@@ -51,7 +51,8 @@ template<typename Data, typename Alloc = std::allocator<char> >
 class concurrent_queue
 {
 public:
-    typedef std::deque<Data, Alloc> queue_type;
+    using alloc_type = typename Alloc::template rebind<Data>::other;
+    using queue_type = std::deque<Data, alloc_type>;
 private:
     queue_type                  m_queue;
     mutable boost::mutex        m_mutex;
