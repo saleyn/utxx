@@ -106,6 +106,17 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
             BOOST_REQUIRE_EQUAL( val.i2, 6 );
         }
     }
+    {
+        persist_blob<test_blob> o;
+
+        BOOST_REQUIRE_NO_THROW(o.init(s_filename));
+
+        {
+            test_blob& val = o.dirty_get();
+            BOOST_REQUIRE_EQUAL( val.i1, 5 );
+            BOOST_REQUIRE_EQUAL( val.i2, 6 );
+        }
+    }
     unlink(s_filename);
 }
 

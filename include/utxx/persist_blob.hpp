@@ -71,10 +71,13 @@ private:
         T        data;
         blob_t() { init(); }
 
-        void init() {
+        void init(const T* a_init_data = nullptr) {
             version = blob_t::s_version;
-            init(typename std::conditional<std::is_trivially_copyable<T>::value,
-                                           std::true_type, std::false_type>::type());
+            if (a_init_data)
+                data = *a_init_data;
+            else
+                init(typename std::conditional<std::is_trivially_copyable<T>::value,
+                                               std::true_type, std::false_type>::type());
         }
 
     private:
@@ -205,10 +208,7 @@ bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
     }
     */
     if (l_initialized) {
-        if (a_init_val)
-            m_blob->data = *a_init_val;
-        else
-            m_blob->init();
+        m_blob->init(a_init_val);
 
         m_lock.init(m_blob->lock_data);
     } else if (blob_t::s_version != m_blob->version) {
