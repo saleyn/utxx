@@ -57,7 +57,7 @@ struct test_blob {
     long i1;
     long i2;
 
-    test_blob() : i1(0), i2(0) {}
+    constexpr test_blob() : i1(0), i2(0) {}
     test_blob(test_blob&& a)      : i1(a.i1), i2(a.i2) {}
     test_blob(test_blob const& a) : i1(a.i1), i2(a.i2) {}
     test_blob(long i, long j) : i1(i), i2(j) {}
