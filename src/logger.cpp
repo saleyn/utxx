@@ -146,7 +146,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
                   bool a_install_finalizer)
 {
     if (m_initialized)
-        throw std::runtime_error("Logger already initialized!");
+        UTXX_THROW_RUNTIME_ERROR("Logger already initialized!");
 
     std::lock_guard<std::mutex> guard(m_mutex);
     do_finalize();
@@ -157,7 +157,19 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
                                                   m_show_fun_namespaces);
         m_show_category  = a_cfg.get<bool>       ("logger.show-category",    m_show_category);
         m_show_ident     = a_cfg.get<bool>       ("logger.show-ident",       m_show_ident);
-        m_show_thread    = a_cfg.get<bool>       ("logger.show-thread",      m_show_thread);
+        auto stt         = a_cfg.get_child_optional("logger.show-thread");
+        std::string st("false");
+        if (stt) {
+            if      (stt->data().is_bool())  { if  (stt->data().to_bool()) st = "true"; }
+            else if (stt->data().is_string())  st = stt->data().to_str();
+            else     st = "";
+        }
+        m_show_thread    = st == "false" ? thr_id_type::NONE :
+                           st == "true"  ? thr_id_type::NAME :
+                           st == "name"  ? thr_id_type::NAME :
+                           st == "id"    ? thr_id_type::ID   :
+                           UTXX_THROW_RUNTIME_ERROR("Invalid logger.show-thread setting!");
+
         m_fatal_kill_signal = a_cfg.get<int>     ("logger.fatal-kill-signal",m_fatal_kill_signal);
         m_ident          = a_cfg.get<std::string>("logger.ident",            m_ident);
         m_ident          = replace_macros(m_ident);
@@ -168,8 +180,8 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
             set_level_filter(static_cast<log_level>(parse_log_levels(levs)));
         std::string ls   = a_cfg.get<std::string>("logger.min-level-filter", "info");
         if (!levs.empty() && !ls.empty())
-            std::runtime_error
-                ("Either 'levels' or 'min-level-filter' option is permitted!");
+            UTXX_THROW_RUNTIME_ERROR
+                ("Logger configurtion: either 'levels' or 'min-level-filter' option is permitted!");
         set_min_level_filter(parse_log_level(ls));
         long timeout_ms  = a_cfg.get<int>        ("logger.wait-timeout-ms", 1000);
         m_wait_timeout   = timespec{timeout_ms / 1000, timeout_ms % 1000 *  1000000L};
@@ -178,7 +190,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
         m_block_signals  = a_cfg.get<bool>       ("logger.block-signals",   true);
 
         if ((int)m_timestamp_type < 0)
-            throw std::runtime_error("Invalid timestamp type: " + ts);
+            UTXX_THROW_RUNTIME_ERROR("Invalid logger timestamp type: ", ts);
 
         // Install crash signal handlers
         // (SIGABRT, SIGFPE, SIGILL, SIGSEGV, SIGTERM)
@@ -226,8 +238,8 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
                     }
 
                 if (found)
-                    throw badarg_error("Implementation '", it->first,
-                                       "' is already registered with the logger!");
+                    UTXX_THROW_BADARG_ERROR("Implementation '", it->first,
+                                            "' is already registered with the logger!");
 
                 // A call to it->second() creates a logger_impl* pointer.
                 // We need to call implementation's init function that may throw,
@@ -249,7 +261,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
             atexit(&finalize_logger_at_exit);
             m_finalizer_installed = true;
         }
-    } catch (std::runtime_error& e) {
+    } catch (utxx::runtime_error& e) {
         if (m_error)
             m_error(e.what());
         else
@@ -415,7 +427,7 @@ format_header(const logger::msg& a_msg, char* a_buf, const char* a_end)
         p = stpncpy(p, ident().c_str(), ident().size());
         *p++ = '|';
     }
-    if (show_thread()) {
+    if (show_thread() != thr_id_type::NONE) {
         if (a_msg.m_thread_name[0] == '\0') {
             char* q = const_cast<char*>(a_msg.m_thread_name);
             itoa(a_msg.m_thread_id, q, 10);
@@ -602,7 +614,9 @@ std::ostream& logger::dump(std::ostream& out) const
         << "    show-location       = " << val(m_show_location)         << '\n'
         << "    show-fun-namespaces = " << m_show_fun_namespaces        << '\n'
         << "    show-ident          = " << val(m_show_ident)            << '\n'
-        << "    show-thread         = " << val(m_show_thread)           << '\n'
+        << "    show-thread         = " << (m_show_thread==thr_id_type::ID   ? "id"   :
+                                            m_show_thread==thr_id_type::NAME ? "name" :
+                                            "false")                    << '\n'
         << "    ident               = " << m_ident                      << '\n'
         << "    timestamp-type      = " << to_string(m_timestamp_type)  << '\n';
 

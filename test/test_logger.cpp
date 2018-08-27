@@ -439,6 +439,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     cleanup(res.second);
 }
 
+
 BOOST_AUTO_TEST_CASE( test_logger2 )
 {
     variant_tree pt;

@@ -215,6 +215,13 @@ struct logger : boost::noncopyable {
                 - log<(int)LEVEL_TRACE, 2>::value + 1
     };
 
+    /// Thread idenfitier type added to output
+    enum class thr_id_type {
+        NONE,
+        ID,
+        NAME
+    };
+
     /// Return log level as a 1-char string
     /// DEPRECATED use logger_util.hpp:log_level_to_abbrev()
     [[deprecated]]
@@ -298,7 +305,7 @@ struct logger : boost::noncopyable {
             , m_thread_id   (pthread_self())
             , m_fun         (a_fun)
         {
-            if (!logger::instance().show_thread() ||
+            if (logger::instance().show_thread() != logger::thr_id_type::NAME ||
                 pthread_getname_np(m_thread_id, m_thread_name, sizeof(m_thread_name)) < 0)
                 m_thread_name[0] = '\0';
         }
@@ -474,7 +481,7 @@ private:
     int                             m_show_fun_namespaces   = 3;
     bool                            m_show_category         = false;
     bool                            m_show_ident            = false;
-    bool                            m_show_thread           = false;
+    thr_id_type                     m_show_thread           = thr_id_type::NONE;
     std::string                     m_ident;
     bool                            m_silent_finish         = false;
     int                             m_fatal_kill_signal     = 0;
@@ -626,7 +633,7 @@ public:
     /// @return true if ident logging is enabled by default.
     bool        show_ident()     const { return m_show_ident;    }
     /// @return true if thread name logging is enabled.
-    bool        show_thread()    const { return m_show_thread;   }
+    thr_id_type show_thread()    const { return m_show_thread;   }
     /// @return true if source location display is enabled by default.
     bool        show_location()  const { return m_show_location; }
     /// @return Max depth of function name scope being printed (e.g.

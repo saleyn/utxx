@@ -10,8 +10,14 @@
                 desc="When true message category is added to output lines"/>
         <option name="show-ident" val-type="bool" default="false"
                 desc="When true logger's ident property is added to output lines"/>
-        <option name="show-thread" val-type="bool" default="false"
-                desc="When true logging thread identifier of a message is added to output lines"/>
+        <option name="show-thread" val-type="string" default="false"
+                desc="Add logging thread identifier to output">
+            <value val="false"          desc="Same as 'none'"/>
+            <value val="true"           desc="Same as 'name'"/>
+            <value val="none"           desc="Don't include thread identifier"/>
+            <value val="id"             desc="Include numeric thread identifier"/>
+            <value val="name"           desc="Include thread identifier by calling 'pthread_getname_np()'"/>
+        </option>
         <option name="ident" val-type="string" default=""
                 desc="Process's identifier (can use env variables in the name)"/>
         <option name="timestamp" val-type="string" default="time-usec"
@@ -19,15 +25,15 @@
             <value val="no"             desc="No timestamp"/>
             <value val="none"           desc="No timestamp"/>
             <value val="no-timestamp"   desc="No timestamp"/>
-            <value val="time"           desc="HH:MM:DD"/>
-            <value val="time-msec"      desc="HH:MM:DD.sss"/>
-            <value val="time-usec"      desc="HH:MM:DD.ssssss"/>
-            <value val="time-nsec"      desc="HH:MM:DD.sssssssss"/>
+            <value val="time"           desc="HH:MM:SS"/>
+            <value val="time-msec"      desc="HH:MM:SS.ttt"/>
+            <value val="time-usec"      desc="HH:MM:SS.tttttt"/>
+            <value val="time-nsec"      desc="HH:MM:SS.ttttttttt"/>
             <value val="date"           desc="YYYYmmdd"/>
-            <value val="date-time"      desc="YYYYmmdd-HH:MM:DD"/>
-            <value val="date-time-msec" desc="YYYYmmdd-HH:MM:DD.sss"/>
-            <value val="date-time-usec" desc="YYYYmmdd-HH:MM:DD.ssssss"/>
-            <value val="date-time-nsec" desc="YYYYmmdd-HH:MM:DD.sssssssss"/>
+            <value val="date-time"      desc="YYYYmmdd-HH:MM:SS"/>
+            <value val="date-time-msec" desc="YYYYmmdd-HH:MM:SS.ttt"/>
+            <value val="date-time-usec" desc="YYYYmmdd-HH:MM:SS.tttttt"/>
+            <value val="date-time-nsec" desc="YYYYmmdd-HH:MM:SS.ttttttttt"/>
         </option>
 
         <option name="levels" val-type="string" default=""

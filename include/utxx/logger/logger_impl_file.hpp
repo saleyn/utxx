@@ -92,10 +92,11 @@ class logger_impl_file: public logger_impl {
     }
 
     void        modify_file_name(bool increment = true);
+    void        write_file_header(bool exists, bool rotated);
     int         parse_file_index(std::string const& a_filename) const;
 
     void        create_symbolic_link();
-    bool        open_file();
+    bool        open_file(bool rotated);
 public:
     static logger_impl_file* create(const char* a_name) {
         return new logger_impl_file(a_name);

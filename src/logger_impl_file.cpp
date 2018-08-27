@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 /// \file  logger_impl_file.cpp
 //----------------------------------------------------------------------------
-/// \brief Back-end plugin implementating synchronous file writer for the
+/// \brief Back-end plugin implementing synchronous file writer for the
 /// <tt>logger</tt> class.
 //----------------------------------------------------------------------------
 // Copyright (c) 2011 Serge Aleynikov <saleyn@gmail.com>
@@ -57,7 +57,7 @@ std::ostream& logger_impl_file::dump(std::ostream& out,
     if (!m_symlink.empty()) out <<
            a_prefix << "    symlink        = " << m_symlink << '\n';
     out << a_prefix << "    levels         = " << log_levels_to_str(m_levels) << '\n'
-        << a_prefix << "    no-header      = " << (m_no_header ? "true" : "false")    << '\n'
+        << a_prefix << "    no-header      = " << (m_no_header  ? "true" : "false")   << '\n'
         << a_prefix << "    splitting      = " << (m_split_size ? "true" : "false")   << '\n';
     if (m_split_size) {
         out << a_prefix << "      size         = " << m_split_size  << '\n'
@@ -80,7 +80,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
         UTXX_THROW_BADARG_ERROR("logger.file.filename not specified");
     }
 
-    m_append       = a_config.get<bool>("logger.file.append", true);
+    m_append       = a_config.get("logger.file.append",       true);
     m_no_header    = a_config.get("logger.file.no-header",   false);
     m_mode         = a_config.get("logger.file.mode",         0644);
     m_symlink      = a_config.get("logger.file.symlink",        "");
@@ -104,7 +104,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
     if (m_split_size) {
         m_split_filename_index = m_orig_filename.find_last_of('.');
         if(m_split_filename_index==std::string::npos)
-            UTXX_THROW_RUNTIME_ERROR("Invalid file name format. Filename must have extension for file split feature.");
+            UTXX_THROW_RUNTIME_ERROR("logger.file.split-size: filename must have extension for file split feature.");
         // Determine the name of most recent log file
         if (!m_symlink.empty() && path::file_exists(m_symlink)) {
             // If symlink exists, get the file index from the symlinked filename
@@ -130,7 +130,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
         modify_file_name(false);
     }
 
-    auto levels     = a_config.get("logger.file.levels", "");
+    auto levels = a_config.get("logger.file.levels", "");
 
     m_levels = levels.empty()
              ? m_log_mgr->level_filter()
@@ -145,45 +145,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
                                  "'");
 
     if (m_levels != NOLOGGING) {
-        bool exists = open_file();
-
-        // Write field information
-        if (!m_no_header) {
-            char buf[256];
-            char* p = buf, *end = buf + sizeof(buf);
-
-            tzset();
-
-            auto ll = log_level_to_string(as_log_level(__builtin_ffs(m_levels)), false);
-            int  tz = -timezone;
-            int  hh = abs(tz / 3600);
-            int  mm = abs(tz % 60);
-            p += snprintf(p, p - end, "# Logging started at: %s %c%02d:%02d (MinLevel: %s)\n#",
-                          timestamp::to_string(DATE_TIME).c_str(),
-                          tz > 0 ? '+' : '-', hh, mm, ll.c_str());
-            if (!exists) {
-                if (!this->m_log_mgr ||
-                    this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
-                    p += snprintf(p, p - end, "Timestamp|");
-                p += snprintf(p, p - end, "Level|");
-                if (this->m_log_mgr) {
-                    if (this->m_log_mgr->show_ident())
-                        p += snprintf(p, p - end, "Ident|");
-                    if (this->m_log_mgr->show_thread())
-                        p += snprintf(p, p - end, "Thread|");
-                    if (this->m_log_mgr->show_category())
-                    p += snprintf(p, p - end, "Category|");
-                }
-                p += snprintf(p, p - end, "Message");
-                if (this->m_log_mgr && this->m_log_mgr->show_location())
-                    p += snprintf(p, p - end, " [File:Line%s]",
-                                this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
-            }
-            *p++ = '\n';
-
-            if (write(m_fd, buf, p - buf) < 0)
-                throw io_error(errno, "Error writing log header to file: ", m_filename);
-        }
+        open_file(false);
 
         // Install log_msg callbacks from appropriate levels
         for(int lvl = 0; lvl < logger::NLEVELS; ++lvl) {
@@ -195,6 +157,50 @@ bool logger_impl_file::init(const variant_tree& a_config)
         }
     }
     return true;
+}
+
+void logger_impl_file::write_file_header(bool exists, bool rotated)
+{
+    if (m_no_header)
+        return;
+
+    char buf[256];
+    char* p = buf, *end = buf + sizeof(buf);
+
+    tzset();
+
+    auto ll = log_level_to_string(as_log_level(__builtin_ffs(m_levels)), false);
+    int  tz = -timezone;
+    int  hh = abs(tz / 3600);
+    int  mm = abs(tz % 60);
+    p += snprintf(p, p - end, "# %s at: %s %c%02d:%02d (MinLevel: %s)",
+                  rotated ? "Log rotated" : "Logging started",
+                  timestamp::to_string(DATE_TIME).c_str(),
+                  tz > 0 ? '+' : '-', hh, mm, ll.c_str());
+    if (!exists) {
+        *p++ = '\n';
+        *p++ = '#';
+        if (!this->m_log_mgr ||
+            this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
+            p += snprintf(p, p - end, "Timestamp|");
+        p += snprintf(p, p - end, "Level|");
+        if (this->m_log_mgr) {
+            if (this->m_log_mgr->show_ident())
+                p += snprintf(p, p - end, "Ident|");
+            if (this->m_log_mgr->show_thread() != logger::thr_id_type::NONE)
+                p += snprintf(p, p - end, "Thread|");
+            if (this->m_log_mgr->show_category())
+            p += snprintf(p, p - end, "Category|");
+        }
+        p += snprintf(p, p - end, "Message");
+        if (this->m_log_mgr && this->m_log_mgr->show_location())
+            p += snprintf(p, p - end, " [File:Line%s]",
+                        this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
+    }
+    *p++ = '\n';
+
+    if (write(m_fd, buf, p - buf) < 0)
+        UTXX_THROW_IO_ERROR(errno, "Error writing log header to file: ", m_filename);
 }
 
 void logger_impl_file::modify_file_name(bool increment)
@@ -309,14 +315,14 @@ void logger_impl_file::log_msg(const logger::msg& a_msg, const char* a_buf, size
         if ((size_t)stat_buf.st_size >= m_split_size) {
             finalize();
             modify_file_name();
-            open_file();
+            open_file(true);
         }
     }
     if (write(m_fd, a_buf, a_size) < 0)
-        throw io_error(errno, "Error writing to file: ", m_filename, ' ', a_msg.src_location());
+        UTXX_THROW_IO_ERROR(errno, "Error writing to file: ", m_filename, ' ', a_msg.src_location());
 }
 
-bool logger_impl_file::open_file()
+bool logger_impl_file::open_file(bool rotated)
 {
     auto exists = path::file_exists(m_filename);
     m_fd = open(m_filename.c_str(),
@@ -327,6 +333,10 @@ bool logger_impl_file::open_file()
         UTXX_THROW_IO_ERROR(errno, "Error opening file ", m_filename);
 
     create_symbolic_link();
+
+    // Write field information
+    write_file_header(exists, rotated);
+
     return exists;
 }
 
