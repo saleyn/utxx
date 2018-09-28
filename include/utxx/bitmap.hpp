@@ -73,7 +73,7 @@ public:
     int  count() const { return bitcount(m_data); }
 
     bool operator[] (unsigned int i) const { return is_set(i); }
-    void operator=  (const bitmap_low<N>& rhs) { m_data = rhs.value(); }
+    void operator=  (const bitmap_low<N,T>& rhs) { m_data = rhs.value(); }
 
     /// @param <i> is the bit to search from in the forward direction.
     ///            Valid range [0 ... max-1].
