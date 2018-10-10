@@ -245,7 +245,7 @@ public:
     /// Write \a n bytes to a buffer from a given source \a a_src.
     /// @return pointer to the next possible buffer write location.
     char* write(const char* a_src, size_t n) {
-        capacity(n);
+        reserve(n);
         char* p = m_wr_ptr;
         commit(n);
         memcpy(p, a_src, n);
