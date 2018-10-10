@@ -191,8 +191,7 @@ list_files(Fun         const& a_on_file,
            bool               a_join_dir)
 {
     DIR*           dir;
-    struct dirent  ent;
-    struct dirent* res;
+    struct dirent* ent;
     std::regex     filter;
 
     if (a_match_type == FileMatchT::REGEX)
@@ -210,11 +209,11 @@ list_files(Fun         const& a_on_file,
 
     scope_exit se([dir, &buf]() { closedir(dir); chdir(buf); });
 
-    while (::readdir_r(dir, &ent, &res) == 0 && res != nullptr) {
+    while ((ent = ::readdir(dir)) != nullptr) {
         struct stat s;
-        std::string file(ent.d_name);
+        std::string file(ent->d_name);
 
-        if (stat(ent.d_name, &s) < 0 || !S_ISREG(s.st_mode))
+        if (stat(ent->d_name, &s) < 0 || !S_ISREG(s.st_mode))
             continue;
 
         if (!a_filter.empty()) {
