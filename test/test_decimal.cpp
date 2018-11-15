@@ -55,6 +55,8 @@ BOOST_AUTO_TEST_CASE( test_decimal )
     { decimal d; BOOST_CHECK(!d.is_null()); BOOST_CHECK_EQUAL(0.0, (double)d); }
     { decimal d(nullptr);         BOOST_CHECK(d.is_null()); }
     { decimal d(decimal::nan(),0);BOOST_CHECK(d.is_null()); }
+    { BOOST_CHECK(decimal(0,1) != decimal(-4,10000));  }
+    { BOOST_CHECK(decimal(0,1).value() == decimal(-4,10000).value());  }
     { BOOST_CHECK_EQUAL(decimal(1,1),  decimal(1,1)); }
     { BOOST_CHECK_NE   (decimal(-1,1), decimal(1,1)); }
     { BOOST_CHECK_NE   (decimal(2,1),  decimal(1,1)); }
