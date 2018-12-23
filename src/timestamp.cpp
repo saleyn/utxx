@@ -83,13 +83,14 @@ char* timestamp::write_date(char* a_buf, time_t a_utc_seconds, bool a_utc,
 {
     long nsec = a_utc_seconds*1000000000L;
 
-    // If not same day - update cached string value
-    if (unlikely(nsec >= s_next_utc_midnight_nseconds))
-        update_midnight_nseconds(now_utc());
+    // If not same day - update cached string date value
+    if (unlikely(nsec >= s_next_utc_midnight_nseconds ||
+                 nsec >= s_next_local_midnight_nseconds))
+        update_midnight_nseconds(nsecs(nsec));
 
-    auto today_utc_midnight = s_next_utc_midnight_nseconds - 86400000000000L;
-
-    if (a_sep || !a_use_cached_date || nsec < today_utc_midnight)
+    if (a_sep || !a_use_cached_date
+              ||( a_utc && nsec < s_next_utc_midnight_nseconds  -86400000000000L)
+              ||(!a_utc && nsec < s_next_local_midnight_nseconds-86400000000000L))
         return internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
     else {
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
@@ -172,13 +173,13 @@ int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
             return p - a_buf;
         }
         case DATE:
-            p = write_date(a_buf, sec, a_utc, 8, '\0', a_use_cached_date);
+            p = write_date(a_buf, pair.first, a_utc, 8, '\0', a_use_cached_date);
             return 8;
         case DATE_TIME:
         case DATE_TIME_WITH_MSEC:
         case DATE_TIME_WITH_USEC:
         case DATE_TIME_WITH_NSEC: {
-            p = write_date(a_buf, sec, a_utc, 0, '\0', a_use_cached_date);
+            p = write_date(a_buf, pair.first, a_utc, 0, '\0', a_use_cached_date);
             p = time_val::write_time(sec, pair.second, p, stamp_type(a_tp+4));
             return p - a_buf;
         }
