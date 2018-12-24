@@ -536,6 +536,10 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     BOOST_CHECK_EQUAL("20000102-", timestamp::cached_utc_timestamp());
     BOOST_CHECK_EQUAL("20000102-", timestamp::cached_local_timestamp());
 
+    auto expect = "20000102-23:59:59";
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tv, DATE_TIME, true, true));
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tv, DATE_TIME, true, false));
+
     auto tu = time_val::universal_time(2000, 1, 3, 0, 0, 0, 0);
     auto tl = tu + nsecs(timestamp::utc_offset_nseconds());
 
@@ -548,11 +552,19 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
     BOOST_CHECK_EQUAL("20000102-", timestamp::cached_local_timestamp());
 
+    expect = "20000103-00:00:00";
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, true));
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, false));
+
     tu = time_val::local_time(2000, 1, 3, 0, 0, 0, 0);
     timestamp::update_midnight_nseconds(tu);
 
     BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
     BOOST_CHECK_EQUAL("20000103-", timestamp::cached_local_timestamp());
+
+    expect = "20000103-05:00:00";
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, true));
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, false));
 
     //------------------
     tv = ml - secs(1);
@@ -578,6 +590,10 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
     BOOST_CHECK_EQUAL("20000102-", timestamp::cached_local_timestamp());
 
+    expect = "20000104-00:00:00";
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, true));
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, false));
+
     //------------------
     tv += secs(1);
     auto h = abs(int(timestamp::utc_offset() / 3600));
@@ -589,14 +605,14 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     mu = timestamp::utc_next_midnight_time();
     ml = timestamp::local_next_midnight_time();
 
+    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
+    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_local_timestamp());
+
     tu = time_val::universal_time(2000, 1, 4, 0, 0, 0, 0);
     tl = tu + nsecs(timestamp::utc_offset_nseconds());
 
     BOOST_CHECK_EQUAL(mu.nsec(), tu.nsec());
     BOOST_CHECK_EQUAL(ml.nsec(), tl.nsec());
-
-    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_utc_timestamp());
-    BOOST_CHECK_EQUAL("20000103-", timestamp::cached_local_timestamp());
 
     //------
     {
@@ -649,6 +665,10 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
     BOOST_CHECK_EQUAL("20181219-00:00:00", su);
     BOOST_CHECK_EQUAL("20181219-05:00:00", sl);
 
+    expect = "20181218-05:00:06";
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, true));
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, false));
+
     timestamp::update_midnight_nseconds(tu);
 
     su = timestr(timestamp::utc_next_midnight_time(),   true);
@@ -659,9 +679,6 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
 
     BOOST_CHECK_EQUAL("20181218-", timestamp::cached_utc_timestamp());
     BOOST_CHECK_EQUAL("20181218-", timestamp::cached_local_timestamp());
-
-    su = timestamp::to_string(tu, DATE_TIME, false, false);
-    BOOST_CHECK_EQUAL("20181218-00:00:06", su);
 
     mu = timestamp::utc_next_midnight_time();
     ml = timestamp::local_next_midnight_time();
@@ -675,6 +692,10 @@ BOOST_AUTO_TEST_CASE( test_timestamp_since_midnight )
 
     sl = timestamp::to_string(ml, DATE_TIME, true, false);
     BOOST_CHECK_EQUAL("20181219-05:00:00", sl);
+
+    expect = "20181218-05:00:06";
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, true));
+    BOOST_CHECK_EQUAL(expect, timestamp::to_string(tu, DATE_TIME, true, false));
 
     //------
     if (env)
