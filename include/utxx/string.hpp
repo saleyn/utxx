@@ -59,6 +59,10 @@ namespace utxx {
     template <int N>
     constexpr size_t length(const char (&a)[N]) { return N-1; }
 
+    /// Get the length of a string stored inside a fixed-length string buffer;
+    template <int N>
+    int strnlen(const char (&s)[N]) { auto p=s, e=s+N;  while (*p) ++p; return p-s; }
+
     /// Return the static length of any given type.
     /// Example:
     /// \code
