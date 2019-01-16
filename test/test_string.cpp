@@ -120,8 +120,8 @@ BOOST_AUTO_TEST_CASE( test_string_length )
     size_t b[3];
     BOOST_REQUIRE_EQUAL(3u, length<decltype(b)>());
 
-    auto s1[] = "abcde";
-    auto s2[] = "abc\0\0";
+    const char s1[] = "abcde";
+    const char s2[] = "abc\0\0";
     BOOST_REQUIRE_EQUAL(5, strnlen(s1));
     BOOST_REQUIRE_EQUAL(3, strnlen(s2));
 }
