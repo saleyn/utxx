@@ -120,11 +120,10 @@ BOOST_AUTO_TEST_CASE( test_string_length )
     size_t b[3];
     BOOST_REQUIRE_EQUAL(3u, length<decltype(b)>());
 
-    const char s[] = "abcde";
-    BOOST_REQUIRE_EQUAL(5, strnlen(s));
-
-    const char s[] = "abc\0\0";
-    BOOST_REQUIRE_EQUAL(3, strnlen(s));
+    auto s1[] = "abcde";
+    auto s2[] = "abc\0\0";
+    BOOST_REQUIRE_EQUAL(5, strnlen(s1));
+    BOOST_REQUIRE_EQUAL(3, strnlen(s2));
 }
 
 enum op_type {OP_UNDEFINED = -1, OP_ADD, OP_REMOVE, OP_REPLACE, OP_UPDATE};
