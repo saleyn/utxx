@@ -82,7 +82,10 @@ struct fixed {
             utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
             out.write(buf, a.digits());
         } else {
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wvla"
             char buf[256];
+            #pragma GCC diagnostic pop
             int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), true);
             if (likely(n >= 0))
                 out.write(buf, n);
