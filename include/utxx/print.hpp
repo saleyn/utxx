@@ -77,15 +77,11 @@ struct fixed {
 
     template <typename StreamT>
     inline friend StreamT& operator<<(StreamT& out, const fixed& a) {
-        if (a.digits() > -1) {
-            char buf[a.digits()];
+        char buf[1024];
+        if (a.digits() > -1 && a.digits() < sizeof(buf)) {
             utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
             out.write(buf, a.digits());
         } else {
-            #pragma GCC diagnostic push
-            #pragma GCC diagnostic ignored "-Wvla"
-            char buf[256];
-            #pragma GCC diagnostic pop
             int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), true);
             if (likely(n >= 0))
                 out.write(buf, n);
