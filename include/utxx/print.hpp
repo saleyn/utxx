@@ -78,7 +78,7 @@ struct fixed {
     template <typename StreamT>
     inline friend StreamT& operator<<(StreamT& out, const fixed& a) {
         char buf[1024];
-        if (a.digits() > -1 && a.digits() < sizeof(buf)) {
+        if (a.digits() > -1 && a.digits() < int(sizeof(buf))) {
             utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
             out.write(buf, a.digits());
         } else {

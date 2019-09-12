@@ -121,7 +121,8 @@ struct ring_buffer {
     }
 
     /// Destroy previously allocated buffer
-    static void destroy(ring_buffer*& a_ptr) {
+    static void destroy_ptr(ring_buffer* a_ptr) { destroy(a_ptr); }
+    static void destroy(ring_buffer*&    a_ptr) {
         if (!a_ptr)
             return;
 

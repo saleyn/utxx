@@ -42,10 +42,10 @@ void test(const char* a_desc, size_t a_exp_capacity, size_t a_capacity,
           void* a_memory, size_t a_mem_sz, bool a_construct = true) {
     BOOST_TEST_MESSAGE("Testing " << a_desc << " ring buffer");
 
-    std::unique_ptr<Buffer, void(*)(Buffer*&)>
+    std::unique_ptr<Buffer, void(*)(Buffer*)>
         buf(
             Buffer::create(a_capacity, a_memory, a_mem_sz, a_construct),
-            &Buffer::destroy
+            &Buffer::destroy_ptr
         );
 
     BOOST_CHECK_EQUAL(a_exp_capacity, buf->capacity());
