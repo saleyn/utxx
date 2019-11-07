@@ -1363,7 +1363,7 @@ commit(const struct timespec* tsp)
         int status = SI_OK;
 
         const command_t* p = si->pending_writes_head();
-        command_t* end;
+        command_t*     end = nullptr;
 
         // Process commands in blocks of si->max_batch_sz
         for (; p && !si->error && ((status & SI_CLOSE) != SI_CLOSE); p = end) {
