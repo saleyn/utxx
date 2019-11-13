@@ -133,10 +133,10 @@ struct basic_multi_file_async_logger {
 
 private:
     struct stream_info_eq {
-        bool operator()(const stream_info* a, const stream_info* b) { return a == b; }
+        bool operator()(const stream_info* a, const stream_info* b) const { return a == b; }
     };
     struct stream_info_lt {
-        bool operator()(const stream_info* a, const stream_info* b) { return a < b; }
+        bool operator()(const stream_info* a, const stream_info* b) const { return a < b; }
     };
 
     using cmd_allocator = typename traits::fixed_size_allocator::template
