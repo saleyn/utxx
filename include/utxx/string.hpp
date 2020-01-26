@@ -41,6 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdexcept>
 #include <sstream>
 #include <array>
+#include <vector>
 #include <type_traits>
 #include <utxx/types.hpp>
 #include <utxx/print.hpp>
@@ -174,31 +175,85 @@ namespace utxx {
         return join(a_vec.begin(), a_vec.end(), a_delim, a_convert);
     }
 
-	// Trim from start (in place)
-	static inline void ltrim(std::string& s, char c = ' ') {
-		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [c](int ch) {
-			return ch != c;
-		}));
-	}
+    /// Trim from start (in place)
+    inline void ltrim(std::string& s, char c = ' ') {
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [c](int ch) {
+            return ch != c;
+        }));
+    }
 
-	// Trim from end (in place)
-	static inline void rtrim(std::string& s, char c = ' ') {
-		s.erase(std::find_if(s.rbegin(), s.rend(), [c](int ch) {
-			return ch != c;
-		}).base(), s.end());
-	}
+    /// Trim from end (in place)
+    inline void rtrim(std::string& s, char c = ' ') {
+        s.erase(std::find_if(s.rbegin(), s.rend(), [c](int ch) {
+            return ch != c;
+        }).base(), s.end());
+    }
 
-	// Trim from both ends (in place)
-	static inline void trim(std::string &s) { ltrim(s); rtrim(s); }
+    /// Trim from both ends (in place)
+    inline void trim(std::string &s) { ltrim(s); rtrim(s); }
 
-	// Trim from start (copying)
-	static inline std::string ltrim_copy(std::string s) { ltrim(s); return s; }
+    /// Trim from start (copying)
+    inline std::string ltrim_copy(std::string s) { ltrim(s); return s; }
 
-	// Trim from end (copying)
-	static inline std::string rtrim_copy(std::string s) { rtrim(s); return s; }
+    /// Trim from end (copying)
+    inline std::string rtrim_copy(std::string s) { rtrim(s); return s; }
 
-	// Trim from both ends (copying)
-	static inline std::string trim_copy(std::string s)  { trim(s);  return s; }
+    /// Trim from both ends (copying)
+    inline std::string trim_copy(std::string s)  { trim(s);  return s; }
+
+    /// Write a hex representation of the character 'c' to "dst" string
+    inline char* hex(char* dst, char c) {
+        static const char* s_array = "0123456789ABCDEF";
+        *dst++ = s_array[uint8_t(c >>  4)];
+        *dst++ = s_array[uint8_t(c & 0xF)];
+        return dst;
+    }
+
+    /// Decode the next two chars in a hex representation of the "a_src" string
+    inline char unhex(const char* a_src) {
+        auto f = [](char c) { return char(c >= 'A' ? 10+(c-'A') : c-'0'); };
+        return (f(*a_src) << 4) | f(*(a_src+1));
+    }
+
+    /// Encode a hex representation of the "a_str" string
+    inline std::string hex(const char* a_str, size_t sz) {
+        std::string res;
+        res.reserve(sz*2);
+        for (const char* p = a_str, *e = p+sz; p != e; ++p) {
+            char ss[2];
+            hex(ss, *p);
+            res.append(ss, 2);
+        }
+        return res;
+    }
+
+    /// Encode a hex representation of the "s" string
+    inline std::string hex(const std::string& s) { return hex(s.c_str(), s.size()); }
+
+    /// Unhex the hex representation of the string "a_str" to vector
+    template <typename T>
+    inline T unhex(const char* a_str, size_t sz) {
+        assert((sz&1) == 0); // size must be even
+        T res;
+        res.reserve(sz / 2);
+        for (const char* p = a_str, *e = p+sz; p != e; p += 2)
+            res.push_back(unhex(p));
+        return res;
+    }
+
+    /// Unhex the hex representation of the string "a_str" to vector
+    template <typename T>
+    inline T unhex(const std::string& s) {
+        return unhex<T>(s.c_str(), s.size());
+    }
+
+    inline std::vector<char> unhex_vector(const std::string& s) {
+        return unhex<std::vector<char>>(s.c_str(), s.size());
+    }
+
+    inline std::string unhex_string(const std::string& s) {
+        return unhex<std::string>(s.c_str(), s.size());
+    }
 
     /// Convert a string to an integer value
     /// \code
@@ -590,5 +645,6 @@ namespace utxx {
     };
 
     using short_string = basic_short_string<>;
+    using ustring      = std::basic_string<uint8_t>;
 
 } // namespace utxx

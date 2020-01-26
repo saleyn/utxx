@@ -494,3 +494,17 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
     }
 }
+
+BOOST_AUTO_TEST_CASE( test_string_hex )
+{
+    const char* src = "KLMN0123";
+
+    auto  res1 = hex(src, strlen(src));
+    auto  res2 = unhex_string(res1);
+
+    const char* expect = "4B4C4D4E30313233";
+
+    BOOST_REQUIRE_EQUAL(expect, res1);
+    BOOST_REQUIRE_EQUAL(src,    res2);
+}
+
