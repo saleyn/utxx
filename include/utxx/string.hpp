@@ -227,6 +227,13 @@ namespace utxx {
         return res;
     }
 
+    /// Encode a hex representation of the "a_val" value converted to string
+    template <typename T>
+    inline std::string hex(T a_val) {
+        auto src = std::to_string(a_val);
+        return hex(src.c_str(), src.size());
+    }
+
     /// Encode a hex representation of the "s" string
     inline std::string hex(const std::string& s) { return hex(s.c_str(), s.size()); }
 

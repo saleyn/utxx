@@ -506,5 +506,7 @@ BOOST_AUTO_TEST_CASE( test_string_hex )
 
     BOOST_REQUIRE_EQUAL(expect, res1);
     BOOST_REQUIRE_EQUAL(src,    res2);
+
+    BOOST_REQUIRE_EQUAL("313233", hex(123));
 }
 
