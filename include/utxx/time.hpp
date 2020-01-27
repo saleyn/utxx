@@ -80,7 +80,7 @@ namespace utxx {
 
     /// Return number of days between two y/m/d pairs.
     inline int date_diff(unsigned y1, unsigned m1, unsigned d1,
-                  unsigned y2, unsigned m2, unsigned d2)
+                         unsigned y2, unsigned m2, unsigned d2)
     {
         if (unlikely(m1 < 1 || m1 > 12 || m2 < 1 || m2 > 12))
             throw badarg_error("Invalid month value");
@@ -168,6 +168,13 @@ namespace utxx {
     constexpr int weekday_from_days(int a_days) noexcept {
         return a_days >= -4 ? (a_days+4) % 7 : (a_days+5) % 7 + 6;
     }
+
+    /// Returns day of week in civil calendar for y-m-d date. [0, 6] -> [Sun, Sat].
+    constexpr int weekday(int y, int m, int d) {
+		constexpr int t[] = { 0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4 };
+		y -= m < 3;
+		return (y + y/4 - y/100 + y/400 + t[m-1] + d) % 7;
+	}
 
     /// Convert y/m/d into seconds since epoch 1970-1-1
     inline time_t mktime_utc(int y, unsigned m, unsigned d) {

@@ -248,6 +248,10 @@ BOOST_AUTO_TEST_CASE( test_time_val )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_time_weekday )
+{
+    BOOST_CHECK_EQUAL(1, weekday(2010, 8, 30));
+}
 
 BOOST_AUTO_TEST_CASE( test_time_val_perf )
 {
