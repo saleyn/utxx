@@ -79,7 +79,7 @@ script:
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
   - cd ${TRAVIS_BUILD_DIR}      # Go back to the root of the project and bootstrap
-  - make bootstrap toolchain=gcc generator=make build=debug
+  - make bootstrap toolchain=clang generator=make build=debug
   - make jobs=$(nproc)
 
 branches:
