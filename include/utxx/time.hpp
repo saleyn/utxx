@@ -239,7 +239,7 @@ namespace utxx {
   inline long parse_time_to_seconds(const char* a_tm, int a_sz = -1)
   {
     if (a_sz <  0) a_sz = strlen(a_tm);
-    if (a_sz != 8)
+    if (a_sz != 8 || a_tm[2] != ':' || a_tm[5] != ':')
       return -1;
 
     auto     parse = [](const char* p) { return 10*(p[0]-'0') + (p[1]-'0'); };
