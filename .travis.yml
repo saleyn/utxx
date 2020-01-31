@@ -9,8 +9,8 @@ addons:
     - ubuntu-toolchain-r-test
     #- boost-latest
     packages:
-    - gcc-8
-    - g++-8
+    - gcc-9
+    - g++-9
     #- libboost1.65-all-dev
     #- cmake
     #- cmake-data
@@ -22,8 +22,8 @@ cache:
     - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
 
 before_install:
-  - export CC=gcc-8
-  - export CXX=g++-8
+  - export CC=gcc-9
+  - export CXX=g++-9
   - lsb_release -a && uname -a
   - nproc
   #- sudo apt-get -y install cmake
