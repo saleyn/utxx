@@ -127,6 +127,11 @@ public:
         return dest;
     }
   
+    static std::string decode_str(const std::string& s, encoding enc = STANDARD) {
+        auto v = decode(s, enc);
+        return std::string(v.begin(), v.end());
+    }
+
     /// Decode base64 string into "dest"
     /// @param dest can be an STL container or string
     template <typename T>
