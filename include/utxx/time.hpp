@@ -233,21 +233,36 @@ namespace utxx {
 
 #endif
 
-  //----------------------------------------------------------------------------
-  /// Parse time in format "HH:MM:SS" to seconds since midnight
-  //----------------------------------------------------------------------------
-  inline long parse_time_to_seconds(const char* a_tm, int a_sz = -1)
-  {
-    if (a_sz <  0) a_sz = strlen(a_tm);
-    if (a_sz != 8 || a_tm[2] != ':' || a_tm[5] != ':')
-      return -1;
-
-    auto     parse = [](const char* p) { return 10*(p[0]-'0') + (p[1]-'0'); };
-    int  h = parse(a_tm);
-    int  m = parse(a_tm+3);
-    int  s = parse(a_tm+6);
-
-    return  h*3600 + m*60 + s;
-  }
+    //----------------------------------------------------------------------------
+    /// Parse time in format "HH:MM[:SS][am|pm]" to seconds since midnight
+    //----------------------------------------------------------------------------
+    inline long parse_time_to_seconds(const char* a_tm, int a_sz = -1)
+    {
+        int n = a_sz < 0 ? strlen(a_tm) : a_sz;
+        if (n < 5 || a_tm[2] != ':') // a_tm[5] != ':')
+          return -1;
+      
+        auto parse = [](const char* p) { return 10*(p[0]-'0') + (p[1]-'0'); };
+        auto p = a_tm;
+        int  h = parse(p);
+        int  m = parse(p+3);
+        int  s = 0;
+        p  = a_tm+5;
+        if (n >= 8 && *p == ':') {
+            s = parse(++p); p += 2;
+        }
+        if (n == (p+2 - a_tm)) {
+            if (p[0] == 'p' && p[1] == 'm' && h < 12)
+                h += 12;
+            else if (p[0] == 'a' && p[1] == 'm' && h < 12) { /* do nothing */ }
+            else 
+                return -1;
+        }
+        else if (n == p-a_tm) { /* do nothing */ }
+        else
+            return -1;
+      
+        return  h*3600 + m*60 + s;
+    }
 
 } // namespace utxx
