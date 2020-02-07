@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #pragma once
 
-#include <utxx/time_val.hpp>
+#include <utxx/time.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/error.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -236,33 +236,22 @@ namespace utxx {
     //----------------------------------------------------------------------------
     /// Parse time in format "HH:MM[:SS][am|pm]" to seconds since midnight
     //----------------------------------------------------------------------------
-    inline long parse_time_to_seconds(const char* a_tm, int a_sz = -1)
-    {
-        int n = a_sz < 0 ? strlen(a_tm) : a_sz;
-        if (n < 5 || a_tm[2] != ':') // a_tm[5] != ':')
-          return -1;
-      
-        auto parse = [](const char* p) { return 10*(p[0]-'0') + (p[1]-'0'); };
-        auto p = a_tm;
-        int  h = parse(p);
-        int  m = parse(p+3);
-        int  s = 0;
-        p  = a_tm+5;
-        if (n >= 8 && *p == ':') {
-            s = parse(++p); p += 2;
-        }
-        if (n == (p+2 - a_tm)) {
-            if (p[0] == 'p' && p[1] == 'm' && h < 12)
-                h += 12;
-            else if (p[0] == 'a' && p[1] == 'm' && h < 12) { /* do nothing */ }
-            else 
-                return -1;
-        }
-        else if (n == p-a_tm) { /* do nothing */ }
-        else
-            return -1;
-      
-        return  h*3600 + m*60 + s;
+    long parse_time_to_seconds(const char* a_tm, int a_sz = -1);
+
+    //----------------------------------------------------------------------------
+    /// Parse day of week "Sun" to "Sat" (case insensitive).
+    /// Also accept "tod" and "today" for today's day.
+    /// @param a_str       input string
+    /// @param a_today_dow DOW of today, if known
+    /// @param a_utc       use UTC timezone (only used when a_str is "tod[ay]" and
+    ///                    \a a_today_dow is -1)
+    /// @return 0-6 for Sun-Sat, or -1 for bad input. a_str is advanced to the end
+    ///         of parsed input.
+    //----------------------------------------------------------------------------
+    int parse_dow_ref(const char*& a_str, int a_today_dow=-1, bool a_utc=false);
+
+    inline int parse_dow(const char* a_str, int a_tod_dow=-1, bool a_utc=false) {
+        return parse_dow_ref(a_str, a_tod_dow, a_utc);
     }
 
 } // namespace utxx

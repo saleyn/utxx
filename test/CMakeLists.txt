@@ -67,6 +67,7 @@ list(APPEND TEST_SRCS
     test_string.cpp
     test_thread_cached_int.cpp
     test_thread_local.cpp
+    test_time.cpp
     test_time_val.cpp
     test_timestamp.cpp
     test_type_traits.cpp
