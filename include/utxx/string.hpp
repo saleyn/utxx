@@ -454,6 +454,24 @@ namespace utxx {
         return buf.to_string();
     }
 
+    /// Convert input to a printable hex string
+    /// @see: https://stackoverflow.com/questions/311165/how-do-you-convert-a-byte-array-to-a-hexadecimal-string-and-vice-versa/14333437#14333437
+    template <typename Ch=char>
+    inline std::string to_hex_string(const Ch* a_bytes, size_t a_sz)
+    {
+        std::string s(a_sz*2, 0);
+        for (auto* p = &s[0], *e = p + s.size(); p < e;) {
+            auto hi = *a_bytes >> 4;
+            auto lo = *a_bytes++ & 0xF;
+            *p++ = (char)(55 + hi + (((hi-10)>>31)&-7));
+            *p++ = (char)(55 + lo + (((lo-10)>>31)&-7));
+        }
+        return s;
+    }
+
+    template <typename T = std::string>
+    std::string to_hex_string(T s) { return to_hex_string(&s.front(), s.size()); }
+
     //--------------------------------------------------------------------------
     /// Representation of a string value that has an embedded buffer.
     /// Short strings (size <= N) don't involve memory allocations (def: N=47).

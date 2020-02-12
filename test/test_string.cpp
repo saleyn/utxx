@@ -508,5 +508,8 @@ BOOST_AUTO_TEST_CASE( test_string_hex )
     BOOST_REQUIRE_EQUAL(src,    res2);
 
     BOOST_REQUIRE_EQUAL("313233", hex(123));
+
+    auto res = to_hex_string(std::string(src));
+    BOOST_REQUIRE_EQUAL(expect, res);
 }
 
