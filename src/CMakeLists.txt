@@ -20,6 +20,7 @@ list(APPEND UTXX_SRCS
   polynomial.cpp
   signal_block.cpp
   string.cpp
+  time.cpp
   timestamp.cpp
   url.cpp
   variant.cpp

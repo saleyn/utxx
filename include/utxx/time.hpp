@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #pragma once
 
-#include <utxx/time_val.hpp>
+#include <utxx/time.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/error.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
@@ -233,21 +233,25 @@ namespace utxx {
 
 #endif
 
-  //----------------------------------------------------------------------------
-  /// Parse time in format "HH:MM:SS" to seconds since midnight
-  //----------------------------------------------------------------------------
-  inline long parse_time_to_seconds(const char* a_tm, int a_sz = -1)
-  {
-    if (a_sz <  0) a_sz = strlen(a_tm);
-    if (a_sz != 8 || a_tm[2] != ':' || a_tm[5] != ':')
-      return -1;
+    //----------------------------------------------------------------------------
+    /// Parse time in format "HH:MM[:SS][am|pm]" to seconds since midnight
+    //----------------------------------------------------------------------------
+    long parse_time_to_seconds(const char* a_tm, int a_sz = -1);
 
-    auto     parse = [](const char* p) { return 10*(p[0]-'0') + (p[1]-'0'); };
-    int  h = parse(a_tm);
-    int  m = parse(a_tm+3);
-    int  s = parse(a_tm+6);
+    //----------------------------------------------------------------------------
+    /// Parse day of week "Sun" to "Sat" (case insensitive).
+    /// Also accept "tod" and "today" for today's day.
+    /// @param a_str       input string
+    /// @param a_today_dow DOW of today, if known
+    /// @param a_utc       use UTC timezone (only used when a_str is "tod[ay]" and
+    ///                    \a a_today_dow is -1)
+    /// @return 0-6 for Sun-Sat, or -1 for bad input. a_str is advanced to the end
+    ///         of parsed input.
+    //----------------------------------------------------------------------------
+    int parse_dow_ref(const char*& a_str, int a_today_dow=-1, bool a_utc=false);
 
-    return  h*3600 + m*60 + s;
-  }
+    inline int parse_dow(const char* a_str, int a_tod_dow=-1, bool a_utc=false) {
+        return parse_dow_ref(a_str, a_tod_dow, a_utc);
+    }
 
 } // namespace utxx

@@ -35,9 +35,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/time.hpp>
 #include <utxx/detail/gettimeofday.hpp>
 #include <utxx/compiler_hints.hpp>
-#include <utxx/time.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <cstddef>
 #include <stdint.h>
 #include <type_traits>

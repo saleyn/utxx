@@ -334,13 +334,3 @@ BOOST_AUTO_TEST_CASE( test_time_val_ptime )
     BOOST_REQUIRE_EQUAL(pt, tt);
 }
 
-BOOST_AUTO_TEST_CASE( test_time )
-{
-    auto n = parse_time_to_seconds("");
-    BOOST_CHECK_EQUAL(-1, n);
-    n = parse_time_to_seconds("02:03");
-    BOOST_CHECK_EQUAL(-1, n);
-    n = parse_time_to_seconds("02:03:04");
-    BOOST_CHECK_EQUAL(2*3600+3*60+4, n);
-}
-
