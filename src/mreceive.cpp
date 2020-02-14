@@ -46,6 +46,10 @@
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr)   __builtin_expect(!!(expr), 1)
 
+#ifndef SIOCGSTAMPNS
+# define SIOCGSTAMPNS 0x8907
+#endif
+
 enum data_fmt_t {
   UNDEFINED = 0,
   FORTS     = 'f',

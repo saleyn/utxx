@@ -10,6 +10,8 @@
 
 using namespace  boost::posix_time;
 
+#if (BOOST_VERSION < 107000)
+
 // callback hander for out timers
 void handle_timeout( int id, boost::asio::timer_event_type ev, 
     const ptime& now,
@@ -21,6 +23,8 @@ void handle_timeout( int id, boost::asio::timer_event_type ev,
     std::cout << s.str();
 }
 
+#endif
+
 int main(int argc, char* argv[])
 {
     size_t ntimers  = argc > 1 ? atoi(argv[1]) : 10;
@@ -28,6 +32,10 @@ int main(int argc, char* argv[])
 
     if (ntimers  > 10) ntimers = 10;
     if (nthreads > 10) nthreads = 10;
+
+#if (BOOST_VERSION >= 107000)
+#   warning "Implementation ignored - need to update repeating_timer"
+#else
 
     // example shows io_service running in multiple thread, with multiple timers
     boost::thread_group         threads;
@@ -93,5 +101,8 @@ int main(int argc, char* argv[])
     // and then wait for all threads to complete
     threads.join_all();
 
+#endif // boost_version
+
     return 0;
 }
+

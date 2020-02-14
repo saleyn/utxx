@@ -24,9 +24,12 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #ifndef BOOST_ASIO_REPEATING_TIMER_H_INCLUDED
 #define BOOST_ASIO_REPEATING_TIMER_H_INCLUDED
 
+#if (BOOST_VERSION < 107000)
+
 #include <boost/bind.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
+#include <boost/asio/detail/deadline_timer_service.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/condition.hpp>
@@ -326,6 +329,8 @@ namespace asio {
 }
 }
 
-#endif
+#endif // BOOST_VERSION
+
+#endif // BOOST_ASIO_REPEATING_TIMER_H_INCLUDED
 
 
