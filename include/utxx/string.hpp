@@ -203,9 +203,9 @@ namespace utxx {
 
     /// Write a hex representation of the character 'c' to "dst" string
     inline char* hex(char* dst, char c) {
-        static const char* s_array = "0123456789ABCDEF";
-        *dst++ = s_array[uint8_t(c >>  4)];
-        *dst++ = s_array[uint8_t(c & 0xF)];
+        static const char s_array[] = "0123456789ABCDEF";
+        *dst++ = s_array[int((c >> 4) & 0xF)];
+        *dst++ = s_array[int(c & 0xF)];
         return dst;
     }
 
@@ -445,7 +445,8 @@ namespace utxx {
     /// @param eol      if true - terminate string with end-of-line
     std::string to_bin_string(const char* buf, size_t sz,
                               bool hex = false, bool readable = true,
-                              bool eol = false);
+                              bool eol = false, const char* delim = ",",
+                              const char* pfx = "<<", const char* sfx = ">>");
 
     template <class... Args>
     inline std::string to_string(Args&&... args) {

@@ -36,14 +36,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 std::string to_bin_string(const char* a_buf, size_t a_sz,
-                          bool a_hex, bool a_readable, bool a_eol)
+                          bool a_hex, bool a_readable, bool a_eol,
+                          const char* delim, const char* pfx, const char* sfx)
 {
     std::stringstream out;
     const char* begin = a_buf, *end = a_buf + a_sz;
     print_opts  opts  = a_hex
                       ? (a_readable ? print_opts::printable_or_hex : print_opts::hex)
                       : (a_readable ? print_opts::printable_or_dec : print_opts::dec);
-    output(out, begin, end, opts, ",", "", "\"", "<<", ">>");
+    output(out, begin, end, opts, delim, "", "\"", pfx, sfx);
     if (a_eol) out << std::endl;
     return out.str();
 }
