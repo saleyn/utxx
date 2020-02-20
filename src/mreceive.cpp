@@ -46,6 +46,17 @@
 #define unlikely(expr) __builtin_expect(!!(expr), 0)
 #define likely(expr)   __builtin_expect(!!(expr), 1)
 
+#ifndef SIOCGSTAMP
+/* linux-5.2+ added support for 64-bit time_t into ioctls
+   that support 'struct timeval' and removed 'SIOCGSTAMP'
+   define.
+
+   Include 'SIOCGSTAMP' wrapper via linux/sockios.h
+   if does not exist.
+  */
+# include <linux/sockios.h>
+#endif
+
 enum data_fmt_t {
   UNDEFINED = 0,
   FORTS     = 'f',

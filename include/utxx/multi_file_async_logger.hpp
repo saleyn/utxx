@@ -1315,8 +1315,8 @@ commit(const struct timespec* tsp)
     for(auto it = m_pending_data_streams.begin(), e = m_pending_data_streams.end();
              it != e; ++it)
     {
-        stream_info*     si = *it;
-        msg_formatter& ffmt = si->on_format;
+        stream_info* si = *it;
+        if (!si) continue;
 
         // If there was an error on this stream try to reconnect the stream
         if (si->error && si->on_reconnect) {
@@ -1362,8 +1362,10 @@ commit(const struct timespec* tsp)
 
         int status = SI_OK;
 
-        const command_t* p = si->pending_writes_head();
-        command_t*     end = nullptr;
+        msg_formatter& ffmt = si->on_format;
+        const command_t*  p = si->pending_writes_head();
+        command_t*      end = nullptr;
+
 
         // Process commands in blocks of si->max_batch_sz
         for (; p && !si->error && ((status & SI_CLOSE) != SI_CLOSE); p = end) {
