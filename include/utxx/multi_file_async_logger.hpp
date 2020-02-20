@@ -264,7 +264,7 @@ public:
         int                a_mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
     );
 
-    /// Same as open_file() but throws io_error exception on error 
+    /// Same as open_file() but throws io_error exception on error
     file_id open_file_or_throw
     (
         const std::string& a_filename,
@@ -1312,11 +1312,15 @@ commit(const struct timespec* tsp)
     UTXX_ASYNC_DEBUG_TRACE(("Processed count: %d / %ld. (MaxQsz = %d)\n",
                        count, m_total_msgs_processed.load(), m_max_queue_size));
 
-    for(auto it = m_pending_data_streams.begin(), e = m_pending_data_streams.end();
-             !m_cancel.load(std::memory_order_relaxed) && it != e; ++it)
+    // Since inside the loop there is a posibility of erasing an element from
+    // m_pending_data_streams, we need to conditionally increment the iterator
+    bool increment = true;
+    auto inc = [&](auto& it) { if (increment) ++it; };
+
+    for(auto it=m_pending_data_streams.begin(); it != m_pending_data_streams.end(); inc(it))
     {
         stream_info* si = *it;
-        if (!si) continue;
+        increment       = true;
 
         // If there was an error on this stream try to reconnect the stream
         if (si->error && si->on_reconnect) {
@@ -1419,7 +1423,8 @@ commit(const struct timespec* tsp)
 
             if (destroy_si || si->fd < 0) {
                 UTXX_ASYNC_DEBUG_TRACE(("Removing %p stream from list of pending data streams\n", si));
-                m_pending_data_streams.erase(si);
+                it = m_pending_data_streams.erase(it);
+                increment = false;
             }
 
             internal_close(si, si->error);
