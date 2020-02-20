@@ -1313,7 +1313,7 @@ commit(const struct timespec* tsp)
                        count, m_total_msgs_processed.load(), m_max_queue_size));
 
     for(auto it = m_pending_data_streams.begin(), e = m_pending_data_streams.end();
-             it != e; ++it)
+             !m_cancel.load(std::memory_order_relaxed) && it != e; ++it)
     {
         stream_info* si = *it;
         if (!si) continue;
