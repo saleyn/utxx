@@ -64,6 +64,8 @@ BOOST_AUTO_TEST_CASE( test_io_buffer )
     BOOST_CHECK_EQUAL("cd", std::string(b.rd_ptr(), b.size()));
 }
 
+#if (BOOST_VERSION < 107000)
+
 BOOST_AUTO_TEST_CASE( test_bufferred_queue )
 {
     buffered_queue<> v;
@@ -76,5 +78,7 @@ BOOST_AUTO_TEST_CASE( test_bufferred_queue )
     l_buf_proxy.enqueue(hb);
     l_buf_owner.enqueue(hb);
 }
+
+#endif // BOOST_VERSION
 
 } // namespace utxx

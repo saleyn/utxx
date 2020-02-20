@@ -91,6 +91,9 @@ namespace detail {
     };
 }
 
+#if (BOOST_VERSION < 107000)
+// TODO: boost 1.70 changed consuming_buffers to take 3 arguments: fix the code above
+
 /**
  * \brief A stream that can be used for asyncronous output with boost::asio.
  * There are a couple of optimizations implemented to reduce
@@ -193,5 +196,7 @@ public:
     }
 
 };
+
+#endif // Boost version < 1.70.0
 
 } // namespace utxx
