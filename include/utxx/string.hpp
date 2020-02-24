@@ -1,3 +1,4 @@
+// vim:ts=4:sw=4:et
 //----------------------------------------------------------------------------
 /// \file   string.hpp
 /// \author Serge Aleynikov
@@ -150,6 +151,26 @@ namespace utxx {
         std::string s;
         s.reserve(strlen(a) + strlen(b) + a_delim.size() + 1);
         return s.append(a).append(a_delim).append(b);
+    }
+
+    /// Replace the first occurance of string "from" in "str" with "to"
+    inline std::string replace(std::string str, const std::string& from, const std::string& to) {
+        size_t start_pos = str.find(from);
+        if(start_pos != std::string::npos)
+            str.replace(start_pos, from.length(), to);
+        return str;
+    }
+
+    /// Replace all occurances of string "from" in "str" with "to"
+    inline std::string replace_all(std::string str, const std::string& from, const std::string& to) {
+        if (!from.empty()) {
+            size_t start_pos = 0;
+            while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+                str.replace(start_pos, from.length(), to);
+                start_pos += to.length();
+            }
+        }
+        return str;
     }
 
     /// Join an iterator range to string delimited by \a a_delim

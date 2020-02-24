@@ -126,6 +126,12 @@ BOOST_AUTO_TEST_CASE( test_string_length )
     BOOST_REQUIRE_EQUAL(3, strnlen(s2));
 }
 
+BOOST_AUTO_TEST_CASE( test_string_replace )
+{
+    BOOST_CHECK_EQUAL("abc cdNNN", utxx::replace    ("abNNN cdNNN", "NNN", "c"));
+    BOOST_CHECK_EQUAL("abc cdc",   utxx::replace_all("abNNN cdNNN", "NNN", "c"));
+}
+
 enum op_type {OP_UNDEFINED = -1, OP_ADD, OP_REMOVE, OP_REPLACE, OP_UPDATE};
 
 BOOST_AUTO_TEST_CASE( test_string_find_pos )
