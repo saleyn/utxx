@@ -32,6 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/string.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
 #include <iostream>
 
 using namespace utxx;
@@ -507,15 +508,20 @@ BOOST_AUTO_TEST_CASE( test_string_hex )
 
     auto  res1 = hex(src, strlen(src));
     auto  res2 = unhex_string(res1);
+    auto  res3 = unhex_string(boost::to_lower_copy(res1));
 
     const char* expect = "4B4C4D4E30313233";
 
-    BOOST_REQUIRE_EQUAL(expect, res1);
-    BOOST_REQUIRE_EQUAL(src,    res2);
+    BOOST_CHECK_EQUAL(expect, res1);
+    BOOST_CHECK_EQUAL(src,    res2);
+    BOOST_CHECK_EQUAL(src,    res3);
 
-    BOOST_REQUIRE_EQUAL("313233", hex(123));
+    BOOST_CHECK_EQUAL("313233",   hex(123));
+    BOOST_CHECK_EQUAL("4b4c4d4e", hex(std::string("KLMN"), true));
 
-    auto res = to_hex_string(std::string(src));
-    BOOST_REQUIRE_EQUAL(expect, res);
+    auto res4 = to_hex_string(std::string(src));
+    BOOST_CHECK_EQUAL(expect, res4);
+    auto res5 = hex(std::string(src), true);
+    BOOST_CHECK_EQUAL("4b4c4d4e30313233", res5);
 }
 

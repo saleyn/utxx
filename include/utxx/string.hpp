@@ -223,26 +223,27 @@ namespace utxx {
     inline std::string trim_copy(std::string s)  { trim(s);  return s; }
 
     /// Write a hex representation of the character 'c' to "dst" string
-    inline char* hex(char* dst, char c) {
-        static const char s_array[] = "0123456789ABCDEF";
-        *dst++ = s_array[int((c >> 4) & 0xF)];
-        *dst++ = s_array[int(c & 0xF)];
-        return dst;
+    inline char* hex(char* dst, char c, bool lower=false) {
+        static const char* s_array[2] = {"0123456789ABCDEF", "0123456789abcdef"};
+        auto* s = s_array[lower];
+        *dst++  = s[int((c >> 4) & 0xF)];
+        *dst++  = s[int(c & 0xF)];
+        return    dst;
     }
 
     /// Decode the next two chars in a hex representation of the "a_src" string
     inline char unhex(const char* a_src) {
-        auto f = [](char c) { return char(c >= 'A' ? 10+(c-'A') : c-'0'); };
+        auto f = [](char c) { c = toupper(c); return char(c >= 'A' ? 10+(c-'A') : c-'0'); };
         return (f(*a_src) << 4) | f(*(a_src+1));
     }
 
     /// Encode a hex representation of the "a_str" string
-    inline std::string hex(const char* a_str, size_t sz) {
+    inline std::string hex(const char* a_str, size_t sz, bool a_lower=false) {
         std::string res;
         res.reserve(sz*2);
         for (const char* p = a_str, *e = p+sz; p != e; ++p) {
             char ss[2];
-            hex(ss, *p);
+            hex(ss, *p, a_lower);
             res.append(ss, 2);
         }
         return res;
@@ -250,13 +251,13 @@ namespace utxx {
 
     /// Encode a hex representation of the "a_val" value converted to string
     template <typename T>
-    inline std::string hex(T a_val) {
+    inline std::string hex(T a_val, bool a_lower=false) {
         auto src = std::to_string(a_val);
-        return hex(src.c_str(), src.size());
+        return hex(src.c_str(), src.size(), a_lower);
     }
 
     /// Encode a hex representation of the "s" string
-    inline std::string hex(const std::string& s) { return hex(s.c_str(), s.size()); }
+    inline std::string hex(const std::string& s, bool lower=false) { return hex(s.c_str(), s.size(), lower); }
 
     /// Unhex the hex representation of the string "a_str" to vector
     template <typename T>
