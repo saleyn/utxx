@@ -115,6 +115,7 @@ public:
     #if __cplusplus >= 201103L
     basic_io_buffer(basic_io_buffer&& a_rhs)
         : alloc_t (std::move(static_cast<alloc_t&&>(a_rhs)))
+        , m_begin (m_data), m_end(m_data+N)
     {
         repoint(std::forward<basic_io_buffer&&>(a_rhs));
     }
