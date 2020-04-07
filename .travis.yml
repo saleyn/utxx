@@ -9,8 +9,8 @@ addons:
     - ubuntu-toolchain-r-test
     #- boost-latest
     packages:
-    - gcc-9
-    - g++-9
+    - gcc-8
+    - g++-8
     #- libboost1.65-all-dev
     #- cmake
     #- cmake-data
@@ -22,8 +22,9 @@ cache:
     - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
 
 before_install:
-  - export CC=gcc-9
-  - export CXX=g++-9
+  - export CC=gcc-8
+  - export CXX=g++-8
+  - g++ --version | head -1
   - lsb_release -a && uname -a
   - nproc
   #- sudo apt-get -y install cmake
@@ -43,7 +44,7 @@ before_install:
   - |
     if [ ! -f "boost-tarball/boost.tgz" ]; then
       rm -rf boost_* boost-tarball
-      TARBALL=boost_1_65_1.tar.gz
+      TARBALL=boost_1_72_0.tar.gz
       wget -q http://downloads.sourceforge.net/boost/${TARBALL}
       tar zxf ${TARBALL}
       cd ${TARBALL%.tar.gz}
