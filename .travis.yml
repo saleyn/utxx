@@ -17,6 +17,8 @@ addons:
     - libxslt1.1
     - python-lxml
     - doxygen
+  env:
+    - MATRIX_EVAL="CC=gcc-8 && CXX=g++-8"
 cache:
   directories:
     - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
