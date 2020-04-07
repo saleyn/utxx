@@ -326,14 +326,30 @@ public:
         reset(a_sec_interval);
     }
 
-    /// Obtain weighted average
+    /// Obtain weighted exponential average
     double calculate(size_t a_now_sec, double a_value) {
-        double alpha    = exp(-(double)(a_now_sec - m_last_seconds)
-                        / m_denominator);
-        m_last_wavg     = a_value + alpha * (m_last_wavg - a_value);
-        m_last          = a_value;
-        m_last_seconds  = a_now_sec;
-        return m_last_wavg;
+        return calculate_exp(a_now_sec, a_value);
+    }
+
+    /// Obtain exponential moving average
+    double calculate_ema(size_t a_now_sec, double a_value) {
+      auto fun = [=]() { return 2.0/(1.0+interval()); };
+      return calculate(a_now_sec, a_value, fun);
+    }
+
+    /// Obtain weighted exponential average
+    double calculate_exp(size_t a_now_sec, double a_value) {
+      auto fun = [=]() { return exp(-(double)(a_now_sec - m_last_seconds) / m_denominator); };
+      return calculate(a_now_sec, a_value, fun);
+    }
+
+    template <typename AlphaFun>
+    double calculate(size_t a_now_sec, double a_value, AlphaFun fun) {
+      double alpha    = AlphaFun();
+      m_last_wavg     = a_value + alpha * (m_last_wavg - a_value);
+      m_last          = a_value;
+      m_last_seconds  = a_now_sec;
+      return m_last_wavg;
     }
 
     /// Clear internal state
