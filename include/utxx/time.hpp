@@ -253,4 +253,16 @@ namespace utxx {
         return parse_dow_ref(a_str, a_tod_dow, a_utc);
     }
 
+#ifdef _WIN32
+    /// Simulated support of strptime(3) on Windows
+    /// \see strptime(3)
+    inline char* strptime(const char* str, const char* fmt, struct tm*  tm) {
+        std::istringstream input(str);
+        input.imbue(std::locale(setlocale(LC_ALL, nullptr)));
+        input >> std::get_time(tm, fmt);
+        return input.fail() ? nullptr (char*)(str + input.tellg());
+    }
+#endif
+
+#endif
 } // namespace utxx
