@@ -260,7 +260,7 @@ namespace utxx {
         std::istringstream input(str);
         input.imbue(std::locale(setlocale(LC_ALL, nullptr)));
         input >> std::get_time(tm, fmt);
-        return input.fail() ? nullptr (char*)(str + input.tellg());
+        return input.fail() ? nullptr : (char*)(str + input.tellg());
     }
 #endif
 
