@@ -264,5 +264,4 @@ namespace utxx {
     }
 #endif
 
-#endif
 } // namespace utxx
