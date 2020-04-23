@@ -344,8 +344,8 @@ public:
     }
 
     template <typename AlphaFun>
-    double calculate(size_t a_now_sec, double a_value, AlphaFun fun) {
-      double alpha    = AlphaFun();
+    double calculate(size_t a_now_sec, double a_value, const AlphaFun& fun) {
+      double alpha    = fun();
       m_last_wavg     = a_value + alpha * (m_last_wavg - a_value);
       m_last          = a_value;
       m_last_seconds  = a_now_sec;
