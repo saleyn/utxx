@@ -14,6 +14,7 @@ licensing details).
 The components include:
 
 * Logging framework with pluggable back-ends using Inversion of Control design pattern 
+* Ultra-low latency multi-stream/file async logger (1us average latency per message on the critical path)
 * Custom allocators (including atomic pool allocator, stack allocator)
 * Atomic functions
 * Bitmap mask with fast iteration
@@ -26,7 +27,6 @@ The components include:
 * Exception error classes with dynamic number of arguments
 * Hashmap abstraction
 * UDP receiver
-* Ultra-low latency async logger
 * Math functions
 * Metaprogramming functions
 * Persistent blob and array
