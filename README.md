@@ -16,6 +16,9 @@ The components include:
 * Logging framework with pluggable back-ends using Inversion of Control design pattern 
 * Ultra-low latency multi-stream/file async logger (1us average latency per message on the critical path)
 * Custom allocators (including atomic pool allocator, stack allocator)
+* Exceptions with error source location
+* Reflectable enums
+* Configuration framework with option validation (SCON configuration format support)
 * Atomic functions
 * Bitmap mask with fast iteration
 * BOOST wait_timeout, repeating timer
@@ -35,9 +38,6 @@ The components include:
 * Throttling components
 * PID file manager
 * Variant / variant tree components
-* Exceptions with error source location
-* Reflectable enums
-* Configuration framework with option validation (SCON configuration format support)
 
 ## Downloading ##
 ``$ git clone git@github.com:saleyn/utxx.git``
