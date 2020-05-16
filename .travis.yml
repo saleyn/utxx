@@ -30,12 +30,13 @@ before_script:
   - |
     echo "PKG_ROOT_DIR=/usr/local"                               > .cmake-args.${HOSTNAME}
     echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
-    #echo "ENV:BOOST_ROOT=${BOOST_ROOT}"                         >> .cmake-args.${HOSTNAME}
+    #echo "ENV:BOOST_ROOT=/usr/local"                            >> .cmake-args.${HOSTNAME}
     echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
 
 script:
   - ${CXX} --version
-  - find /usr/local -name 'libboost*'
+  - find /usr/include -name '*boost*' | head -100
+  - find /usr/lib -name '*boost*' | head -100
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
