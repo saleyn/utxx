@@ -23,6 +23,8 @@ matrix:
             - libxslt1.1
             - python-lxml
             - doxygen
+      env:
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
 
 before_script:
   - |
