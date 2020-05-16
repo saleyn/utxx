@@ -33,7 +33,6 @@ before_script:
     echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
     #echo "ENV:BOOST_ROOT=${BOOST_ROOT}"                         >> .cmake-args.${HOSTNAME}
     echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
-  - g++ --version
 
 script:
   - $CXX --version
