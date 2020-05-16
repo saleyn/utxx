@@ -19,12 +19,12 @@ The components include:
 * Exceptions with error source location
 * Reflectable enums
 * Configuration framework with option validation (SCON configuration format support)
+* Concurrent array/fifo/priority_queue/stack/hashmap
+* Fast delegates
 * Atomic functions
 * Bitmap mask with fast iteration
 * BOOST wait_timeout, repeating timer
 * Buffer for I/O handling
-* Concurrent array/fifo/priority_queue/stack/hashmap
-* Fast delegates
 * Type conversion routines
 * Endian-handling
 * Exception error classes with dynamic number of arguments
