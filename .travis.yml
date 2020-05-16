@@ -16,8 +16,8 @@ matrix:
           packages:
             - gcc-9
             - g++-9
-            - boost-latest
-            #- boost1.70
+            #- boost-latest
+            - boost1.70
             #- cmake
             #- cmake-data
             - libxslt1.1
