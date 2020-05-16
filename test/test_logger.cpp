@@ -251,16 +251,16 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
             LOG_INFO ("%s",temp_data.c_str());
         }
         log.finalize();
-        return path::list_files("/tmp", "logger.file_*.log");
+        return utxx::path::list_files("/tmp", "logger.file_*.log");
     };
 
     auto cleanup = [] (std::list<std::string> const& files = std::list<std::string>()) {
         std::list<std::string> list(files);
         if (list.empty())
-            list = path::list_files("/tmp", "logger.file_*.log").second;
+            list = utxx::path::list_files("/tmp", "logger.file_*.log").second;
         for (auto& f : list)
-            path::file_unlink(path::join("/tmp", f));
-        path::file_unlink("/tmp/logger.log"); // delete symlink
+            utxx::path::file_unlink(utxx::path::join("/tmp", f));
+        utxx::path::file_unlink("/tmp/logger.log"); // delete symlink
     };
 
     auto check = [] (auto& title, auto& files, uint n) {
