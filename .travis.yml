@@ -4,13 +4,13 @@ dist:     trusty
 matrix:
   include:
     - os: linux
-      compiler: g++
       addons:
         apt:
           update: true
           sources:
             - sourceline: 'ppa:mhier/libboost-latest'
-            - ubuntu-toolchain-r-test
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            #- ubuntu-toolchain-r-test
           packages:
             - gcc-9
             - g++-9
@@ -27,6 +27,10 @@ matrix:
 before_install:
   - eval "${MATRIX_EVAL}"
 
+install:
+  - echo ${CXX}
+  - ${CXX} --version
+
 before_script:
   - |
     echo "PKG_ROOT_DIR=/usr/local"                               > .cmake-args.${HOSTNAME}
@@ -35,7 +39,7 @@ before_script:
     echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
 
 script:
-  - $CXX --version
+  - ${CXX} --version
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
