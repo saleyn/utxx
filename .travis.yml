@@ -1,26 +1,28 @@
-# See http://genbattle.bitbucket.org/blog/2016/01/17/c++-travis-ci
-
 language: cpp
 compiler: g++
+os:       linux
 dist:     trusty
-addons:
-  apt:
-    sources:
-    - sourceline: 'ppa:mhier/libboost-latest'
-    - ubuntu-toolchain-r-test
-    #- boost-latest
-    packages:
-    - gcc-9
-    - g++-9
-    - boost1.70
-    #- cmake
-    #- cmake-data
-    - libxslt1.1
-    - python-lxml
-    - doxygen
-cache:
-  directories:
-    - ${TRAVIS_BUILD_DIR}/deps/boost-tarball
+
+matrix:
+  include:
+    - env: COMPILER=g++-9
+      compiler: g++
+      addons:
+        apt:
+          update: true
+          sources:
+            - sourceline: 'ppa:mhier/libboost-latest'
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-9
+            - g++-9
+            - boost-latest
+            #- boost1.70
+            #- cmake
+            #- cmake-data
+            - libxslt1.1
+            - python-lxml
+            - doxygen
 
 before_script:
   - |
