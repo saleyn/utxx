@@ -84,13 +84,14 @@ bool logger_impl_file::init(const variant_tree& a_config)
     m_no_header    = a_config.get("logger.file.no-header",   false);
     m_mode         = a_config.get("logger.file.mode",         0644);
     m_symlink      = a_config.get("logger.file.symlink",        "");
-    m_split_size   = a_config.get("logger.file.split-size",      0);
+    auto split_sz  = a_config.get("logger.file.split-size",      0);
+    m_split_size   = size_t(split_sz);
     m_split_parts  = a_config.get("logger.file.split-parts",     0);
     m_split_delim  = a_config.get("logger.file.split-delim",   "_")[0];
     m_split_order  = split_ord::from_string(a_config.get("logger.file.split-order", "last"), true);
 
-    if (m_split_size  < 0)
-        UTXX_THROW_BADARG_ERROR("logger.file.split-size cannot be negative: ",  m_split_size);
+    if (split_sz  < 0)
+        UTXX_THROW_BADARG_ERROR("logger.file.split-size cannot be negative: ",  m_split_sz);
     if (m_split_parts < 0)
         UTXX_THROW_BADARG_ERROR("logger.file.split-parts cannot be negative: ", m_split_parts);
     if (m_split_order == split_ord::ROTATE && m_split_parts == 0)
