@@ -35,6 +35,7 @@ before_script:
   - g++ --version
 
 script:
+  - $CXX --version
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
