@@ -91,7 +91,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
     m_split_order  = split_ord::from_string(a_config.get("logger.file.split-order", "last"), true);
 
     if (split_sz  < 0)
-        UTXX_THROW_BADARG_ERROR("logger.file.split-size cannot be negative: ",  m_split_sz);
+        UTXX_THROW_BADARG_ERROR("logger.file.split-size cannot be negative: ",  split_sz);
     if (m_split_parts < 0)
         UTXX_THROW_BADARG_ERROR("logger.file.split-parts cannot be negative: ", m_split_parts);
     if (m_split_order == split_ord::ROTATE && m_split_parts == 0)
