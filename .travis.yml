@@ -30,7 +30,8 @@ before_script:
   - |
     echo "PKG_ROOT_DIR=/usr/local"                               > .cmake-args.${HOSTNAME}
     echo "WITH_THRIFT=OFF"                                      >> .cmake-args.${HOSTNAME}
-    #echo "ENV:BOOST_ROOT=/usr/local"                            >> .cmake-args.${HOSTNAME}
+    echo "ENV:BOOST_ROOT=/usr/include"                          >> .cmake-args.${HOSTNAME}
+    echo "ENV:BOOST_LIBRARYDIR=/usr/lib"                        >> .cmake-args.${HOSTNAME}
     echo "WITH_ENUM_SERIALIZATION=ON"                           >> .cmake-args.${HOSTNAME}
 
 script:
