@@ -36,8 +36,8 @@ before_script:
 
 script:
   - ${CXX} --version
-  - find /usr/include -name '*boost*' | head -100
-  - find /usr/lib -name '*boost*' | head -100
+  #- find /usr/include -name '*boost*' | head -100
+  #- find /usr/lib -name '*boost*' | head -100
   ############################################################################
   # Install a recent CMake (unless already installed on OS X)
   ############################################################################
