@@ -59,6 +59,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/synch.hpp>
 #include <thread>
 #include <mutex>
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 
 #ifndef _MSC_VER
 #   include <utxx/synch.hpp>
@@ -262,7 +265,11 @@ struct logger : boost::noncopyable {
     using str_function   = function
         <std::string (const char* pfx, size_t plen, const char* sfx, size_t slen)>;
 
-    enum class payload_t { STR_FUN, CHAR_FUN, STR };
+    enum class payload_t { STR_FUN, CHAR_FUN, STR
+#if __cplusplus >= 201703L
+        , STR_VIEW
+#endif
+    };
 
     class msg {
         time_val      m_timestamp;
@@ -277,21 +284,25 @@ struct logger : boost::noncopyable {
         char          m_thread_name[16];
 
         union U {
-            char_function  cf;
-            str_function   sf;
-            std::string    str;
+            char_function     cf;
+            str_function      sf;
+            std::string       str;
+#if __cplusplus >= 201703L
+            std::string_view  strv;
+            U(const std::string_view& v) : strv(v){}
+#endif
             U() : cf(nullptr) {}
-            U(const char_function& f) : cf(f)  {}
-            U(const str_function&  f) : sf(f)  {}
-            U(const std::string&   f) : str(f) {}
+            U(const char_function&    f) : cf(f)  {}
+            U(const str_function&     f) : sf(f)  {}
+            U(const std::string&      v) : str(v) {}
             ~U() {}
         } m_fun;
 
         friend struct logger;
 
-        template <typename Fun>
+        template <typename Value>
         msg(log_level a_ll, const std::string& a_category, payload_t a_type,
-            const Fun& a_fun,
+            const Value& a_val,
             const char* a_src_loc, std::size_t a_sloc_len,
             const char* a_src_fun, std::size_t a_sfun_len
         )   : m_timestamp   (now_utc())
@@ -303,7 +314,7 @@ struct logger : boost::noncopyable {
             , m_src_fun     (a_src_fun)
             , m_type        (a_type)
             , m_thread_id   (pthread_self())
-            , m_fun         (a_fun)
+            , m_fun         (a_val)
         {
             if (logger::instance().show_thread() != logger::thr_id_type::NAME ||
                 pthread_getname_np(m_thread_id, m_thread_name, sizeof(m_thread_name)) < 0)
@@ -347,11 +358,29 @@ struct logger : boost::noncopyable {
                   a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
         {}
 
-        ~msg() {
+ #if __cplusplus >= 201703L
+        template <int N, int M>
+        msg(log_level a_ll, const std::string& a_cat, const std::string_view& a_str,
+            const char (&a_src_loc)[N], const char (&a_src_fun)[M])
+            : msg(a_ll, a_cat, payload_t::STR_VIEW, a_str,
+                  a_src_loc, N-1, a_src_fun, M-1)
+        {}
+
+        msg(log_level a_ll, const std::string& a_cat, const std::string_view& a_str,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len)
+            : msg(a_ll, a_cat, payload_t::STR_VIEW, a_str,
+                  a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
+        {}
+ #endif
+       ~msg() {
             switch (m_type) {
                 case payload_t::STR_FUN:  m_fun.sf = nullptr;  break;
                 case payload_t::CHAR_FUN: m_fun.cf = nullptr;  break;
                 case payload_t::STR:      m_fun.str.~basic_string(); break;
+#if __cplusplus >= 201703L
+                case payload_t::STR_VIEW: m_fun.strv.~basic_string_view(); break;
+#endif
             }
         }
 
@@ -766,6 +795,17 @@ public:
     /// @param a_src   identifies the source location of the error
     bool log(utxx::log_level  a_level, const std::string& a_cat,
              const std::string& a_msg, src_info&&         a_src);
+
+#if __cplusplus >= 201703L
+    /// Log a constant string view of given log level to registered implementations.
+    /// Use the provided <LOG_*> macros instead of calling it directly.
+    /// @param a_level is the log level to record
+    /// @param a_cat   is a category of the message (use NULL if undefined).
+    /// @param a_msg   is the message to be logged
+    /// @param a_src   identifies the source location of the error
+    bool log(utxx::log_level  a_level, const std::string& a_cat,
+             const std::string_view& a_msg, src_info&&         a_src);
+#endif
 
     /// Log a message of given log level to registered implementations.
     /// Invocation of \a a_fun happens in the context different from the caller's.

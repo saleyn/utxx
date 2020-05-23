@@ -20,17 +20,17 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     const char* filename = "/tmp/logger.file.log";
     const int iterations = 1000;
 
-    pt.put("logger.timestamp",     variant("none"));
-    pt.put("logger.show-ident",    variant(false));
-    pt.put("logger.show-location", variant(false));
-    pt.put("logger.silent-finish", variant(true));
-    pt.put("logger.file.levels",   variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.file.filename", variant(filename));
-    pt.put("logger.file.append",   variant(false));
-    pt.put("logger.file.ho-header",variant(true));
+    pt.put("logger.timestamp",     utxx::variant("none"));
+    pt.put("logger.show-ident",    utxx::variant(false));
+    pt.put("logger.show-location", utxx::variant(false));
+    pt.put("logger.silent-finish", utxx::variant(true));
+    pt.put("logger.file.levels",   utxx::variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename", utxx::variant(filename));
+    pt.put("logger.file.append",   utxx::variant(false));
+    pt.put("logger.file.ho-header",utxx::variant(true));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
-        BOOST_TEST_MESSAGE(pt.dump(std::cout, 2, false, true));
+        BOOST_TEST_MESSAGE(pt.to_string(2, false, true));
 
     BOOST_REQUIRE(pt.get_child_optional("logger.file"));
 
@@ -138,7 +138,7 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
                 BOOST_TEST_MESSAGE("Thread" << th << ", line=" << j);
             BOOST_REQUIRE(s != "");
             int idx = (j-1) % thr_msgs;
-            sprintf(buf, "|%s||%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
+            sprintf(buf, "|%s|%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
             exp = buf;
             if (exp != s) std::cerr << "File " << filename << ":" << n << std::endl;
             BOOST_REQUIRE_EQUAL(exp, s);

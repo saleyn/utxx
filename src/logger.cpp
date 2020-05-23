@@ -510,6 +510,9 @@ void logger::dolog_msg(const logger::msg& a_msg) {
 
                 break;
             }
+#if __cplusplus >= 201703L
+            case payload_t::STR_VIEW:
+#endif
             case payload_t::STR: {
                 detail::basic_buffered_print<1024> buf;
                 char  pfx[256], sfx[256];

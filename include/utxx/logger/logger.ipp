@@ -196,6 +196,23 @@ inline bool logger::log(
     return res;
 }
 
+#if __cplusplus >= 201703L
+inline bool logger::log(
+    log_level               a_level,
+    const std::string&      a_cat,
+    const std::string_view& a_msg,
+    src_info&&              a_si)
+{
+    if (!is_enabled(a_level))
+        return false;
+
+    bool res = m_queue.emplace(a_level, a_cat, a_msg, a_si.srcloc(), a_si.srcloc_len(),
+                               a_si.fun(), a_si.fun_len());
+    m_event.signal_fast();
+    return res;
+}
+#endif
+
 template <int N, int M, typename... Args>
 inline bool logger::async_logs(
     log_level           a_level,

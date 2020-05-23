@@ -36,6 +36,7 @@ list(APPEND TEST_SRCS
     test_iovector.cpp
     test_leb128.cpp
     test_logger.cpp
+    #test_logger_async_file.cpp
     test_logger_scribe.cpp
     test_logger_syslog.cpp
     test_math.cpp

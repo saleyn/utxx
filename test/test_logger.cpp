@@ -152,12 +152,12 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(3u,                   log_level_size(utxx::LEVEL_LOG));
     BOOST_CHECK_EQUAL(4u,                   log_level_size(utxx::LEVEL_NONE));
 
-    pt.put("logger.timestamp",             variant("time-usec"));
-    pt.put("logger.min-level-filter",      variant("debug"));
-    pt.put("logger.console.stdout-levels", variant("debug|info|notice|warning|error|fatal|alert"));
+    pt.put("logger.timestamp",             utxx::variant("time-usec"));
+    pt.put("logger.min-level-filter",      utxx::variant("debug"));
+    pt.put("logger.console.stdout-levels", utxx::variant("debug|info|notice|warning|error|fatal|alert"));
     pt.put("logger.show-thread",           true);
     pt.put("logger.show-ident",            true);
-    pt.put("logger.ident",                 variant("my-logger"));
+    pt.put("logger.ident",                 utxx::variant("my-logger"));
     pt.put("logger.fatal-kill-signal",     0);
     pt.put("logger.silent-finish",         true);
 
@@ -284,21 +284,21 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Initial directory cleanup
     cleanup();
 
-    variant_tree pt;
+    utxx::variant_tree pt;
     const std::string filename_prefix = "logger.file";
     const char*       filename        = "/tmp/logger.file.log";
-    pt.put("logger.timestamp",          variant("none"));
+    pt.put("logger.timestamp",          utxx::variant("none"));
     pt.put("logger.show-ident",         false);
     pt.put("logger.show-location",      false);
     pt.put("logger.silent-finish",      true);
-    pt.put("logger.file.stdout-levels", variant("debug|info|warning|error|fatal|alert"));
-    pt.put("logger.file.filename",      variant(filename));
+    pt.put("logger.file.stdout-levels", utxx::variant("debug|info|warning|error|fatal|alert"));
+    pt.put("logger.file.filename",      utxx::variant(filename));
     pt.put("logger.file.append",        false);
     pt.put("logger.file.no-header",     true);
     pt.put("logger.file.split-file",    true);
-    pt.put("logger.file.split-order",   variant("first"));
+    pt.put("logger.file.split-order",   utxx::variant("first"));
     pt.put("logger.file.split-size",    250); //size in bytes
-    pt.put("logger.file.symlink",       variant("/tmp/logger.log"));
+    pt.put("logger.file.symlink",       utxx::variant("/tmp/logger.log"));
 
     //--------------------------------------------------------------------------
     // Check FIRST part order (unrestricted)
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..8}.log" are created
     check("first unrestricted", res.second, 8);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_1.log"));
+    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_1.log"));
     BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_8.log")
                                       .find("I|write count: 0\n") == 0);
 
@@ -322,7 +322,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
                       "I|write count: 100\n",
                       utxx::path::read_file("/tmp/logger.file_1.log"));
 
-    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -336,9 +336,9 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..3}.log" are created
     check("first restricted 3", res.second, 3);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_1.log"));
+    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_1.log"));
 
-    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -351,14 +351,14 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{01..11}.log" are created (note zero padding)
     check("first restricted 11", res.second, 11);
 
-    BOOST_CHECK_EQUAL("/tmp/logger.file_01.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_01.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
     //--------------------------------------------------------------------------
     // Check LAST part order (unrestricted)
     //--------------------------------------------------------------------------
-    pt.put("logger.file.split-order",   variant("last"));
+    pt.put("logger.file.split-order",   utxx::variant("last"));
     pt.put("logger.file.append",        false);
     pt.put("logger.file.split-parts",   0);
     pt.put("logger.file.split-size",    250); //size in bytes
@@ -368,7 +368,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..8}.log" are created
     check("last unrestricted", res.second, 8);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_8.log"));
+    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_8.log"));
     BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_1.log")
                                       .find("I|write count: 0\n") == 0);
     // Reopen the log
@@ -380,7 +380,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     BOOST_CHECK_EQUAL("I|write count: 99\n"
                       "I|write count: 100\n",
                       utxx::path::read_file("/tmp/logger.file_8.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_8.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_8.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -394,8 +394,8 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..3}.log" are created
     check("last restricted", res.second, 3);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_3.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_3.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -403,12 +403,12 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check ROTATE part order (restricted to 5 parts)
     //--------------------------------------------------------------------------
     pt.put("logger.file.split-parts", 5);
-    pt.put("logger.file.split-order", variant("rotate"));
+    pt.put("logger.file.split-order", utxx::variant("rotate"));
 
     res = write_test_data(pt);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", path::read_file("/tmp/logger.file_3.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", path::file_readlink("/tmp/logger.log"));
+    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_3.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", utxx::path::file_readlink("/tmp/logger.log"));
     BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_4.log")
                                       .find("I|write count: 43\n") == 0);
 
@@ -416,23 +416,23 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
 
     // Create one log file and ensure that rotation starts off with it
     pt.put("logger.file.split-parts", 10);
-    path::write_file("/tmp/logger.file_05.log", "I|write count: -1\n");
+    utxx::path::write_file("/tmp/logger.file_05.log", "I|write count: -1\n");
 
     res = write_test_data(pt);
 
     BOOST_CHECK_EQUAL("I|write count: 98\n"
-                      "I|write count: 99\n", path::read_file("/tmp/logger.file_02.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_01.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_02.log"));
-    BOOST_CHECK      (!path::file_exists("/tmp/logger.file_03.log"));
-    BOOST_CHECK      (!path::file_exists("/tmp/logger.file_04.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_05.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_06.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_07.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_08.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_09.log"));
-    BOOST_CHECK      ( path::file_exists("/tmp/logger.file_10.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_02.log", path::file_readlink("/tmp/logger.log"));
+                      "I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_02.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_01.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_02.log"));
+    BOOST_CHECK      (!utxx::path::file_exists("/tmp/logger.file_03.log"));
+    BOOST_CHECK      (!utxx::path::file_exists("/tmp/logger.file_04.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_05.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_06.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_07.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_08.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_09.log"));
+    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_10.log"));
+    BOOST_CHECK_EQUAL("/tmp/logger.file_02.log", utxx::path::file_readlink("/tmp/logger.log"));
     BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_05.log")
                                       .find("I|write count: -1\n"
                                             "I|write count: 0\n") == 0);
@@ -443,17 +443,17 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
 BOOST_AUTO_TEST_CASE( test_logger2 )
 {
     variant_tree pt;
-    pt.put("logger.timestamp",             variant("time-usec"));
+    pt.put("logger.timestamp",             utxx::variant("time-usec"));
     pt.put("logger.show-thread",           false);
     pt.put("logger.show-ident",            false);
-    pt.put("logger.ident",                 variant("my-logger"));
+    pt.put("logger.ident",                 utxx::variant("my-logger"));
     pt.put("logger.silent-finish",         true);
 
     logger& log = logger::instance();
 
     {
-        pt.put("logger.min-level-filter",      variant("debug"));
-        pt.put("logger.console.stdout-levels", variant("info|notice|warning|error"));
+        pt.put("logger.min-level-filter",      utxx::variant("debug"));
+        pt.put("logger.console.stdout-levels", utxx::variant("info|notice|warning|error"));
         if (log.initialized())
             log.finalize();
 
@@ -463,8 +463,8 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
     }
 
     {
-        pt.put("logger.min-level-filter",      variant("debug"));
-        pt.put("logger.console.stdout-levels", variant("debug|notice|warning|error"));
+        pt.put("logger.min-level-filter",      utxx::variant("debug"));
+        pt.put("logger.console.stdout-levels", utxx::variant("debug|notice|warning|error"));
 
         if (log.initialized())
             log.finalize();
@@ -473,8 +473,8 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
     }
 
     {
-        pt.put("logger.min-level-filter",      variant("debug"));
-        pt.put("logger.console.stdout-levels", variant("trace|debug|notice|warning|error"));
+        pt.put("logger.min-level-filter",      utxx::variant("debug"));
+        pt.put("logger.console.stdout-levels", utxx::variant("trace|debug|notice|warning|error"));
 
         if (log.initialized())
             log.finalize();
@@ -536,8 +536,8 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
 {
     variant_tree pt;
 
-    pt.put("logger.timestamp",  variant("time-usec"));
-    pt.put("logger.console.stdout-levels", variant("debug|notice|info|warning|error|fatal|alert"));
+    pt.put("logger.timestamp",  utxx::variant("time-usec"));
+    pt.put("logger.console.stdout-levels", utxx::variant("debug|notice|info|warning|error|fatal|alert"));
     pt.put("logger.show-ident", false);
     pt.put("logger.handle-crash-signals", true); // This is default behavior
 
