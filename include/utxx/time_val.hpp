@@ -142,6 +142,7 @@ namespace utxx {
         int64_t             m_tv;
 
     public:
+        constexpr
         time_val() noexcept         : m_tv(0)                  {}
         time_val(secs   s)          : m_tv(s.nsec())           {}
         time_val(msecs ms)          : m_tv(ms.nsec())          {}
