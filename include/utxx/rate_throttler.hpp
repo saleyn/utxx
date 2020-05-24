@@ -231,7 +231,7 @@ add(time_val a_time, int a_count)
             l_start = (l_now - m_interval + 1) & s_bucket_mask;
             l_end   = (m_last_time+1) & s_bucket_mask;
             m_sum = a_count;
-            #ifdef THROTTLE_DEBUG
+            #ifdef UTXX_THROTTLE_DEBUG
             printf("Summing %d through %d\n", l_start, l_end);
             #endif
             for (int i = l_start; i != l_end; i = (i+1) & s_bucket_mask) {
@@ -242,7 +242,7 @@ add(time_val a_time, int a_count)
         } else {
             l_start = (m_last_time - m_interval + 1) & s_bucket_mask;
             l_end   = (l_now - m_interval + 1) & s_bucket_mask;
-            #ifdef THROTTLE_DEBUG
+            #ifdef UTXX_THROTTLE_DEBUG
             printf("Subtracting/resetting %d through %d\n", l_start, l_end);
             #endif
             for (int i = l_start; i != l_end; i = (i+1) & s_bucket_mask) {
@@ -250,8 +250,10 @@ add(time_val a_time, int a_count)
                 // BOOST_ASSERT(m_sum >= 0);
                 if (m_sum < 0) {
                     m_sum = 0;
+                    #ifdef UTXX_THROTTLE_DEBUG
                     std::cerr << "ERROR " << __FILE__ << ':' << __LINE__ << std::endl;
                     dump(std::cerr, a_time);
+                    #endif
                 }
                 m_buckets[i] = 0;
             }
@@ -259,7 +261,7 @@ add(time_val a_time, int a_count)
             l_end   = l_now & s_bucket_mask;
             m_sum += a_count;
         }
-        #ifdef THROTTLE_DEBUG
+        #ifdef UTXX_THROTTLE_DEBUG
         printf("Resetting %d through %d\n", l_start, l_end);
         #endif
         // Reset values in intermediate buckets since there was no activity there
@@ -268,7 +270,7 @@ add(time_val a_time, int a_count)
         m_buckets[l_bucket] = a_count;
     }
     m_last_time = l_now;
-    #ifdef THROTTLE_DEBUG
+    #ifdef UTXX_THROTTLE_DEBUG
     dump(std::cout);
     #endif
 
@@ -282,20 +284,20 @@ dump(std::ostream& out, time_val a_time)
     time_t l_now    = (time_t)(a_time.seconds() * s_buckets_per_sec);
     size_t l_bucket = l_now & s_bucket_mask;
 
-    char buf[256];
+    char buf[16384];
     std::stringstream s;
     sprintf(buf, "last_time=%ld, last_bucket=%3zu, sum=%ld (interval=%ld)\n",
             m_last_time, l_bucket, m_sum, m_interval);
     s << buf;
     int k = 0;
     size_t n = (l_bucket-m_interval) & s_bucket_mask;
-    for (size_t j=0; j < s_bucket_count; j++) {
+    for (size_t j=0; j < s_bucket_count && k < int(sizeof(buf)); j++) {
         k += snprintf(buf+k, sizeof(buf)-k, "%3zu%c", j, (j == l_bucket || j == n) ? '|' : ' ');
         k += snprintf(buf+k, sizeof(buf)-k, "%s", (j < s_bucket_count-1) ? "" : "\n");
     }
     s << buf;
     k = 0;
-    for (size_t j=0; j < s_bucket_count; j++) {
+    for (size_t j=0; j < s_bucket_count && k < int(sizeof(buf)); j++) {
         k += snprintf(buf+k, sizeof(buf)-k, "%3zu%c", m_buckets[j], (j == l_bucket || j == n) ? '|' : ' ');
         k += snprintf(buf+k, sizeof(buf)-k, "%s", (j < s_bucket_count-1) ? "" : "\n");
     }
