@@ -239,6 +239,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     ::unlink(filename);
 }
 
+template <int LogAsync>
 struct latency_worker {
     int              id;
     int              iterations;
@@ -259,7 +260,23 @@ struct latency_worker {
 
         for (int i=0; i < iterations; i++) {
             if (!no_histogram) histogram->start();
-            LOG_ERROR  ("%d %9d This is an error #123", id, i+1);
+            if (LogAsync == 1) {
+                static const std::string s_cat;
+                auto f = [=](char* a_buf, size_t a_size) {
+                    return snprintf(a_buf, a_size, "%d %9d This is an error #123", id, i+1);
+                };
+                utxx::logger::instance().async_logf(LEVEL_ERROR, s_cat, f,
+                        __FILE__, BOOST_CURRENT_FUNCTION);
+            }
+            else if (LogAsync == 2) {
+                static const std::string s_cat;
+                utxx::logger::instance().log(LEVEL_ERROR, s_cat,
+                        std::string_view("This is a test string"),
+                        UTXX_SRC);
+            }
+            else
+                LOG_ERROR  ("%d %9d This is an error #123", id, i+1);
+
             if (!no_histogram) histogram->stop();
         }
 
@@ -282,6 +299,7 @@ enum open_mode {
 const int ITERATIONS = getenv("ITERATIONS") ? atoi(::getenv("ITERATIONS")) : 1000000;
 const int THREADS    = getenv("THREADS")    ? atoi(getenv("THREADS"))      : 3;
 
+template <int LogAsync>
 void run_test(const char* config_type, open_mode mode, int def_threads)
 {
     BOOST_TEST_MESSAGE("Testing back-end: " << config_type);
@@ -309,15 +327,15 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
     boost::barrier barrier(threads+1);
     int id = 0;
 
-    boost::shared_ptr<latency_worker>   workers[threads];
-    boost::shared_ptr<boost::thread>    thread [threads];
-    double                              elapsed[threads];
-    perf_histogram                      histograms[threads];
+    boost::shared_ptr<latency_worker<LogAsync>> workers[threads];
+    boost::shared_ptr<boost::thread>            thread [threads];
+    double                                      elapsed[threads];
+    perf_histogram                              histograms[threads];
 
     for (int i=0; i < threads; i++) {
-        workers[i] = boost::shared_ptr<latency_worker>(
-                        new latency_worker(++id, ITERATIONS, boost::ref(barrier),
-                                           &histograms[i], &elapsed[i]));
+        workers[i] = boost::shared_ptr<latency_worker<LogAsync>>(
+                        new latency_worker<LogAsync>(++id, ITERATIONS, boost::ref(barrier),
+                                                     &histograms[i], &elapsed[i]));
         thread[i]  = boost::shared_ptr<boost::thread>(
                         new boost::thread(boost::ref(*workers[i])));
     }
@@ -355,12 +373,22 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite )
 {
-    run_test("file", MODE_OVERWRITE, THREADS);
+    run_test<0>("file", MODE_OVERWRITE, THREADS);
+}
+
+BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite_async )
+{
+    run_test<1>("file", MODE_OVERWRITE, THREADS);
+}
+
+BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite_sview )
+{
+    run_test<2>("file", MODE_OVERWRITE, THREADS);
 }
 
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_append )
 {
-    run_test("file", MODE_APPEND, THREADS);
+    run_test<0>("file", MODE_APPEND, THREADS);
 }
 
 // Note that this test should fail when THREAD environment is set to
@@ -368,6 +396,6 @@ BOOST_AUTO_TEST_CASE( test_logger_file_perf_append )
 // We use default thread count = 1 to avoid the failure.
 BOOST_AUTO_TEST_CASE( test_logger_file_perf_no_mutex )
 {
-    run_test("file", MODE_NO_MUTEX, 1);
+    run_test<false>("file", MODE_NO_MUTEX, 1);
 }
 

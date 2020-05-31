@@ -207,7 +207,7 @@ int main(int argc, char* argv[])
 
   lines.resize(sz);
 
-  utxx::time_val deadline = utxx::now_utc() + 1.0, last_time;
+  utxx::time_val deadline = utxx::now_utc() + 1.0;
   int change_count = 0;
 
   find_last_line(last, file);

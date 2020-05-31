@@ -264,7 +264,7 @@ private:
     // voked from within "CreateInShM" only:
     //
     ring_buffer(size_t a_capacity, bool a_external_memory)
-        : m_version   (s_version | a_external_memory ? 1 : 0)
+        : m_version   (s_version | (a_external_memory ? 1 : 0))
         , m_end       (0u)
         , m_capacity  (StaticCapacity
             ? s_static_capacity : math::upper_power(a_capacity, 2))

@@ -175,15 +175,12 @@ public:
                 double pcnt  = 100.0 * (double)m_latencies[i] / m_count;
                 int    gauge = (int)(s_gwidth*pcnt/100);
                 tot += pcnt;
-                out << "    " << std::setw(6) << from_bucket(i) << "us = "
-                    << std::setw(9) << m_latencies[i] 
-                    << '(' << std::setw(6) << std::setprecision(3)
-                    << pcnt << ") (total: "
-                    << std::setw(7) << std::setprecision(3)
-                    << tot << ") |"
-                    << std::string(gauge, '*')
-                    << std::string(s_gwidth-gauge, ' ')
-                    << '|' << std::endl;
+                char buf[256];
+
+                snprintf(buf, sizeof(buf), "    %6d us = %9d(%6.2f) (total: %7.3f) |%-*s|\n",
+                         from_bucket(i), m_latencies[i], pcnt, tot,
+                         s_gwidth, std::string(gauge, '*').c_str());
+                out << buf;
             }
     }
 

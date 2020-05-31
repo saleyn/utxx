@@ -194,10 +194,10 @@ namespace utxx {
         const_iterator cbegin()   const { return m_val;          }
         const_iterator cend()     const { return is_null() ? m_val : m_val+m_sz; }
     private:
-        T*   m_val;
-        int  m_sz;
-        uint m_max_sz;
-        T    m_buf[MaxItems];
+        T*       m_val;
+        int      m_sz;
+        unsigned m_max_sz;
+        T        m_buf[MaxItems];
 
         void deallocate() {
             m_sz = 0;
