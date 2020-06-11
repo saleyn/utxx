@@ -3,11 +3,6 @@
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Producer/consumer queue.
-///
-/// Based on code from:
-/// https://github.com/facebook/folly/blob/master/folly/concurrent_spsc_queue.h
-/// Original public domain version authored by Facebook
-/// Modifications by Serge Aleynikov
 //----------------------------------------------------------------------------
 // Created: 2014-06-10
 //----------------------------------------------------------------------------
