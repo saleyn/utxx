@@ -145,7 +145,7 @@ struct concurrent_mpsc_queue {
     /// Deallocate a node created by a call to pop_all() or pop_all_reverse()
     void free(node* a_node) {
         a_node->~node();
-        m_allocator.deallocate(a_node, a_node->size());
+        m_allocator.deallocate(a_node, 1);
     }
 
     /// Clear the queue
