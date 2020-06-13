@@ -14,7 +14,7 @@ licensing details).
 The components include:
 
 * Logging framework with pluggable back-ends using Inversion of Control design pattern 
-* Ultra-low latency multi-stream/file async logger (1us average latency per message on the critical path)
+* Ultra-low latency multi-stream/file async logger (300-700ns average latency per message on the critical path)
 * Custom allocators (including atomic pool allocator, stack allocator)
 * Exceptions with error source location
 * Reflectable enums
