@@ -29,7 +29,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-##pragma once
+#pragma once
 
 #include <boost/version.hpp>
 
@@ -39,12 +39,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #if BOOST_VERSION > 107000
 
 #include <boost/timer/progress_display.hpp>
-namespace utxx { using boost_progress = boost::timer::boost_progress; }
+namespace utxx { using boost_progress = boost::timer::progress_display; }
 
 #else
 
 #include <boost/progress.hpp>
-namespace utxx { using boost_progress = boost::progress; }
+namespace utxx { using boost_progress = boost::progress_display; }
 
 #endif
 
