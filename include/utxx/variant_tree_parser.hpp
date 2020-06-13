@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <utxx/detail/variant_tree_parser_impl.hpp>
+#include <utxx/error.hpp>
 
 namespace utxx {
 
@@ -42,6 +43,15 @@ namespace utxx {
         FORMAT_INI,
         FORMAT_XML
     };
+
+    inline const char* fmt_to_string(config_format fmt) {
+        switch (fmt) {
+            case FORMAT_SCON: return "SCON";
+            case FORMAT_INI:  return "INI";
+            case FORMAT_XML:  return "XML";
+            default:          return "UNDEFINED";
+        }
+    }
 
     /**
      * @brief Read SCON/INI/XML format from stream
@@ -76,18 +86,19 @@ namespace utxx {
 #ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
                 detail::read_ini(a_stream, a_tree, a_flags);
 #else
-                throw std::invalid_argument("XML format reading is disabled!");
+                UTXX_THROW_BADARG_ERROR("INI format reading is disabled!");
 #endif
                 break;
             case FORMAT_XML:
 #ifndef UTXX_VARIANT_TREE_NO_XML_PARSER
                 detail::read_xml(a_stream, a_tree, a_flags);
 #else
-                throw std::invalid_argument("XML format reading is disabled!");
+                UTXX_THROW_BADARG_ERROR("XML format reading is disabled!");
 #endif
                 break;
             default:
-                throw std::invalid_argument("Not implemented!");
+                UTXX_THROW_BADARG_ERROR
+                    ("Reading of this file format not implemented (", a_filename, ")!");
         }
 
         if (a_tree.validator())
@@ -129,13 +140,13 @@ namespace utxx {
             else if (ext == ".xml")
                 a_fmt = FORMAT_XML;
             else
-                throw std::runtime_error("Configuration file extension not supported!");
+                UTXX_THROW_BADARG_ERROR
+                    ("Configuration file extension not supported (", a_filename, "!");
         }
 
         std::basic_ifstream<Ch> stream(a_filename.c_str());
         if (!stream)
-            throw variant_tree_parser_error(
-                "cannot open file for reading", a_filename, 0);
+            UTXX_THROW_BADARG_ERROR("Cannot open file for reading", a_filename, 0);
         stream.imbue(a_loc);
         read_config(stream, a_tree, a_fmt, a_filename, a_resolver, a_flags);
     }
@@ -175,7 +186,8 @@ namespace utxx {
                 detail::write_scon(a_stream, a_tree, a_settings);
                 break;
             default:
-                throw std::invalid_argument("Not implemented!");
+                UTXX_THROW_BADARG_ERROR
+                    ("Writing to ", fmt_to_string(a_format), " format not implemented!");
         }
     }
 
@@ -199,13 +211,13 @@ namespace utxx {
     ) {
         std::basic_ofstream<Ch> stream(a_filename.c_str());
         if (!stream) {
-            throw variant_tree_parser_error(
-                "Cannot open file for writing", a_filename, 0);
+            UTXX_THROW_RUNTIME_ERROR
+                ("Cannot open file for writing", a_filename);
         }
         stream.imbue(a_loc);
         write_config(stream, a_tree, a_format, a_settings);
         if (!stream.good())
-            throw variant_tree_parser_error("Write error", a_filename, 0);
+            UTXX_THROW_IO_ERROR(errno, "Config write error ", a_filename);
     }
 
     template <class Ch, class Settings>

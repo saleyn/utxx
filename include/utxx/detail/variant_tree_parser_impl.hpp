@@ -172,8 +172,8 @@ namespace detail {
     {
         std::basic_ifstream<Ch> stream(a_filename.c_str());
         if (!stream)
-            throw variant_tree_parser_error(
-                "cannot open file for reading", a_filename, 0);
+            UTXX_THROW_BADARG_ERROR
+                ("Cannot open file for reading ", a_filename);
         stream.imbue(a_loc);
         read_scon(stream, a_tree, a_filename, a_resolver);
     }
@@ -221,14 +221,14 @@ namespace detail {
     {
         std::basic_ofstream<Ch> stream(a_filename.c_str());
         if (!stream) {
-            throw boost::property_tree::file_parser_error(
-                    "cannot open file for writing", a_filename, 0);
+            UTXX_THROW_IO_ERROR
+                (errno, "Cannot open file for writing ", a_filename);
         }
         stream.imbue(a_loc);
         detail::write_scon(stream, a_tree, a_settings);
         if (!stream.good())
-            throw boost::property_tree::file_parser_error(
-                    "write error", a_filename, 0);
+            UTXX_THROW_IO_ERROR
+                (errno, "Config write error ", a_filename);
     }
 
 #ifndef UTXX_VARIANT_TREE_NO_INFO_PARSER
