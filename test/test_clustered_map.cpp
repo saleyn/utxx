@@ -37,7 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #else
 #   include <boost/test/unit_test.hpp>
 #endif
-#include <boost/timer.hpp>
+#include <utxx/time_val.hpp>
 #include <utxx/container/clustered_map.hpp>
 
 #if __cplusplus >= 201103L
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
                 gaussian_rnd(generator, normal_distribution);
             #endif
 
-            boost::timer t;
+            utxx::timer t;
             for (long i = 0; i < ITERATIONS; i++) {
             recalc1:
                 #if __cplusplus >= 201103L
@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
                 gaussian_rnd(generator, normal_distribution);
             #endif
 
-            boost::timer t;
+            utxx::timer t;
             for (long i = 0; i < ITERATIONS; i++) {
             recalc2:
                 #if __cplusplus >= 201103L
