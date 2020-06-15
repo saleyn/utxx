@@ -77,6 +77,7 @@ list(APPEND TEST_SRCS
     test_variant.cpp
     test_variant_tree_scon_parser.cpp
     test_verbosity.cpp
+    test_xxhash.cpp
 )
 
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
