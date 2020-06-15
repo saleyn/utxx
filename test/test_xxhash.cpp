@@ -40,4 +40,6 @@ BOOST_AUTO_TEST_CASE( test_xxhash )
 
     BOOST_REQUIRE_EQUAL(xxh::xxhash<32>(input.data(), input.size(), seed), utxx::xxhash<32>(input, seed));
     BOOST_REQUIRE_EQUAL(xxh::xxhash<64>(input.data(), input.size(), seed), utxx::xxhash<64>(input, seed));
+    BOOST_REQUIRE_EQUAL(95760214,            utxx::xxhash<32>(input, seed));
+    BOOST_REQUIRE_EQUAL(4377185585067041146, utxx::xxhash<64>(input, seed));
 }
