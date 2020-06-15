@@ -84,6 +84,8 @@ class base64 : public boost::noncopyable {
 public:
     enum encoding { STANDARD, URL };
   
+    static unsigned encode_size(unsigned input_sz) { return (((input_sz<<2) / 3) + 3) & ~3; }
+
     static std::string encode(
         const std::string& s, encoding enc = STANDARD, bool eq_trail = true)
     {
@@ -95,30 +97,40 @@ public:
         const uint8_t* s, unsigned int size, encoding enc = STANDARD, bool eq_trail = true)
     {
         buffered_print os;
-        os.reserve(((4 * size / 3) + 3) & ~3);
+        os.reserve(encode_size(size));
+        auto n = encode_unchecked(s, size, os.str(), enc, eq_trail);
+        os.advance(n);
+        return os.to_string();
+    }
+
+    static unsigned encode_unchecked(
+        const uint8_t* s, unsigned size, char* dest, encoding enc = STANDARD, bool eq_trail = true)
+    {
+        unsigned j = 0;
   
-        for (uint i=0; i < size;) {
+        for (unsigned i=0; i < size;) {
             auto c1 = s[i++] & 0xff;
             if (i == size) {
-                os << enctable(enc)[c1 >> 2] << enctable(enc)[(c1 & 0x3) << 4];
-                if (eq_trail) os << "==";
+                dest[j++] = enctable(enc)[c1 >> 2];
+                dest[j++] = enctable(enc)[(c1 & 0x3) << 4];
+                if (eq_trail) { dest[j++] = '='; dest[j++] = '='; }
                 break;
             }
             auto c2 = s[i++];
             if (i == size) {
-                os << enctable(enc)[  c1 >> 2]
-                   << enctable(enc)[((c1 & 0x3) << 4)|((c2 & 0xf0) >> 4)]
-                   << enctable(enc)[ (c2 & 0xf) << 2];
-                if (eq_trail) os << '=';
+                dest[j++] = enctable(enc)[  c1 >> 2];
+                dest[j++] = enctable(enc)[((c1 & 0x3) << 4)|((c2 & 0xf0) >> 4)];
+                dest[j++] = enctable(enc)[ (c2 & 0xf) << 2];
+                if (eq_trail) dest[j++] = '=';
                 break;
             }
             auto c3 = s[i++];
-            os << enctable(enc)[  c1 >> 2]
-               << enctable(enc)[((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4)]
-               << enctable(enc)[((c2 & 0xf) << 2) | ((c3 & 0xc0) >> 6)]
-               << enctable(enc)[  c3 & 0x3f];
+            dest[j++] = enctable(enc)[  c1 >> 2];
+            dest[j++] = enctable(enc)[((c1 & 0x3) << 4) | ((c2 & 0xf0) >> 4)];
+            dest[j++] = enctable(enc)[((c2 & 0xf) << 2) | ((c3 & 0xc0) >> 6)];
+            dest[j++] = enctable(enc)[  c3 & 0x3f];
         }
-        return os.to_string();
+        return j;
     }
   
     static std::vector<char> decode(const std::string& s, encoding enc = STANDARD) {
@@ -135,13 +147,23 @@ public:
     /// Decode base64 string into "dest"
     /// @param dest can be an STL container or string
     template <typename T>
-    static void decode(const std::string& s, T& dest, encoding enc = STANDARD) {
+    static unsigned decode(const std::string& s, T& dest, encoding enc = STANDARD) {
         auto size = s.size();
         auto dest_sz = static_cast<float>(size * 3) / 4;
-    
+
         dest.clear();
-        dest.reserve(static_cast<unsigned int>(std::ceil(dest_sz)));
-    
+        dest.resize(static_cast<unsigned int>(std::ceil(dest_sz)));
+
+        auto len = decode_unchecked(s.c_str(), size, &dest[0], enc);
+        dest.resize(len);
+
+        return len;
+    }
+
+    template <typename Ch = uint8_t>
+    static unsigned decode_unchecked(const char* s, size_t size, Ch* out, encoding enc = STANDARD) {
+        auto j = 0u;
+
         for (uint i=0; i < size;) {
             char c1;
             do {c1 = dectable(enc)[s[i++] & 0xff];} while (i < size && c1 == -1);
@@ -150,30 +172,31 @@ public:
             char c2;
             do {c2 = dectable(enc)[s[i++] & 0xff];} while (i < size && c2 == -1);
             if (c2 == -1) break;
-      
-            dest.push_back(static_cast<uint8_t>(((c1 << 2)|((c2 & 0x30) >> 4)) & 0xff));
-      
+
+            out[j++] = static_cast<Ch>(((c1 << 2)|((c2 & 0x30) >> 4)) & 0xff);
+
             char c3;
             do {
                 c3 = s[i++] & 0xff;
-                if (c3 == 61) return;
+                if (c3 == 61) return j;
                 c3 = dectable(enc)[int(c3)];
             } while (i < size && c3 == -1);
-      
+
             if (c3 == -1) break;
-      
-            dest.push_back(static_cast<uint8_t>((((c2 & 0xf) << 4)|((c3 & 0x3c) >> 2)) & 0xff));
-      
+
+            out[j++] = static_cast<Ch>((((c2 & 0xf) << 4)|((c3 & 0x3c) >> 2)) & 0xff);
+
             char c4;
             do {
                 c4 = s[i++] & 0xff;
-                if (c4 == 61) return;
+                if (c4 == 61) return j;
                 c4 = dectable(enc)[int(c4)];
             } while (i < size && c4 == -1);
             if (c4 == -1) break;
-      
-            dest.push_back(static_cast<uint8_t>((((c3 & 0x03) << 6)| c4) & 0xff));
+
+            out[j++] = static_cast<Ch>((((c3 & 0x03) << 6)| c4) & 0xff);
         }
+        return j;
     }
   
 private:
