@@ -149,10 +149,10 @@ public:
     template <typename T>
     static unsigned decode(const std::string& s, T& dest, encoding enc = STANDARD) {
         auto size = s.size();
-        auto dest_sz = static_cast<float>(size * 3) / 4;
+        auto dest_sz = std::ceil(static_cast<float>(size) * 0.75f);
 
         dest.clear();
-        dest.resize(static_cast<unsigned int>(std::ceil(dest_sz)));
+        dest.resize(static_cast<unsigned int>(dest_sz));
 
         auto len = decode_unchecked(s.c_str(), size, &dest[0], enc);
         dest.resize(len);
