@@ -71,18 +71,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #endif
 
 #ifndef UTXX_SKIP_LOG_MACROS
-#   define UTXX_LOG_TRACE4( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE4 , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_TRACE3( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE3 , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_TRACE2( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE2 , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_TRACE1( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE1 , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_TRACE(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_TRACE  , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_DEBUG(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_DEBUG  , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_INFO(   Fmt, ...)     UTXX_CLOG(utxx::LEVEL_INFO   , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_NOTICE( Fmt, ...)     UTXX_CLOG(utxx::LEVEL_NOTICE , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_WARNING(Fmt, ...)     UTXX_CLOG(utxx::LEVEL_WARNING, "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_ERROR(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_ERROR  , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_FATAL(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_FATAL  , "",  Fmt, ##__VA_ARGS__)
-#   define UTXX_LOG_ALERT(  Fmt, ...)     UTXX_CLOG(utxx::LEVEL_ALERT  , "",  Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE4( Fmt, ...)      UTXX_CLOG(utxx::LEVEL_TRACE4 , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE3( Fmt, ...)      UTXX_CLOG(utxx::LEVEL_TRACE3 , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE2( Fmt, ...)      UTXX_CLOG(utxx::LEVEL_TRACE2 , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE1( Fmt, ...)      UTXX_CLOG(utxx::LEVEL_TRACE1 , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_TRACE(  Fmt, ...)      UTXX_CLOG(utxx::LEVEL_TRACE  , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_DEBUG(  Fmt, ...)      UTXX_CLOG(utxx::LEVEL_DEBUG  , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_INFO(   Fmt, ...)      UTXX_CLOG(utxx::LEVEL_INFO   , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_NOTICE( Fmt, ...)      UTXX_CLOG(utxx::LEVEL_NOTICE , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_WARNING(Fmt, ...)      UTXX_CLOG(utxx::LEVEL_WARNING, utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_ERROR(  Fmt, ...)      UTXX_CLOG(utxx::LEVEL_ERROR  , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_FATAL(  Fmt, ...)      UTXX_CLOG(utxx::LEVEL_FATAL  , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
+#   define UTXX_LOG_ALERT(  Fmt, ...)      UTXX_CLOG(utxx::LEVEL_ALERT  , utxx::logger::nocat(), Fmt, ##__VA_ARGS__)
 
 #   define UTXX_CLOG_TRACE4( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE4 , Cat, Fmt, ##__VA_ARGS__)
 #   define UTXX_CLOG_TRACE3( Cat,Fmt, ...) UTXX_CLOG(utxx::LEVEL_TRACE3 , Cat, Fmt, ##__VA_ARGS__)
@@ -184,6 +184,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     utxx::logger::instance().logfmt(Level, Cat, UTXX_LOG_SRCINFO, \
                                     Fmt, ##__VA_ARGS__)
 
+#define UTXX_ASYNC_CLOG(Level, Cat, Fmt, ...) \
+    do { \
+        auto f = [=](char* a_buf, size_t a_size) { \
+            return snprintf(a_buf, a_size, Fmt, ##__VA_ARGS__); \
+        }; \
+        utxx::logger::instance().async_logf(Level, Cat, f, UTXX_LOG_SRCINFO); \
+    } while(0)
+
 //------------------------------------------------------------------------------
 /// Support for streaming version of the logger
 //------------------------------------------------------------------------------
@@ -224,6 +232,9 @@ struct logger : boost::noncopyable {
         ID,
         NAME
     };
+
+    /// Empty category
+    static const std::string nocat() { static std::string s; return s; }
 
     /// Return log level as a 1-char string
     /// DEPRECATED use logger_util.hpp:log_level_to_abbrev()
