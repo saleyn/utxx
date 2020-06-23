@@ -104,12 +104,14 @@ namespace {
     }
 }
 
-template <int N, int M, typename... Args>
+template <typename... Args>
 inline bool logger::logfmt(
     log_level           a_level,
     const std::string&  a_cat,
-    const char        (&a_src_loc)[N],
-    const char        (&a_src_fun)[M],
+    const char*         a_src_loc,
+    size_t              a_src_loc_len,
+    const char*         a_src_fun,
+    size_t              a_src_fun_len,
     const char*         a_fmt,
     Args&&...           a_args)
 {
@@ -121,8 +123,9 @@ inline bool logger::logfmt(
     // The condition below prevents the compiler warning about snprintf
     // when there are no arguments provides, since a_fmt is not a string literal
     n = do_copy(buf, sizeof(buf), a_fmt, std::forward<Args>(a_args)...);
-    std::string sbuf(buf, std::min<int>(n, sizeof(buf)-1));
-    bool res = m_queue.emplace(a_level, a_cat, sbuf, a_src_loc, N-1, a_src_fun, M-1);
+    auto sbuf = std::string(buf, std::min<int>(n, sizeof(buf)-1));
+    bool res  = m_queue.emplace(a_level, a_cat, std::move(sbuf), a_src_loc, a_src_loc_len,
+                                                                 a_src_fun, a_src_fun_len);
     m_event.signal_fast();
     return res;
 }
@@ -141,7 +144,7 @@ inline bool logger::logs(
     buf.print(std::forward<Args>(a_args)...);
     bool res = m_queue.emplace(a_level, a_cat, buf.to_string(),
                                a_si.srcloc(), a_si.srcloc_len(),
-                               a_si.fun(), a_si.fun_len());
+                               a_si.fun(),    a_si.fun_len());
     m_event.signal_fast();
     return res;
 }
@@ -237,12 +240,14 @@ inline bool logger::async_logs(
 }
 
 // TODO: make synchronous string formatting
-template <int N, int M, typename... Args>
+template <typename... Args>
 inline bool logger::async_logfmt(
     log_level           a_level,
     const std::string&  a_cat,
-    const char         (&a_src_loc)[N],
-    const char         (&a_src_fun)[M],
+    const char*         a_src_loc,
+    size_t              a_src_loc_len,
+    const char*         a_src_fun,
+    size_t              a_src_fun_len,
     const char*         a_fmt,
     Args&&...           a_args)
 {
@@ -252,7 +257,8 @@ inline bool logger::async_logfmt(
     auto fun = [=](char* a_buf, size_t a_size) {
         return snprintf(a_buf, a_size, a_fmt, std::forward<Args>(a_args)...);
     };
-    bool res = m_queue.emplace(a_level, a_cat, fun, a_src_loc, N-1, a_src_fun, M-1);
+    bool res = m_queue.emplace(a_level, a_cat, fun, a_src_loc, a_src_loc_len,
+                                                    a_src_fun, a_src_fun_len);
     m_event.signal_fast();
     return res;
 }

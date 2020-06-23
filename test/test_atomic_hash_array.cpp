@@ -21,7 +21,7 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include <boost/test/auto_unit_test.hpp>
+#include <boost/test/unit_test.hpp>
 #include <utxx/atomic_hash_array.hpp>
 
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)

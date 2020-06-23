@@ -208,6 +208,8 @@ public:
         static_assert(M >= 1, "Invalid string literal! Length is zero!");
     }
 
+    /// NOTE: only use this version for statically assigned \a a_fun (such as
+    ///       in the UTXX_SRCX macro using UTXX_PRETTY_FUNCTION() reference)!
     template <int N>
     constexpr src_info(const char (&a_srcloc)[N], const std::string& a_fun,
                        bool  a_fun_verbatim = false) noexcept

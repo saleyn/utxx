@@ -306,6 +306,7 @@ struct logger : boost::noncopyable {
             U(const char_function&    f) : cf(f)  {}
             U(const str_function&     f) : sf(f)  {}
             U(const std::string&      v) : str(v) {}
+            U(std::string&&           v) : str(std::move(v)) {}
             ~U() {}
         } m_fun;
 
@@ -368,6 +369,25 @@ struct logger : boost::noncopyable {
             : msg(a_ll, a_cat, payload_t::STR, a_str,
                   a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
         {}
+
+        msg(log_level a_ll, const std::string& a_category, std::string&& a_val,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len
+        )   : m_timestamp   (now_utc())
+            , m_level       (a_ll)
+            , m_category    (a_category)
+            , m_src_loc_len (a_sloc_len)
+            , m_src_location(a_src_loc)
+            , m_src_fun_len (a_sfun_len)
+            , m_src_fun     (a_src_fun)
+            , m_type        (payload_t::STR)
+            , m_thread_id   (pthread_self())
+            , m_fun         (std::move(a_val))
+        {
+            if (logger::instance().show_thread() != logger::thr_id_type::NAME ||
+                pthread_getname_np(m_thread_id, m_thread_name, sizeof(m_thread_name)) < 0)
+                m_thread_name[0] = '\0';
+        }
 
  #if __cplusplus >= 201703L
         template <int N, int M>
@@ -577,6 +597,28 @@ private:
     void run();
     bool flush();
 
+    template <typename... Args>
+    bool logfmt(
+        log_level           a_level,
+        const std::string&  a_cat,
+        const char*         a_src_loc,
+        size_t              a_src_loc_len,
+        const char*         a_src_fun,
+        size_t              a_src_fun_len,
+        const char*         a_fmt,
+        Args&&...           a_args);
+
+    template <typename... Args>
+    bool async_logfmt(
+        log_level           a_level,
+        const std::string&  a_cat,
+        const char*         a_src_loc,
+        size_t              a_src_loc_len,
+        const char*         a_src_fun,
+        size_t              a_src_fun_len,
+        const char*         a_fmt,
+        Args&&...           a_args);
+
     friend class log_msg_info;
 
 public:
@@ -755,7 +797,17 @@ public:
     template<int N, int M, typename... Args>
     bool logfmt(log_level a_level, const std::string& a_cat,
                 const char (&a_src_loc)[N], const char (&a_src_fun)[M],
-                const char*  a_fmt, Args&&... a_args);
+                const char*  a_fmt, Args&&... a_args) {
+        return logfmt(a_level, a_cat, a_src_loc, N-1, a_src_fun, M-1,
+                      a_fmt, std::forward<Args>(a_args)...);
+    }
+
+    template<typename... Args>
+    bool logfmt(log_level a_level, const std::string& a_cat, const src_info& a_si,
+                const char*  a_fmt, Args&&... a_args) {
+        return logfmt(a_level, a_cat, a_si.srcloc(), a_si.srcloc_len(),
+                      a_si.fun(), a_si.fun_len(), a_fmt, std::forward<Args>(a_args)...);
+    }
 
     /// Log a message of given log level to the registered implementations.
     /// Formatting of the resulting string to be logged happens in the caller's
@@ -876,7 +928,18 @@ public:
     template<int N, int M, typename... Args>
     bool async_logfmt(log_level a_level, const std::string& a_cat,
                       const char (&a_src_loc)[N], const char (&a_src_fun)[M],
-                      const char* a_fmt, Args&&... a_args);
+                      const char* a_fmt, Args&&... a_args) {
+        return async_logfmt(a_level, a_cat, a_src_loc, N-1, a_src_fun, M-1,
+                            a_fmt, std::forward<Args>(a_args)...);
+    }
+
+    template<typename... Args>
+    bool async_logfmt(log_level a_level, const std::string& a_cat, const src_info& a_si,
+                      const char*  a_fmt, Args&&... a_args) {
+        return async_logfmt(a_level, a_cat, a_si.srcloc(), a_si.srcloc_len(),
+                            a_si.fun(), a_si.fun_len(), a_fmt, std::forward<Args>(a_args)...);
+    }
+
 };
 
 // Logger back-end implementations must derive from this class.
