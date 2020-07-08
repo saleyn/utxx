@@ -20,7 +20,7 @@ REBUILD=${REBUILD^^}
 
 if   [ "$1" = "-h" -o "${2}" = "--help" ]; then
     echo "${0##*/} [-d ON|OFF] [-v]"
-elif [ "$1" = "-d" -a "${REBUILD}" == "OFF" ]; then
+elif [ "$1" = "-d" -a "${REBUILD}" == "OFF" -a -f "${FILE}" ]; then
     true
 elif [ "$1" = "-v" ]; then
     echo "Version: ${DATE} ($(${VER_CMD} 2>/dev/null))"
