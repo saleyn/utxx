@@ -123,15 +123,22 @@ public:
         this->data().validator(a_rhs.data().validator());
     }
 
-    basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs, const path_type& a_path=path_type())
+    basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
+                       const path_type&                   a_path=path_type(),
+                       const config::validator*           a_validator=nullptr)
         : base(a_path.empty() ? a_rhs : upcast(a_rhs).get_child(a_path))
     {
         auto path = a_path.empty()
                   ? a_rhs.data().root_path()
                   : a_rhs.data().root_path().empty()
                   ? a_path : a_rhs.data().root_path() / a_path;
+        auto val  = a_validator
+                  ? a_validator
+                  : a_rhs.data().validator()
+                  ? a_rhs.data().validator()
+                  : nullptr;
         this->data().root_path(path);
-        this->data().validator(a_rhs.data().validator());
+        this->data().validator(val);
     }
 
     basic_variant_tree(basic_variant_tree<Ch>&& a_rhs)
@@ -416,11 +423,9 @@ public:
         merge("", a_tree, a_on_update);
     }
 
-    void merge(const self_type& a_tree) { merge("", a_tree, &update_fun); }
-
     void merge(const self_type& a_tree, const path_type& a_prefix = path_type())
     {
-        merge(a_prefix, a_tree, detail::basic_translator_from_string<Ch>());
+        merge(a_prefix, a_tree, &update_fun /*detail::basic_translator_from_string<Ch>()*/);
     }
 
     /// Execute \a a_on_update function for every node in the tree. The function
@@ -713,7 +718,8 @@ private:
     }
 
     static const variant& update_fun(
-        const basic_variant_tree::path_type& a, const variant& v)
+        const path_type&                   a,
+        const basic_variant_tree_data<Ch>& v)
     { return v; }
 
     template <typename T>
