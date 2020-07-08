@@ -13,12 +13,14 @@ DIR=${DIR%/bin/*}
 FILE=${DIR}/include/utxx/version.hpp
 GIT_VER=$(git --version | awk '{sub(/\.[0-9]+\.[0-9]+$/, "", $3); print $3}')
 VER_CMD="git describe --dirty --abbrev=7 --tags --always --long"
+REBUILD=${2:-OFF}
+REBUILD=${REBUILD^^}
 
 [ "${GIT_VER}" \> "2.0" ] && VER_CMD+=" --first-parent"
 
 if   [ "$1" = "-h" -o "${2}" = "--help" ]; then
     echo "${0##*/} [-d ON|OFF] [-v]"
-elif [ "$1" = "-d" -a "${2^^}" = "OFF" ]; then
+elif [ "$1" = "-d" -a "${REBUILD}" == "OFF" ]; then
     true
 elif [ "$1" = "-v" ]; then
     echo "Version: ${DATE} ($(${VER_CMD} 2>/dev/null))"

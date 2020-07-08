@@ -123,10 +123,14 @@ public:
         this->data().validator(a_rhs.data().validator());
     }
 
-    basic_variant_tree(const basic_variant_tree<Ch>& a_rhs, const path_type& a_path)
-        : base(a_rhs.get_child(a_path))
+    basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs, const path_type& a_path=path_type())
+        : base(a_path.empty() ? a_rhs : upcast(a_rhs).get_child(a_path))
     {
-        this->data().root_path(a_rhs.data().root_path() / a_path);
+        auto path = a_path.empty()
+                  ? a_rhs.data().root_path()
+                  : a_rhs.data().root_path().empty()
+                  ? a_path : a_rhs.data().root_path() / a_path;
+        this->data().root_path(path);
         this->data().validator(a_rhs.data().validator());
     }
 
@@ -145,6 +149,22 @@ public:
     void operator=(basic_variant_tree<Ch>&& a_rhs) {
         this->~basic_variant_tree();
         new (this) basic_variant_tree(std::move(a_rhs));
+    }
+
+    void operator=(basic_variant_tree_base<Ch> const& a_rhs) {
+        this->operator=(upcast(a_rhs));
+    }
+
+    void operator=(basic_variant_tree_base<Ch>&& a_rhs) {
+        this->operator=(reinterpret_cast<self_type&&>(a_rhs));
+    }
+
+    static self_type& upcast(basic_variant_tree_base<Ch>& a_rhs) {
+        return reinterpret_cast<self_type&>(a_rhs);
+    }
+
+    static self_type const& upcast(basic_variant_tree_base<Ch> const& a_rhs) {
+        return reinterpret_cast<self_type const&>(a_rhs);
     }
 
     /// Offset path of this tree from the root configuration
