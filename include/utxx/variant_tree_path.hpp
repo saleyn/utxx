@@ -33,7 +33,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <boost/property_tree/string_path.hpp>
-#include <utxx/variant_translator.hpp>
 
 namespace utxx {
 

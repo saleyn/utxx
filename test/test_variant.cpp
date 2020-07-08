@@ -478,7 +478,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         variant_tree tree;
         detail::read_scon(s, tree);
 
-        boost::optional<variant_tree_base&> r = tree.get_child_optional("k1[a001]");
+        boost::optional<variant_tree&> r = tree.get_child_optional("k1[a001]");
         BOOST_REQUIRE(r);
         BOOST_REQUIRE(r->empty());
 

@@ -32,8 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <utxx/variant.hpp>
+#include <utxx/variant_tree_fwd.hpp>
 #include <utxx/typeinfo.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <string>
 #include <stdlib.h>
 
@@ -41,12 +41,12 @@ namespace boost {
 namespace property_tree {
     // Custom translator that works with utxx::variant instead of std::string.
     // This translator is used to read/write values from files.
-    template <>
-    struct translator_between<utxx::variant, std::string>
+    template <typename Ch>
+    struct translator_between<utxx::basic_variant_tree_data<Ch>, std::basic_string<Ch>>
     {
-        typedef translator_between<utxx::variant, std::string> type;
-        typedef std::string     external_type;
-        typedef utxx::variant   internal_type;
+        using type = translator_between<utxx::basic_variant_tree_data<Ch>, std::basic_string<Ch>>;
+        using external_type = std::basic_string<Ch>;
+        using internal_type = utxx::basic_variant_tree_data<Ch>;
 
         boost::optional<external_type> get_value(const internal_type& value) const {
             return boost::optional<external_type>(value.is_null() ? "" : value.to_str());
@@ -69,7 +69,7 @@ namespace property_tree {
             // Note that value.size() can be 1, so we need both tests
             if (e > value.c_str() && e >= end-1) { // is an integer and has been decoded fully
                 if (!*e)
-                    return boost::optional<internal_type>(n);
+                    return boost::optional<internal_type>(internal_type(utxx::variant(n)));
 
                 if (e == end-1) {
                     switch (toupper(*e)) {
@@ -79,68 +79,72 @@ namespace property_tree {
                         default:
                             return internal_type();
                     }
-                    return boost::optional<internal_type>(n);
+                    return boost::optional<internal_type>(internal_type(utxx::variant(n)));
                 }
             }
             double d = strtod(value.c_str(), &e);
             if (!*e && e == end) // is a double and has been decoded fully
-                return boost::optional<internal_type>(d);
+                return boost::optional<internal_type>(internal_type(utxx::variant(d)));
 
             if (value == "true" || value == "false")
-                return boost::optional<internal_type>(value[0] == 't');
-            return boost::optional<internal_type>(value);
+                return boost::optional<internal_type>(internal_type(utxx::variant(value[0] == 't')));
+            return boost::optional<internal_type>(internal_type(utxx::variant(value)));
         }
 
         // Custom SCON extension to distinguish between values: 123 and \"123\",
         // with the first being an integer and the second being a string
         boost::optional<internal_type> put_value(const std::string& value, bool is_str) const {
-            return is_str ? boost::optional<internal_type>(value) : put_value(value);
+            return is_str ? boost::optional<internal_type>(internal_type(utxx::variant(value)))
+                          : put_value(value);
         }
     };
 
-    template <>
-    struct translator_between<utxx::variant, const char*>
+    template <typename Ch>
+    struct translator_between<utxx::basic_variant_tree_data<Ch>, utxx::basic_variant_tree_data<Ch>>
     {
-        typedef translator_between<utxx::variant, const char*> type;
-        boost::optional<const char*> get_value(const utxx::variant& val) const {
-            return val.is_null() ? "" : val.to_str().c_str();
-        }
-        boost::optional<utxx::variant> put_value(const char* val) const {
-            translator_between<utxx::variant, std::string> tr;
-            return tr.put_value(std::string(val));
-        }
+        using external_type = utxx::basic_variant_tree_data<Ch>;
+        using internal_type = utxx::basic_variant_tree_data<Ch>;
+        using type          = translator_between<internal_type, external_type>;
+
+        boost::optional<external_type> get_value(const internal_type& val) const { return val; }
+        boost::optional<internal_type> put_value(external_type        val) const { return val; }
     };
 
-    template <>
-    struct translator_between<utxx::variant, bool>
+    template <typename Ch, typename T>
+    struct translator_between<utxx::basic_variant_tree_data<Ch>, T>
     {
-        typedef translator_between<utxx::variant, bool> type;
-        boost::optional<bool> get_value(const utxx::variant& val) const { return val.to_bool(); }
-        boost::optional<utxx::variant> put_value(bool val) const { return utxx::variant(val); }
+        using external_type = T;
+        using internal_type = utxx::basic_variant_tree_data<Ch>;
+        using type          = translator_between<internal_type, external_type>;
+
+        boost::optional<external_type> get_value(const internal_type& val) const { return val.value().template to<T>(); }
+        boost::optional<internal_type> put_value(external_type        val) const { return internal_type(utxx::variant(val)); }
     };
 
-    template <>
-    struct translator_between<utxx::variant, int>
+    template <typename Ch>
+    struct translator_between<utxx::basic_variant_tree_data<Ch>, utxx::variant>
     {
-        typedef translator_between<utxx::variant, int> type;
-        boost::optional<int> get_value(const utxx::variant& val) const { return val.to_int(); }
-        boost::optional<utxx::variant> put_value(int val) const { return utxx::variant(val); }
+        using external_type = utxx::variant;
+        using internal_type = utxx::basic_variant_tree_data<Ch>;
+        using type          = translator_between<internal_type, external_type>;
+
+        template <typename T>
+        boost::optional<T> get_value(const internal_type& val) const { return val.value().template to<T>(); }
+
+        template <typename T>
+        boost::optional<internal_type> put_value(const T&             val) const { return internal_type(val); }
+        boost::optional<internal_type> put_value(const external_type& val) const { return internal_type(val); }
     };
 
-    template <>
-    struct translator_between<utxx::variant, long>
+    template <typename Ch>
+    struct translator_between<utxx::basic_variant_tree_data<Ch>, nullptr_t>
     {
-        typedef translator_between<utxx::variant, long> type;
-        boost::optional<long> get_value(const utxx::variant& val) const { return val.to_int(); }
-        boost::optional<utxx::variant> put_value(long val) const { return utxx::variant(val); }
-    };
+        using external_type = nullptr_t;
+        using internal_type = utxx::basic_variant_tree_data<Ch>;
+        using type          = translator_between<internal_type, external_type>;
 
-    template <>
-    struct translator_between<utxx::variant, double>
-    {
-        typedef translator_between<utxx::variant, double> type;
-        boost::optional<double>  get_value(const utxx::variant& val) const { return val.to_float(); }
-        boost::optional<utxx::variant> put_value(double val) const { return utxx::variant(val); }
+        boost::optional<external_type> get_value(internal_type& v) const { return v.value().template get<nullptr_t>(); }
+        boost::optional<internal_type> put_value(external_type)    const { return internal_type(); }
     };
 
 } // namespace property_tree
@@ -151,47 +155,39 @@ namespace detail {
 
     // Custom translator that works with variant instead of std::string
     // This translator is used to get/put values through explicit get/put calls.
-    template <typename Ext>
+    template <typename Ext, typename Ch>
     struct variant_translator
     {
-        typedef Ext external_type;
-        typedef variant internal_type;
-        typedef variant::valid_types valid_types;
+        using external_type = Ext;
+        using internal_type = basic_variant_tree_data<Ch>;
+        using valid_types   = variant::valid_types;
 
         external_type get_value(const internal_type& value) const {
-            return value.get<external_type>();
+            return value.template get<external_type>();
         }
 
         template<typename T>
-        typename boost::disable_if<
-            boost::is_same<
+        typename std::enable_if<
+            !std::is_same<
                 boost::mpl::end<valid_types>::type,
                 boost::mpl::find<variant::valid_types, T>
-            >,
+            >::value,
             internal_type>::type
-        put_value(T value) const { return variant(value); }
+        put_value(T value) const { return internal_type(variant(value)); }
     };
 
     template <typename Ch>
     struct basic_translator_from_string
         : public boost::property_tree::translator_between<
-            variant, std::basic_string<Ch>
+            basic_variant_tree_data<Ch>, std::basic_string<Ch>
         >
     {
-        typedef
-            std::basic_string<Ch>
-            string_t;
-
-        typedef
-            boost::property_tree::basic_ptree<
-                string_t, variant, std::less<string_t>
-            > tree;
-
-        typedef
-            boost::property_tree::string_path<
-                string_t,
-                boost::property_tree::id_translator<string_t>
-            > path_type;
+        using string_t  = std::basic_string<Ch>;
+        using tree      = boost::property_tree::basic_ptree<
+                            string_t, basic_variant_tree_data<Ch>, std::less<string_t>>;
+        using path_type = boost::property_tree::string_path<
+                            string_t,
+                            boost::property_tree::id_translator<string_t>>;
 
         boost::optional<variant> operator() (const tree& a_tree) const {
             // Get as string and put it as variant by trying to infer value type
@@ -199,14 +195,12 @@ namespace detail {
             return *this->put_value(s);
         }
 
-        const variant& operator() (const path_type& a_path, const variant& value) const {
+        const basic_variant_tree_data<Ch>& operator() (const path_type& a_path, const basic_variant_tree_data<Ch>& value) const {
             return value;
         }
     };
 
-    typedef
-        basic_translator_from_string<char>
-        translator_from_string;
+    using translator_from_string = basic_translator_from_string<char>;
 
 } // namespace detail
 } // namespace utxx

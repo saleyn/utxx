@@ -442,9 +442,8 @@ namespace detail {
                         if (isquote())
                         {
                             bool need_more_lines;
-                            std::basic_string<Ch> data =
-                                last->template get_value<std::basic_string<Ch> >() +
-                                read_string(&need_more_lines, true);
+                            auto data = last->template get_value<std::basic_string<Ch>>() +
+                                        read_string(&need_more_lines, true);
                             if (need_more_lines) {
                                 // Use node's data as the temporary accumulator
                                 last->put_value(data);

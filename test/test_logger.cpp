@@ -152,12 +152,12 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK_EQUAL(3u,                   log_level_size(utxx::LEVEL_LOG));
     BOOST_CHECK_EQUAL(4u,                   log_level_size(utxx::LEVEL_NONE));
 
-    pt.put("logger.timestamp",             utxx::variant("time-usec"));
-    pt.put("logger.min-level-filter",      utxx::variant("debug"));
-    pt.put("logger.console.stdout-levels", utxx::variant("debug|info|notice|warning|error|fatal|alert"));
+    pt.put("logger.timestamp",             "time-usec");
+    pt.put("logger.min-level-filter",      "debug");
+    pt.put("logger.console.stdout-levels", "debug|info|notice|warning|error|fatal|alert");
     pt.put("logger.show-thread",           true);
     pt.put("logger.show-ident",            true);
-    pt.put("logger.ident",                 utxx::variant("my-logger"));
+    pt.put("logger.ident",                 "my-logger");
     pt.put("logger.fatal-kill-signal",     0);
     pt.put("logger.silent-finish",         true);
 

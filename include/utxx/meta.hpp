@@ -283,4 +283,12 @@ struct has_type_nocvref
        >
 {};
 
+//-----------------------------------------------------------------------------
+// Remove "const", "volatile", and reference ("&") operators from a type
+//-----------------------------------------------------------------------------
+template <typename T>
+struct remove_cvref {
+    using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
+};
+
 } // namespace utxx

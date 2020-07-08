@@ -48,18 +48,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-struct null {};
-
-class variant: public boost::variant<null, bool, long, double, std::string>
+class variant: public boost::variant<nullptr_t, bool, long, double, std::string>
 {
-    typedef boost::variant    <null, bool, long, double, std::string> base;
-    typedef boost::mpl::vector<null, bool, long, double, std::string> internal_types;
+    typedef boost::variant    <nullptr_t, bool, long, double, std::string> base;
+    typedef boost::mpl::vector<nullptr_t, bool, long, double, std::string> internal_types;
 
     struct string_visitor: public boost::static_visitor<std::string> {
-        std::string operator () (null v) const { return "<NULL>";             }
-        std::string operator () (bool v) const { return v ? "true" : "false"; }
-        std::string operator () (long v) const { return std::to_string(v);    }
-        std::string operator () (double v) const {
+        std::string operator () (nullptr_t) const { return "<NULL>";             }
+        std::string operator () (bool v)    const { return v ? "true" : "false"; }
+        std::string operator () (long v)    const { return std::to_string(v);    }
+        std::string operator () (double v)  const {
             char buf[128];
             snprintf(buf, sizeof(buf)-1, "%f", v);
             // Remove trailing zeros.
@@ -81,12 +79,12 @@ public:
 
     typedef boost::mpl::joint_view<
         int_types,
-        boost::mpl::vector<null,bool,double,std::string>
+        boost::mpl::vector<nullptr_t,bool,double,std::string>
     > valid_types;
 
     typedef boost::mpl::joint_view<
         int_types,
-        boost::mpl::vector<null,bool,double,std::string,variant>
+        boost::mpl::vector<nullptr_t,bool,double,std::string,variant>
     > valid_get_types;
 
     // For integers - cast them all to long type
@@ -109,7 +107,7 @@ public:
         , TYPE_STRING
     };
 
-    variant() : base(null()) {}
+    variant() : base(nullptr) {}
     explicit variant(bool       a) : base(a)        {}
     explicit variant(int16_t    a) : base((long)a)  {}
     explicit variant(int        a) : base((long)a)  {}
@@ -134,7 +132,7 @@ public:
     variant(value_type v, const std::string& a) { from_string(v, a); }
 
     void operator= (const variant& a) { *(base*)this = (const base&)a; }
-    //void operator= (null        a)  { *(base*)this = null(); }
+    //void operator= (nullptr_t)  { *(base*)this = nullptr; }
     void operator= (int16_t     a)  { *(base*)this = (long)a; }
     void operator= (int         a)  { *(base*)this = (long)a; }
     void operator= (int64_t     a)  { *(base*)this = (long)a; }
@@ -176,7 +174,7 @@ public:
     }
 
     /// Set value to null.
-    void clear() { *(base*)this = null(); }
+    void clear() { *(base*)this = nullptr; }
 
     /// Returns true if the value is null.
     bool is_null()      const { return type() == TYPE_NULL; }
@@ -222,7 +220,7 @@ public:
         BOOST_STATIC_ASSERT(
             (!boost::is_same<boost::mpl::end<valid_get_types>::type, valid_iter>::value));
         // For integers - cast them to long type when fetching from the variant.
-        typename normal_type<T>::type* dummy(NULL);
+        typename normal_type<T>::type* dummy(nullptr);
         return get(dummy);
     }
 
@@ -230,7 +228,7 @@ public:
 
     void from_string(value_type v, const std::string& a) {
         switch (v) {
-            case TYPE_NULL:     *this = null(); break;
+            case TYPE_NULL:     *this = nullptr;                        break;
             case TYPE_BOOL:     *this = a == "true" || a == "yes";      break;
             case TYPE_INT:      *this = boost::lexical_cast<long>(a);   break;
             case TYPE_DOUBLE:   *this = boost::lexical_cast<double>(a); break;

@@ -21,7 +21,7 @@
 /// to be used to do a source code generation of the header file (matching
 /// XML file's name) that is included in the developer's project.  That file
 /// implements a structure derived from config_validator.hpp:
-/// utxx::confg::validator that overrides the init() function, which populates
+/// utxx::config::validator that overrides the init() function, which populates
 /// the validator with rules used for validating configuration options.
 ///   An application that uses a configuration file needs to read its
 /// configuration in the following manner (assuming that the name of the

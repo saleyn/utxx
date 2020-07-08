@@ -134,7 +134,7 @@ namespace detail {
     {
         typedef detail::basic_translator_from_string<Ch> translator;
         translator                  tr;
-        basic_variant_tree_base<Ch> tree(a_tree.to_base());
+        basic_variant_tree_base<Ch> tree(a_tree);
         int                         lineno  = 0;
         const Ch*                   text    = NULL;
         std::basic_string<Ch>       line;
@@ -241,16 +241,17 @@ namespace detail {
      */
     template <typename Source, typename Ch>
     void read_info(Source& a_src, basic_variant_tree<Ch>& a_tree) {
-        typename basic_variant_tree<Ch>::base& pt = a_tree.to_base();
-        boost::property_tree::info_parser::read_info(a_src, pt);
+        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::info_parser::read_info(a_src, tree);
         boost::property_tree::translator_between<
-            utxx::variant, std::basic_string<Ch>> tr;
-        basic_variant_tree<Ch>::translate_data(pt, tr);
+            basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
+        basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
     template <typename Target, typename Ch>
     void write_info(Target& a_tar, basic_variant_tree<Ch>& a_tree) {
-        boost::property_tree::info_parser::write_info(a_tar, a_tree);
+        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::info_parser::write_info(a_tar, tree);
     }
 
     template <typename Target, typename Ch, typename Settings>
@@ -274,11 +275,11 @@ namespace detail {
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
-        typename basic_variant_tree<Ch>::base& pt = a_tree.to_base();
-        boost::property_tree::xml_parser::read_xml(a_src, pt, a_flags);
+        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::xml_parser::read_xml(a_src, tree, a_flags);
         boost::property_tree::translator_between<
-            utxx::variant, std::basic_string<Ch>> tr;
-        basic_variant_tree<Ch>::translate_data(pt, tr);
+            basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
+        basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
 #endif
@@ -289,24 +290,24 @@ namespace detail {
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
-        typename basic_variant_tree<Ch>::base& pt = a_tree.to_base();
-        boost::property_tree::ini_parser::read_ini(a_src, pt);
+        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::ini_parser::read_ini(a_src, tree);
         boost::property_tree::translator_between<
-            utxx::variant, std::basic_string<Ch>> tr;
-        basic_variant_tree<Ch>::translate_data(pt, tr);
+            basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
+        basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
 
     /*
     template <typename Target>
     void write_xml(Target& a_tar, variant_tree& a_tree) {
-        boost::property_tree::xml_parser::write_xml(
-            a_tar, static_cast<detail::basic_variant_tree&>(a_tree));
+        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::xml_parser::write_xml(a_tar, tree);
     }
 
     template <typename Target, typename Settings>
     void write_xml(Target& a_tar, variant_tree& a_tree, const Settings& a_settings) {
-        boost::property_tree::xml_parser::write_xml(
-            a_tar, static_cast<detail::basic_variant_tree&>(a_tree), a_settings);
+        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::xml_parser::write_xml(a_tar, a_tree, a_settings);
     }
     */
 #endif

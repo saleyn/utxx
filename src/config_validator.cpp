@@ -120,7 +120,7 @@ std::string option::substitute_vars(const std::string& a_value) {
 variant option::default_subst_value() const {
     return default_value.data().is_string()
          ? variant(substitute_vars(default_value.data().to_str()))
-         : default_value.data();
+         : default_value.data().value();
 }
 
 tree_path validator::
@@ -287,7 +287,7 @@ void validator::validate
     const
 {
     config_level_list stack;
-    stack.push(a_config.root_path(), a_config.to_base(), nullptr, a_opts);
+    stack.push(a_config.root_path(), a_config, nullptr, a_opts);
     recursive_validate(stack, a_fill_defaults, a_custom_validator);
 }
 

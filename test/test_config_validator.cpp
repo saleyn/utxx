@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE( test_config_find )
     "    address = \"value\"\n"
     "    enabled = false\n"
     "}\n";
-    variant_tree cfg1;
+    variant_tree     cfg1;
     read_config(ss1, cfg1, FORMAT_SCON);
     oe->put_child("interface", cfg1.get_child("interface"));
 

@@ -347,9 +347,8 @@ class ConfigGenerator(object):
             f.write("#include <utxx/config_validator.hpp>\n\n")
             f.write("namespace %s {\n" % root.attrib['namespace'])
             f.write("    using namespace utxx;\n")
-            f.write("    typedef\n")
-            f.write("        boost::property_tree::translator_between<variant, std::string>\n")
-            f.write("        translator;\n")
+            f.write("    using translator =\n")
+            f.write("        boost::property_tree::translator_between<basic_variant_tree_data<char>, std::string>;\n")
 
             max_name_size = max([len(n) for n in names])
             max_val_size = max([len(n) for n in values]) if len(values) > 0 else 0
