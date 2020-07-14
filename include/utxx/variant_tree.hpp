@@ -372,7 +372,7 @@ public:
         path_type p(path);
         auto* c = navigate(this, p, nullptr, true);
         if  (!c)  throw variant_tree_bad_path("Path doesn't exist", p);
-        c->data().value() = value.data().value();
+        *c = value;
         c->root_path(path);
         return *c;
     }
@@ -501,7 +501,6 @@ private:
         return add(tree, k, *v);
     }
     static self_type* do_put_value(self_type* tree, const key_type& k, nullptr_t, bool put) {
-        if (put) add(tree, k, variant());
         return tree;
     }
     static self_type* do_put_value(self_type* tree, const key_type& k, const Ch* v, bool put) {

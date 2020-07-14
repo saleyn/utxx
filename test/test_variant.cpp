@@ -248,6 +248,21 @@ BOOST_AUTO_TEST_CASE( test_variant_tree )
         bool b = pt.get<bool>("bool value");
         BOOST_REQUIRE_EQUAL(true, b);
     }
+
+    {
+        variant_tree cfg;
+        cfg.put_child("md", pt);
+        cfg.put("md", "CME");
+        std::stringstream s; cfg.dump(s);
+        BOOST_REQUIRE_EQUAL(
+            "md \"CME\" {\n"
+            "  \"int value\"      = 3\n"
+            "  \"long value\"     = 10\n"
+            "  \"string value\"   = \"foo bar\"\n"
+            "  \"bool value\"     = true\n"
+            "}\n",
+            s.str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_file )
