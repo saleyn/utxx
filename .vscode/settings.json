@@ -1,6 +1,26 @@
 {
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "cmake.installPrefix": "/opt/pkg/utxx/1.4.1",
+  "cmake.buildArgs": [
+  ],
+  "cmake.cacheInit": null,
+  "cmake.buildEnvironment": {
+  },
+  "cmake.configureSettings": {
+    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+    "TOOLCHAIN": "gcc",
+    "CMAKE_USER_MAKE_RULES_OVERRIDE": "${workspaceFolder}/build-aux/CMakeInit.txt",
+    "BUILD_SHARED_LIBS": "ON",
+    "WITH_ENUM_SERIALIZATION": "ON",
+    "WITH_THRIFT": "OFF"
+  },
+  "cmake.generator": "Unix Makefiles",
+  "cmake.configureEnvironment": {
+  },
+  "cmake.preferredGenerators": [
+    "Unix Makefiles"
+  ],
+  "cmake.parallelJobs": 3,
   "files.associations": {
     "*.ipp": "cpp",
     "*.inc": "cpp",
@@ -78,25 +98,5 @@
     "sstream": "cpp",
     "stop_token": "cpp",
     "streambuf": "cpp"
-  },
-  "cmake.buildArgs": [
-  ],
-  "cmake.cacheInit": null,
-  "cmake.buildEnvironment": {
-  },
-  "cmake.configureSettings": {
-    "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-    "TOOLCHAIN": "gcc",
-    "CMAKE_USER_MAKE_RULES_OVERRIDE": "${workspaceFolder}/build-aux/CMakeInit.txt",
-    "BUILD_SHARED_LIBS": "ON",
-    "WITH_ENUM_SERIALIZATION": "ON",
-    "WITH_THRIFT": "OFF"
-  },
-  "cmake.generator": "Unix Makefiles",
-  "cmake.configureEnvironment": {
-  },
-  "cmake.preferredGenerators": [
-    "Unix Makefiles"
-  ],
-  "cmake.parallelJobs": 3
+  }
 }

@@ -262,6 +262,14 @@ BOOST_AUTO_TEST_CASE( test_variant_tree )
             "  \"bool value\"     = true\n"
             "}\n",
             s.str());
+        try {
+            auto& c = cfg.get_child("md");
+            auto  v = c.get("int value", 0);
+            BOOST_REQUIRE_EQUAL(3, v);
+        } catch (variant_tree_bad_path& e) {
+            std::cerr << "Path 'md' not found!" << std::endl;
+            BOOST_REQUIRE(false);
+        }
     }
 }
 

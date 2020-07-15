@@ -124,14 +124,14 @@ public:
     }
 
     basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
-                       const path_type&                   a_path=path_type(),
+                       const path_type&                   a_root_path=path_type(),
                        const config::validator*           a_validator=nullptr)
-        : base(a_path.empty() ? a_rhs : upcast(a_rhs).get_child(a_path))
+        : base(a_rhs)
     {
-        auto path = a_path.empty()
+        auto path = a_root_path.empty()
                   ? a_rhs.data().root_path()
                   : a_rhs.data().root_path().empty()
-                  ? a_path : a_rhs.data().root_path() / a_path;
+                  ? a_root_path : a_rhs.data().root_path() / a_root_path;
         auto val  = a_validator
                   ? a_validator
                   : a_rhs.data().validator()
