@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE( test_endian )
         int64_t    resb  = cast_be<int64_t>(test);
         BOOST_CHECK_EQUAL(72623859790382856, resb);
         int64_t    resl  = cast_le<int64_t>(test);
-        BOOST_CHECK_EQUAL(57843769575230720, resl);
+        BOOST_CHECK_EQUAL(578437695752307201, resl);
 
         const char* p = test;
         get_be(p, resb);
@@ -51,7 +51,7 @@ BOOST_AUTO_TEST_CASE( test_endian )
         BOOST_CHECK_EQUAL(uint64_t(test+8), uint64_t(p));
         p = test;
         get_le(p, resl);
-        BOOST_CHECK_EQUAL(57843769575230720, resl);
+        BOOST_CHECK_EQUAL(578437695752307201, resl);
         BOOST_CHECK_EQUAL(uint64_t(test+8), uint64_t(p));
     }
     {
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE( test_endian )
         test[8] = '\0';
         store_be(test, 72623859790382856);
         BOOST_CHECK_EQUAL("\x1\x2\x3\x4\x5\x6\x7\x8", test);
-        store_le(test, 57843769575230720);
+        store_le(test, 578437695752307201);
         BOOST_CHECK_EQUAL("\x1\x2\x3\x4\x5\x6\x7\x8", test);
     }
 }
