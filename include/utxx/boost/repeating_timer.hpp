@@ -26,7 +26,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 
 #if (BOOST_VERSION < 107000)
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/detail/deadline_timer_service.hpp>

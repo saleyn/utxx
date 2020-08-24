@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <boost/test/unit_test.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/concept_check.hpp>
 #include <algorithm>
 #include <utxx/running_stat.hpp>
@@ -40,6 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/persist_array.hpp>
 
 using namespace utxx;
+using namespace boost::placeholders;
 
 using running_sum      = basic_running_sum<double>;
 using running_variance = basic_running_variance<double>;

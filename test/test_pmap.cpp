@@ -52,7 +52,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 
 using namespace utxx;
-namespace bsd = boost::spirit::detail;
 
 static const char* test_set[] = {
   /* 0 */  "\x9f\x81\x92",

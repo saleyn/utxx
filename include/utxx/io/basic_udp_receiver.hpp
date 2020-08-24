@@ -25,7 +25,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #define _UTXX_IO_BASIC_UDP_RECEIVER_HPP_
 
 #include <boost/asio.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <utxx/buffered_queue.hpp>
 
 namespace utxx {

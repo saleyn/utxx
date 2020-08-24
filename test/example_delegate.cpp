@@ -3,8 +3,11 @@
 #include <utxx/delegate.hpp>
 #include <boost/signals2.hpp>
 #include <boost/timer/timer.hpp>
+#include <boost/bind/bind.hpp>
 #include <utxx/perf_histogram.hpp>
 #include <iostream>
+
+using namespace boost::placeholders;
 
 typedef utxx::delegate<
     void (const char*, /* format */

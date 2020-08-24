@@ -27,7 +27,7 @@ at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <deque>
 #include <boost/system/error_code.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/asio/write.hpp>
 

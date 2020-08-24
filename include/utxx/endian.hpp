@@ -32,14 +32,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#if BOOST_VERSION >= 107100
+#include <boost/endian/conversion.hpp>
+#else
 #include <boost/spirit/home/support/detail/endian.hpp>
+#endif
 #include <boost/static_assert.hpp>
 #include <stdint.h>
 
 namespace utxx {
 
 namespace {
-#if BOOST_VERSION >= 104800
+#if BOOST_VERSION >= 107100
+    namespace bsd = boost::endian;
+#elif BOOST_VERSION >= 104800
     namespace bsd = boost::spirit::detail;
 #else
     namespace bsd = boost::detail;
@@ -48,42 +54,44 @@ namespace {
 
 template <typename T, typename Ch>
 inline void put_be(Ch*& s, T n) {
+#if BOOST_VERSION >= 107100
+    bsd::endian_store<T, sizeof(T), bsd::order::big>(s, n);
+#else
     bsd::store_big_endian<T, sizeof(T)>((void*)s, n);
+#endif
     s += sizeof(T);
 }
 
 template <typename T, typename Ch>
 inline void put_le(Ch*& s, T n) {
+#if BOOST_VERSION >= 107100
+    bsd::endian_store<T, sizeof(T), bsd::order::little>(s, n);
+#else
     bsd::store_little_endian<T, sizeof(T)>((void*)s, n);
+#endif
     s += sizeof(T);
 }
 
 template <typename T, typename Ch>
 inline void get_be(const Ch*& s, T& n) {
+#if BOOST_VERSION >= 107100
+    n = bsd::endian_load<T, sizeof(T), bsd::order::big>
+            (reinterpret_cast<const unsigned char*>(s));
+#else
     n = bsd::load_big_endian<T, sizeof(T)>((const void*)s);
+#endif
     s += sizeof(T);
 }
 
 template <typename T, typename Ch>
 inline void get_le(const Ch*& s, T& n) {
+#if BOOST_VERSION >= 107100
+    n = bsd::endian_load<T, sizeof(T), bsd::order::little>
+            (reinterpret_cast<const unsigned char*>(s));
+#else
     n = bsd::load_little_endian<T, sizeof(T)>((const void*)s);
+#endif
     s += sizeof(T);
-}
-
-inline void get_be(const char*& s, double& n) {
-    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
-    union { double f; uint64_t i; } u;
-    u.i = bsd::load_big_endian<uint64_t, sizeof(double)>(static_cast<const void*>(s));
-    n = u.f;
-    s += sizeof(double);
-}
-
-inline void get_le(const char*& s, double& n) {
-    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
-    union { double f; uint64_t i; } u;
-    u.i = bsd::load_little_endian<uint64_t, sizeof(double)>(static_cast<const void*>(s));
-    n = u.f;
-    s += sizeof(double);
 }
 
 template <typename T, typename Ch>
@@ -92,51 +100,105 @@ inline T get_be(const Ch*& s) { T n; get_be(s, n); return n; }
 template <typename T, typename Ch>
 inline T get_le(const Ch*& s) { T n; get_le(s, n); return n; }
 
+inline void get_be(const char*& s, double& n) {
+    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
+    union { double f; uint64_t i; } u;
+    u.i = get_be<uint64_t, char>(s);
+    n = u.f;
+    s += sizeof(double);
+}
+
+inline void get_le(const char*& s, double& n) {
+    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
+    union { double f; uint64_t i; } u;
+    u.i = get_le<uint64_t, char>(s);
+    n = u.f;
+    s += sizeof(double);
+}
+
 template <typename T>
 inline void store_be(char* s, T n) {
+#if BOOST_VERSION >= 107100
+    bsd::endian_store<T, sizeof(T), bsd::order::big>(reinterpret_cast<unsigned char*>(s), n);
+#else
     bsd::store_big_endian<T, sizeof(T)>(static_cast<void*>(s), n);
+#endif
 }
 
 template <typename T>
 inline void store_le(char* s, T n) {
+#if BOOST_VERSION >= 107100
+    bsd::endian_store<T, sizeof(T), bsd::order::little>(reinterpret_cast<unsigned char*>(s), n);
+#else
     bsd::store_little_endian<T, sizeof(T)>(static_cast<void*>(s), n);
+#endif
 }
 
 inline void store_be(char* s, double n) {
     BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
     union u { double f; uint64_t i; };
+#if BOOST_VERSION >= 107100
+    bsd::endian_store<uint64_t, sizeof(double), bsd::order::big>
+        (reinterpret_cast<unsigned char*>(s), reinterpret_cast<u*>(&n)->i);
+#else
     bsd::store_big_endian<uint64_t, sizeof(double)>(
         static_cast<void*>(s), reinterpret_cast<u*>(&n)->i);
+#endif
 }
 
 inline void store_le(char* s, double n) {
     BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
     union u { double f; uint64_t i; };
+#if BOOST_VERSION >= 107100
+    bsd::endian_store<uint64_t, sizeof(double), bsd::order::little>
+        (reinterpret_cast<unsigned char*>(s), reinterpret_cast<u*>(&n)->i);
+#else
     bsd::store_little_endian<uint64_t, sizeof(double)>(
         static_cast<void*>(s), reinterpret_cast<u*>(&n)->i);
+#endif
 }
 
 template <typename T>
 inline void cast_be(const char* s, T& n) {
+#if BOOST_VERSION >= 107100
+    n = bsd::endian_load<T, sizeof(T), bsd::order::big>
+        (reinterpret_cast<const unsigned char*>(s));
+#else
     n = bsd::load_big_endian<T, sizeof(T)>((const void*)s);
+#endif
 }
 
 template <typename T>
 inline void cast_le(const char* s, T& n) {
+#if BOOST_VERSION >= 107100
+    n = bsd::endian_load<T, sizeof(T), bsd::order::little>
+        (reinterpret_cast<const unsigned char*>(s));
+#else
     n = bsd::load_little_endian<T, sizeof(T)>((const void*)s);
+#endif
 }
 
 inline void cast_be(const char* s, double& n) {
     BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
     union { double f; uint64_t i; } u;
+#if BOOST_VERSION >= 107100
+    u.i = bsd::endian_load<uint64_t, sizeof(double), bsd::order::big>
+        (reinterpret_cast<const unsigned char*>(s));
+#else
     u.i = bsd::load_big_endian<uint64_t, sizeof(double)>((const void*)s);
+#endif
     n = u.f;
 }
 
 inline void cast_le(const char* s, double& n) {
     BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
     union { double f; uint64_t i; } u;
+#if BOOST_VERSION >= 107100
+    u.i = bsd::endian_load<uint64_t, sizeof(double), bsd::order::little>
+        (reinterpret_cast<const unsigned char*>(s));
+#else
     u.i = bsd::load_little_endian<uint64_t, sizeof(double)>((const void*)s);
+#endif
     n = u.f;
 }
 
