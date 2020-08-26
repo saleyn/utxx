@@ -1,6 +1,9 @@
 //#define BOOST_TEST_MODULE logger_test
 #include <boost/test/unit_test.hpp>
 #include <utxx/config_tree.hpp>
+#if __cplusplus >= 201703L
+#include <string_view>
+#endif
 
 #include <boost/thread.hpp>
 #include <iostream>
@@ -268,12 +271,14 @@ struct latency_worker {
                 utxx::logger::instance().async_logf(LEVEL_ERROR, s_cat, f,
                         __FILE__, BOOST_CURRENT_FUNCTION);
             }
+#if __cplusplus >= 201703L
             else if (LogAsync == 2) {
                 static const std::string s_cat;
                 utxx::logger::instance().log(LEVEL_ERROR, s_cat,
                         std::string_view("This is a test string"),
                         UTXX_SRC);
             }
+#endif
             else
                 LOG_ERROR  ("%d %9d This is an error #123", id, i+1);
 

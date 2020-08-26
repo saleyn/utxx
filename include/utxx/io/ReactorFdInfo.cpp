@@ -196,7 +196,7 @@ ReportError(IOType a_tp, int a_ec, const std::string& a_err,
 
   if (!m_on_error) {
     if (!a_throw) {
-      RSLOG(this, ERROR, a_si, "UNHANDLED error: ", a_err);
+      this->Log(LOG_ERROR, std::move(a_si), this->Ident(), "UNHANDLED error: ", a_err);
       return -1;
     }
 

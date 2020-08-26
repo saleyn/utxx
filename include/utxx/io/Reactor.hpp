@@ -44,8 +44,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 
-#include <mqt/infra/Util.hpp>
-#include <mqt/io/Misc.hpp>
+//#include <mqt/infra/Util.hpp>
+#include <utxx/io/ReactorMisc.hpp>
 #include <utxx/io/ReactorTypes.hpp>
 #include <utxx/io/ReactorFdInfo.hpp>
 

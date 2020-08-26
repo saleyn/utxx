@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
-/// \file  utxx.cpp
+/// \file  logger.cpp
 //----------------------------------------------------------------------------
-/// \brief Implementation of general purpose functions and classes.
+/// \brief Implementation of logger functions and classes.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2010-10-04
