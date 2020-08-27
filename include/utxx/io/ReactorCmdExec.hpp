@@ -40,8 +40,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string>
 #include <utxx/error.hpp>
 
-namespace mqt {
-namespace io  {
+namespace utxx {
+namespace io   {
 
 //------------------------------------------------------------------------------
 /// Run a shell command and allocate a pollable file descriptor for its output

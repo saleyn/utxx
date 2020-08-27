@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 #include <utxx/io/ReactorFdInfo.hpp>
+#include <utxx/io/ReactorLog.hpp>
 #include <utxx/io/Reactor.hpp>
 #include <sys/signalfd.h>
 #include <sys/timerfd.h>
@@ -188,6 +189,8 @@ inline int FdInfo::
 ReportError(IOType a_tp, int a_ec, const std::string& a_err,
       utxx::src_info&& a_si, bool a_throw)
 {
+  UTXX_PRETTY_FUNCTION();
+  
   UTXX_SCOPE_EXIT([this]() { Clear(); });
 
   auto err = a_ec
@@ -196,7 +199,7 @@ ReportError(IOType a_tp, int a_ec, const std::string& a_err,
 
   if (!m_on_error) {
     if (!a_throw) {
-      this->Log(LOG_ERROR, std::move(a_si), this->Ident(), "UNHANDLED error: ", a_err);
+      RLOG(this, ERROR, std::move(a_si), this->Ident(), "UNHANDLED error: ", a_err);
       return -1;
     }
 

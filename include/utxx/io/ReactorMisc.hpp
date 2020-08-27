@@ -43,14 +43,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/compiler_hints.hpp>
 #include <utxx/buffer.hpp>
 #include <utxx/error.hpp>
-#include <boost/align/aligned_allocator.hpp>
+#include <utxx/io/ReactorTypes.hpp>
 
 namespace utxx {
 namespace io   {
 
 using utxx::src_info;
-using dynamic_io_buffer = utxx::detail::basic_dynamic_io_buffer
-                            <boost::alignment::aligned_allocator<char, 512>>;
 
 //------------------------------------------------------------------------------
 // Miscelaneous functions

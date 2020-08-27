@@ -36,7 +36,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/function.hpp>
 #include <utxx/buffer.hpp>
 #include <utxx/enum.hpp>
+#include <utxx/error.hpp>
 #include <utxx/logger/logger_enums.hpp>
+#include <boost/align/aligned_allocator.hpp>
 #include <memory>
 
 namespace utxx {
@@ -45,7 +47,8 @@ namespace io   {
 class Reactor;
 
 using utxx::src_info;
-using utxx::dynamic_io_buffer;
+using dynamic_io_buffer = utxx::detail::basic_dynamic_io_buffer
+                            <boost::alignment::aligned_allocator<char, 512>>;
 
 class FdInfo;
 

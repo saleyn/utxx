@@ -30,6 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
+#include <utxx/io/ReactorLog.hpp>
 #include <utxx/io/Reactor.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <utxx/verbosity.hpp>

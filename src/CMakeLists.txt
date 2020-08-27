@@ -18,6 +18,8 @@ list(APPEND UTXX_SRCS
   logger_util.cpp
   path.cpp
   polynomial.cpp
+  Reactor.cpp
+  ReactorFdInfo.cpp
   ReactorMisc.cpp
   signal_block.cpp
   string.cpp
