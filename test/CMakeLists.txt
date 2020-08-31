@@ -54,6 +54,7 @@ list(APPEND TEST_SRCS
     test_polynomial.cpp
     test_pidfile.cpp
     test_rate_throttler.cpp
+    test_reactor_file_aio.cpp
     test_registrar.cpp
     test_robust_mutex.cpp
     test_ring_buffer.cpp
