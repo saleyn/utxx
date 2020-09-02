@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/timestamp.hpp>
 #include <utxx/logger/logger.hpp>
 
-#define RLOG(Obj, Level, ...) \
+#define UTXX_RLOG(Obj, Level, ...) \
     do { \
         if (UNLIKELY((Obj)->Debug() >= utxx::as_int<utxx::LEVEL_##Level>())) \
             (Obj)->Log(utxx::LEVEL_##Level, \
@@ -68,7 +68,7 @@ inline void DefaultLog(log_level a_lev, utxx::src_info&& a_si, Args&&... args)
 		// Make sure the buffer has enough space for the "filename:line"
 		buf.reserve(len + 4);
 		buf.pos() = a_si.to_string(buf.pos(), buf.capacity(), " [", "]\n");
-		std::cerr << buf.to_string();
+		std::cerr.write(buf.str(), buf.size());
 }
 
 } // namespace io

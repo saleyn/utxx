@@ -190,7 +190,7 @@ ReportError(IOType a_tp, int a_ec, const std::string& a_err,
       utxx::src_info&& a_si, bool a_throw)
 {
   UTXX_PRETTY_FUNCTION();
-  
+
   UTXX_SCOPE_EXIT([this]() { Clear(); });
 
   auto err = a_ec
@@ -199,7 +199,7 @@ ReportError(IOType a_tp, int a_ec, const std::string& a_err,
 
   if (!m_on_error) {
     if (!a_throw) {
-      RLOG(this, ERROR, std::move(a_si), this->Ident(), "UNHANDLED error: ", a_err);
+      UTXX_RLOG(this, ERROR, std::move(a_si), this->Ident(), "UNHANDLED error: ", a_err);
       return -1;
     }
 
@@ -230,7 +230,7 @@ Handle(uint32_t a_events)
     case HType::Accept: return HandleAccept(a_events);
     case HType::Signal: return HandleSignal(a_events);
     default:
-      RLOG(this, DEBUG, "fd=", m_fd, " undefined handler type");
+      UTXX_RLOG(this, DEBUG, "fd=", m_fd, " undefined handler type");
       return -1;
   }
 }
@@ -508,7 +508,7 @@ HandleFile(uint32_t a_events)
 
   // Did we reach the end of file?
   if (UNLIKELY(!file->Remaining())) {
-    RLOG(this, DEBUG, "file read done (offset=",
+    UTXX_RLOG(this, DEBUG, "file read done (offset=",
       file->Offset(), ", size=",
       file->Size(),   ')');
 

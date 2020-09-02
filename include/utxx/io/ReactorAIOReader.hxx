@@ -169,7 +169,7 @@ ReadEvents(int a_events)
 
   // (2) Get the pending completion event:
   do {
-    n = io_getevents_ex(m_ctx, 0, a_events, events, &tmo);
+    n = ::io_getevents_ex(m_ctx, 0, a_events, events, &tmo);
   } while (UNLIKELY(n == -EINTR));
 
   // We can get a negative return here only if there are bad arguments or

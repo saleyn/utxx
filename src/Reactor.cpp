@@ -177,7 +177,7 @@ FdInfo& Reactor
             (a_trigger == EDGE_TRIGGERED ? EPOLLET : 0) |
             (a_on_write ? EPOLLOUT : 0);
 
-  RLOG(this, TRACE5, "adding IO handler '", a_name, "', fd=", a_fd,
+  UTXX_RLOG(this, TRACE5, "adding IO handler '", a_name, "', fd=", a_fd,
       ", RdBuf=", a_rd_bufsz, ", WrBuf=", a_wr_bufsz,
       ", Events=", EPollEvents(events), ", Opaque=", a_opaque);
 
@@ -207,7 +207,7 @@ FdInfo& Reactor
   if (UNLIKELY(a_fd < 0))
     UTXX_THROWX_BADARG_ERROR("invalid fd=", a_fd);
 
-  RLOG(this, TRACE5, "adding RawIO handler '",
+  UTXX_RLOG(this, TRACE5, "adding RawIO handler '",
         a_name, "', fd=", a_fd, ", Events=", EPollEvents(a_events),
         ", Opaque=", a_opaque);
 
@@ -257,7 +257,7 @@ FdInfo& Reactor
 
   p->SetHandler(HType::File, a_on_read);
 
-  RLOG(this, TRACE5, "adding File reader '", a_name, "' for file ", a_filename,
+  UTXX_RLOG(this, TRACE5, "adding File reader '", a_name, "' for file ", a_filename,
      ", Opaque=",  a_opaque);
 
   guard1.disable(true);
@@ -298,7 +298,7 @@ FdInfo& Reactor
     UTXX_THROWX_BADARG_ERROR('[', a_name, "] cannot open pipe: ", e.what());
   }
 
-  RLOG(this, TRACE5, "adding Pipe handler '", a_name, "', fd=", exe->FD(),
+  UTXX_RLOG(this, TRACE5, "adding Pipe handler '", a_name, "', fd=", exe->FD(),
      ", Opaque=",  a_opaque);
 
   auto p = Set(a_name, exe->FD(), FdTypeT::Pipe,
@@ -366,7 +366,7 @@ FdInfo& Reactor
 
   uint events = EPOLLIN | EPOLLET | EPOLLERR;
 
-  RLOG(this, TRACE5, "adding UDS Listener '",
+  UTXX_RLOG(this, TRACE5, "adding UDS Listener '",
       a_name, ", Events=", EPollEvents(events), "', fd=", listen_fd,
       ", Opaque=", a_opaque);
 
@@ -394,7 +394,7 @@ FdInfo& Reactor
   if (fd < 0)
     UTXX_THROWX_IO_ERROR(errno, "eventfd");
 
-  RLOG(this, TRACE5, "adding Event '", a_name, ", fd=", fd,
+  UTXX_RLOG(this, TRACE5, "adding Event '", a_name, ", fd=", fd,
      ", Opaque=", a_opaque);
 
   auto p = Set(a_name, fd, FdTypeT::Event,
@@ -436,7 +436,7 @@ FdInfo& Reactor
   if (timerfd_settime(fd, TFD_TIMER_ABSTIME, &timeout, NULL) < 0)
     UTXX_THROWX_IO_ERROR(errno, "timerfd_settime");
 
-  RLOG(this, TRACE5, "adding Timer '", a_name, "', fd=", fd, ", initial=",
+  UTXX_RLOG(this, TRACE5, "adding Timer '", a_name, "', fd=", fd, ", initial=",
       utxx::fixed(double(a_initial_msec)/1000,  3), ", interval=",
       utxx::fixed(double(a_interval_msec)/1000, 3), ", Opaque=", a_opaque);
 
@@ -474,7 +474,7 @@ FdInfo& Reactor
   if ((fd = signalfd(-1, &a_mask, SFD_NONBLOCK | SFD_CLOEXEC)) < 0)
     UTXX_THROWX_IO_ERROR(errno, "Cannot create signalfd");
 
-  RLOG(this, TRACE3, "adding Signal handler '", a_name, "', fd=", fd,
+  UTXX_RLOG(this, TRACE3, "adding Signal handler '", a_name, "', fd=", fd,
       ", signals=", utxx::sig_members(a_mask), ", Opaque=", a_opaque);
 
   auto rd_bufsz = sizeof(signalfd_siginfo)*a_sigq_capacity;
@@ -535,18 +535,18 @@ void Reactor
     int fd = p->data.fd;
 
     if (UNLIKELY(fd < 0 || fd >= int(m_fds.size()))) {
-      RLOG(this, DEBUG, "fd=", fd, " not found!");
+      UTXX_RLOG(this, DEBUG, "fd=", fd, " not found!");
       continue;
     }
 
-    RLOG(this, TRACE5, "processing ", ++i, '/', rc, ' ',
+    UTXX_RLOG(this, TRACE5, "processing ", ++i, '/', rc, ' ',
        (fd < int(m_fds.size()) && m_fds[fd] ? m_fds[fd]->Name() : "INVALID FD "),
        "(fd=", fd, ", events=", EPollEvents(p->events), ')');
 
     FdInfo& info = *m_fds[fd];
 
     auto cleanup = [fd, &info]() {
-      RLOG(&info, TRACE5, "closing fd ", fd, " on negative return from handler");
+      UTXX_RLOG(&info, TRACE5, "closing fd ", fd, " on negative return from handler");
       ::close(fd);
       info.FD(-1);
       info.Clear();
