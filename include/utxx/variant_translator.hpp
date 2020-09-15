@@ -137,13 +137,13 @@ namespace property_tree {
     };
 
     template <typename Ch>
-    struct translator_between<utxx::basic_variant_tree_data<Ch>, nullptr_t>
+    struct translator_between<utxx::basic_variant_tree_data<Ch>, std::nullptr_t>
     {
-        using external_type = nullptr_t;
+        using external_type = std::nullptr_t;
         using internal_type = utxx::basic_variant_tree_data<Ch>;
         using type          = translator_between<internal_type, external_type>;
 
-        boost::optional<external_type> get_value(internal_type& v) const { return v.value().template get<nullptr_t>(); }
+        boost::optional<external_type> get_value(internal_type& v) const { return v.value().template get<std::nullptr_t>(); }
         boost::optional<internal_type> put_value(external_type)    const { return internal_type(); }
     };
 

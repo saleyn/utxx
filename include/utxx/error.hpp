@@ -353,7 +353,7 @@ public:
             // scopes    -  records positions of "::"    delimiters
             int tribrcnt = 0, scope = 1;
             struct { const char* l; const char* r; } tribraces[N];
-            const char* scopes[N];
+            const char* scopes[N] = {0};
             scopes[0]   = "";
             auto begin  = a_srcfun;
             auto matched_open_tribrace = -1;
@@ -422,7 +422,10 @@ public:
             // Are there any templated arguments to be trimmed?
             if (!tribrcnt) {
                 auto len = std::min<size_t>(end - p, e - begin);
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wstringop-truncation"
                 p = stpncpy(p, begin, len);
+                #pragma GCC diagnostic pop
             } else {
                 q = begin;
                 // Copy all characters excluding what's inside "<...>"

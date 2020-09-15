@@ -74,14 +74,17 @@ protected:
     void repoint(basic_io_buffer&& a_rhs) {
         deallocate();
         a_rhs.crunch();
-        m_begin  = (a_rhs.m_begin == a_rhs.m_data ? m_data : a_rhs.m_begin);
+        m_begin  = (a_rhs.allocated() ? a_rhs.m_begin : m_data);
         m_end    = m_begin + (a_rhs.m_end    - a_rhs.m_begin);
+        assert((!a_rhs.allocated() && m_end <= m_begin+N) ||
+               ( a_rhs.allocated() && m_end == a_rhs.m_end));
         m_rd_ptr = m_begin + (a_rhs.m_rd_ptr - a_rhs.m_begin);
         m_wr_ptr = m_begin + (a_rhs.m_wr_ptr - a_rhs.m_begin);
         m_wr_lwm = a_rhs.m_wr_lwm;
 
-        if (a_rhs.m_begin == a_rhs.m_data && a_rhs.size()) {
+        if (!a_rhs.allocated() && !a_rhs.empty()) {
             assert(N && N >= a_rhs.size());
+            assert(m_begin + a_rhs.size() <= m_end);
             memcpy(m_begin, a_rhs.m_rd_ptr, a_rhs.size());
         }
 

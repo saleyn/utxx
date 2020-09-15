@@ -45,13 +45,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdexcept>
 #include <string.h>
 #include <stdio.h>
+#include <cstddef>
 
 namespace utxx {
 
+using std::nullptr_t;
+
 class variant: public boost::variant<nullptr_t, bool, long, double, std::string>
 {
-    typedef boost::variant    <nullptr_t, bool, long, double, std::string> base;
-    typedef boost::mpl::vector<nullptr_t, bool, long, double, std::string> internal_types;
+    using base           = boost::variant    <nullptr_t, bool, long, double, std::string>;
+    using internal_types = boost::mpl::vector<nullptr_t, bool, long, double, std::string>;
 
     struct string_visitor: public boost::static_visitor<std::string> {
         std::string operator () (nullptr_t) const { return "<NULL>";             }
