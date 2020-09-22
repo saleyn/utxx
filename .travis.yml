@@ -15,7 +15,7 @@ matrix:
             - g++-9
             #- boost-latest
             - boost1.70
-            - libaio1
+            - libaio-dev
             #- cmake
             #- cmake-data
             - libxslt1.1
