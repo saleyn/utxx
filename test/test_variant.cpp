@@ -306,6 +306,13 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_file )
         BOOST_REQUIRE_EQUAL(5, n);
     }
     {
+        variant v(10);
+        auto n = tree.get("test.aaa", v);
+        BOOST_REQUIRE_EQUAL(10, n.to_int());
+        n = tree.get("test.report_interval", v);
+        BOOST_REQUIRE_EQUAL(5, n.to_int());
+    }
+    {
         int n = tree.get("test.report", 10);
         BOOST_REQUIRE_EQUAL(10, n);
     }
