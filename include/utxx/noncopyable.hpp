@@ -32,8 +32,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <boost/noncopyable.hpp>
+
 namespace utxx {
 
+using noncopyable = boost::noncopyable;
+
+/*
 class noncopyable {
 public:
     noncopyable()  = default;
@@ -44,5 +49,6 @@ public:
     noncopyable& operator=(const noncopyable&) = delete;
     noncopyable& operator=(noncopyable&&)      = delete;
 };
+*/
 
 } // namespace utxx
