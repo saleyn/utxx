@@ -112,6 +112,13 @@ namespace utxx {
 #define UTXX_THROWX_BADARG_ERROR(...) \
     UTXX_SRC_THROW(utxx::badarg_error, UTXX_SRCX, ##__VA_ARGS__)
 
+/// Throw utxx::logic_error exception with current source location information
+#define UTXX_THROW_LOGIC_ERROR(...) \
+    UTXX_SRC_THROW(utxx::logic_error, UTXX_SRC, ##__VA_ARGS__)
+/// Throw utxx::logic_error exception with current source location and cached fun name
+#define UTXX_THROWX_LOGIC_ERROR(...) \
+    UTXX_SRC_THROW(utxx::logic_error, UTXX_SRCX, ##__VA_ARGS__)
+
 /// Throw utxx::io_error exception with current source location information
 #define UTXX_THROW_IO_ERROR(Errno, ...) \
     UTXX_SRC_THROW(utxx::io_error, UTXX_SRC, (Errno), ##__VA_ARGS__)
