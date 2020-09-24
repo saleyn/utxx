@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <boost/static_assert.hpp>
 #include <utxx/meta.hpp>
+#include <utxx/noncopyable.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <iostream>
 
@@ -67,6 +68,18 @@ template <class T> if_base_of<A,T,bool>
 check3() { return true; }
 template <class T> if_not_base_of<A,T,bool>
 check3() { return false; }
+
+struct NoCopy : noncopyable {
+    NoCopy() : x(10) {}
+
+    int x;
+};
+
+BOOST_AUTO_TEST_CASE( test_noncopyable )
+{
+    NoCopy c;
+    BOOST_REQUIRE_EQUAL(10, c.x);
+}
 
 BOOST_AUTO_TEST_CASE( test_meta )
 {
