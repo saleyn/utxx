@@ -406,11 +406,13 @@ public:
     std::basic_string<Ch> to_string
     (
         size_t  a_tab_width,
-        bool    a_with_types    = false,
-        bool    a_with_braces   = true
+        bool    a_with_types  = false,
+        bool    a_with_braces = true,
+        Ch      a_indent_char = Ch(' '),
+        int     a_indent      = 0
     ) const {
         std::basic_stringstream<Ch> s;
-        dump(s, a_tab_width, a_with_types, a_with_braces);
+        dump(s, a_tab_width, a_with_types, a_with_braces, a_indent_char, a_indent);
         return s.str();
     }
 
