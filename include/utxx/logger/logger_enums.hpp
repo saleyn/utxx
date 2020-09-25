@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #define _UTXX_LOGGER_ENUMS_HPP_
 
 #include <strings.h>
+#include <type_traits>
 
 namespace utxx { 
 
@@ -89,9 +90,19 @@ inline int as_int(log_level L) {
 };
 
 /// Function to map an integer in range [1 ... 10] to log_level [WARNING ... TRACE5].
-inline log_level as_log_level(uint8_t a) {
+inline constexpr log_level as_log_level(uint8_t a) {
     if (a == 0) return utxx::LEVEL_NONE;
     uint8_t i = 10 - (a > 10 ? 10 : a);
+    return log_level(i < 5 ? (1 << 5 | 1 << i) : 1 << i);
+}
+
+/// Function to map an integer in range [0 ... 7] to log_level [INFO ... TRACE5].
+template <int N>
+constexpr typename std::enable_if<N >= 0 && N <= 7, log_level>::type
+debug_to_log_level() {
+    if (N == 0) return utxx::LEVEL_INFO;
+    constexpr uint8_t n = N+3;
+    constexpr uint8_t i = 10 - (n > 10 ? 10 : n);
     return log_level(i < 5 ? (1 << 5 | 1 << i) : 1 << i);
 }
 

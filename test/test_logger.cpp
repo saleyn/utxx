@@ -63,21 +63,6 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 {
     variant_tree pt;
 
-    BOOST_CHECK_EQUAL(0, (as_int<LEVEL_NONE>()));
-    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ALERT>()));
-    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_FATAL>()));
-    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_ERROR>()));
-    BOOST_CHECK_EQUAL(1, (as_int<LEVEL_WARNING>()));
-    BOOST_CHECK_EQUAL(2, (as_int<LEVEL_NOTICE>()));
-    BOOST_CHECK_EQUAL(3, (as_int<LEVEL_INFO>()));
-    BOOST_CHECK_EQUAL(4, (as_int<LEVEL_DEBUG>()));
-    BOOST_CHECK_EQUAL(5, (as_int<LEVEL_TRACE>()));
-    BOOST_CHECK_EQUAL(6, (as_int<LEVEL_TRACE1>()));
-    BOOST_CHECK_EQUAL(7, (as_int<LEVEL_TRACE2>()));
-    BOOST_CHECK_EQUAL(8, (as_int<LEVEL_TRACE3>()));
-    BOOST_CHECK_EQUAL(9, (as_int<LEVEL_TRACE4>()));
-    BOOST_CHECK_EQUAL(10,(as_int<LEVEL_TRACE5>()));
-
     BOOST_CHECK_EQUAL(0, (as_int(LEVEL_NONE)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ALERT)));
     BOOST_CHECK_EQUAL(1, (as_int(LEVEL_FATAL)));
@@ -104,6 +89,15 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
     BOOST_CHECK(LEVEL_TRACE3  == as_log_level(8 ));
     BOOST_CHECK(LEVEL_TRACE4  == as_log_level(9 ));
     BOOST_CHECK(LEVEL_TRACE5  == as_log_level(10));
+
+    BOOST_CHECK(LEVEL_INFO    == debug_to_log_level<0>());
+    BOOST_CHECK(LEVEL_DEBUG   == debug_to_log_level<1>());
+    BOOST_CHECK(LEVEL_TRACE   == debug_to_log_level<2>());
+    BOOST_CHECK(LEVEL_TRACE1  == debug_to_log_level<3>());
+    BOOST_CHECK(LEVEL_TRACE2  == debug_to_log_level<4>());
+    BOOST_CHECK(LEVEL_TRACE3  == debug_to_log_level<5>());
+    BOOST_CHECK(LEVEL_TRACE4  == debug_to_log_level<6>());
+    BOOST_CHECK(LEVEL_TRACE5  == debug_to_log_level<7>());
 
     BOOST_CHECK(LEVEL_TRACE   == parse_log_level("trace"));
     BOOST_CHECK(LEVEL_TRACE5  == parse_log_level("trace5"));
