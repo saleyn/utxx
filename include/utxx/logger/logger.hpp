@@ -168,7 +168,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// UTXX_LOG_N_ARGS() macro depending on whether it was called with one
 /// or two arguments:
 #define UTXX_LOG_2_ARGS(SI, Level) \
-    utxx::logger::msg_streamer(utxx::LEVEL_##Level, "",  SI)
+    utxx::logger::msg_streamer(utxx::LEVEL_##Level, utxx::logger::nocat(),  SI)
 #define UTXX_LOG_3_ARGS(SI, Level, Cat) \
     utxx::logger::msg_streamer(utxx::LEVEL_##Level, Cat, SI)
 
@@ -234,7 +234,7 @@ struct logger : boost::noncopyable {
     };
 
     /// Empty category
-    static const std::string nocat() { static std::string s; return s; }
+    static const std::string& nocat() { static std::string s; return s; }
 
     /// Return log level as a 1-char string
     /// DEPRECATED use logger_util.hpp:log_level_to_abbrev()
