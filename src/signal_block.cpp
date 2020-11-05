@@ -144,4 +144,19 @@ sigset_t sig_members_parse(const string& a_signals, utxx::src_info&& a_si)
     return res;
 }
 
+//------------------------------------------------------------------------------
+sigset_t sig_vector_to_set(const vector<int>& a_signals)
+{
+    sigset_t res;
+    sigemptyset(&res);
+
+    for (auto& s : a_signals) {
+        if (s >= 64)
+            UTXX_THROW_BADARG_ERROR("Invalid signal number: ", s);
+        sigaddset(&res, s);
+    }
+
+    return res;
+}
+
 } // namespace utxx

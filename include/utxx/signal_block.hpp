@@ -115,4 +115,7 @@ sigset_t sig_init_set(Signals&&... args) {
 /// The signal names are case insensitive and not required to begin with "SIG".
 sigset_t sig_members_parse(const std::string& a_signals, src_info&& a_si);
 
+/// Convert a vector of integer signal numbers to sigset
+sigset_t sig_vector_to_set(const std::vector<int>& a_signals);
+
 } // namespace utxx

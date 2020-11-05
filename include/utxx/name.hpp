@@ -148,6 +148,11 @@ namespace utxx {
         /// Number of characters needed to store the value.
         static constexpr size_t size() { return Size; }
 
+        static bool valid(const std::string& a_val, bool a_no_case = false) {
+            basic_short_name<Size> nm;
+            return nm.set(a_val, a_no_case) == 0;
+        }
+
         template <int N>
         void set(const char (&a_buf)[N], bool a_no_case = false) {
             BOOST_STATIC_ASSERT(N <= Size);
