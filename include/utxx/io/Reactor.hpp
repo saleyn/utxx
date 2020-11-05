@@ -96,6 +96,10 @@ public:
   /// If not set the debug output will go to the std::cerr
   void SetLogger(const Logger& a_logger) { m_logger = a_logger; }
 
+  /// Use kernel by-pass mode (offered by some networking cards)
+  bool UseKBP()           const { return m_use_kbp; }
+  void UseKBP(bool v)           { m_use_kbp = v;    }
+
   //----------------------------------------------------------------------------
   // Tests for event readability/writeability/errors
   //----------------------------------------------------------------------------
@@ -278,8 +282,9 @@ private:
   IdleHandler     m_on_idle;
   Logger          m_logger;
   int             m_debug;
-  std::string     m_ident;               // E.g. "[p1@] "
-  bool            m_use_getsockname;     // true when set env USE_GETSOCKNAME
+  std::string     m_ident;               ///< Indent prefix (E.g. "[p1@] ")
+  bool            m_use_getsockname;     ///< true when set env USE_GETSOCKNAME
+  bool            m_use_kbp;             ///< Use kernel by-pass (e.g. Mellanox LibVBA)
 
   friend class FdInfo;
 
