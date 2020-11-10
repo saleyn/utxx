@@ -65,6 +65,7 @@ public:
     using self_type      = basic_variant_tree<Ch>;
     using base           = basic_variant_tree_base<Ch>;
     using key_type       = typename base::key_type;
+    using data_type      = typename base::data_type;
     using path_type      = basic_tree_path<Ch>;
     using value_type     = typename base::value_type;
     using char_type      = Ch;
@@ -238,6 +239,13 @@ public:
             try { return  t->base::template get_value<T>(detail::variant_translator<T,Ch>()); }
             catch (...) { throw_bad_type<T>(path, t->data()); }
         return default_value;
+    }
+
+    /// Returns assigned value (or unassigned value if \a path is not found)
+    const data_type& try_get(const path_type& path) const {
+        path_type p(path);
+        auto* t = navigate(this, p, nullptr, false);
+        return t ? t->data().value() : data_type::unassigned();
     }
 
     std::basic_string<Ch>

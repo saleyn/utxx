@@ -77,6 +77,8 @@ class variant: public boost::variant<nullptr_t, bool, long, double, std::string>
     const variant& get(variant*) const { return *this; }
     variant&       get(variant*)       { return *this; }
 public:
+    static const variant& unassigned() { static variant s_val; return s_val; }
+
     typedef boost::mpl::vector<
         int,int16_t,long,uint16_t,uint32_t,uint64_t> int_types;
 
