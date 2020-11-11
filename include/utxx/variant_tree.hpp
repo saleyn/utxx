@@ -245,8 +245,12 @@ public:
     const data_type& try_get(const path_type& path) const {
         path_type p(path);
         auto* t = navigate(this, p, nullptr, false);
-        static const data_type s_unassigned;
-        return t ? t->data().value() : s_unassigned;
+        static const data_type& s_unassigned = data_type::unassigned();
+        //return t ? t->data().value() : s_unassigned;
+        if (!t)
+            return s_unassigned;
+        const data_type& res = t->data().value();
+        return res;
     }
 
     std::basic_string<Ch>

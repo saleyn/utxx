@@ -150,7 +150,7 @@ namespace utxx {
 
         static bool valid(const std::string& a_val, bool a_no_case = false) {
             basic_short_name<Size> nm;
-            return nm.set(a_val, a_no_case) == 0;
+            return nm.set(a_val.c_str(), a_val.size(), a_no_case) == 0;
         }
 
         template <int N>
