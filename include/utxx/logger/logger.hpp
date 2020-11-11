@@ -595,7 +595,7 @@ private:
                const char* a_src_fun,  std::size_t  a_src_fun_len);
 
     void run();
-    bool flush();
+    bool flush_internal();
 
     template <typename... Args>
     bool logfmt(
@@ -653,6 +653,8 @@ public:
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();
+
+    void flush() { m_event.signal_fast(); }
 
     /// Returns true if the logger has been initialized
     bool initialized() const { return m_initialized; }

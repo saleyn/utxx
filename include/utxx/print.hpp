@@ -381,6 +381,14 @@ namespace detail {
             std::stringstream s; s << a;
             print(s.str());
         }
+        template <class T>
+        void do_print(T& a) {
+            std::stringstream s; s << a;
+            print(s.str());
+        }
+        void do_print(std::_Setprecision s) {
+            m_precision = s._M_n;
+        }
     public:
         explicit basic_buffered_print(const Alloc& a_alloc = Alloc())
             : Alloc(a_alloc)

@@ -310,13 +310,13 @@ void logger::run()
         }
 
         // Lastly, flush the queue of pending messages
-        ok = flush();
+        ok = flush_internal();
     }
 
     // Flush the queue in case the logger is aborted while there are some
     // pending messages since last call to flush above
     if (ok)
-        flush();
+        flush_internal();
 
     if (!m_silent_finish) {
         const msg msg(LEVEL_INFO, "", std::string("Logger thread finished"),
@@ -328,7 +328,7 @@ void logger::run()
         m_on_after_run();
 }
 
-bool logger::flush()
+bool logger::flush_internal()
 {
     // Get all pending items from the queue
     for (auto* item = m_queue.pop_all(), *next=item; item; item = next) {
