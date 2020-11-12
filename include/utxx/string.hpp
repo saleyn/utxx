@@ -66,8 +66,15 @@ namespace utxx {
 
     /// Get the length of a string stored inside a fixed-length string buffer
     /// String may not be NULL-terminated
+    inline int strnlen(const char* s, const char* end) {
+        auto p=s; for(;*p && p!=end; ++p);
+        return p-s;
+    }
+
+    /// Get the length of a string stored inside a fixed-length string buffer
+    /// String may not be NULL-terminated
     template <int N>
-    int strnlen(const char (&s)[N]) { auto p=s, e=s+N; for(;*p && p!=e; ++p); return p-s; }
+    int strnlen(const char (&s)[N]) { return strnlen(s, s+N); }
 
 #pragma GCC diagnostic pop    
 
