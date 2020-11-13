@@ -85,7 +85,7 @@ std::string basename(const std::string& a_file, const std::string& a_strip_ext) 
 
 std::string
 replace_env_vars(const std::string& a_path, const struct tm* a_now,
-                 const std::map<std::string, std::string>*   a_bindings)
+                 const path_bindings_t*   a_bindings)
 {
     using namespace boost::posix_time;
     using namespace boost::xpressive;
@@ -138,7 +138,7 @@ replace_env_vars(const std::string& a_path, const struct tm* a_now,
 
 std::string
 replace_macros(const std::string& a_path,
-               const std::map<std::string, std::string>& a_bindings)
+               const path_bindings_t& a_bindings)
 {
     using namespace boost::posix_time;
     using namespace boost::xpressive;

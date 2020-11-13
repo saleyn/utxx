@@ -247,6 +247,9 @@ std::string home();
 /// @param a_filename file name to append to temp directory name
 std::string temp_path(std::string const& a_filename = "");
 
+/// Map of bindings in the form {Variable => Value} used for Variable replacement
+using path_bindings_t = std::map<std::string, std::string>;
+
 /// @brief Substitute all environment variables and day-time
 /// formatting symbols (see strptime(3)) in a given filename.
 /// The variables can be represented by "%VARNAME%" notation
@@ -262,7 +265,7 @@ std::string temp_path(std::string const& a_filename = "");
 ///                   variables.
 std::string replace_env_vars(
     const std::string& a_path, const struct tm* a_now = NULL,
-    const std::map<std::string, std::string>* a_bindings = NULL);
+    const path_bindings_t* a_bindings = NULL);
 
 /// Replace environment variables and time in strptime(3) format in \a a_str.
 /// @param a_str string to replace
@@ -273,7 +276,7 @@ std::string replace_env_vars(
 ///                   variables.
 std::string replace_env_vars(
     const std::string& a_str, time_val a_now, bool a_utc = false,
-    const std::map<std::string, std::string>* a_bindings = NULL);
+    const path_bindings_t* a_bindings = NULL);
 
 /// Replace macro variables found in the \a a_bindings.
 /// The values should be defined in the string in the following form:
@@ -282,8 +285,8 @@ std::string replace_env_vars(
 /// @param a_bindings contains optional value map that will be used
 ///                   for variable substitution.
 std::string replace_macros(
-    const std::string& a_path,
-    const std::map<std::string, std::string>& a_bindings);
+    const std::string&     a_path,
+    const path_bindings_t& a_bindings);
 
 /// Returns a pair containing a file name with substituted
 /// environment variables and day-time formatting symbols
