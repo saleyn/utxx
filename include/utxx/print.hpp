@@ -56,6 +56,12 @@ struct cstr_wrap {
     size_t      size()  const { return m_size; }
 
     explicit operator std::string() const { return std::string(m_str, m_size); }
+
+    template <typename Stream>
+    friend Stream& operator<< (Stream& out, cstr_wrap<Char> const& a) {
+        out.write(a.c_str(), a.size());
+        return out;
+    }
 private:
     const Char*  m_str;
     const size_t m_size;

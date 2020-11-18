@@ -247,7 +247,7 @@ public:
     template <int N>
     inline static int format(stamp_type a_tp, time_val tv,
             char (&a_buf)[N], bool a_utc = false, bool a_use_cached_date=true) {
-        return format(a_tp, tv, a_buf, N, a_utc, a_use_cached_date);
+        return format(a_tp, tv, a_buf, N, a_utc, true, a_use_cached_date);
     }
 
     inline static std::string to_string(stamp_type a_tp = TIME_WITH_USEC,
@@ -257,7 +257,7 @@ public:
 
     inline static std::string to_string(time_val a_tv, stamp_type a_tp=TIME_WITH_USEC,
                                         bool a_utc=false, bool a_use_cached_date=true) {
-        buf_type buf; format(a_tp, a_tv, buf, sizeof(buf), a_utc, a_use_cached_date);
+        buf_type buf; format(a_tp, a_tv, buf, sizeof(buf), a_utc, true, a_use_cached_date);
         return std::string(buf);
     }
 
