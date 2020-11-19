@@ -603,7 +603,7 @@ private:
             }
 
             // Reached the end of path
-            if (q == end && put_val && !dp.empty())
+            if (q == end && put_val != nullptr && !dp.empty())
                 throw variant_tree_bad_path(
                     "Last subpath cannot end with a '[]' filter", root / path);
 
