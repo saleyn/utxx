@@ -249,7 +249,7 @@ public:
         //return t ? t->data().value() : s_unassigned;
         if (!t)
             return s_unassigned;
-        const data_type& res = t->data().value();
+        const data_type& res = t->data();
         return res;
     }
 
