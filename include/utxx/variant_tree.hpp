@@ -236,8 +236,13 @@ public:
         path_type p(path);
         auto* t = navigate(this, p, nullptr, false);
         if (t)
-            try { return  t->base::template get_value<T>(detail::variant_translator<T,Ch>()); }
-            catch (...) { throw_bad_type<T>(path, t->data()); }
+            try {
+                return t->data().value().empty()
+                     ? default_value
+                     : t->base::template get_value<T>(detail::variant_translator<T,Ch>());
+            } catch (...) {
+                throw_bad_type<T>(path, t->data());
+            }
         return default_value;
     }
 
