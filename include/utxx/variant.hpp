@@ -74,6 +74,7 @@ class variant: public boost::variant<nullptr_t, bool, long, double, std::string>
 
     template <typename T>
     T              get(T*)       const { return boost::get<T>(*this); }
+    double         get(double*)  const { return to_double(); }
     const variant& get(variant*) const { return *this; }
     variant&       get(variant*)       { return *this; }
 public:
