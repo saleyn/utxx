@@ -40,14 +40,16 @@ namespace utxx {
 
     template <class Ch>
     struct basic_variant_tree_data : public variant {
+        using path_t = basic_tree_path<Ch>;
+
         basic_variant_tree_data()
             : m_schema_validator(nullptr)
         {}
 
         basic_variant_tree_data(
-            const variant&             v,
-            const basic_tree_path<Ch>& r = basic_tree_path<Ch>(),
-            const config::validator*   validator=nullptr
+            const variant&           v,
+            const path_t&            r = path_t(),
+            const config::validator* validator=nullptr
         )   : variant(v)
             , m_root_path(r)
             , m_schema_validator(validator)
@@ -55,7 +57,7 @@ namespace utxx {
 
         basic_variant_tree_data(
             const std::basic_string<Ch>& v,
-            const basic_tree_path<Ch>&   r = basic_tree_path<Ch>(),
+            const path_t&                r = path_t(),
             const config::validator*     validator=nullptr
         )   : variant(v)
             , m_root_path(r)
@@ -63,9 +65,9 @@ namespace utxx {
         {}
 
         basic_variant_tree_data(
-            const char*                v,
-            const basic_tree_path<Ch>& r = basic_tree_path<Ch>(),
-            const config::validator*   validator=nullptr
+            const char*              v,
+            const path_t&            r = path_t(),
+            const config::validator* validator=nullptr
         )   : variant(v)
             , m_root_path(r)
             , m_schema_validator(validator)
@@ -84,9 +86,9 @@ namespace utxx {
         {}
 
         basic_variant_tree_data(
-            variant&&                   v,
-            basic_tree_path<Ch>&&       r = basic_tree_path<Ch>(),
-            const config::validator*    validator=nullptr
+            variant&&                v,
+            path_t&&                 r = path_t(),
+            const config::validator* validator=nullptr
         )   : variant(std::move(v))
             , m_root_path(std::move(r))
             , m_schema_validator(validator)
@@ -115,14 +117,15 @@ namespace utxx {
         variant&                    value()      { return *(variant*)this;     }
         variant const&              value() const{ return *(variant const*)this;}
 
-        basic_tree_path<Ch> const&  root_path()    const { return m_root_path; }
-        void root_path(const basic_tree_path<Ch>& p)     { m_root_path = p;    }
+        path_t const&  root_path()      const { return m_root_path; }
+        void root_path(const path_t& p)       { m_root_path = p;    }
+        void root_path(const path_t& p) const { m_root_path = p;    }
 
         const config::validator*    validator()    const { return m_schema_validator; }
         void validator(const config::validator* p) const { m_schema_validator = p;    }
 
     private:
-        basic_tree_path<Ch>              m_root_path;
+        mutable path_t                   m_root_path;
         mutable const config::validator* m_schema_validator;
     };
 

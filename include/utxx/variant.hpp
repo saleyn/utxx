@@ -173,9 +173,11 @@ public:
     void operator+= (T a) { throw std::runtime_error("Operation not supported!"); }
 
     value_type  type()     const { return static_cast<value_type>(which()); }
-    const char* type_str() const {
+    const char* type_str() const { return type_str(type()); }
+
+    static const char* type_str(value_type t) {
         static const char* s_types[] = { "null", "bool", "int", "double", "string" };
-        return s_types[type()];
+        return s_types[t];
     }
 
     /// Set value to null.
@@ -196,8 +198,10 @@ public:
 
     bool                to_bool()   const { return boost::get<bool>(*this); }
     long                to_int()    const { return boost::get<long>(*this); }
-    double              to_float()  const { return boost::get<double>(*this); }
-    double              to_double() const { return boost::get<double>(*this); }
+    double              to_double() const { return is_int()
+                                                 ? double(boost::get<long>(*this))
+                                                 : boost::get<double>(*this); }
+    double              to_float()  const { return to_double(); }
     const std::string&  to_str()    const { return boost::get<std::string>(*this); }
     const char*         c_str()     const { return boost::get<std::string>
                                                     (*this).c_str(); }
