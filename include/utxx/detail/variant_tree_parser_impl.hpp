@@ -43,6 +43,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/property_tree/xml_parser.hpp>
 #endif
 
+#ifndef UTXX_VARIANT_TREE_NO_JSON_PARSER
+// The following is needed to avoid compiler warning
+// on deprecated use of boost/bind.hpp
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#include <boost/property_tree/json_parser.hpp>
+#endif
+
 #ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
 #include <boost/property_tree/ini_parser.hpp>
 #endif
@@ -280,6 +287,46 @@ namespace detail {
         boost::property_tree::translator_between<
             basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
         basic_variant_tree<Ch>::translate_data(a_tree, tr);
+    }
+
+#endif
+
+#ifndef UTXX_VARIANT_TREE_NO_JSON_PARSER
+    namespace {
+        template<typename TR, typename PT, typename TR2, typename T>
+        void merge(TR& tree, const PT& path, const TR2& src_tree, const T& on_update) {
+            for (auto it = src_tree.begin(), e = src_tree.end(); it != e; ++it) {
+                PT dst_path = path / it->first;
+                merge(tree, dst_path, it->second, on_update);
+            }
+            tree.put(path, on_update(path, src_tree.data()));
+        }
+    }
+
+    /// @brief Read configuration from an JSON file
+    /// @param a_src   is the configuration source (file or stream
+    /// @param a_tree  target configuration tree
+    /// @param a_flags are optional flags
+    ///                (see boost::property_tree::xml_parser::read_xml())
+    template <typename Source, typename Ch>
+    void read_json(Source& a_src, basic_variant_tree<Ch>& a_tree)
+    {
+        // TODO: Implement native support of read_xml for variant_tree instead
+        //       of using this workaround of reading to ptree and copying.
+//        auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
+        boost::property_tree::ptree pt;
+        boost::property_tree::read_json(a_src, pt);
+
+        boost::property_tree::translator_between
+            <basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
+
+        auto on_update = [&tr](auto& path, auto& data) {
+            boost::optional<variant> v = *tr.put_value(data);
+            return *v;
+        };
+
+        a_tree.clear();
+        merge(a_tree, typename basic_variant_tree<Ch>::path_type(), pt, on_update);
     }
 
 #endif

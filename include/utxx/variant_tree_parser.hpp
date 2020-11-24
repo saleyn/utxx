@@ -41,7 +41,8 @@ namespace utxx {
         FORMAT_UNDEFINED = -1,
         FORMAT_SCON,
         FORMAT_INI,
-        FORMAT_XML
+        FORMAT_XML,
+        FORMAT_JSON
     };
 
     inline const char* fmt_to_string(config_format fmt) {
@@ -49,6 +50,7 @@ namespace utxx {
             case FORMAT_SCON: return "SCON";
             case FORMAT_INI:  return "INI";
             case FORMAT_XML:  return "XML";
+            case FORMAT_JSON: return "JSON";
             default:          return "UNDEFINED";
         }
     }
@@ -95,6 +97,12 @@ namespace utxx {
 #else
                 UTXX_THROW_BADARG_ERROR("XML format reading is disabled!");
 #endif
+            case FORMAT_JSON:
+#ifndef UTXX_VARIANT_TREE_NO_JSON_PARSER
+                detail::read_json(a_stream, a_tree);
+#else
+                UTXX_THROW_BADARG_ERROR("JSON format reading is disabled!");
+#endif
                 break;
             default:
                 UTXX_THROW_BADARG_ERROR
@@ -106,7 +114,7 @@ namespace utxx {
     }
 
     /**
-     * @brief Read SCON/INI/XML/INFO file format by guessing content type by extension
+     * @brief Read SCON/INI/XML/JSON/INFO file format by guessing content type by extension
      * @param a_filename is a filename associated with stream in case of exceptions
      * @param a_tree     is the tree
      * @param a_inc_filename_resolver is the resolver of files included in the
@@ -139,6 +147,8 @@ namespace utxx {
                 a_fmt = FORMAT_INI;
             else if (ext == ".xml")
                 a_fmt = FORMAT_XML;
+            else if (ext == ".json")
+                a_fmt = FORMAT_JSON;
             else
                 UTXX_THROW_BADARG_ERROR
                     ("Configuration file extension not supported (", a_filename, "!");
@@ -146,7 +156,7 @@ namespace utxx {
 
         std::basic_ifstream<Ch> stream(a_filename.c_str());
         if (!stream)
-            UTXX_THROW_BADARG_ERROR("Cannot open file for reading", a_filename, 0);
+            UTXX_THROW_IO_ERROR(errno, "Cannot open file for reading: ", a_filename);
         stream.imbue(a_loc);
         read_config(stream, a_tree, a_fmt, a_filename, a_resolver, a_flags);
     }
@@ -165,7 +175,6 @@ namespace utxx {
         read_config(std::basic_string<Ch>(a_filename),
                     a_tree, a_resolver, a_flags, a_loc, a_fmt);
     }
-
 
     /**
      * Writes a tree to the stream in SCON format.
