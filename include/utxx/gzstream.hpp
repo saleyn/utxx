@@ -60,7 +60,7 @@ public:
               buffer + 4);    // end position
         // ASSERT: both input & output capabilities will not be used together
     }
-    int is_open() { return opened; }
+    int is_open() const { return opened; }
     gzstreambuf* open(const char* name, int mode);
     gzstreambuf* open(const std::string& name, int mode) {
         return open(name.c_str(), mode);
@@ -89,6 +89,7 @@ namespace detail {
         void open(const std::string& name, int mode) { open(name.c_str(), mode); }
         void close();
         gzstreambuf* rdbuf() { return &buf; }
+        bool is_open() const { return buf.is_open(); }
     };
 } // namespace detail
 
