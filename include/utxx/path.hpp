@@ -81,7 +81,24 @@ const char* basename(const char* begin, const char* end);
 /// @param a_file is the filename to get the basename of
 /// @param a_strip_ext when not empty, the basename's extension matching
 ///                    \a a_strip_ext (taken verbatim) will be erased
-std::string basename(const std::string& a_file, const std::string& a_strip_ext = "");
+/// @param a_case_sense is the case sensitive extension comparison
+std::string basename(const std::string& a_file,
+                     const std::string& a_strip_ext="",
+                     bool               a_case_sense=true);
+
+/// Return the extension of the given filename
+/// @param a_file is the filename to get the basename of
+/// @param a_strip_ext when not empty, the filename's extension matching
+///                    \a a_strip_ext (taken verbatim) will be erased
+///                    prior to returning the extension of the remainer.
+/// @param a_case_sense is the case sensitive extension comparison
+/// \code
+/// cout << extension("file.txt.gz", ".gz") << endl;
+/// \endcode
+/// Prints: ".txt"
+std::string extension(const std::string& a_file,
+                      const std::string& a_strip_ext="",
+                      bool               a_case_sense=true);
 
 /// Return dirname portion of the filename
 std::string dirname(const std::string& a_filename);

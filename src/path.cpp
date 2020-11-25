@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/ptime.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/conversion.hpp>
+#include <boost/filesystem/convenience.hpp>
 #include <boost/xpressive/xpressive.hpp>
 #include <utxx/path.ipp>
 #include <utxx/error.hpp>
@@ -72,15 +73,31 @@ std::string temp_path(std::string const& a_filename) {
     return (a_filename.empty()) ? r : r + slash_str() + a_filename;
 }
 
-std::string basename(const std::string& a_file, const std::string& a_strip_ext) {
+namespace {
+    const char* strip_ext(const char* b, const char* e, const std::string& a_ext, bool case_sense) {
+        auto n = a_ext.size();
+        if (!a_ext.empty() && (e-b) >= int(n)) {
+            auto q = e - n;
+            if ((case_sense ? strncmp    (q, a_ext.c_str(), n)
+                            : strncasecmp(q, a_ext.c_str(), n)) == 0)
+                e = q;
+        }
+        return e;
+    }
+}
+
+std::string basename(const std::string& a_file, const std::string& a_strip_ext, bool case_sense) {
     auto e = a_file.c_str() + a_file.size();
     auto p = basename(a_file.c_str(), e);
-    if (!a_strip_ext.empty() && (e-p) > int(a_strip_ext.size())) {
-        auto q = e - a_strip_ext.size();
-        if (memcmp(q, a_strip_ext.c_str(), a_strip_ext.size()) == 0)
-            e = q;
-    }
+    e = strip_ext(p, e, a_strip_ext, case_sense);
     return std::string(p, e - p);
+}
+
+std::string extension(const std::string& a_file, const std::string& a_strip_ext, bool case_sense) {
+    auto p = a_file.c_str();
+    auto e = p + a_file.size();
+    e = strip_ext(p, e, a_strip_ext, case_sense);
+    return boost::filesystem::extension(std::string(p, e - p));
 }
 
 std::string
