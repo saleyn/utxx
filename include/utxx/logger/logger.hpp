@@ -678,6 +678,10 @@ public:
     /// to be included in the log.
     void set_min_level_filter(log_level a_level);
 
+    /// Add filter level to the current filter levels
+    void add_level_filter(log_level level);
+    void add_level_filter(unsigned level) { add_level_filter(as_log_level(level)); }
+
     /// Set an error handler delegate to fire when there is an error
     /// instead of throwing run-time exceptions.  Note that the handler
     /// may be called from different threads so it has to be thread-safe.

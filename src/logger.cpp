@@ -113,6 +113,31 @@ log_level logger::signal_slot_to_level(int slot) noexcept
     return LEVEL_NONE;
 }
 
+void logger::add_level_filter(log_level level)
+{
+    switch (level) {
+        case LEVEL_TRACE5   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
+                                                LEVEL_TRACE2 | LEVEL_TRACE3 |
+                                                LEVEL_TRACE4 | LEVEL_TRACE5;
+                              break;
+        case LEVEL_TRACE4   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
+                                                LEVEL_TRACE2 | LEVEL_TRACE3 |
+                                                LEVEL_TRACE4;
+                              break;
+        case LEVEL_TRACE3   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
+                                                LEVEL_TRACE2 | LEVEL_TRACE3;
+                              break;
+
+        case LEVEL_TRACE2   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
+                                                LEVEL_TRACE2;
+                              break;
+        case LEVEL_TRACE1   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1;
+                              break;
+        case LEVEL_TRACE    : m_level_filter |= LEVEL_TRACE;     break;
+        default             : m_level_filter |= (unsigned)level; break;
+    }
+}
+
 const char* logger::default_log_levels = "INFO|NOTICE|WARNING|ERROR|ALERT|FATAL";
 std::atomic<sigset_t*> logger::m_crash_sigset;
 
