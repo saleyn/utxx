@@ -92,7 +92,7 @@ namespace utxx {
 
 /// Throw given exception with provided source location information
 #define UTXX_SRC_THROW(Exception, SrcInfo, ...) \
-    throw Exception(std::forward<utxx::src_info&&>(SrcInfo), ##__VA_ARGS__)
+    throw Exception((SrcInfo), ##__VA_ARGS__)
 
 /// Throw given exception with current source location information
 #define UTXX_THROW(Exception,  ...) UTXX_SRC_THROW(Exception, UTXX_SRC,  ##__VA_ARGS__)
