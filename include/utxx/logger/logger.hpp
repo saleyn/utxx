@@ -680,7 +680,13 @@ public:
 
     /// Add filter level to the current filter levels
     void add_level_filter(log_level level);
-    void add_level_filter(unsigned level) { add_level_filter(as_log_level(level)); }
+
+    /// Add filter level to the current filter levels
+    /// @param warn_level_is_zero  when true,  maps [1..10] to [WARNING...TRACE5].
+    ///                            When false, maps [1..7]  to [DEBUG...TRACE5]
+    inline void add_level_filter(unsigned level, bool warn_level_is_zero=true) {
+        add_level_filter(as_log_level(level, warn_level_is_zero));
+    }
 
     /// Set an error handler delegate to fire when there is an error
     /// instead of throwing run-time exceptions.  Note that the handler
