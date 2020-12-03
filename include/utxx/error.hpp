@@ -91,7 +91,8 @@ namespace utxx {
 #define UTXX_SRCX utxx::src_info(UTXX_FILE_SRC_LOCATION, __utxx_pretty_function__, true)
 
 /// Throw given exception with provided source location information
-#define UTXX_SRC_THROW(Exception, SrcInfo, ...) throw Exception((SrcInfo), ##__VA_ARGS__)
+#define UTXX_SRC_THROW(Exception, SrcInfo, ...) \
+    throw Exception(std::forward<utxx::src_info&&>(SrcInfo), ##__VA_ARGS__)
 
 /// Throw given exception with current source location information
 #define UTXX_THROW(Exception,  ...) UTXX_SRC_THROW(Exception, UTXX_SRC,  ##__VA_ARGS__)
