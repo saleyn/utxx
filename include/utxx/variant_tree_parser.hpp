@@ -97,6 +97,7 @@ namespace utxx {
 #else
                 UTXX_THROW_BADARG_ERROR("XML format reading is disabled!");
 #endif
+                break;
             case FORMAT_JSON:
 #ifndef UTXX_VARIANT_TREE_NO_JSON_PARSER
                 detail::read_json(a_stream, a_tree);

@@ -712,6 +712,9 @@ public:
     const config_macros& macros() const { return m_macro_var_map; }
     /// Add a macro value
     void  add_macro(const std::string& a_macro, const std::string& a_value);
+    /// Add a macro value
+    void  add_macros(const config_macros& a_macros);
+
     /// Replace all macros in a string that are found in macros() dictionary.
     std::string replace_macros(const std::string& a_value) const;
 

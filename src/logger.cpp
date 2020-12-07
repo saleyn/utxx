@@ -115,26 +115,36 @@ log_level logger::signal_slot_to_level(int slot) noexcept
 
 void logger::add_level_filter(log_level level)
 {
+    static const unsigned s_nwe   = LEVEL_NOTICE | LEVEL_WARNING | LEVEL_ERROR;
+    static const unsigned s_inwe  = LEVEL_INFO   | s_nwe;
+    static const unsigned s_other = LEVEL_DEBUG  | s_inwe;
+
     switch (level) {
         case LEVEL_TRACE5   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
                                                 LEVEL_TRACE2 | LEVEL_TRACE3 |
-                                                LEVEL_TRACE4 | LEVEL_TRACE5;
+                                                LEVEL_TRACE4 | LEVEL_TRACE5 |
+                                                s_other;
                               break;
         case LEVEL_TRACE4   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
                                                 LEVEL_TRACE2 | LEVEL_TRACE3 |
-                                                LEVEL_TRACE4;
+                                                LEVEL_TRACE4 | s_other;
                               break;
         case LEVEL_TRACE3   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
-                                                LEVEL_TRACE2 | LEVEL_TRACE3;
+                                                LEVEL_TRACE2 | LEVEL_TRACE3 |
+                                                LEVEL_DEBUG  | LEVEL_INFO   |
+                                                LEVEL_NOTICE | s_other;
                               break;
 
         case LEVEL_TRACE2   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 |
-                                                LEVEL_TRACE2;
+                                                LEVEL_TRACE2 | s_other;
                               break;
-        case LEVEL_TRACE1   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1;
+        case LEVEL_TRACE1   : m_level_filter |= LEVEL_TRACE  | LEVEL_TRACE1 | s_other;
                               break;
-        case LEVEL_TRACE    : m_level_filter |= LEVEL_TRACE;     break;
-        default             : m_level_filter |= (unsigned)level; break;
+        case LEVEL_TRACE    : m_level_filter |= LEVEL_TRACE  | s_other; break;
+        case LEVEL_DEBUG    : m_level_filter |= s_other;                break;
+        case LEVEL_INFO     : m_level_filter |= s_inwe;                 break;
+        case LEVEL_NOTICE   : m_level_filter |= s_nwe;                  break;
+        default             : m_level_filter |= (unsigned)level;        break;
     }
 }
 
@@ -144,6 +154,12 @@ std::atomic<sigset_t*> logger::m_crash_sigset;
 void logger::add_macro(const std::string& a_macro, const std::string& a_value)
 {
     m_macro_var_map[a_macro] = a_value;
+}
+
+void logger::add_macros(const config_macros& a_macros)
+{
+    for (auto& p : a_macros)
+      m_macro_var_map[p.first] = p.second;
 }
 
 std::string logger::replace_macros(const std::string& a_value) const
