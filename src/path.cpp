@@ -168,7 +168,8 @@ replace_macros(const std::string& a_path,
     };
 
     std::string x(a_path);
-    sregex re = "{{" >> (s1 = +_w) >> "}}";
+    //sregex re = "{{" >> (s1 = +_w) >> "}}";
+    sregex re = sregex::compile( "\\{\\{([\\w-_]+)\\}\\}");
     return regex_replace(x, re, regex_format_fun);
 }
 
