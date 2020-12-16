@@ -32,12 +32,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <boost/test/unit_test.hpp>
 #include <utxx/algorithm.hpp>
+#include <utxx/error.hpp>
+#include <set>
+
+// Example program
+#include <iostream>
+#include <string>
 #include <set>
 
 namespace utxx {
 
 BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
 {
+    std::set<int> empty_set;
+    BOOST_REQUIRE(find_closest(empty_set, 5) == empty_set.end());
+
     std::set<int> set{ 3, 4, 7, 9 };
 
     auto x = find_closest(set, 1); //Returns '3'
@@ -53,6 +62,9 @@ BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
 
 BOOST_AUTO_TEST_CASE(test_algorithm_find_ge)
 {
+    std::set<int> empty_set;
+    BOOST_REQUIRE(find_ge(empty_set, 5) == empty_set.end());
+
     std::set<int> set{ 3, 4, 7, 9 };
 
     auto x = find_ge(set, 1); //Returns '3'

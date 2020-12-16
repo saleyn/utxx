@@ -125,9 +125,9 @@ public:
     }
 
     basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
-                       const path_type&                   a_root_path=path_type(),
-                       const config::validator*           a_validator=nullptr,
-                       bool                               a_navigate=false,
+                       const path_type&                   a_root_path,
+                       const config::validator*           a_validator,
+                       bool                               a_navigate,
                        src_info&&                         a_si = src_info())
         : base(a_navigate
             ? static_cast<const basic_variant_tree<Ch>&>
@@ -149,9 +149,19 @@ public:
 
     basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
                        const path_type&                   a_root_path=path_type(),
-                       bool                               a_navigate=false,
                        src_info&&                         a_si = src_info())
-        : basic_variant_tree(a_rhs, a_root_path, nullptr, a_navigate, std::move(a_si))
+        : basic_variant_tree(a_rhs, a_root_path,
+                            (const config::validator*)nullptr, false,
+                            std::move(a_si))
+    {}
+
+    basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
+                       const path_type&                   a_root_path,
+                       bool                               a_navigate,
+                       src_info&&                         a_si = src_info())
+        : basic_variant_tree(a_rhs, a_root_path,
+                            (const config::validator*)nullptr, a_navigate,
+                            std::move(a_si))
     {}
 
     basic_variant_tree(basic_variant_tree<Ch>&& a_rhs)

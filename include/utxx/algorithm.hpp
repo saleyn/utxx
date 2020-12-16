@@ -38,12 +38,14 @@ namespace utxx {
 
 template <typename Set>
 typename Set::const_iterator
-find_closest(Set const & s, typename Set::value_type const & val)
+find_closest(Set const& s, typename Set::value_type const& val)
 {
+    if (s.empty())
+        return s.end();
+
     auto a = s.begin(), b = s.end(), it = s.lower_bound(val);
 
-    if (it == b)
-    {
+    if (it == b) {
         if (it != a) --it;
         return it;
     }
@@ -56,12 +58,15 @@ find_closest(Set const & s, typename Set::value_type const & val)
 
 template <typename Set>
 typename Set::const_iterator
-find_ge(Set const & s, typename Set::value_type const & val)
+find_ge(Set const& s, typename Set::value_type const& val)
 {
+    if (s.empty())
+        return s.end();
+
     auto it = s.upper_bound(val);
 
     if (it == s.begin())
-      return it;
+        return it;
 
     auto pr = std::prev(it);
 
