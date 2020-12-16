@@ -453,7 +453,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
     {
         variant_tree tree;
         tree.put("one.xxxx", 1);
-        BOOST_CHECK_THROW(tree.get<bool>("one.xxxx"), std::runtime_error);
+        BOOST_CHECK_THROW(tree.get<bool>("one.xxxx"), variant_tree_error);
     }
     {
         config_path s1;
@@ -531,10 +531,16 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_path )
         BOOST_REQUIRE_EQUAL(1.23, tree.get<double>(tree_path("k1[a002]/k2[a011]/k6", '/')));
         BOOST_REQUIRE_EQUAL(10,   tree.get<int>(tree_path("k1[a002]/k2/k7", '/')));
 
-        variant_tree cfg(tree, "k1[a002]");
+        variant_tree cfg(tree, "k1[a002]", true);
 
         BOOST_REQUIRE_EQUAL("k1[a002]", cfg.root_path().dump());
-        BOOST_REQUIRE_EQUAL("a011",     cfg.get<std::string>("k2"));
+        auto res = cfg.get<std::string>("k2");
+        BOOST_REQUIRE_EQUAL("a011",     res);
+
+        try { cfg.get<std::string>("k8", UTXX_SRC); }
+        catch (runtime_error& e) {
+            BOOST_REQUIRE_EQUAL("Config error [k8]: Path not found", e.str());
+        }
     }
 }
 
@@ -551,7 +557,7 @@ void gen_test_case(Stream& stream, ReadFun read_fun, const char* a_test_name)
     BOOST_REQUIRE_EQUAL(true,    tree.get<bool>("one.overwrite"));
     BOOST_REQUIRE_EQUAL("29xx",  tree.get<std::string>("one.address1"));
     BOOST_REQUIRE_EQUAL("29 xx", tree.get<std::string>("one.address2"));
-    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), std::runtime_error);
+    BOOST_REQUIRE_THROW(tree.get<std::string>("one.interval"), variant_tree_error);
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_xml )

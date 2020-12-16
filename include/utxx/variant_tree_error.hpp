@@ -33,18 +33,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #pragma once
 
+#include <utxx/error.hpp>
 #include <utxx/variant_tree_path.hpp>
 #include <boost/property_tree/exceptions.hpp>
 #include <boost/property_tree/detail/file_parser_error.hpp>
-#include <utxx/error.hpp>
 #include <stdexcept>
 
 namespace utxx {
 
-// Errors thrown on bad data
-typedef boost::property_tree::ptree_bad_data    variant_tree_bad_data;
-typedef boost::property_tree::ptree_bad_path    variant_tree_bad_path;
-typedef boost::property_tree::file_parser_error variant_tree_parser_error;
 /**
  * \brief Exception class for configuration related errors.
  * Example use:
@@ -55,38 +51,43 @@ class variant_tree_error : public runtime_error {
     void stream() {}
 
     template <class T, class... Args>
-    void stream(const T& a, Args... args) { *this << a; stream(args...); }
+    void stream(const T& a, Args&&... args) {
+        *this << a; stream(std::forward<Args>(args)...);
+    }
 public:
-    variant_tree_error(src_info&& a_si, const std::string& a_path)
-        : runtime_error(std::move(a_si)), m_path(a_path) {}
+    /*
     variant_tree_error(const std::string& a_path) : m_path(a_path) {}
 
     template <class... Args>
-    variant_tree_error(src_info&& a_si, const std::string& a_path, Args... args)
-        : variant_tree_error(std::move(a_si), a_path)
+    variant_tree_error(src_info&& a_si, const std::string& a_path, Args&&... args)
+        : runtime_error(std::move(a_si)), m_path(a_path)
     {
-        stream(args...);
+        stream(std::forward<Args>(args)...);
+    }
+
+    variant_tree_error(src_info&& a_si, const std::string& a_path)
+        : runtime_error(std::move(a_si)), m_path(a_path) {}
+
+    template <class... Args>
+    explicit variant_tree_error(const std::string& a_path, Args&&... args)
+        : m_path(a_path)
+    {
+        stream(std::forward<Args>(args)...);
+    }
+    */
+
+    template <class... Args>
+    variant_tree_error(src_info&& a_si, const tree_path& a_path, Args&&... args)
+        : runtime_error(std::move(a_si)), m_path(a_path.dump())
+    {
+        stream(std::forward<Args>(args)...);
     }
 
     template <class... Args>
-    variant_tree_error(const std::string& a_path, Args... args)
-        : variant_tree_error(a_path)
+    variant_tree_error(const tree_path& a_path, Args&&... args)
+        : m_path(a_path.dump())
     {
-        stream(args...);
-    }
-
-    template <class... Args>
-    variant_tree_error(src_info&& a_si, const tree_path& a_path, Args... args)
-        : variant_tree_error(std::move(a_si), a_path.dump())
-    {
-        stream(args...);
-    }
-
-    template <class... Args>
-    variant_tree_error(const tree_path& a_path, Args... args)
-        : variant_tree_error(a_path.dump())
-    {
-        stream(args...);
+        stream(std::forward<Args>(args)...);
     }
 
     virtual ~variant_tree_error() throw() {}
@@ -99,5 +100,70 @@ public:
         return s.str();
     }
 };
+
+/**
+ * \brief Exception class for configuration related data errors.
+ * Example use:
+ *   <tt>throw variant_tree_bad_data(a_path, "Test ") << 1 << " result:" << 2;</tt>
+ */
+class variant_tree_bad_data : public variant_tree_error
+{
+    variant m_data;
+public:
+    /*
+    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
+                          const tree_path& a_path = tree_path())
+        : variant_tree_error(std::move(a_si), a_path), m_data(a_data) {}
+    variant_tree_bad_data(const variant&   a_data,
+                          const tree_path& a_path = tree_path())
+        : variant_tree_error(a_path), m_data(a_data) {}
+    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
+                          const std::string&  a_path = std::string())
+        : variant_tree_error(std::move(a_si), a_path), m_data(a_data) {}
+    variant_tree_bad_data(const variant&     a_data,
+                          const std::string& a_path = std::string())
+        : variant_tree_error(a_path), m_data(a_data) {}
+
+    template <class... Args>
+    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
+                          const std::string&  a_path, Args&&... args)
+        : variant_tree_bad_data(std::move(a_si), a_data, tree_path(a_path),
+                                std::forward<Args>(args)...)
+    {}
+
+    */
+
+    template <class... Args>
+    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
+                          const tree_path&  a_path, Args&&... args)
+        : variant_tree_error(std::move(a_si), a_path, std::forward<Args>(args)...)
+        , m_data(a_data) {}
+
+    template <class... Args>
+    variant_tree_bad_data(const variant& a_data, const tree_path& a_path, Args&&... args)
+        : variant_tree_error(a_path, std::forward<Args>(args)...)
+        , m_data(a_data) {}
+
+    template <class... Args>
+    variant_tree_bad_data(const variant& a_data, const std::string& a_path, Args&&... args)
+        : variant_tree_bad_data(a_data, tree_path(a_path), std::forward<Args>(args)...)
+    {}
+
+    virtual ~variant_tree_bad_data() throw() {}
+
+    const variant& data() const { return m_data; }
+
+    std::string str() const override {
+        std::stringstream s;
+        s << "Config error";
+        if (!path().empty())
+            s << " in path '" << path() << "'";
+        s << " with data: " << m_data.to_string() << ' ' << m_out->str();
+        return s.str();
+    }
+};
+
+// Errors thrown on bad data
+using variant_tree_bad_path = variant_tree_error;
 
 } // namespace utxx

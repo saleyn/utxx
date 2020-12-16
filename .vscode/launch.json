@@ -9,7 +9,7 @@
       "type": "cppdbg",
       "request": "launch",
       "program": "${workspaceFolder}/build/test/test_utxx",
-      "args": ["-t", "test_variant_tree"],
+      "args": ["-t", "test_variant_tree_path"],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [],

@@ -126,8 +126,13 @@ public:
 
     basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
                        const path_type&                   a_root_path=path_type(),
-                       const config::validator*           a_validator=nullptr)
-        : base(a_rhs)
+                       const config::validator*           a_validator=nullptr,
+                       bool                               a_navigate=false,
+                       src_info&&                         a_si = src_info())
+        : base(a_navigate
+            ? static_cast<const basic_variant_tree<Ch>&>
+                (a_rhs).get_child(a_root_path, std::move(a_si))
+            : a_rhs)
     {
         auto path = a_root_path.empty()
                   ? a_rhs.data().root_path()
@@ -141,6 +146,13 @@ public:
         this->data().root_path(path);
         this->data().validator(val);
     }
+
+    basic_variant_tree(const basic_variant_tree_base<Ch>& a_rhs,
+                       const path_type&                   a_root_path=path_type(),
+                       bool                               a_navigate=false,
+                       src_info&&                         a_si = src_info())
+        : basic_variant_tree(a_rhs, a_root_path, nullptr, a_navigate, std::move(a_si))
+    {}
 
     basic_variant_tree(basic_variant_tree<Ch>&& a_rhs)
         : basic_variant_tree_base<Ch>(std::move(a_rhs))
@@ -185,71 +197,77 @@ public:
     void validator(const config::validator* a) const { this->data().validator(a);       }
 
     template <class T>
-    T get_value() const {
+    T get_value(src_info&& si = src_info()) const {
         boost::optional<T> o = get_value_optional<T>();
         if (!o)
-            throw_bad_type<T>(path_type(), this->data());
+            throw_bad_type<T>(path_type(), this->data(), std::move(si));
         return *o;
     }
 
     template <class T>
-    T get_value(const T& default_value) const {
-        try { return detail::variant_translator<T,Ch>().get_value(this->data().value()); }
-        catch (const boost::bad_get&) { throw_bad_type<T>(path_type(), this->data().value()); }
+    T get_value(const T& default_value, src_info&& si = src_info()) const {
+        try {
+            return detail::variant_translator<T,Ch>().get_value(this->data().value());
+        } catch (const std::exception&) {
+            throw_bad_type<T>(root_path(), this->data().value(), std::move(si));
+        }
     }
 
-    std::basic_string<Ch> get_value(const Ch* default_value) const {
-        return base::get_value(std::basic_string<Ch>(default_value),
-            detail::variant_translator<std::basic_string<Ch>,Ch>());
+    std::basic_string<Ch> get_value(const Ch* default_value, src_info&& si = src_info()) const {
+        try {
+            return base::get_value(std::basic_string<Ch>(default_value),
+                detail::variant_translator<std::basic_string<Ch>,Ch>());
+        } catch (boost::property_tree::ptree_bad_data& e) {
+            throw_bad_type<std::string>(root_path(), this->data().value(), std::move(si));
+        }
     }
 
     template <class T>
-    boost::optional<T> get_value_optional() const {
+    boost::optional<T> get_value_optional(src_info&& si = src_info()) const {
         if (!this->data().is_null()) {
             try { return detail::variant_translator<T,Ch>().get_value(this->data().value()); }
-            catch (...) { throw_bad_type<T>(path_type(), this->data().value()); }
+            catch (...) { throw_bad_type<T>(path_type(), this->data().value(), std::move(si)); }
         }
         return boost::optional<T>();
     }
 
     template <class T>
-    T get(const path_type& path) const {
+    T get(const path_type& path, src_info&& si = src_info()) const {
         boost::optional<T> r = get_optional<T>(path);
         if (r) return *r;
         if (this->data().validator()) {
             const config::option& o = this->data().validator()->get(path, root_path());
             const auto& v = o.default_subst_value();
             if (v.is_null())
-                throw boost::property_tree::ptree_error(
-                    utxx::to_string("Path '", (root_path() / path).dump(), "'"
-                        " missing required option of type: ",
-                        config::type_to_string(o.value_type)));
+                throw variant_tree_error(std::move(si), root_path() / path,
+                    utxx::to_string("Path missing required option of type: ",
+                                    config::type_to_string(o.value_type)));
             else if (!v.is_type<T>())
-                throw_bad_type<T>(path, v);
+                throw_bad_type<T>(path, v, std::move(si));
             return v.get<T>();
         }
-        throw variant_tree_bad_path("Path not found", path);
+        throw variant_tree_bad_path(std::move(si), path, "Path not found");
     }
 
     template <class T>
-    T get(const path_type& path, const T& default_value) const {
+    T get(const path_type& path, const T& default_value, src_info&& si = src_info()) const {
         path_type p(path);
-        auto* t = navigate(this, p, nullptr, false);
+        auto* t = navigate(this, p, nullptr, false, -1, std::move(si));
         if (t)
             try {
                 return t->data().value().empty()
                      ? default_value
                      : t->base::template get_value<T>(detail::variant_translator<T,Ch>());
             } catch (...) {
-                throw_bad_type<T>(path, t->data());
+                throw_bad_type<T>(path, t->data(), std::move(si));
             }
         return default_value;
     }
 
     /// Returns assigned value (or unassigned value if \a path is not found)
-    const data_type& try_get(const path_type& path) const {
+    const data_type& try_get(const path_type& path, src_info&& si = src_info()) const {
         path_type p(path);
-        auto* t = navigate(this, p, nullptr, false);
+        auto* t = navigate(this, p, nullptr, false, -1, std::move(si));
         static const data_type& s_unassigned = data_type::unassigned();
         //return t ? t->data().value() : s_unassigned;
         if (!t)
@@ -259,17 +277,17 @@ public:
     }
 
     std::basic_string<Ch>
-    get(const path_type& path, const Ch* default_value) const {
-        return get<std::basic_string<Ch>>(path, std::basic_string<Ch>(default_value));
+    get(const path_type& path, const Ch* default_value, src_info&& si = src_info()) const {
+        return get<std::basic_string<Ch>>(path, std::basic_string<Ch>(default_value), std::move(si));
     }
 
     template <typename T>
-    boost::optional<T> get_optional(const path_type& path) const {
+    boost::optional<T> get_optional(const path_type& path, src_info&& si = src_info()) const {
         path_type p(path);
-        auto* t = navigate(this, p, nullptr, false);
+        auto* t = navigate(this, p, nullptr, false, -1, std::move(si));
         if (t && !t->data().is_null()) {
             try { return t->base::template get_value<T>(detail::variant_translator<T,Ch>()); }
-            catch (...) { throw_bad_type<T>(path, t->data()); }
+            catch (...) { throw_bad_type<T>(path, t->data(), std::move(si)); }
         }
         return boost::optional<T>();
     }
@@ -284,24 +302,24 @@ public:
     }
 
     template <class T>
-    self_type& put(const path_type& path, const T& value) {
+    self_type& put(const path_type& path, const T& value, src_info&& si = src_info()) {
         path_type p(path);
-        auto* r = navigate(this, p, &value, true);
+        auto* r = navigate(this, p, &value, true, true, std::move(si));
         BOOST_ASSERT(r);
         return *r;
     }
 
-    self_type& put(const path_type& path, const Ch* value) {
+    self_type& put(const path_type& path, const Ch* value, src_info&& si = src_info()) {
         path_type p(path);
-        auto* r = navigate(this, p, value, true);
+        auto* r = navigate(this, p, value, true, true, std::move(si));
         BOOST_ASSERT(r);
         return *r;
     }
 
     template <class T>
-    self_type& add(const path_type& path, const T& value) {
+    self_type& add(const path_type& path, const T& value, src_info&& si = src_info()) {
         path_type p(path);
-        auto* r = navigate(this, p, &value, false);
+        auto* r = navigate(this, p, &value, false, true, std::move(si));
         BOOST_ASSERT(r);
         return *r;
     }
@@ -320,15 +338,15 @@ public:
      * is looked up with environment variable substitution.
      * Throw @c ptree_bad_path if such path doesn't exist
      */
-    self_type& get_child(const path_type& path) {
+    self_type& get_child(const path_type& path, src_info&& si = src_info()) {
         boost::optional<self_type&> r = get_child_optional(path);
         if (r) return *r;
         if (this->data().validator()) {
             const config::option& o = this->data().validator()->get(path, root_path());
             return put(path, o.default_subst_value());
         }
-        throw variant_tree_bad_path(
-            "Cannot get child - path not found", root_path() / path);
+        throw variant_tree_bad_path(std::move(si), root_path() / path,
+            "Cannot get child - path not found");
     }
 
     /**
@@ -339,15 +357,15 @@ public:
      * If the schema_validator is defined, it's consulted to ensure
      * the given \a path represents a valid option.
      */
-    const self_type& get_child(const path_type& path) const {
+    const self_type& get_child(const path_type& path, src_info&& si = src_info()) const {
         boost::optional<const self_type&> r = get_child_optional(path);
         if (r) return *r;
         if (this->data().validator())
             // default_value will throw if there's no such path
             return reinterpret_cast<const self_type&>
                 (this->data().validator()->def(path, root_path()));
-        throw variant_tree_bad_path(
-            "Cannot get child - path not found", root_path() / path);
+        throw variant_tree_bad_path(std::move(si), root_path() / path,
+            "Cannot get child - path not found");
     }
 
     /** Get the child at the given path, or return @p default_value. */
@@ -386,18 +404,18 @@ public:
         return this->get_child_optional(this, path);
     }
 
-    self_type& put_child(const path_type& path, const self_type& value) {
+    self_type& put_child(const path_type& path, const self_type& value, src_info&& si = src_info()) {
         path_type p(path);
-        auto* c = navigate(this, p, nullptr, true);
-        if  (!c)  throw variant_tree_bad_path("Path doesn't exist", p);
+        auto* c = navigate(this, p, nullptr, true, true, std::move(si));
+        if  (!c)  throw variant_tree_bad_path(std::move(si), p, "Path doesn't exist");
         *c = value;
         c->root_path(path);
         return *c;
     }
 
-    bool exists(const path_type& path) const {
+    bool exists(const path_type& path, src_info&& si = src_info()) const {
         path_type p(path);
-        return !!navigate(this, p, nullptr, false);
+        return !!navigate(this, p, nullptr, false, -1, std::move(si));
     }
 
     template <class Stream>
@@ -554,12 +572,15 @@ private:
     // Otherwise each element of the path is created.
     // The path may contain brackets that will be used to match data elements
     // for a given key: "key1[data1].key2.[data3].key3"
+    // @param create_path determines if the function is allowed to add missing path
+    //                    components: -1 = default action; 0 = no; 1 = yes
     template <typename PTree, typename T = int*>
     static typename std::enable_if<
         std::is_same<self_type, typename remove_cvref<PTree>::type>::value &&
             (std::is_pointer<T>::value || std::is_same<std::nullptr_t, T>::value),
         PTree*>
-    ::type navigate(PTree* t, path_type& path, T put_val = nullptr, bool do_put = true)
+    ::type navigate(PTree* t, path_type& path, T put_val = nullptr, bool do_put = true,
+                    int create_path = -1, src_info&& si = src_info())
     {
         using assoc_iter = typename
             std::conditional<
@@ -583,7 +604,7 @@ private:
             return do_put_value(tree, key_type(), put_val, true);
 
         if (pstr.size() != 0 && *(end-1) == separator)
-            throw variant_tree_bad_path("Invalid path", root / path);
+            throw variant_tree_bad_path(std::move(si), root / path, "Invalid path");
 
         key_type kp;
 
@@ -596,21 +617,21 @@ private:
             if (b != q) {
                 const Ch* be = std::find(b+1, q, Ch(']'));
                 if (be == q)
-                    throw variant_tree_bad_path(
-                        "Missing closing bracket", root / path);
+                    throw variant_tree_bad_path(std::move(si), root / path,
+                        "Missing closing bracket");
                 if (be == b+1)
-                    throw variant_tree_bad_path(
-                        "Empty data expression in '[]'", root / path);
+                    throw variant_tree_bad_path(std::move(si), root / path,
+                        "Empty data expression in '[]'");
                 if (be+1 != end && *(be+1) != separator)
-                    throw variant_tree_bad_path(
-                        "Invalid path", root / path);
+                    throw variant_tree_bad_path(std::move(si), root / path,
+                        "Invalid path");
                 dp = key_type(b+1, be - b - 1);
             }
 
             // Reached the end of path
             if (q == end && put_val != nullptr && !dp.empty())
-                throw variant_tree_bad_path(
-                    "Last subpath cannot end with a '[]' filter", root / path);
+                throw variant_tree_bad_path(std::move(si), root / path,
+                    "Last subpath cannot end with a '[]' filter");
 
             assoc_iter el, tend = tree->not_found();
 
@@ -626,7 +647,7 @@ private:
 
             if (child)          // Child node by kp name was found
                 tree = child;
-            else if (!do_put)   // Child node not found, and can't mutate the tree
+            else if (!do_put && create_path < 1) // Child node not found, and can't mutate the tree
                 tree = nullptr;
             else                // Child node not found, add this sub-path
                 tree = add(tree, kp, dp.empty() ? variant() : variant(dp));
@@ -650,14 +671,14 @@ private:
         std::is_same<self_type, typename remove_cvref<PTree>::type>::value,
         boost::optional<PTree&>
     >::type
-    get_child_optional(PTree* tree, const path_type& path) {
+    get_child_optional(PTree* tree, const path_type& path, src_info&& si = src_info()) {
         static const boost::optional<PTree&> s_empty;
 
         path_type p(path);
 
         BOOST_ASSERT(!p.empty());
 
-        auto*  t = navigate(tree, p, nullptr, false);
+        auto*  t = navigate(tree, p, nullptr, false, -1, std::move(si));
         return t ? *t : s_empty;
     }
 
@@ -742,12 +763,9 @@ private:
     { return v; }
 
     template <typename T>
-    void throw_bad_type(const path_type& a_path, const variant& a_data) const {
-        throw variant_tree_bad_data(
-            utxx::to_string("Path '",
-                (this->data().root_path() / a_path).dump(), "' data conversion to type '",
-                type_to_string<T>(), "' failed"),
-            a_data);
+    void throw_bad_type(const path_type& a_path, const variant& a_data, src_info&& si) const {
+        throw variant_tree_bad_data(std::move(si), a_data, this->data().root_path() / a_path,
+              ": data conversion to type '", type_to_string<T>(), "' failed");
     }
 };
 
