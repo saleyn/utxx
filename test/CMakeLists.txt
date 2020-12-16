@@ -1,6 +1,7 @@
 # vim:ts=2:sw=2:et
 
 list(APPEND TEST_SRCS
+    test_algorithm.cpp
     test_alloc_fixed_page.cpp
     test_atomic_hash_array.cpp
     test_atomic_hash_map.cpp
