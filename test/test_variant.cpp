@@ -271,6 +271,39 @@ BOOST_AUTO_TEST_CASE( test_variant_tree )
             BOOST_REQUIRE(false);
         }
     }
+
+    {
+        variant_tree t, ct, dt;
+        ct.put("one",   1);
+        ct.put("two",   2);
+        dt.put("three", 3);
+        dt.put("four",  4);
+        t.put("md", "CME");
+        t.put_child("md", ct); // This replaces the "md" node, erasing the "CME" value
+        BOOST_REQUIRE(t.exists("md"));
+        // Since "md" path exists, get<string> returns empty string
+        BOOST_REQUIRE(t.get<std::string>("md").empty());
+        // Since "md" path exists, get<variant> returns empty variant
+        BOOST_REQUIRE(t.get<variant>    ("md").empty());
+        // Trying to get any other type raises an exception
+        BOOST_CHECK_THROW(t.get<int>    ("md"), variant_tree_error);
+
+        t.put("md", "CME");    // Restore the "CME" value
+        BOOST_REQUIRE_EQUAL("CME", t.get<std::string>("md"));
+        t.put_child("md", dt);
+        BOOST_REQUIRE(t.get<std::string>("md").empty());
+
+        t.put("md", "CME1");    // Restore the "md" node's value
+        t.add("md", std::string("CME2")); // Add an "md" node with the "CME2" value
+        ct.data().value() = "CME3";
+        t.add_child("md", ct);
+
+        BOOST_REQUIRE_EQUAL(3, t.count("md"));
+        BOOST_REQUIRE(t.exists("md[CME1]"));
+        BOOST_REQUIRE(t.exists("md[CME2]"));
+        BOOST_REQUIRE(t.exists("md[CME3]"));
+        //std::cout << t.to_string() << std::endl;
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_variant_tree_file )
