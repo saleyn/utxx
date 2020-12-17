@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree )
         BOOST_REQUIRE(t.get<std::string>("md").empty());
 
         t.put("md", "CME1");    // Restore the "md" node's value
-        t.add("md", std::string("CME2")); // Add an "md" node with the "CME2" value
+        t.add("md", "CME2"); // Add an "md" node with the "CME2" value
         ct.data().value() = "CME3";
         t.add_child("md", ct);
 

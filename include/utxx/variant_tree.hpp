@@ -327,10 +327,7 @@ public:
     }
 
     self_type& put(const path_type& path, const Ch* value, src_info&& si = src_info()) {
-        path_type p(path);
-        auto* r = navigate(this, p, value, true, true, std::move(si));
-        BOOST_ASSERT(r);
-        return *r;
+        return put(path, std::basic_string<Ch>(value), std::move(si));
     }
 
     template <class T>
@@ -340,6 +337,10 @@ public:
         BOOST_ASSERT(r);
         *r = value;
         return *r;
+    }
+
+    self_type& add(const path_type& path, const Ch* value, src_info&& si = src_info()) {
+        return add(path, std::basic_string<Ch>(value), std::move(si));
     }
 
     void swap(basic_variant_tree& rhs) {
