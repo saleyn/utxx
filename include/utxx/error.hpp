@@ -85,10 +85,14 @@ namespace utxx {
 /// Alias for source location information
 #define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION)
 
+#define UTXX_SRCD(si) (si.empty() ? UTXX_SRC : si)
+
 /// Alias for source location information using cached pretty function name
 ///
 /// The cached pretty function name must be declared by call to UTXX_PRETTY_FUNCTION
 #define UTXX_SRCX utxx::src_info(UTXX_FILE_SRC_LOCATION, __utxx_pretty_function__, true)
+
+#define UTXX_SRCXD(si) (si.empty() ? UTXX_SRCX : si)
 
 /// Throw given exception with provided source location information
 #define UTXX_SRC_THROW(Exception, SrcInfo, ...) \
