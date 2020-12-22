@@ -2,7 +2,7 @@
 /// \file   decimal.hpp
 /// \author Serge Aleynikov
 //------------------------------------------------------------------------------
-/// \brief This file defines enum stringification declaration macro.
+/// \brief Implementation of a decimal type that fits in 64 bits.
 //------------------------------------------------------------------------------
 // Copyright (c) 2016 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2016-06-01

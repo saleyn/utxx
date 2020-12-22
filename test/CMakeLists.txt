@@ -42,6 +42,7 @@ list(APPEND TEST_SRCS
     test_logger_scribe.cpp
     test_logger_syslog.cpp
     test_math.cpp
+    test_md5.cpp
     test_meta.cpp
     test_multi_file_async_logger.cpp
     test_nchar.cpp
