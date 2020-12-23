@@ -232,6 +232,13 @@ public:
         return p;
     }
 
+    /// Discard \a n bytes from the buffer by incrementing the rd_ptr() by \a n.
+    /// @param n is the number of bytes to read.
+    void discard(unsigned n) {
+        m_rd_ptr += n;
+        BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+    }
+
     /// Do the same action as read(n), and call crunch() function
     /// when the buffer's capacity gets less than the wr_lwm() value.
     /// @param n is the number of bytes to read.
@@ -274,6 +281,19 @@ public:
         }
         m_rd_ptr = m_begin;
         m_wr_ptr = m_begin + sz;
+    }
+
+    /// Do the same action as discard(n), and call crunch() function
+    /// when the buffer's capacity gets less than the wr_lwm() value.
+    /// @param n is the number of bytes to discard.
+    /// @returns -1 if there is not enough data in the buffer
+    ///         to read \a n bytes.
+    void discard_and_crunch(unsigned a_discard_bytes) {
+        discard(a_discard_bytes);
+        if (capacity() < m_wr_lwm) {
+            crunch();
+            BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+        }
     }
 };
 

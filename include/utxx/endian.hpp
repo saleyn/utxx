@@ -72,50 +72,6 @@ inline void put_le(Ch*& s, T n) {
     s += sizeof(T);
 }
 
-template <typename T, typename Ch>
-inline void get_be(const Ch*& s, T& n) {
-#if BOOST_VERSION >= 107100
-    n = bsd::endian_load<T, sizeof(T), bsd::order::big>
-            (reinterpret_cast<const unsigned char*>(s));
-#else
-    n = bsd::load_big_endian<T, sizeof(T)>((const void*)s);
-#endif
-    s += sizeof(T);
-}
-
-template <typename T, typename Ch>
-inline void get_le(const Ch*& s, T& n) {
-#if BOOST_VERSION >= 107100
-    n = bsd::endian_load<T, sizeof(T), bsd::order::little>
-            (reinterpret_cast<const unsigned char*>(s));
-#else
-    n = bsd::load_little_endian<T, sizeof(T)>((const void*)s);
-#endif
-    s += sizeof(T);
-}
-
-template <typename T, typename Ch>
-inline T get_be(const Ch*& s) { T n; get_be(s, n); return n; }
-
-template <typename T, typename Ch>
-inline T get_le(const Ch*& s) { T n; get_le(s, n); return n; }
-
-inline void get_be(const char*& s, double& n) {
-    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
-    union { double f; uint64_t i; } u;
-    u.i = get_be<uint64_t, char>(s);
-    n = u.f;
-    s += sizeof(double);
-}
-
-inline void get_le(const char*& s, double& n) {
-    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
-    union { double f; uint64_t i; } u;
-    u.i = get_le<uint64_t, char>(s);
-    n = u.f;
-    s += sizeof(double);
-}
-
 template <typename T>
 inline void store_be(char* s, T n) {
 #if BOOST_VERSION >= 107100
@@ -207,6 +163,40 @@ inline T cast_be(const Ch* s) { T n; cast_be(s, n); return n; }
 
 template <typename T, typename Ch>
 inline T cast_le(const Ch* s) { T n; cast_le(s, n); return n; }
+
+template <typename T>
+inline void get_be(const char*& s, T& n) {
+    n = cast_be<T>(s);
+    s += sizeof(T);
+}
+
+template <typename T, typename Ch>
+inline void get_le(const Ch*& s, T& n) {
+    n = cast_le<T>(s);
+    s += sizeof(T);
+}
+
+template <typename T, typename Ch>
+inline T get_be(const Ch*& s) { T n; get_be(s, n); return n; }
+
+template <typename T, typename Ch>
+inline T get_le(const Ch*& s) { T n; get_le(s, n); return n; }
+
+inline void get_be(const char*& s, double& n) {
+    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
+    union { double f; uint64_t i; } u;
+    u.i = get_be<uint64_t, char>(s);
+    n = u.f;
+    s += sizeof(double);
+}
+
+inline void get_le(const char*& s, double& n) {
+    BOOST_STATIC_ASSERT(sizeof(double) == sizeof(uint64_t));
+    union { double f; uint64_t i; } u;
+    u.i = get_le<uint64_t, char>(s);
+    n = u.f;
+    s += sizeof(double);
+}
 
 template <class Ch>
 inline void put8   (Ch*& s, uint8_t n ) { put_be(s, n); }
