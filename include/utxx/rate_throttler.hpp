@@ -75,6 +75,11 @@ public:
         new (this) basic_time_spacing_throttle(a_rate, a_window_msec, a_now);
     }
 
+    /// Reset the throttle request counter
+    void reset(time_val a_now = now_utc()) {
+        m_next_time = a_now;
+    }
+
     /// Add \a a_samples to the throtlle's counter.
     /// @return number of samples that fit in the throttling window. 0 means
     /// that the throttler is fully congested, and more time needs to elapse
@@ -135,7 +140,7 @@ private:
         assert(m_rate != 0);
         auto diff = (a_now - m_next_time).nanoseconds();
         auto res  = diff >= 0
-                  ? m_rate : T(std::max<T>(0, (m_window_ns+diff) / m_step_ns));
+                  ? m_rate : T(std::min<T>(m_rate, std::max<T>(0, (m_window_ns+diff) / m_step_ns)));
         assert(res >= 0 && res <= m_rate);
         return res;
     }

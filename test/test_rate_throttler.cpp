@@ -96,6 +96,12 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
     next_time = time_val(2015,6,1, 12,0,1, 100000);
     BOOST_CHECK(next_time == thr.next_time());
     BOOST_CHECK_EQUAL(10.0, thr.curr_rate_per_second(now));
+    thr.reset(now);
+    BOOST_CHECK_EQUAL(10u, thr.available(now));
+    BOOST_CHECK_EQUAL(0u,  thr.used(now));
+    thr.reset();   // In this case current time is used and it's > "now"
+    BOOST_CHECK_EQUAL(10u, thr.available(now));
+    BOOST_CHECK_EQUAL(0u,  thr.used(now));
 
     {
         auto now = time_val(2015, 6, 1, 11,59,58, 900000);
