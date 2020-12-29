@@ -61,19 +61,26 @@ namespace utxx {
 template <typename T = uint32_t>
 class basic_time_spacing_throttle {
 public:
-    basic_time_spacing_throttle(uint32_t a_rate, uint32_t a_window_msec = 1000,
+    basic_time_spacing_throttle(T a_rate, uint32_t a_window_msec = 1000,
                                 time_val a_now = now_utc())
         : m_rate        (a_rate)
         , m_window_ns   (long(a_window_msec) * 1000000)
-        , m_step_ns     (m_window_ns / m_rate)
+        , m_step_ns     (a_rate == 0 ? 0 : m_window_ns / m_rate)
         , m_next_time   (a_now)
-    {}
+    {
+        assert(a_rate >= 0);
+    }
+
+    void init(T a_rate, uint32_t a_window_msec = 1000, time_val a_now = now_utc()) {
+        new (this) basic_time_spacing_throttle(a_rate, a_window_msec, a_now);
+    }
 
     /// Add \a a_samples to the throtlle's counter.
     /// @return number of samples that fit in the throttling window. 0 means
     /// that the throttler is fully congested, and more time needs to elapse
     /// before the throttles gets reset to accept more samples.
     T add(T a_samples  = 1, time_val a_now = now_utc()) {
+        if (m_rate == 0) return a_samples;
         auto next_time = m_next_time;
         next_time.add_nsec(a_samples * m_step_ns);
         auto now_next  = a_now + nsecs(m_window_ns);
@@ -97,14 +104,24 @@ public:
     long     step_msec()   const { return m_step_ns   / 1000000; }
     long     step_usec()   const { return m_step_ns   / 1000;    }
     long     window_msec() const { return m_window_ns / 1000000; }
-    long     window_usec() const { return m_window_ns;           }
+    long     window_usec() const { return m_window_ns / 1000;    }
     time_val next_time()   const { return m_next_time;           }
 
     /// Return the number of available samples given \a a_now current time.
-    T        available(time_val a_now = now_utc()) const      {
-        auto   diff = (a_now - m_next_time).nanoseconds();
-        return diff >= 0
-             ? m_rate : T(std::max<long>(0, (m_window_ns+diff) / m_step_ns));
+    T        available(time_val a_now = now_utc()) const {
+        if (m_rate == 0)
+            return std::numeric_limits<T>::max();
+        return calc_available(a_now);
+    }
+
+    /// Return the number of used samples given \a a_now current time.
+    T        used(time_val a_now=now_utc()) const {
+        return m_rate==0 ? 0 : m_rate-calc_available(a_now);
+    }
+
+    /// Return currently used rate per second.
+    double   curr_rate_per_second(time_val a_now=now_utc()) const {
+        return m_rate==0 ? 0 : (double)(m_rate-calc_available(a_now))*1'000'000'000/m_window_ns;
     }
 
 private:
@@ -112,6 +129,16 @@ private:
     long     m_window_ns;
     long     m_step_ns;
     time_val m_next_time;
+
+    /// Return the number of available samples given \a a_now current time.
+    T        calc_available(time_val a_now = now_utc()) const {
+        assert(m_rate != 0);
+        auto diff = (a_now - m_next_time).nanoseconds();
+        auto res  = diff >= 0
+                  ? m_rate : T(std::max<T>(0, (m_window_ns+diff) / m_step_ns));
+        assert(res >= 0 && res <= m_rate);
+        return res;
+    }
 };
 
 using time_spacing_throttle = basic_time_spacing_throttle<>;
@@ -173,8 +200,10 @@ public:
     long    interval()     const { return m_interval >> s_log_buckets_sec; }
     /// Return current running sum over the interval.
     long    running_sum()  const { return m_sum; }
-    /// Return current running sum over the interval.
-    double  running_avg()  const { return (double)m_sum / (m_interval >> s_log_buckets_sec); }
+    /// Return currently used rate over the interval.
+    double  curr_rate()    const { return (double)m_sum / (m_interval >> s_log_buckets_sec); }
+    [[deprecated]]
+    double  running_avg()  const { return curr_rate(); }
 
     /// Add \a a_count number of items to the bucket associated with \a a_time.
     /// @param a_time is monotonically increasing time value.

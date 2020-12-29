@@ -49,33 +49,41 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
     int n   = thr.add(1,  now);
     BOOST_CHECK_EQUAL(1,  n);
     BOOST_CHECK_EQUAL(9u, thr.available(now));
+    BOOST_CHECK_EQUAL(1u, thr.used(now));
 
     now     = time_val(2015, 6, 1, 11,59,58, 999999);
     BOOST_CHECK_EQUAL(9u, thr.available(now));
+    BOOST_CHECK_EQUAL(1u, thr.used(now));
 
     now     = time_val(2015, 6, 1, 11,59,59, 0);
     BOOST_CHECK_EQUAL(10u, thr.available(now));
+    BOOST_CHECK_EQUAL(0u,  thr.used(now));
 
     now     = time_val(2015, 6, 1, 12, 0, 0, 0);
     BOOST_CHECK_EQUAL(10u, thr.available(now));
+    BOOST_CHECK_EQUAL(0u,  thr.used(now));
 
     // 1 second elapsed, the throttler's interval is reset, and 10 samples are available
     n       = thr.add(1,  now);
     BOOST_CHECK_EQUAL(1,  n);
     BOOST_CHECK_EQUAL(9u, thr.available(now));
+    BOOST_CHECK_EQUAL(1u, thr.used(now));
 
     n       = thr.add(1,  now);
     BOOST_CHECK_EQUAL(1,  n);
     BOOST_CHECK_EQUAL(8u, thr.available(now));
+    BOOST_CHECK_EQUAL(2u, thr.used(now));
     auto next_time = time_val(2015,6,1, 12,0,0, 200000);
     BOOST_CHECK(next_time == thr.next_time());
 
     now.add_msec(100);
     BOOST_CHECK_EQUAL(9u, thr.available(now));
+    BOOST_CHECK_EQUAL(1u, thr.used(now));
 
     n       = thr.add(5,  now);
     BOOST_CHECK_EQUAL(5,  n);
     BOOST_CHECK_EQUAL(4u, thr.available(now));
+    BOOST_CHECK_EQUAL(6u, thr.used(now));
     next_time = time_val(2015,6,1, 12,0,0, 700000);
 //     BOOST_TEST_MESSAGE("Next = " << timestamp::to_string(thr.next_time(), utxx::TIME_WITH_USEC, true));
 //     BOOST_TEST_MESSAGE("Now  = " << timestamp::to_string(now, utxx::TIME_WITH_USEC, true));
@@ -84,8 +92,34 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
     n       = thr.add(5,  now);
     BOOST_CHECK_EQUAL(4,  n);
     BOOST_CHECK_EQUAL(0u, thr.available(now));
+    BOOST_CHECK_EQUAL(10u,thr.used(now));
     next_time = time_val(2015,6,1, 12,0,1, 100000);
     BOOST_CHECK(next_time == thr.next_time());
+    BOOST_CHECK_EQUAL(10.0, thr.curr_rate_per_second(now));
+
+    {
+        auto now = time_val(2015, 6, 1, 11,59,58, 900000);
+        time_spacing_throttle thr(10, 50, now);    // Throttle 10 samples / 50ms
+        n = thr.add(4, now);
+        BOOST_CHECK_EQUAL(4,  n);
+        BOOST_CHECK_EQUAL(6u, thr.available(now));
+        BOOST_CHECK_EQUAL(4u, thr.used(now));
+        BOOST_CHECK_EQUAL(80.0, thr.curr_rate_per_second(now));
+        n = thr.add(6, now);
+        BOOST_CHECK_EQUAL(6,  n);
+        BOOST_CHECK_EQUAL(0u, thr.available(now));
+        BOOST_CHECK_EQUAL(10u,thr.used(now));
+        BOOST_CHECK_EQUAL(200.0, thr.curr_rate_per_second(now));
+    }
+    {
+        auto now = time_val(2015, 6, 1, 11,59,58, 900000);
+        time_spacing_throttle thr(0, 50, now);    // Throttle disabled (rate==0)
+        n = thr.add(4, now);
+        BOOST_CHECK_EQUAL(4,  n);
+        BOOST_CHECK_EQUAL(UINT_MAX, thr.available(now));
+        BOOST_CHECK_EQUAL(0u, thr.used(now));
+        BOOST_CHECK_EQUAL(0.0, thr.curr_rate_per_second(now));
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_rate_throttler_basic )
@@ -133,5 +167,5 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_basic )
     l_throttler.add(tv, ++i); // i=15
     BOOST_REQUIRE_EQUAL(29, l_throttler.running_sum());
 
-    BOOST_REQUIRE_EQUAL(29.0 / 3, l_throttler.running_avg());
+    BOOST_REQUIRE_EQUAL(29.0 / 3, l_throttler.curr_rate());
 }
