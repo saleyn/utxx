@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # vim:ts=4:sw=4:et
 """
 config_validator_codegen.py
@@ -20,7 +20,7 @@ Example usage:
 import argparse
 import lxml.etree as et
 import os.path
-import commands
+import subprocess
 import pwd
 import tempfile
 import time
@@ -95,7 +95,8 @@ class RenamedTemporaryFile(object):
         if tmpdir is None:
             tmpdir = os.path.dirname(target_filename)
 
-        self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpdir, **kwargs)
+        self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpdir, mode='w+',
+                                                   delete=False, **kwargs)
         self.final_path = target_filename
 
     def __getattr__(self, attr):
@@ -109,12 +110,12 @@ class RenamedTemporaryFile(object):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
+
         if exc_type is None:
-            self.tmpfile.delete = False
-            result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
             os.rename(self.tmpfile.name, self.final_path)
         else:
-            result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
+            os.remove(self.tmpfile.name)
 
         return result
 
@@ -188,7 +189,7 @@ class ConfigGenerator(object):
                 print >> sys.stderr, "Copy loop detected at %s: %s" % \
                                      (node_path_to_string(tn,ids='_ID_'), ','.join(visited))
                 exit(1)
- 
+
             path  = tn.attrib['path']
             nodes = tn.xpath(path)
 
@@ -233,7 +234,7 @@ class ConfigGenerator(object):
 
             # Remove the <copy> element
             if tn.getparent() is not None:
-                tn.getparent().remove(tn) 
+                tn.getparent().remove(tn)
                 self.debug(lambda:
                     "Removed node %s" % (node_to_string(tn,with_offset=False,ids='_ID_')),
                     verbosity=2)
@@ -243,7 +244,7 @@ class ConfigGenerator(object):
 
     def check_include_loops(self, root, filedict, acc):
         for n in sorted(set(root.xpath(".//include"))):
-            fn = unicode(n.attrib['file'])
+            fn = str(n.attrib['file'])
             self.debug(lambda:
                 "Checking %s/%s: %s" % (root.base, fn, [i.encode('utf8') for i in acc]))
             if fn not in filedict:
@@ -263,7 +264,7 @@ class ConfigGenerator(object):
         root = self.parse_xml(filename)
         d[filename] = root
         for file in root.xpath("//include"):
-            n = unicode(file.attrib['file'])
+            n = str(file.attrib['file'])
             if n not in d:
                 self.parse_all_files(n, d)
         return root
@@ -278,7 +279,7 @@ class ConfigGenerator(object):
                 repl_list = self.expand_includes(childroot, treedict)
                 for j in reversed(repl_list):
                     i.addnext(deepcopy(j))
-                if i.getparent() is not None: i.getparent().remove(i) 
+                if i.getparent() is not None: i.getparent().remove(i)
 
         return [root] if len(root.keys()) > 0 and root.tag != 'config' else root.getchildren()
 
@@ -319,7 +320,7 @@ class ConfigGenerator(object):
         if not os.path.isdir(outdir):
             print >> sys.stderr, "Output directory %s doesn't exist" % outdir
 
-        ufilename = unicode(self.filename) if type(self.filename) != unicode else self.filename
+        ufilename = str(self.filename) if type(self.filename) != str else self.filename
         root = self.expand_all_includes(ufilename)
         names = sorted(set(root.xpath("*//@name")))
         values = sorted(set(root.xpath("*//name/@val | *//value/@val")))
@@ -419,13 +420,13 @@ class ConfigGenerator(object):
         ws1 = '  ' + ws
         ws2 = '  ' + ws1
 
-        for node in sorted(set(root.xpath("./option"))):
+        for node in sorted(set(root.xpath("./option")), key=lambda x: root.index(x)):
             f.write(ws  + "{\n")
             f.write(ws1 + "ovec l_children%d; sset l_names; vset l_values;\n" % (level))
             self.process_options(f, node, level+1, 'l_children'+str(level))
 
             subopts = len(node.xpath("./option"))
-            
+
             valid_opt_attrs = [
                 ('name',          ""),
                 ('desc',          ""),
@@ -467,8 +468,8 @@ class ConfigGenerator(object):
                 tp        = 'branch'
                 required  = 'false'
                 recursive = 'true'
-            
-            if len(filter(lambda x: x not in ['true', 'false'], [unique, required, validate])):
+
+            if len(list(filter(lambda x: x not in ['true', 'false'], [unique, required, validate]))):
                 err = "non-boolean value given to option (must be 'true' or 'false'): %s" % node.attrib
             if not valtype:
                 valtype = tp if (tp and tp != 'branch') else 'string'
@@ -556,12 +557,13 @@ if __name__ == '__main__':
                         help="Username of the XML author")
     parser.add_argument('--email',
                         help="Email of the XML author")
-    parser.add_argument('-v', '--verbosity', action="count", help='Verbosity level')
+    parser.add_argument('-v', '--verbosity', action="count", default=0,
+                        help='Verbosity level')
 
     args = parser.parse_args()
 
-    if not args.user:  args.user  = commands.getoutput("git config --get user.name")
+    if not args.user:  args.user  = subprocess.getoutput("git config --get user.name")
     if not args.user:  args.user  = pwd.getpwuid(os.getuid()).pw_gecos
-    if not args.email: args.email = commands.getoutput("git config --get user.email")
+    if not args.email: args.email = subprocess.getoutput("git config --get user.email")
 
     ConfigGenerator(args).run()
