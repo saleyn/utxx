@@ -139,8 +139,8 @@ set(PKG_ROOT_DIR "/opt/pkg" CACHE STRING "Package root directory")
 
 # Python
 find_package(PythonInterp)
-if(PYTHON_VERSION_STRING VERSION_LESS 2.7)
-  message(FATAL_ERROR "Python version less than 2.y: \"${PYTHON_VERSION_STRING}\".")
+if(PYTHON_VERSION_STRING VERSION_LESS 3.0)
+  message(FATAL_ERROR "Python version less than 3.x: \"${PYTHON_VERSION_STRING}\".")
 endif()
 
 if(WITH_THRIFT)
@@ -308,7 +308,7 @@ install(
 install(
 	FILES 		  ${CMAKE_SOURCE_DIR}/LICENSE
 						  ${CMAKE_SOURCE_DIR}/README.md
-	DESTINATION ${CMAKE_INSTALL_PREFIX}/share 
+	DESTINATION ${CMAKE_INSTALL_PREFIX}/share
 )
 
 #===============================================================================
