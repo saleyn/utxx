@@ -138,9 +138,11 @@ find_package(PkgConfig)
 set(PKG_ROOT_DIR "/opt/pkg" CACHE STRING "Package root directory")
 
 # Python
-find_package(PythonInterp)
-if(PYTHON_VERSION_STRING VERSION_LESS 3.0)
-  message(FATAL_ERROR "Python version less than 3.x: \"${PYTHON_VERSION_STRING}\".")
+find_package(Python3 COMPONENTS Interpreter)
+if(Python3_FOUND)
+  message(STATUS "Found python: ${Python3_VERSION} ${Python3_EXECUTABLE}")
+else()
+  message(FATAL_ERROR "Python version 3.x not found!")
 endif()
 
 if(WITH_THRIFT)
@@ -154,8 +156,6 @@ if(WITH_THRIFT)
 		message(STATUS "Found thrift: ${Thrift_DIR}")
 		set(UTXX_HAVE_THRIFT_H 1)
  	endif()
-else()
-  message(STATUS "Building without Thrift")
 endif()
 
 # Boost (with local modifications):

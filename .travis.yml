@@ -24,7 +24,6 @@ matrix:
             - doxygen
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
-        - PATH=/opt/python/3.7/bin:$PATH
 
 before_install:
   - eval "${MATRIX_EVAL}"
