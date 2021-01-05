@@ -19,11 +19,12 @@ matrix:
             #- cmake
             #- cmake-data
             - libxslt1.1
-            - python3.5
+            - python3.7
             - python-lxml
             - doxygen
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+        - PATH=/opt/python/3.7/bin:$PATH
 
 before_install:
   - eval "${MATRIX_EVAL}"
@@ -38,6 +39,7 @@ before_script:
 
 script:
   - ${CXX} --version
+  - python3 -VV
   #- find /usr/include -name '*boost*' | head -100
   #- find /usr/lib -name '*boost*' | head -100
   ############################################################################
