@@ -20,7 +20,7 @@ matrix:
             #- cmake-data
             - libxslt1.1
             - python3.7
-            - python-lxml
+            - python3-lxml
             - doxygen
       env:
         - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
