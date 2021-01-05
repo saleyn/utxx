@@ -136,7 +136,7 @@ public:
         }
     }
 
-    static inline void rtrimZeroes(char* a_str) {
+    static inline void rtrim_zeroes(char* a_str) {
         int idX = strlen(a_str) - 1;
 
         while (a_str[idX] == '0') {
