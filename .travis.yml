@@ -10,6 +10,7 @@ matrix:
             - sourceline: 'ppa:mhier/libboost-latest'
             - sourceline: 'ppa:ubuntu-toolchain-r/test'
             #- ubuntu-toolchain-r-test
+          python: 3.6
           packages:
             - gcc-9
             - g++-9

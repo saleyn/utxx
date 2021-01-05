@@ -141,6 +141,8 @@ set(PKG_ROOT_DIR "/opt/pkg" CACHE STRING "Package root directory")
 find_package(PythonInterp)
 if(PYTHON_VERSION_STRING VERSION_LESS 3.0)
   message(FATAL_ERROR "Python version less than 3.x: \"${PYTHON_VERSION_STRING}\".")
+else()
+  message(STATUS "Python version: ${PYTHON_VERSION_STRING}")
 endif()
 
 if(WITH_THRIFT)
