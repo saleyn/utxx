@@ -55,6 +55,7 @@ UTXX_ENUM( mm_enumz5,(char,Nil,-3), A);
 UTXX_ENUM( mm_enumz6,(char,Nil,-3),(A));
 UTXX_ENUM( mm_enumz7,(char,Nil,-3),(A,"a"));
 UTXX_ENUMV(mmSideT,  (int8_t,  -1), (BID)(ASK)(SIDES));
+//UTXX_ENUMV(mm_enumv, (char,   ' '), (A, 'a', "AAA")(BB, 'b')(CCC)(D, 'a', "DDD"));
 UTXX_ENUMV(mm_enumv, (char,   ' '), (A, 'a', "AAA")(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
@@ -201,8 +202,8 @@ BOOST_AUTO_TEST_CASE( test_enumv )
     {
         // Iterate over all enum values defined in mm_enum type:
         std::stringstream s;
-        mm_enumv::for_each([&s](mm_enumv::type e, auto& name_pair) {
-            s << e;
+        mm_enumv::for_each([&s](auto& m) {
+            s << std::get<2>(m);
             return true;
         });
         BOOST_CHECK_EQUAL("AAABBCCC", s.str());
@@ -210,21 +211,14 @@ BOOST_AUTO_TEST_CASE( test_enumv )
         s.str("");
         s.clear();
 
-        mm_enumv::for_each([&s](mm_enumv::type e, auto& name_pair) {
-            s << name_pair.first;
+        mm_enumv::for_each([&s](auto& m) {
+            s << std::get<1>(m);
             return true;
         });
         BOOST_CHECK_EQUAL("ABBCCC", s.str());
 
         s.str("");
         s.clear();
-
-        mm_enumv::for_each([&s](mm_enumv::type e, auto& name_pair) {
-            s << name_pair.second;
-            return true;
-        });
-        BOOST_CHECK_EQUAL("AAABBCCC", s.str());
-
     }
 
     BOOST_CHECK(mm_enumv::A   == mm_enumv::from_string("AAA"));
