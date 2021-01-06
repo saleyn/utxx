@@ -139,9 +139,7 @@ set(PKG_ROOT_DIR "/opt/pkg" CACHE STRING "Package root directory")
 
 # Python
 find_package(Python3 COMPONENTS Interpreter)
-if(Python3_FOUND)
-  message(STATUS "Found python: ${Python3_VERSION} ${Python3_EXECUTABLE}")
-else()
+if(NOT Python3_FOUND)
   message(FATAL_ERROR "Python version 3.x not found!")
 endif()
 

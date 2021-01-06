@@ -1,8 +1,8 @@
 //----------------------------------------------------------------------------
-/// \file   enumv.hpp
+/// \file   enumu.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
-/// \brief This file defines enum with assignable non-unique values
+/// \brief This file defines enum with assignable unique values
 //----------------------------------------------------------------------------
 // Copyright (c) 2015 Serge Aleynikov <saleyn@gmail.com>
 // Created: 2015-04-11
@@ -62,34 +62,33 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #endif
 
 //------------------------------------------------------------------------------
-/// The difference between enum.hpp and enumv.hpp is that UTXX_ENUMV
-/// allows to assign specific non-unique values to the enumerated constants.
-//------------------------------------------------------------------------------
-/// NOTE: Make sure that UndefValue is distinct from other values in this enum!
-/// NOTE: The name lookups in ENUMV happen by using std::map<ENUM, string>. The
-///       reason we can't use a switch statement or array is that assigned enum
-///       values can be duplicated, e.g.: ```enum X { A = 1, B = 1, C = 2 }```.
-///       In this case we must guarantee that both ENUM::from_name("A") and
-///       ENUM::from_name("B") resolve to value ENUM::A, and ENUM::B, which
-///       happen to be the same value. So if we used a switch statement, that
-///       would result in compiler error:
+/// The difference between enumu.hpp and enumv.hpp is that UTXX_ENUMU
+/// allows the enum to have specific enumerated unique constants, whereas
+/// UTXX_ENUMV permits the use of non-unique constants. The enum name lookup by
+/// value is faster for UTXX_ENUMU, since it uses a play array with lookup by
+/// index, whereas UTXX_ENUMV uses a map, so ```enum X { A=1, B=2 }``` is
+/// equivalent to ```UTXX_ENUMU(X, int, (A, 1)(B, 2))```, and name lookups are
+/// implemented using:
 ///       ```
-///          switch(enum_value) {
-///             case ENUM::A: return "A";
-///             case ENUM::B: return "B";
+///          switch(val) {
+///             case 1: return "A";
+///             case 2: return "B";
 ///             ...
 ///          }
 ///       ```
-///
+//------------------------------------------------------------------------------
+/// NOTE: Make sure that UndefValue is distinct from other values in this enum!
+//
 /// Enum declaration:
 /// ```
-/// #include <utxx/enumv.hpp>
+/// #include <utxx/enumu.hpp>
 ///
-/// UTXX_ENUMV(MyEnumT,
+/// UTXX_ENUMU(MyEnumT,
 ///    (char,               // This is enum storage type
 ///     ' '),               // This is an "UNDEFINED" value
 ///    (Apple, 'x', "Fuji") // Item with a value and with name string "Fuji"
 ///    (Pear,  'y')         // Item with value 'y' (name defaults to "Pear")
+/// // (Fig,   'y')         // NOTE: this would result in compile-time error!
 ///    (Grape)              // Grape's value will be equal to 'y'+1
 /// );
 ///
@@ -98,24 +97,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// std::cout << "Value: " << to_string(val) << std::endl;
 /// std::cout << "Value: " << val            << std::endl;
 //------------------------------------------------------------------------------
-#define UTXX_ENUMV(ENUM, TYPE, ...)                                            \
-        UTXX_ENUMV__(                                                          \
+#define UTXX_ENUMU(ENUM, TYPE, ...)                                            \
+        UTXX_ENUMU__(                                                          \
             ENUM,                                                              \
             UTXX_ENUM_GET_TYPE(TYPE),                                          \
             UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
             UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
             __VA_ARGS__)
 
-#define UTXX_ENUMV__(ENUM, TYPE, UNDEFINED, UndefValue, ...)                   \
+#define UTXX_ENUMU__(ENUM, TYPE, UNDEFINED, UndefValue, ...)                   \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
             UNDEFINED = (UndefValue),                                          \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
-                UTXX_ENUMV_INTERNAL_GET_NAMEVAL__, _,                          \
+                UTXX_ENUMU_INTERNAL_GET_NAMEVAL__, _,                          \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
         };                                                                     \
+                                                                               \
+        using meta_type  = std::tuple<type, std::string, std::string>;         \
                                                                                \
         explicit  ENUM(long v) noexcept : m_val(type(v))   {}                  \
         constexpr ENUM()       noexcept : m_val(UNDEFINED) {}                  \
@@ -135,8 +136,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static    constexpr bool is_enum()   { return true;                }   \
         static    constexpr bool is_flags()  { return false;               }   \
                                                                                \
-        const std::string& name()    const { return meta(m_val).first;     }   \
-        const std::string& value()   const { return meta(m_val).second;    }   \
+        const std::string& name()    const { return std::get<1>(meta(m_val));} \
+        const std::string& value()   const { return std::get<2>(meta(m_val));} \
         TYPE               code()    const { return TYPE(m_val);           }   \
                                                                                \
         const std::string& to_string() const { return value();             }   \
@@ -149,8 +150,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         from_string(const char* a, bool a_nocase=false, bool as_name=false)  { \
             auto f = a_nocase ? &strcasecmp : &strcmp;                         \
             for (auto& t : metas())                                            \
-                if (!f((as_name ? t.second.first : t.second.second).c_str(),a))\
-                    return ENUM(t.first);                                      \
+                if (!f((as_name ? std::get<1>(t) : std::get<2>(t)).c_str(),a)) \
+                    return ENUM(std::get<0>(t));                               \
             return ENUM(UNDEFINED);                                            \
         }                                                                      \
                                                                                \
@@ -187,37 +188,38 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         template <typename Visitor>                                            \
         static void for_each(const Visitor& a_fun) {                           \
-            for (auto it = ++metas().begin(), e = metas().end(); it!=e; ++it)  \
-                if (!a_fun(it->first, it->second))                             \
+            int i=0;                                                           \
+            for (auto& m : metas())                                            \
+                if (i++ && !a_fun(m))                                          \
                     break;                                                     \
         }                                                                      \
                                                                                \
     private:                                                                   \
-        static const std::pair<const type,std::pair<std::string,std::string>>& \
-        null_pair() {                                                          \
-            static const                                                       \
-            std::pair<const type, std::pair<std::string,std::string>> s_val =  \
-                std::make_pair                                                 \
-                    (UNDEFINED, std::make_pair("UNDEFINED", "UNDEFINED"));     \
+        static const meta_type& null_meta() {                                  \
+            static const meta_type s_val =                                     \
+                std::make_tuple(UNDEFINED, "UNDEFINED", "UNDEFINED");          \
             return s_val;                                                      \
         }                                                                      \
         static const size_t s_size =                                           \
             1+BOOST_PP_SEQ_SIZE(BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__));    \
-        static const std::map<type, std::pair<std::string,std::string>>&       \
-        metas() {                                                              \
-            static const std::map<type, std::pair<std::string,std::string>>    \
-            s_metas{{                                                          \
-                null_pair(),                                                   \
+        static const std::array<meta_type, s_size>& metas() {                  \
+            static const std::array<meta_type, s_size> s_metas{{               \
+                null_meta(),                                                   \
                 BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                      \
-                    UTXX_ENUM_INTERNAL_GET_PAIR_AND_PAIR__, _,                 \
+                    UTXX_INTERNAL_ENUMU_META_TUPLE__, _,                       \
                     BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                \
             }};                                                                \
             return s_metas;                                                    \
         }                                                                      \
                                                                                \
-        static const std::pair<std::string,std::string>& meta(type n) {        \
-            auto it = metas().find(n);                                         \
-            return (it == metas().end() ? null_pair() : *it).second;           \
+        static const meta_type& meta(type n) {                                 \
+            switch (n) {                                                       \
+                case UNDEFINED: return metas()[0];                             \
+                BOOST_PP_SEQ_FOR_EACH_I_R(1,                                   \
+                    UTXX_INTERNAL_ENUMU_CASE__, _,                             \
+                    BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))                 \
+                default:        return metas()[0];                             \
+            }                                                                  \
         }                                                                      \
                                                                                \
         UTXX__ENUM_FRIEND_SERIALIZATION__;                                     \
@@ -226,27 +228,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     }
 
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_ENUMV_INTERNAL_GET_NAMEVAL__(x, _, val)                           \
+#define UTXX_ENUMU_INTERNAL_GET_NAMEVAL__(x, _, val)                          \
     BOOST_PP_TUPLE_ELEM(0, val)                                                \
     BOOST_PP_IF(                                                               \
         BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),                         \
         = BOOST_PP_TUPLE_ELEM(1, val),                                         \
         BOOST_PP_EMPTY())
 
-#define UTXX_ENUM_INTERNAL_GET_PAIR_AND_PAIR__(x, _, val)                      \
-    std::make_pair(                                                            \
+#define UTXX_INTERNAL_ENUMU_META_TUPLE__(x, _, val)                            \
+    std::make_tuple(                                                           \
         BOOST_PP_TUPLE_ELEM(0, val),                                           \
-        std::make_pair(                                                        \
-            BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),                   \
-            BOOST_PP_IIF(                                                      \
-                BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 2),                 \
-                BOOST_PP_TUPLE_ELEM(2, BOOST_PP_TUPLE_PUSH_BACK(val,_)),       \
-                BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)))))
+        BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),                       \
+        BOOST_PP_IIF(                                                          \
+            BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 2),                     \
+            BOOST_PP_TUPLE_ELEM(2, BOOST_PP_TUPLE_PUSH_BACK(val,_)),           \
+            BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))))
 
-// Internal macros for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_ENUM_INTERNAL_GET_PAIR__(x, _, val)                               \
-    std::make_pair( BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),           \
-                    BOOST_PP_IIF(                                              \
-                        BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),         \
-                        BOOST_PP_TUPLE_ELEM(1, val),                           \
-                        BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )
+#define UTXX_INTERNAL_ENUMU_CASE__(x, _, i, item)                              \
+            case BOOST_PP_TUPLE_ELEM(0, item): return metas()[BOOST_PP_INC(i)];
