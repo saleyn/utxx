@@ -50,7 +50,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 namespace detail {
-    static inline const char int_to_char(int n) {
+    static inline char int_to_char(int n) {
         static const char  s_characters[] = { "9876543210123456789" };
         static const char* s_middle = s_characters + 9;
         return s_middle[n];
