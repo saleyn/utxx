@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <cassert>
+#include <map>
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/preprocessor/seq/enum.hpp>
@@ -45,8 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/stringize.hpp>
 #include <utxx/detail/enum_helper.hpp>
 #include <utxx/string.hpp>
-#include <cassert>
-#include <map>
+#include <utxx/enumu.hpp>
 
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
 # ifndef UTXX__ENUM_FRIEND_SERIALIZATION__
