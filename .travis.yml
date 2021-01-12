@@ -19,6 +19,7 @@ matrix:
             #- cmake
             #- cmake-data
             - libxslt1.1
+            - python-lxml
             - python3.7
             - python3-lxml
             - doxygen
