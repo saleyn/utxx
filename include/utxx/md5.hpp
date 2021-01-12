@@ -38,12 +38,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #  include <boost/uuid/detail/md5.hpp>
 #else
 #  include <boost/uuid/sha1.hpp>
-#  include <boost/uuid/md5.hpp>
 #endif
 #include <utxx/string.hpp>
 #include <utxx/endian.hpp>
 
 namespace utxx {
+
+#if BOOST_VERSION >= 106600
 
 /// Calculates MD5 hash of the passed string.
 std::string md5(const std::string& str, bool a_lower=true)
@@ -66,6 +67,8 @@ std::string md5(const std::string& str, bool a_lower=true)
     res = hex((const char*)ccdigest, sizeof(md5::digest_type), a_lower);
     return res;
 }
+
+#endif
 
 /// Calculates SHA1 hash of the passed string.
 std::string sha1(const std::string& str, bool a_lower=true)
