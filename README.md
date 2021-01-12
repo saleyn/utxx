@@ -43,6 +43,18 @@ The components include:
 ``$ git clone git@github.com:saleyn/utxx.git``
 
 ## Building ##
+
+The `utxx` library requires:
+
+* BOOST
+* Python3 or Python2
+* Python LXML library (`python*-lxml.x86_64` package)
+
+The bootstraping process searches for `python3` and if found uses that
+version. Otherwise it searches for `python2`.  If you have both versions
+and would like to use `python2`, set `WITH_PYTHON2=1` environment
+variable before running `make bootstrap` or add it to the `.cmake-args`.
+
 To customize location of BOOST or installation prefix, create a file called
 `.cmake-args.${HOSTNAME}`. Alternatively if you are doing multi-host build with
 identical configuration, create a file call `.cmake-args`. E.g.:

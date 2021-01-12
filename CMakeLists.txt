@@ -138,9 +138,37 @@ find_package(PkgConfig)
 set(PKG_ROOT_DIR "/opt/pkg" CACHE STRING "Package root directory")
 
 # Python
-find_package(Python3 COMPONENTS Interpreter)
-if(NOT Python3_FOUND)
-  message(FATAL_ERROR "Python version 3.x not found!")
+if(NOT DEFINED ENV{WITH_PYTHON2} OR "$ENV{WITH_PYTHON2}" STREQUAL "0")
+  find_package(Python3 COMPONENTS Interpreter)
+endif()
+if(Python3_FOUND)
+  set(Python_EXECUTABLE ${Python3_EXECUTABLE})
+  set(Python_LXML       "python3-lxml")
+  configure_file(${CMAKE_SOURCE_DIR}/bin/config_validator_codegen.py3
+                 ${CMAKE_BINARY_DIR}/bin/config_validator_codegen.py
+                 COPYONLY)
+else()
+  find_package(Python2 COMPONENTS Interpreter)
+  set(Python_LXML       "python-lxml")
+  if(NOT Python2_FOUND)
+    message(FATAL_ERROR "Missing Python version 3.x or 2.7 or later!")
+  elseif("${Python2_VERSION_MAJOR}.${Python2_VERSION_MINOR}" VERSION_LESS 2.7)
+    message(FATAL_ERROR "Python version >= 2.7 is required!")
+  endif()
+  set(Python_EXECUTABLE ${Python2_EXECUTABLE})
+  configure_file(${CMAKE_SOURCE_DIR}/bin/config_validator_codegen.py2
+                 ${CMAKE_BINARY_DIR}/bin/config_validator_codegen.py
+                 COPYONLY)
+endif()
+
+# Find python-lxml
+execute_process(COMMAND ${Python_EXECUTABLE} -c
+                  "from distutils.sysconfig import *;print(get_python_lib())"
+                OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
+if(NOT EXISTS "${PYTHON_SITE_PACKAGES}/lxml")
+  message(FATAL_ERROR "${Python_LXML} is not installed!")
+else()
+  message(STATUS "Found ${Python_LXML}: ${PYTHON_SITE_PACKAGES}/lxml")
 endif()
 
 if(WITH_THRIFT)
@@ -217,7 +245,7 @@ macro(XML_CFG TargetSrcList File)
   file(MAKE_DIRECTORY "${GenDirName}")
   add_custom_command(
     OUTPUT            "${GenFileName}"
-    COMMAND           "${CMAKE_SOURCE_DIR}/bin/config_validator_codegen.py"
+    COMMAND           "${CMAKE_BINARY_DIR}/bin/config_validator_codegen.py"
                       -f "${SrcFile}" -o "${GenFileName}" --overwrite
                       -d ${GenIncDir}
     MAIN_DEPENDENCY   "${SrcFile}"
@@ -277,12 +305,6 @@ list(APPEND UTXX_LIBS ${Thrift_LIBRARIES} aio pthread)
 add_subdirectory(src)
 add_subdirectory(test)
 
-# Copy configuration files to the build directory
-#foreach(File etc/hs-replay.config etc/logger.config etc/hs-secdef.txt)
-#  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${File}
-#                 ${CMAKE_CURRENT_BINARY_DIR}/${File} COPYONLY)
-#endforeach(File)
-
 #===============================================================================
 # Installation
 #===============================================================================
@@ -296,7 +318,7 @@ install(
   DESTINATION ${CMAKE_INSTALL_PREFIX}/include/${PROJECT_NAME}
 )
 install(
-	PROGRAMS    ${CMAKE_SOURCE_DIR}/bin/config_validator_codegen.py
+	PROGRAMS    ${CMAKE_BINARY_DIR}/bin/config_validator_codegen.py
 	DESTINATION ${CMAKE_INSTALL_PREFIX}/bin
 )
 install(
