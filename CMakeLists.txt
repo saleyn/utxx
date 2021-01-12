@@ -163,7 +163,7 @@ endif()
 
 # Find python-lxml
 execute_process(COMMAND ${Python_EXECUTABLE} -c
-                  "from distutils.sysconfig import *;print(get_python_lib())"
+                  "from distutils.sysconfig import *;print(get_python_lib(plat_specific=True))"
                 OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(NOT EXISTS "${PYTHON_SITE_PACKAGES}/lxml")
   message(FATAL_ERROR "${Python_LXML} is not installed!")
