@@ -76,19 +76,24 @@ std::string sha1(const std::string& str, bool a_lower=true)
     using boost::uuids::detail::sha1;
 
     sha1 hash;
+#if BOOST_VERSION >= 106600
     sha1::digest_type digest;
+#else
+    unsigned int buf[5];
+    sha1::digest_type digest = buf;
+#endif
 
     hash.process_bytes(str.data(), str.size());
     hash.get_digest(digest);
 
-    char  ccdigest[sizeof(sha1::digest_type)];
+    char  ccdigest[sizeof(digest)];
     uint8_t* pc = reinterpret_cast<uint8_t*>(ccdigest);
 
-    for (unsigned i=0; i < std::extent<sha1::digest_type>::value; i++)
+    for (unsigned i=0; i < std::extent<decltype(digest)>::value; i++)
         put_be(pc, digest[i]);
 
     std::string res;
-    res = hex((const char*)ccdigest, sizeof(sha1::digest_type), a_lower);
+    res = hex((const char*)ccdigest, sizeof(digest), a_lower);
     return res;
 }
 
