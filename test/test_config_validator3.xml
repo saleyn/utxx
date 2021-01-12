@@ -1,0 +1,6 @@
+<config>
+    <option name="grp3" type="branch" defaults="def" required="false">
+        <option name="key3"  type="string"/>
+        <option name="addr3" type="string"/>
+    </option>
+</config>

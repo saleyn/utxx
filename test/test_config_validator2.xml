@@ -21,5 +21,7 @@
     <option name="grp2" type="branch" defaults="def" required="false">
         <option name="key"  type="string"/>
         <option name="addr" type="string"/>
+        <include file="test_config_validator3.xml"/>
     </option>
+    <include file="test_config_validator3.xml"/>
 </config>

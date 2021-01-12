@@ -43,6 +43,13 @@ The components include:
 ``$ git clone git@github.com:saleyn/utxx.git``
 
 ## Building ##
+
+The `utxx` library requires:
+
+* BOOST
+* Python3
+* Python LXML library (`python*-lxml.x86_64` package)
+
 To customize location of BOOST or installation prefix, create a file called
 `.cmake-args.${HOSTNAME}`. Alternatively if you are doing multi-host build with
 identical configuration, create a file call `.cmake-args`. E.g.:
