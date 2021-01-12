@@ -19,8 +19,28 @@ matrix:
             #- cmake
             #- cmake-data
             - libxslt1.1
-            - python-lxml
-            - python3.7
+            - python-lxml     # Use Python2
+            - doxygen
+      env:
+        - MATRIX_EVAL="CC=gcc-9 && CXX=g++-9"
+     - os: linux
+      addons:
+        apt:
+          update: true
+          sources:
+            - sourceline: 'ppa:mhier/libboost-latest'
+            - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            - deadsnakes # for python3
+          packages:
+            - gcc-9
+            - g++-9
+            #- boost-latest
+            - boost1.70
+            - libaio-dev
+            #- cmake
+            #- cmake-data
+            - libxslt1.1
+            - python3.7       # Use Python3
             - python3-lxml
             - doxygen
       env:
