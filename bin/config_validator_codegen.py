@@ -80,6 +80,9 @@ def print_element(e, stream = sys.stdout, with_offset=True, ids=None):
 def format_name(name):
     return re.sub('[-.,;: ]', '_', re.sub('[()]', "", name.upper()))
 
+def sorted_set_xpath(root, expr):
+    return sorted(set(root.xpath(expr)), key=lambda x: x.getparent().index(x))
+
 class RenamedTemporaryFile(object):
     """
     A temporary file which will be renamed to the specified
@@ -243,7 +246,7 @@ class ConfigGenerator(object):
                 skip.add(i)
 
     def check_include_loops(self, root, filedict, acc):
-        for n in sorted(set(root.xpath(".//include"))):
+        for n in sorted_set_xpath(root, ".//include"):
             fn = str(n.attrib['file'])
             self.debug(lambda:
                 "Checking %s/%s: %s" % (root.base, fn, [i.encode('utf8') for i in acc]))
@@ -372,11 +375,11 @@ class ConfigGenerator(object):
             if alias:
                 f.write('        static constexpr const char* alias()%s { return "%s"; }\n\n' % (' ' * (max_width - 5), alias))
             f.write("        //---------- Configuration Options ------------\n")
-            for n in sorted(set(names)):
+            for n in names:
                 u = format_name(n)
                 f.write('        static constexpr const char* %s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("        //---------- Configuration Values -------------\n")
-            for n in sorted(set(values)):
+            for n in values:
                 u = format_name(n)
                 f.write('        static constexpr const char* VAL_%s()%s { return "%s"; }\n' % (u, ' ' * (max_width - len(n)), n))
             f.write("\n")
@@ -420,7 +423,7 @@ class ConfigGenerator(object):
         ws1 = '  ' + ws
         ws2 = '  ' + ws1
 
-        for node in sorted(set(root.xpath("./option")), key=lambda x: root.index(x)):
+        for node in sorted_set_xpath(root, "./option"):
             f.write(ws  + "{\n")
             f.write(ws1 + "ovec l_children%d; sset l_names; vset l_values;\n" % (level))
             self.process_options(f, node, level+1, 'l_children'+str(level))
