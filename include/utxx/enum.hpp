@@ -223,10 +223,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static constexpr size_t size()  { return s_size-1; }                   \
-        static constexpr ENUM   begin() { return type(FIRST); }                \
-        static constexpr ENUM   end()   { return _END_; }                      \
-        static constexpr ENUM   last()  { return type(FIRST+size()-1); }       \
-        static constexpr ENUM   inc(ENUM x) { return type(int(x)+1);   }       \
+        static constexpr type   begin() { return type(FIRST); }                \
+        static constexpr type   end()   { return _END_; }                      \
+        static constexpr type   last()  { return type(FIRST+size()-1); }       \
+        static constexpr type   inc(type x) { return type(int(x)+1);   }       \
                                                                                \
         template <typename Visitor>                                            \
         static void for_each(const Visitor& a_fun) {                           \
