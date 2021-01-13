@@ -42,6 +42,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/enum.hpp>
 #include <boost/preprocessor/comparison/equal.hpp>
+#include <boost/preprocessor/arithmetic/dec.hpp>
+#include <boost/preprocessor/comparison/not_equal.hpp>
+#include <boost/preprocessor/punctuation/comma.hpp>
+#include <boost/preprocessor/control/expr_iif.hpp>
 #include <utxx/detail/enum_helper.hpp>
 #include <utxx/string.hpp>
 #include <utxx/config.h>
@@ -55,9 +59,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// `UTXX_ENUM(EnumName, Opts, Enums)`
 /// * EnumName - the name of ENUM
 /// * Opts - can be one of three formats:
-///     * Type                      - Enum storage Type. Adds UNDEFINED=0
-///     * (Type,DefValue)           - Enum storage Type. Adds UNDEFINED=DefValue
-///     * (Type,UndefName,DefValue) - Enum storage Type. Adds UndefName=DefValue
+///     * Type                      - Enum of Type. Adds UNDEFINED=0.
+///     * (Type,DefValue)           - Enum of Type. Adds UNDEFINED=DefValue.
+///     * (Type,UndefName,DefValue) - Enum of Type. Adds UndefName=DefValue.
+///     * (Type,UndefName,DefValue,FirstVal) - Ditto. Start enum with FirstVal.
 /// * Enums is either a variadic list or sequence of arguments:
 ///     * Enum1, Enum2, ...
 ///     * (Enum1)(Enum2)...
@@ -82,14 +87,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///
 /// UTXX_ENUM(Op1, char,          A,B);  // Adds UNDEFINED=0  default item
 /// UTXX_ENUM(Op2, (char, -1),    A,B);  // Adds UNDEFINED=-1 default item
-/// UTXX_ENUM(Op3, (char,NIL,-1), A,B);  // Adds NIL=0        default item
+/// UTXX_ENUM(Op3, (char,NIL,-1), A,B);  // Adds NIL=0 default item
+/// UTXX_ENUM(Op3, (char,NIL,3,0),A,B);  // Adds NIL=3 default item, A=0,B=1
 /// UTXX_ENUM(Op4, char,  (A,"a") (B));  // Adds UNDEFINED=0  default item
 ///
 /// UTXX_ENUM(MyEnumT,
 ///    (char,           // This is enum storage type
 ///     UNDEFINED,      // The "name" of the first (i.e. "undefined") item
-///     -1,             // "initial" enum value for "UNDEFINED" value
-///    )
+///     -10,            // "UNDEFINED" value
+///     0               // Value assigned to the first item (Apple)
+///    ),
 ///    (Apple, "Gala") // An item can optionally have an associated string value
 ///    (Pear)          // String value defaults to item's name (i.e. "Pear")
 ///    (Grape, "Fuji")
@@ -118,6 +125,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             UTXX_ENUM_GET_TYPE(TYPE),                                          \
             UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
             UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
+            UTXX_ENUM_GET_FIRST_VAL(TYPE),                                     \
             BOOST_PP_TUPLE_ENUM(                                               \
                 BOOST_PP_IF(                                                   \
                     BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE(__VA_ARGS__), 1),    \
@@ -130,12 +138,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 // For internal use
 //------------------------------------------------------------------------------
-#define UTXX_ENUMZ(ENUM, TYPE, UNDEFINED, INIT, ...)                           \
+#define UTXX_ENUMZ(ENUM, TYPE, UNDEFINED, INIT, FIRST, ...)                    \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
-            UNDEFINED = (INIT),                                                \
+            UNDEFINED = INIT,                                                  \
+            _START_   = FIRST-1,                                               \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
                 UTXX_ENUM_INTERNAL_GET_0__, _,                                 \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))),                   \
@@ -144,7 +153,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         explicit  ENUM(TYPE v)   noexcept: m_val(type(v))                      \
                                          { assert(v<int(s_size)); }            \
-        constexpr ENUM()         noexcept: m_val(UNDEFINED) {}                 \
+        constexpr ENUM()         noexcept: m_val(UNDEFINED) {                  \
+            static_assert(INIT < FIRST || INIT >= int(_END_),                  \
+                          "Init value must be outside of first and last!");    \
+        }                                                                      \
         constexpr ENUM(type v)   noexcept: m_val(v) {}                         \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
@@ -174,10 +186,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static ENUM                                                            \
         from_string(const char* a, bool nocase=false, bool as_name=false)  {   \
             auto f = nocase  ? &strcasecmp : &strcmp;                          \
-            for (int i=1; i < int(s_size); ++i) {                              \
-                int j = i+(INIT);                                              \
-                if(!f((as_name ? meta(j).first : meta(j).second).c_str(),a))   \
-                    return ENUM(j);                                            \
+            for (auto i=begin(); i < end(); i = inc(i)) {                      \
+                if(!f((as_name ? meta(i).first : meta(i).second).c_str(),a))   \
+                    return i;                                                  \
             }                                                                  \
             return ENUM(UNDEFINED);                                            \
         }                                                                      \
@@ -212,14 +223,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static constexpr size_t size()  { return s_size-1; }                   \
-        static constexpr ENUM   begin() { return type(INIT+1); }               \
+        static constexpr ENUM   begin() { return type(FIRST); }                \
         static constexpr ENUM   end()   { return _END_; }                      \
-        static constexpr ENUM   last()  { return type(INIT+size()); }          \
+        static constexpr ENUM   last()  { return type(FIRST+size()-1); }       \
+        static constexpr ENUM   inc(ENUM x) { return type(int(x)+1);   }       \
                                                                                \
         template <typename Visitor>                                            \
         static void for_each(const Visitor& a_fun) {                           \
-            for (size_t i=1; i < s_size; i++)                                  \
-                if (!a_fun(type((INIT)+i)))                                    \
+            for (auto i=begin(); i < end(); i = inc(i))                        \
+                if (!a_fun(i))                                                 \
                     break;                                                     \
         }                                                                      \
     private:                                                                   \
@@ -239,7 +251,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static const std::pair<std::string,std::string>& meta(TYPE n) {        \
-            auto   m = int(n)-(INIT);                                          \
+            auto   m = n == UNDEFINED ? 0 : int(n)-(FIRST)+1;                  \
             assert(m >= 0 && m < int(s_size));                                 \
             return names()[m];                                                 \
         }                                                                      \

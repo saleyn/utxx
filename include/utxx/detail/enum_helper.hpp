@@ -37,32 +37,47 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/comparison/greater.hpp>
 #include <boost/preprocessor/tuple/size.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/preprocessor/arithmetic/inc.hpp>
 
 // Type value may be in one of three forms:
-//      char                // EnumType
-//      (char, 0)           // EnumType, DefaultValue
-//      (char, Undef, 0)    // EnumType, UndefinedItemName, DefaultValue
+//   char                 // Type=char, UNDEFINED=0,  First=0
+//   (char, -1)           // Type=char, UNDEFINED=-1, First=-1
+//   (char, Undef, 0)     // Type=char, Undef=0,  First=1
+//   (char, Undef, 10, 0) // Type=char, Undef=10, First=0
 //
 // The following three macros get the {Type, Name, Value} accordingly:
 #define UTXX_ENUM_GET_TYPE(type)       UTXX_ENUM_INTERNAL_1__(0, type)
 #define UTXX_ENUM_GET_UNDEF_NAME(type) UTXX_ENUM_INTERNAL_1__(1, type)
 #define UTXX_ENUM_GET_UNDEF_VAL(type)  UTXX_ENUM_INTERNAL_1__(2, type)
+#define UTXX_ENUM_GET_FIRST_VAL(type)  UTXX_ENUM_INTERNAL_1__(3, type)
 
 #define UTXX_ENUM_INTERNAL_1__(N, arg)                                         \
     BOOST_PP_IIF(                                                              \
         BOOST_PP_IS_BEGIN_PARENS(arg),                                         \
         UTXX_ENUM_INTERNAL_2__(N, arg),                                        \
-        UTXX_ENUM_INTERNAL_2__(N, (arg, UNDEFINED, 0)))
+        UTXX_ENUM_INTERNAL_2__(N, (arg, UNDEFINED, 0, 1)))
 
-#define UTXX_ENUM_INTERNAL_2__(N, arg)                                         \
-    BOOST_PP_IIF(BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(arg),2),                 \
-        BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(arg), _)),                 \
-        BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ELEM(0, arg),                   \
+#define UTXX_ENUM_INTERNAL_2__(N, arg) \
+        UTXX_ENUM_INTERNAL_3__(N, BOOST_PP_TUPLE_SIZE(arg), arg)               \
+
+#define UTXX_ENUM_INTERNAL_3__(N, Sz, arg)                                     \
+    BOOST_PP_IIF(BOOST_PP_GREATER(Sz,2),                                       \
+        BOOST_PP_IIF(BOOST_PP_GREATER(Sz,3),                                   \
+            BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(arg), _, _, _)),       \
+            BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg), \
+                                    UTXX_ENUM_GET_ELEM__(1, arg), \
+                                    UTXX_ENUM_GET_ELEM__(2, arg), \
+                                    (UTXX_ENUM_GET_ELEM__(2, arg)+1)))), \
+        BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg), \
                                 UNDEFINED,                                     \
-                                BOOST_PP_TUPLE_ELEM(1, arg))))
+                                UTXX_ENUM_GET_ELEM__(1, arg), \
+                                (UTXX_ENUM_GET_ELEM__(1, arg)+1))))
+
+#define UTXX_ENUM_GET_ELEM__(N, T) \
+    BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(T), _, _, _))
 
 // Internal macros for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_ENUM_INTERNAL_GET_0__(x, _, val)     BOOST_PP_TUPLE_ELEM(0, val)
+#define UTXX_ENUM_INTERNAL_GET_0__(x, _, val) BOOST_PP_TUPLE_ELEM(0, val)
 
 #define UTXX_ENUM_INTERNAL_GET_PAIR__(x, _, val)                               \
     std::make_pair( BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val)),           \

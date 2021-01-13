@@ -47,6 +47,8 @@ UTXX_ENUM( mm_enum,   int64_t,      A,  B,  C);
 UTXX_ENUM( mm_enum2, (int64_t, -2), A,  B,  C);
 UTXX_ENUM( mm_enum3, (char,Nil,-3), A,  B,  C);
 UTXX_ENUM( mm_enum4, (char,Nil,-3),(A,"AA") (B) (C));
+UTXX_ENUM( mm_enum5, (int64_t, Nil, -2, 0), A,  B,  C);
+UTXX_ENUM( mm_enum6, (int64_t, Nil,  3, 0), A,  B,  C);
 UTXX_ENUM( mm_enumz, (int,     -1),(A) (B) (C));
 UTXX_ENUM( mm_enumz2, int,         (A) (B) (C));
 UTXX_ENUM( mm_enumz3,(int, Nil,-3),(A) (B) (C));
@@ -115,6 +117,24 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK_EQUAL("B", mm_enum::to_string(mm_enum::B));
     BOOST_CHECK_EQUAL("C", mm_enum::to_string(mm_enum::C));
     BOOST_CHECK_EQUAL("A", mm_enum::from_string("A").to_string());
+
+    BOOST_CHECK_EQUAL(mm_enum5::Nil,         mm_enum5(-2));
+    BOOST_CHECK_EQUAL(mm_enum5::A,           mm_enum5(0));
+    BOOST_CHECK_EQUAL(mm_enum5::A,           mm_enum5::begin());
+    BOOST_CHECK_EQUAL(mm_enum5::C,           mm_enum5::last());
+    BOOST_CHECK_EQUAL(mm_enum5::_END_,       mm_enum5::end());
+    BOOST_CHECK_EQUAL(1+int(mm_enum5::C),    mm_enum5::end());
+    BOOST_CHECK_EQUAL("A", mm_enum5::from_string("A").name());
+    BOOST_CHECK_EQUAL("A", mm_enum5::from_string("A").to_string());
+
+    BOOST_CHECK_EQUAL(mm_enum6::Nil,         mm_enum6(3));
+    BOOST_CHECK_EQUAL(mm_enum6::A,           mm_enum6(0));
+    BOOST_CHECK_EQUAL(mm_enum6::A,           mm_enum6::begin());
+    BOOST_CHECK_EQUAL(mm_enum6::C,           mm_enum6::last());
+    BOOST_CHECK_EQUAL(mm_enum6::_END_,       mm_enum6::end());
+    BOOST_CHECK_EQUAL(1+int(mm_enum6::C),    mm_enum6::end());
+    BOOST_CHECK_EQUAL("A", mm_enum6::from_string("A").name());
+    BOOST_CHECK_EQUAL("A", mm_enum6::from_string("A").to_string());
 
     BOOST_CHECK_EQUAL("a", mm_enumz7(mm_enumz7::A).to_string());
     BOOST_CHECK_EQUAL("a", mm_enumz7::from_string("a").to_string());
