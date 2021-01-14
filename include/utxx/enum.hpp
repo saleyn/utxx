@@ -59,8 +59,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// `UTXX_ENUM(EnumName, Opts, Enums)`
 /// * EnumName - the name of ENUM
 /// * Opts - can be one of three formats:
-///     * Type                      - Enum of Type. Adds UNDEFINED=0.
-///     * (Type,DefValue)           - Enum of Type. Adds UNDEFINED=DefValue.
+///     * Type                      - Enum of Type. Adds DEF_NAME=0.
+///     * (Type,DefValue)           - Enum of Type. Adds DEF_NAME=DefValue.
 ///     * (Type,UndefName,DefValue) - Enum of Type. Adds UndefName=DefValue.
 ///     * (Type,UndefName,DefValue,FirstVal) - Ditto. Start enum with FirstVal.
 /// * Enums is either a variadic list or sequence of arguments:
@@ -79,22 +79,22 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// ```
 /// #include <utxx/enum.hpp>
 ///
-/// UTXX_ENUM(Fruits, char,       // Automatically gets UNDEFINED=0 item added
+/// UTXX_ENUM(Fruits, char,       // Automatically gets DEF_NAME=0 item added
 ///             Apple,
 ///             Pear,
 ///             Grape
 ///          );
 ///
-/// UTXX_ENUM(Op1, char,          A,B);  // Adds UNDEFINED=0  default item
-/// UTXX_ENUM(Op2, (char, -1),    A,B);  // Adds UNDEFINED=-1 default item
+/// UTXX_ENUM(Op1, char,          A,B);  // Adds DEF_NAME=0  default item
+/// UTXX_ENUM(Op2, (char, -1),    A,B);  // Adds DEF_NAME=-1 default item
 /// UTXX_ENUM(Op3, (char,NIL,-1), A,B);  // Adds NIL=0 default item
 /// UTXX_ENUM(Op3, (char,NIL,3,0),A,B);  // Adds NIL=3 default item, A=0,B=1
-/// UTXX_ENUM(Op4, char,  (A,"a") (B));  // Adds UNDEFINED=0  default item
+/// UTXX_ENUM(Op4, char,  (A,"a") (B));  // Adds DEF_NAME=0  default item
 ///
 /// UTXX_ENUM(MyEnumT,
 ///    (char,           // This is enum storage type
-///     UNDEFINED,      // The "name" of the first (i.e. "undefined") item
-///     -10,            // "UNDEFINED" value
+///     DEF_NAME,       // The "name" of the first (i.e. "undefined") item
+///     -10,            // "DEF_NAME" value
 ///     0               // Value assigned to the first item (Apple)
 ///    ),
 ///    (Apple, "Gala") // An item can optionally have an associated string value
@@ -115,9 +115,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// ```
 //------------------------------------------------------------------------------
 // NOTE: the last "if" statement unifies possible forms of vararg inputs:
-//   UTXX_ENUM(XXX, int, A, B, C)       ->  UTXX_ENUM2(XXX, int, (A)(B)(C))
-//   UTXX_ENUM(XXX, int, (A,"a"), B, C) ->  UTXX_ENUM2(XXX, int, (A,"a")(B)(C))
-//   UTXX_ENUM(XXX, int, (A) (B) (C))   ->  UTXX_ENUM2(XXX, int, (A)(B)(C))
+//   UTXX_ENUM(XXX, int, A, B, C)       ->  UTXX_ENUMZ(XXX, int, (A)(B)(C))
+//   UTXX_ENUM(XXX, int, (A,"a"), B, C) ->  UTXX_ENUMZ(XXX, int, (A,"a")(B)(C))
+//   UTXX_ENUM(XXX, int, (A) (B) (C))   ->  UTXX_ENUMZ(XXX, int, (A)(B)(C))
 //------------------------------------------------------------------------------
 #define UTXX_ENUM(ENUM, TYPE, ...)                                             \
         UTXX_ENUMZ(                                                            \
@@ -138,12 +138,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 // For internal use
 //------------------------------------------------------------------------------
-#define UTXX_ENUMZ(ENUM, TYPE, UNDEFINED, INIT, FIRST, ...)                    \
+#define UTXX_ENUMZ(ENUM, TYPE, DEF_NAME, DEF_VAL, FIRST, ...)                  \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
-            UNDEFINED = INIT,                                                  \
+            DEF_NAME = DEF_VAL,                                                \
             _START_   = FIRST-1,                                               \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
                 UTXX_ENUM_INTERNAL_GET_0__, _,                                 \
@@ -153,8 +153,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         explicit  ENUM(TYPE v)   noexcept: m_val(type(v))                      \
                                          { assert(v<int(s_size)); }            \
-        constexpr ENUM()         noexcept: m_val(UNDEFINED) {                  \
-            static_assert(INIT < FIRST || INIT >= int(_END_),                  \
+        constexpr ENUM()         noexcept: m_val(DEF_NAME) {                   \
+            static_assert(DEF_VAL < FIRST || DEF_VAL >= int(_END_),            \
                           "Init value must be outside of first and last!");    \
         }                                                                      \
         constexpr ENUM(type v)   noexcept: m_val(v) {}                         \
@@ -167,8 +167,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         static constexpr const char*   class_name() { return #ENUM; }          \
         constexpr operator type()      const { return m_val; }                 \
-        constexpr bool     empty()     const { return m_val == UNDEFINED;  }   \
-        void               clear()           { m_val =  UNDEFINED;         }   \
+        constexpr bool     empty()     const { return m_val == DEF_NAME;   }   \
+        void               clear()           { m_val =  DEF_NAME;          }   \
                                                                                \
         static constexpr   bool is_enum()    { return true;                }   \
         static constexpr   bool is_flags()   { return false;               }   \
@@ -183,8 +183,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         const char*        c_str()     const { return to_string().c_str(); }   \
         static const char* c_str(type a)     { return to_string(a).c_str();}   \
                                                                                \
-        static constexpr bool valid(TYPE v)  { return v == UNDEFINED ||        \
-                                                     (v >= begin() &&          \
+        static constexpr bool valid(TYPE v)  { return v == DEF_NAME ||         \
+                                                     (v >= begin()  &&         \
                                                       v <  end());    }        \
         static ENUM                                                            \
         from_string(const char* a, bool nocase=false, bool as_name=false)  {   \
@@ -193,7 +193,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                 if(!f((as_name ? meta(i).first : meta(i).second).c_str(),a))   \
                     return i;                                                  \
             }                                                                  \
-            return ENUM(UNDEFINED);                                            \
+            return ENUM(DEF_NAME);                                             \
         }                                                                      \
                                                                                \
         static ENUM from_string(const std::string& a, bool a_nocase=false,     \
@@ -228,7 +228,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static constexpr size_t size()  { return s_size-1; }                   \
         static constexpr type   begin() { return type(FIRST); }                \
         static constexpr type   end()   { return _END_; }                      \
-        static constexpr type   last()  { return type(FIRST+size()-1); }       \
+        static constexpr type   last()  { return type(_END_-1); }              \
         static constexpr type   inc(type x) { return type(int(x)+1);   }       \
                                                                                \
         template <typename Visitor>                                            \
@@ -242,8 +242,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             1+BOOST_PP_SEQ_SIZE(BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__));    \
         static const std::pair<std::string,std::string>* names() {             \
             static const std::pair<std::string,std::string> s_names[] = {      \
-                std::make_pair(BOOST_PP_STRINGIZE(UNDEFINED),                  \
-                               BOOST_PP_STRINGIZE(UNDEFINED)),                 \
+                std::make_pair(BOOST_PP_STRINGIZE(DEF_NAME),                   \
+                               BOOST_PP_STRINGIZE(DEF_NAME)),                  \
                 BOOST_PP_SEQ_ENUM(                                             \
                     BOOST_PP_SEQ_TRANSFORM(                                    \
                         UTXX_ENUM_INTERNAL_GET_PAIR__, ,                       \
@@ -254,7 +254,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static const std::pair<std::string,std::string>& meta(TYPE n) {        \
-            auto   m = n == UNDEFINED ? 0 : int(n)-(FIRST)+1;                  \
+            auto   m = n == DEF_NAME ? 0 : int(n)-(FIRST)+1;                   \
             assert(m >= 0 && m < int(s_size));                                 \
             return names()[m];                                                 \
         }                                                                      \

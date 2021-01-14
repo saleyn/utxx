@@ -76,16 +76,36 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///             ...
 ///          }
 ///       ```
+/// `UTXX_ENUMU(EnumName, Opts, Enums)`
+/// * EnumName - the name of ENUM
+/// * Opts - can be one of three formats:
+///     * Type                      - Enum of Type. Adds DEF_NAME=0.
+///     * (Type,DefValue)           - Enum of Type. Adds DEF_NAME=DefValue.
+///     * (Type,UndefName,DefValue) - Enum of Type. Adds UndefName=DefValue.
+///     * (Type,UndefName,DefValue,FirstVal) - Ditto. Start enum with FirstVal.
+/// * Enums is either a variadic list or sequence of arguments:
+///     * Enum1, Enum2, ...
+///     * (Enum1)(Enum2)...
+///     where each `EnumN` can be given a Value associated with each EnumName,
+///     and may optionally specify a symbolic value label:
+///         * EnumName
+///         * (EnumName,Value)              - EnumName's code()  = Value
+///         * (EnumName,Value,"EnumValue")  - EnumName's value() = "EnumValue"
 //------------------------------------------------------------------------------
-/// NOTE: Make sure that UndefValue is distinct from other values in this enum!
-//
+/// NOTE: DefValue as well as values given to EnumName's must be distinct!
+//------------------------------------------------------------------------------
 /// Enum declaration:
 /// ```
 /// #include <utxx/enumu.hpp>
 ///
 /// UTXX_ENUMU(MyEnumT,
-///    (char,               // This is enum storage type
-///     ' '),               // This is an "UNDEFINED" value
+///    (                    // This parameter is a tuple of up to four elements:
+///     char,               //   This is enum storage type
+///     NIL,                //   Name of the undefined type
+///     ' ',                //   NIL's value
+///     'a'                 //   Value assigned to the first item (Orange)
+///    ),
+///    (Orange)             // Orange's value will be set to 'a'
 ///    (Apple, 'x', "Fuji") // Item with a value and with name string "Fuji"
 ///    (Pear,  'y')         // Item with value 'y' (name defaults to "Pear")
 /// // (Fig,   'y')         // NOTE: this would result in compile-time error!
@@ -103,23 +123,31 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             UTXX_ENUM_GET_TYPE(TYPE),                                          \
             UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
             UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
-            __VA_ARGS__)
+            UTXX_ENUM_GET_FIRST_VAL(TYPE),                                     \
+            BOOST_PP_TUPLE_ENUM(                                               \
+                BOOST_PP_IF(                                                   \
+                    BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE(__VA_ARGS__), 1),    \
+                        BOOST_PP_IF(BOOST_PP_IS_BEGIN_PARENS(__VA_ARGS__),     \
+                            (__VA_ARGS__),                                     \
+                            ((__VA_ARGS__))),                                  \
+                        (BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))))              \
+        )
 
-#define UTXX_ENUMU__(ENUM, TYPE, UNDEFINED, UndefValue, ...)                   \
+#define UTXX_ENUMU__(ENUM, TYPE, DEF_NAME, DEF_VAL, ...)                       \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
-            UNDEFINED = (UndefValue),                                          \
+            DEF_NAME = (DEF_VAL),                                              \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
-                UTXX_ENUMU_INTERNAL_GET_NAMEVAL__, _,                          \
+                UTXX_ENUM_INTERNAL_GET_NAMEVAL__, _,                           \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
         };                                                                     \
                                                                                \
         using meta_type  = std::tuple<type, std::string, std::string>;         \
                                                                                \
         explicit  ENUM(long v) noexcept : m_val(type(v))   {}                  \
-        constexpr ENUM()       noexcept : m_val(UNDEFINED) {}                  \
+        constexpr ENUM()       noexcept : m_val(DEF_NAME)  {}                  \
         constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
@@ -130,8 +158,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         static constexpr const char*   class_name() { return #ENUM;        }   \
         constexpr operator  type()     const { return m_val; }                 \
-        constexpr bool      empty()    const { return m_val == UNDEFINED;  }   \
-        void                clear()          { m_val =  UNDEFINED;         }   \
+        constexpr bool      empty()    const { return m_val == DEF_NAME;   }   \
+        void                clear()          { m_val =  DEF_NAME;          }   \
                                                                                \
         static    constexpr bool is_enum()   { return true;                }   \
         static    constexpr bool is_flags()  { return false;               }   \
@@ -148,7 +176,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         /* Returns true if the given value is a valid value for this enum */   \
         static constexpr bool valid(TYPE v)  {                                 \
-            if (v == UNDEFINED) return true;                                   \
+            if (v == DEF_NAME) return true;                                    \
             bool found = false;                                                \
             auto f = [&found, v](type t, auto&) {                              \
                 if (t == v) { found = true; return false; }                    \
@@ -164,7 +192,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             for (auto& t : metas())                                            \
                 if (!f((as_name ? std::get<1>(t) : std::get<2>(t)).c_str(),a)) \
                     return ENUM(std::get<0>(t));                               \
-            return ENUM(UNDEFINED);                                            \
+            return ENUM(DEF_NAME);                                             \
         }                                                                      \
                                                                                \
         static ENUM from_string(const std::string& a, bool a_nocase=false,     \
@@ -209,7 +237,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
     private:                                                                   \
         static const meta_type& null_meta() {                                  \
             static const meta_type s_val =                                     \
-                std::make_tuple(UNDEFINED, "UNDEFINED", "UNDEFINED");          \
+                std::make_tuple(DEF_NAME, BOOST_PP_STRINGIZE(DEF_NAME),        \
+                                          BOOST_PP_STRINGIZE(DEF_NAME));       \
             return s_val;                                                      \
         }                                                                      \
         static const size_t s_size =                                           \
@@ -226,7 +255,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         static const meta_type& meta(type n) {                                 \
             switch (n) {                                                       \
-                case UNDEFINED: return metas()[0];                             \
+                case DEF_NAME: return metas()[0];                              \
                 BOOST_PP_SEQ_FOR_EACH_I_R(1,                                   \
                     UTXX_INTERNAL_ENUMU_CASE__, _,                             \
                     BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))                 \
@@ -238,14 +267,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         type m_val;                                                            \
     }
-
-// Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
-#define UTXX_ENUMU_INTERNAL_GET_NAMEVAL__(x, _, val)                          \
-    BOOST_PP_TUPLE_ELEM(0, val)                                                \
-    BOOST_PP_IF(                                                               \
-        BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),                         \
-        = BOOST_PP_TUPLE_ELEM(1, val),                                         \
-        BOOST_PP_EMPTY())
 
 #define UTXX_INTERNAL_ENUMU_META_TUPLE__(x, _, val)                            \
     std::make_tuple(                                                           \

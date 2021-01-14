@@ -86,7 +86,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                         BOOST_PP_TUPLE_ELEM(1, val),                           \
                         BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )
 
-// Optionally enable support of BOOST serialization in enums
+// Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
+#define UTXX_ENUM_INTERNAL_GET_NAMEVAL__(x, _, val)                            \
+    BOOST_PP_TUPLE_ELEM(0, val)                                                \
+    BOOST_PP_IF(                                                               \
+        BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),                         \
+        = BOOST_PP_TUPLE_ELEM(1, val),                                         \
+        BOOST_PP_EMPTY())
+
+// Optionally enables support of BOOST serialization in enums
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
 # ifndef UTXX__ENUM_FRIEND_SERIALIZATION__
 #   include <boost/serialization/access.hpp>
