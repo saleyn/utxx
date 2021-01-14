@@ -133,12 +133,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                         (BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))))              \
         )
 
-#define UTXX_ENUMU__(ENUM, TYPE, DEF_NAME, DEF_VAL, ...)                       \
+#define UTXX_ENUMU__(ENUM, TYPE, DEF_NAME, DEF_VAL, FIRST_VAL, ...)            \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
             DEF_NAME = (DEF_VAL),                                              \
+            _START_  = FIRST_VAL-1,                                            \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
                 UTXX_ENUM_INTERNAL_GET_NAMEVAL__, _,                           \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
@@ -230,7 +231,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static void for_each(const Visitor& a_fun) {                           \
             int i=0;                                                           \
             for (auto& m : metas())                                            \
-                if (i++ && !a_fun(m))                                          \
+                if (i++ && !a_fun(std::get<0>(m), m))                          \
                     break;                                                     \
         }                                                                      \
                                                                                \
