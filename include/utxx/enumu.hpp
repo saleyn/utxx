@@ -146,6 +146,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         const char*        c_str()     const { return to_string().c_str(); }   \
         static const char* c_str(type a)     { return to_string(a).c_str();}   \
                                                                                \
+        /* Returns true if the given value is a valid value for this enum */   \
+        static constexpr bool valid(TYPE v)  {                                 \
+            if (v == UNDEFINED) return true;                                   \
+            bool found = false;                                                \
+            auto f = [&found, v](type t, auto&) {                              \
+                if (t == v) { found = true; return false; }                    \
+                return true;                                                   \
+            };                                                                 \
+            for_each(f);                                                       \
+            return found;                                                      \
+        }                                                                      \
+                                                                               \
         static ENUM                                                            \
         from_string(const char* a, bool a_nocase=false, bool as_name=false)  { \
             auto f = a_nocase ? &strcasecmp : &strcmp;                         \

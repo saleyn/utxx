@@ -183,6 +183,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         const char*        c_str()     const { return to_string().c_str(); }   \
         static const char* c_str(type a)     { return to_string(a).c_str();}   \
                                                                                \
+        static constexpr bool valid(TYPE v)  { return v == UNDEFINED ||        \
+                                                     (v >= begin() &&          \
+                                                      v <  end());    }        \
         static ENUM                                                            \
         from_string(const char* a, bool nocase=false, bool as_name=false)  {   \
             auto f = nocase  ? &strcasecmp : &strcmp;                          \

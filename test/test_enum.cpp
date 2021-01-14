@@ -58,6 +58,7 @@ UTXX_ENUM( mm_enumz6,(char,Nil,-3),(A));
 UTXX_ENUM( mm_enumz7,(char,Nil,-3),(A,"a"));
 UTXX_ENUMV(mmSideT,  (int8_t,  -1), (BID)(ASK)(SIDES));
 UTXX_ENUMV(mm_enumv, (char,   ' '), (A, 'a', "AAA")(BB, 'b')(CCC));
+UTXX_ENUMV(mm_enumu, (char,   ' '), (A, 'a', "AAA")(BB, 'b')(CCC));
 UTXX_ENUM_FLAGS(mm_flags, uint8_t,
     A,
     B,
@@ -117,6 +118,13 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK_EQUAL("B", mm_enum::to_string(mm_enum::B));
     BOOST_CHECK_EQUAL("C", mm_enum::to_string(mm_enum::C));
     BOOST_CHECK_EQUAL("A", mm_enum::from_string("A").to_string());
+
+    BOOST_CHECK(!mm_enumz::valid(-2));
+    BOOST_CHECK( mm_enumz::valid(-1));
+    BOOST_CHECK( mm_enumz::valid(0));
+    BOOST_CHECK( mm_enumz::valid(1));
+    BOOST_CHECK( mm_enumz::valid(2));
+    BOOST_CHECK(!mm_enumz::valid(3));
 
     BOOST_CHECK_EQUAL(mm_enum5::Nil,         mm_enum5(-2));
     BOOST_CHECK_EQUAL(mm_enum5::A,           mm_enum5(0));
@@ -210,6 +218,18 @@ BOOST_AUTO_TEST_CASE( test_enumv )
     BOOST_CHECK_EQUAL("CCC",         mm_enumv(mm_enumv::CCC).name());
     BOOST_CHECK_EQUAL("CCC",         mm_enumv(mm_enumv::CCC).value());
     BOOST_CHECK_EQUAL('c',           mm_enumv(mm_enumv::CCC).code());
+
+    BOOST_CHECK( mm_enumv::valid(' '));
+    BOOST_CHECK( mm_enumv::valid('a'));
+    BOOST_CHECK( mm_enumv::valid('b'));
+    BOOST_CHECK( mm_enumv::valid('c'));
+    BOOST_CHECK(!mm_enumv::valid('d'));
+
+    BOOST_CHECK( mm_enumu::valid(' '));
+    BOOST_CHECK( mm_enumu::valid('a'));
+    BOOST_CHECK( mm_enumu::valid('b'));
+    BOOST_CHECK( mm_enumu::valid('c'));
+    BOOST_CHECK(!mm_enumu::valid('d'));
 
     {
         mm_enumv val = mm_enumv::from_string("BB");
