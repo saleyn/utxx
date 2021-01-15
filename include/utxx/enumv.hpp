@@ -165,8 +165,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
             explicit, /**/)                                                    \
         constexpr ENUM(TYPE v) noexcept : m_val(type(v))   {}                  \
-        BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
-            explicit, /**/)                                                    \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
         ENUM(ENUM const&)            = default;                                \
