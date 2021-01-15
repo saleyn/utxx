@@ -53,7 +53,7 @@ inline long getenv(const char* a_name, long a_default) {
 /// Return effective username
 inline std::string username() {
     char buf[L_cuserid];
-    return unlikely(cuserid(buf) == nullptr) ? "" : buf;
+    return UNLIKELY(cuserid(buf) == nullptr) ? "" : buf;
 }
 
 } // namespace os
