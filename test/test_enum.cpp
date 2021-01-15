@@ -80,6 +80,9 @@ UTXX_ENUM(mm_large, int,
     A48, A49, A50, A51, A52, A53, A54, A55, A56, A57, A58, A59, A60, A61, A62,
     A63, A64);
 
+UTXX_ENUMU(mm_enumu1, uint8_t, (A,  (uint8_t)1)  (B,  (uint8_t)2));
+UTXX_ENUMU(mm_enumu2, uint8_t, (A, ((uint8_t)1)) (B, ((uint8_t)2)));
+
 // Define an enum my_enum2 inside a struct:
 struct oh_mm { UTXX_ENUM(mm_enum2, char, X, Y); };
 

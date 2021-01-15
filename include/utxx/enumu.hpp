@@ -83,6 +83,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ///     * (Type,DefValue)           - Enum of Type. Adds DEF_NAME=DefValue.
 ///     * (Type,UndefName,DefValue) - Enum of Type. Adds UndefName=DefValue.
 ///     * (Type,UndefName,DefValue,FirstVal) - Ditto. Start enum with FirstVal.
+///     * (Type,UndefName,DefValue,FirstVal,Explicit)
+///         - Ditto. Boolean Explicit (default=true) enforces explicit
+///           conversion from Type.
 /// * Enums is either a variadic list or sequence of arguments:
 ///     * Enum1, Enum2, ...
 ///     * (Enum1)(Enum2)...
@@ -124,6 +127,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             UTXX_ENUM_GET_UNDEF_NAME(TYPE),                                    \
             UTXX_ENUM_GET_UNDEF_VAL(TYPE),                                     \
             UTXX_ENUM_GET_FIRST_VAL(TYPE),                                     \
+            UTXX_ENUM_GET_EXPLICIT(TYPE),                                      \
             BOOST_PP_TUPLE_ENUM(                                               \
                 BOOST_PP_IF(                                                   \
                     BOOST_PP_EQUAL(BOOST_PP_VARIADIC_SIZE(__VA_ARGS__), 1),    \
@@ -133,7 +137,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                         (BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__))))              \
         )
 
-#define UTXX_ENUMU__(ENUM, TYPE, DEF_NAME, DEF_VAL, FIRST_VAL, ...)            \
+#define UTXX_ENUMU__(ENUM, TYPE, DEF_NAME, DEF_VAL, FIRST_VAL, EXPLICIT, ...)  \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
@@ -147,9 +151,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         using meta_type  = std::tuple<type, std::string, std::string>;         \
                                                                                \
-        explicit  ENUM(long v) noexcept : m_val(type(v))   {}                  \
         constexpr ENUM()       noexcept : m_val(DEF_NAME)  {}                  \
         constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
+        BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
+            explicit, BOOST_PP_EMPTY)                                          \
+        constexpr ENUM(TYPE v) noexcept : m_val(type(v))   {}                  \
+        BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
+            explicit, BOOST_PP_EMPTY)                                          \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
         ENUM(ENUM const&)            = default;                                \

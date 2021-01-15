@@ -46,35 +46,55 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //   (char, Undef, 10, 0) // Type=char, Undef=10, First=0
 //
 // The following three macros get the {Type, Name, Value} accordingly:
-#define UTXX_ENUM_GET_TYPE(type)       UTXX_ENUM_INTERNAL_1__(0, type)
-#define UTXX_ENUM_GET_UNDEF_NAME(type) UTXX_ENUM_INTERNAL_1__(1, type)
-#define UTXX_ENUM_GET_UNDEF_VAL(type)  UTXX_ENUM_INTERNAL_1__(2, type)
-#define UTXX_ENUM_GET_FIRST_VAL(type)  UTXX_ENUM_INTERNAL_1__(3, type)
+#define UTXX_ENUM_GET_TYPE(type)       UTXX_ENUM_INTERNAL__(0, type)
+#define UTXX_ENUM_GET_UNDEF_NAME(type) UTXX_ENUM_INTERNAL__(1, type)
+#define UTXX_ENUM_GET_UNDEF_VAL(type)  UTXX_ENUM_INTERNAL__(2, type)
+#define UTXX_ENUM_GET_FIRST_VAL(type)  UTXX_ENUM_INTERNAL__(3, type)
+#define UTXX_ENUM_GET_EXPLICIT(type)   UTXX_ENUM_INTERNAL__(4, type)
 
-#define UTXX_ENUM_INTERNAL_1__(N, arg)                                         \
+// BOOST_PP_BOOL(X) Helpers to convert true to 1 and false to 0
+#define UTXX_PP_BOOL_TO_BIT(x) UTXX_PP_BOOL_ ## x
+#define UTXX_PP_BOOL_true  1
+#define UTXX_PP_BOOL_false 0
+
+#define UTXX_ENUM_INTERNAL__(N, arg)                                           \
     BOOST_PP_IIF(                                                              \
         BOOST_PP_IS_BEGIN_PARENS(arg),                                         \
-        UTXX_ENUM_INTERNAL_2__(N, arg),                                        \
-        UTXX_ENUM_INTERNAL_2__(N, (arg, UNDEFINED, 0, 1)))
+        UTXX_ENUM_INTERNAL_0__(N, arg),                                        \
+        UTXX_ENUM_INTERNAL_0__(N, (arg, UNDEFINED, 0, 1, true)))
 
-#define UTXX_ENUM_INTERNAL_2__(N, arg) \
-        UTXX_ENUM_INTERNAL_3__(N, BOOST_PP_TUPLE_SIZE(arg), arg)               \
+#define UTXX_ENUM_INTERNAL_0__(N, arg) \
+        UTXX_ENUM_INTERNAL_2__(N, BOOST_PP_TUPLE_SIZE(arg), arg)               \
+
+#define UTXX_ENUM_INTERNAL_2__(N, Sz, arg)                                     \
+    BOOST_PP_IIF(BOOST_PP_GREATER(Sz,2),                                       \
+        UTXX_ENUM_INTERNAL_3__(N, Sz, arg),                                    \
+        BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg),                  \
+                                UNDEFINED,                                     \
+                                UTXX_ENUM_GET_ELEM__(1, arg),                  \
+                                (UTXX_ENUM_GET_ELEM__(1, arg)+1),              \
+                                true)))
 
 #define UTXX_ENUM_INTERNAL_3__(N, Sz, arg)                                     \
-    BOOST_PP_IIF(BOOST_PP_GREATER(Sz,2),                                       \
-        BOOST_PP_IIF(BOOST_PP_GREATER(Sz,3),                                   \
-            BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(arg), _, _, _)),       \
-            BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg), \
-                                    UTXX_ENUM_GET_ELEM__(1, arg), \
-                                    UTXX_ENUM_GET_ELEM__(2, arg), \
-                                    (UTXX_ENUM_GET_ELEM__(2, arg)+1)))), \
-        BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg), \
-                                UNDEFINED,                                     \
-                                UTXX_ENUM_GET_ELEM__(1, arg), \
-                                (UTXX_ENUM_GET_ELEM__(1, arg)+1))))
+    BOOST_PP_IIF(BOOST_PP_GREATER(Sz,3),                                       \
+        UTXX_ENUM_INTERNAL_4__(N, Sz, arg),                                    \
+        BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg),                  \
+                                UTXX_ENUM_GET_ELEM__(1, arg),                  \
+                                UTXX_ENUM_GET_ELEM__(2, arg),                  \
+                               (UTXX_ENUM_GET_ELEM__(2, arg)+1),               \
+                                true)))
 
-#define UTXX_ENUM_GET_ELEM__(N, T) \
-    BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(T), _, _, _))
+#define UTXX_ENUM_INTERNAL_4__(N, Sz, arg)                                     \
+    BOOST_PP_IIF(BOOST_PP_GREATER(Sz,4),                                       \
+        BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(arg), _, _, _, _)),        \
+        BOOST_PP_TUPLE_ELEM(N, (UTXX_ENUM_GET_ELEM__(0, arg),                  \
+                                UTXX_ENUM_GET_ELEM__(1, arg),                  \
+                                UTXX_ENUM_GET_ELEM__(2, arg),                  \
+                                UTXX_ENUM_GET_ELEM__(3, arg),                  \
+                                true)))
+
+#define UTXX_ENUM_GET_ELEM__(N, T)                                             \
+    BOOST_PP_TUPLE_ELEM(N, (BOOST_PP_TUPLE_ENUM(T), _, _, _, _))
 
 // Internal macros for supporting BOOST_PP_SEQ_TRANSFORM
 #define UTXX_ENUM_INTERNAL_GET_0__(x, _, val) BOOST_PP_TUPLE_ELEM(0, val)

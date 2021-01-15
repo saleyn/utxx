@@ -392,14 +392,10 @@ namespace detail {
 
 } // namespace detail
 
-/**
- * \brief Generic buffer providing heap space for I/O data.
- */
-typedef detail::basic_dynamic_io_buffer<std::allocator<char> > dynamic_io_buffer;
+/// Generic buffer providing heap space for I/O data.
+using dynamic_io_buffer = detail::basic_dynamic_io_buffer<std::allocator<char>>;
 
-/**
- * \brief A buffer providing space for input and output I/O operations.
- */
+/// A buffer providing space for input and output I/O operations.
 template <int InBufSize, int OutBufSize = InBufSize>
 struct io_buffer {
     basic_io_buffer<InBufSize>  in;

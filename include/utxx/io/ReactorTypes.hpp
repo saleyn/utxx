@@ -46,8 +46,6 @@ namespace io   {
 
 class Reactor;
 
-using utxx::src_info;
-using dynamic_io_buffer = utxx::dynamic_io_buffer;
 //using dynamic_io_buffer = utxx::detail::basic_dynamic_io_buffer
 //                          <boost::alignment::aligned_allocator<char, 512>>;
 
