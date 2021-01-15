@@ -82,6 +82,10 @@ UTXX_ENUM(mm_large, int,
 
 UTXX_ENUMU(mm_enumu1, uint8_t, (A,  (uint8_t)1)  (B,  (uint8_t)2));
 UTXX_ENUMU(mm_enumu2, uint8_t, (A, ((uint8_t)1)) (B, ((uint8_t)2)));
+UTXX_ENUMU(mm_enumu3, (int, NULL_VALUE, (uint8_t)255, (uint8_t)255+1, false),
+    (B, (uint8_t)0)
+    (P, (uint8_t)1)
+);
 
 // Define an enum my_enum2 inside a struct:
 struct oh_mm { UTXX_ENUM(mm_enum2, char, X, Y); };

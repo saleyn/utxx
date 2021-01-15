@@ -40,7 +40,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/seq/transform.hpp>
 #include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
-#include <boost/preprocessor/facilities/empty.hpp>
 #include <boost/preprocessor/tuple/push_back.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <utxx/detail/enum_helper.hpp>
@@ -154,10 +153,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         constexpr ENUM()       noexcept : m_val(DEF_NAME)  {}                  \
         constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
         BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
-            explicit, BOOST_PP_EMPTY)                                          \
+            explicit, /**/)                                                    \
         constexpr ENUM(TYPE v) noexcept : m_val(type(v))   {}                  \
         BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
-            explicit, BOOST_PP_EMPTY)                                          \
+            explicit, /**/)                                                    \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
         ENUM(ENUM const&)            = default;                                \
