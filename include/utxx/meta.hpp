@@ -291,4 +291,12 @@ struct remove_cvref {
     using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 };
 
+//-----------------------------------------------------------------------------
+// Check if two types are the same, ignore const, volatile, and ref modifiers
+//-----------------------------------------------------------------------------
+ttemplate <typename T, typename U>
+inline bool is_same() {
+  return std::is_same<typename remove_cvref<T>::type, typename remove_cvref<U>::type>::value;
+};
+
 } // namespace utxx

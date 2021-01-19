@@ -87,6 +87,11 @@ UTXX_ENUMU(mm_enumu3, (int, NULL_VALUE, (uint8_t)255, (uint8_t)255+1, false),
     (P, (uint8_t)1)
 );
 
+int pass_enumu3_arg(mm_enumu3 a)
+{
+    return a.code();
+}
+
 // Define an enum my_enum2 inside a struct:
 struct oh_mm { UTXX_ENUM(mm_enum2, char, X, Y); };
 
@@ -197,6 +202,20 @@ BOOST_AUTO_TEST_CASE( test_enum )
     BOOST_CHECK(oh_mm::mm_enum2::X == oh_mm::mm_enum2::from_string("X"));
     BOOST_CHECK(oh_mm::mm_enum2::Y == oh_mm::mm_enum2::from_string("Y"));
     BOOST_CHECK(oh_mm::mm_enum2::UNDEFINED == oh_mm::mm_enum2::from_string("D"));
+
+    {
+        mm_enumu3 en1(0);
+        mm_enumu3 en3(mm_enumu3::NULL_VALUE);
+
+        en1 = 1;
+
+        auto fun = [](mm_enumu3 v) { return v == mm_enumu3(1); };
+        auto ok  = fun(en1);
+        BOOST_CHECK(ok);
+
+        int res = pass_enumu3_arg(en3);
+        BOOST_CHECK_EQUAL(1, res);
+    }
 }
 
 BOOST_AUTO_TEST_CASE( test_enumv )

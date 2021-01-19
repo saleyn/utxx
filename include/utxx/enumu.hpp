@@ -151,10 +151,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         using meta_type  = std::tuple<type, std::string, std::string>;         \
                                                                                \
         constexpr ENUM()       noexcept : m_val(DEF_NAME)  {}                  \
-        constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
         BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
             explicit, /**/)                                                    \
         constexpr ENUM(TYPE v) noexcept : m_val(type(v))   {}                  \
+        constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
         ENUM(ENUM const&)            = default;                                \
@@ -162,23 +162,23 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         ENUM& operator=(ENUM const&) = default;                                \
         ENUM& operator=(ENUM&&)      = default;                                \
                                                                                \
-        static constexpr const char*   class_name() { return #ENUM;        }   \
-        constexpr operator  type()     const { return m_val; }                 \
-        constexpr bool      empty()    const { return m_val == DEF_NAME;   }   \
-        void                clear()          { m_val =  DEF_NAME;          }   \
+        static constexpr const char* class_name() { return #ENUM;            } \
+        constexpr operator  type()   const { return m_val;                   } \
+        constexpr bool      empty()  const { return m_val == DEF_NAME;       } \
+        void                clear()        { m_val =  DEF_NAME;              } \
                                                                                \
-        static    constexpr bool is_enum()   { return true;                }   \
-        static    constexpr bool is_flags()  { return false;               }   \
+        static    constexpr bool is_enum() { return true;                    } \
+        static    constexpr bool is_flags(){ return false;                   } \
                                                                                \
         const std::string& name()    const { return std::get<1>(meta(m_val));} \
         const std::string& value()   const { return std::get<2>(meta(m_val));} \
-        TYPE               code()    const { return TYPE(m_val);           }   \
+        TYPE               code()    const { return TYPE(m_val);             } \
                                                                                \
-        const std::string& to_string() const { return value();             }   \
+        const std::string& to_string() const { return value();               } \
         static const std::string&                                              \
-                           to_string(type a) { return ENUM(a).to_string(); }   \
-        const char*        c_str()     const { return to_string().c_str(); }   \
-        static const char* c_str(type a)     { return to_string(a).c_str();}   \
+                           to_string(type a) { return ENUM(a).to_string();   } \
+        const char*        c_str()     const { return to_string().c_str();   } \
+        static const char* c_str(type a)     { return to_string(a).c_str();  } \
                                                                                \
         /* Returns true if the given value is a valid value for this enum */   \
         static constexpr bool valid(TYPE v)  {                                 \

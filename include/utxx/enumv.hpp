@@ -161,10 +161,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         };                                                                     \
                                                                                \
         constexpr ENUM()       noexcept : m_val(DEF_NAME)  {}                  \
-        constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
         BOOST_PP_IF(UTXX_PP_BOOL_TO_BIT(EXPLICIT),                             \
             explicit, /**/)                                                    \
         constexpr ENUM(TYPE v) noexcept : m_val(type(v))   {}                  \
+        constexpr ENUM(type v) noexcept : m_val(v)         {}                  \
                                                                                \
         ENUM(ENUM&&)                 = default;                                \
         ENUM(ENUM const&)            = default;                                \
