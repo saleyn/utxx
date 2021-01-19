@@ -87,6 +87,15 @@ UTXX_ENUMU(mm_enumu3, (int, NULL_VALUE, (uint8_t)255, (uint8_t)255+1, false),
     (P, (uint8_t)1)
 );
 
+UTXX_ENUMU
+(mm_enumu4, (char, NULL_VALUE, (char)0, (char)0+1, false),
+    (A, (char)48)
+    (B, (char)49)
+    (C, (char)69)
+    (D, (char)70)
+    (E, (char)74)
+);
+
 int pass_enumu3_arg(mm_enumu3 a)
 {
     return a.code();
