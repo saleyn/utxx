@@ -156,14 +156,27 @@ public:
         , m_idx(0)
     {}
 
+    /*
     /// Checks if \a a_opt is present at i-th position in the m_argv list
     /// @param a_opt name of the option to match
     bool test(const char* a_opt) const {
         return strcmp(m_argv[m_idx], a_opt) == 0;
     }
+    */
 
+    // NOTE: The functions below are intentionally not implementing
+    // assignment of default NULL argument! Otherwise get ambiguous
+    // method calls!
     bool match(const std::string& a_opt) {
         return match({ a_opt }, nullptr);
+    }
+
+    bool match(const std::string& a_opt, const std::string& a_long) {
+        return match({ a_opt, a_long }, nullptr);
+    }
+
+    bool match(std::initializer_list<std::string> a_opt) {
+        return match(a_opt, nullptr);
     }
 
     /// Match current option against \a a_short name or \a a_long name
@@ -183,8 +196,8 @@ public:
         return match({ a_short, a_long }, a_fun);
     }
 
-    template <typename T = std::nullptr_t>
-    bool match(const std::string& a_short, const std::string& a_long, T* a_val = nullptr) {
+    template <typename T>
+    bool match(const std::string& a_short, const std::string& a_long, T* a_val) {
         return match({ a_short, a_long }, a_val);
     }
 

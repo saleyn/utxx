@@ -73,7 +73,7 @@ BOOST_AUTO_TEST_CASE( test_get_option )
             e_found = true;
             continue;
         }
-        if (opts.match({"-F"})) {
+        if (opts.match({"-F", "-FF"})) {
             f_found = true;
             continue;
         }
