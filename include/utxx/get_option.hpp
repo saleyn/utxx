@@ -146,7 +146,8 @@ class opts_parser {
 public:
     template <typename Char = const char>
     opts_parser(int a_argc, Char** a_argv)
-        : m_argc(a_argc), m_argv(const_cast<const char**>(a_argv)), m_idx(0)
+        : m_argc(a_argc), m_argv(const_cast<const char**>(a_argv))
+        , m_idx(0)
     {}
 
     /// Checks if \a a_opt is present at i-th position in the m_argv list
@@ -156,8 +157,7 @@ public:
     }
 
     bool match(const std::string& a_short, const std::string& a_long) {
-        return match_opt(m_argc, m_argv, nullptr, a_short, m_idx)
-            || match_opt(m_argc, m_argv, nullptr, a_long,  m_idx);
+        return match({ a_short, a_long }, nullptr);
     }
 
     /// Match current option against \a a_short name or \a a_long name
@@ -166,29 +166,50 @@ public:
     /// \code
     /// opts_parser opts(argc, argv);
     /// while (opts.next()) {
-    ///     if (opts.match("-a", "", &a)) continue;
+    ///     if (opts.match("-a", "",        &a)) continue;
+    ///     if (opts.match({"-b"},          &b)) continue;
+    ///     if (opts.match({"-c", "--cat"}, &c)) continue;
     ///     ...
     /// }
     /// \endcode
     template <typename Setter>
     bool match(const std::string& a_short, const std::string& a_long, const Setter& a_fun) {
-        return match_opt(m_argc, m_argv, a_fun, a_short, m_idx)
-            || match_opt(m_argc, m_argv, a_fun, a_long,  m_idx);
+        return match({ a_short, a_long }, a_fun);
     }
 
     template <typename T>
     bool match(const std::string& a_short, const std::string& a_long, T* a_val) {
-        auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
-        return match(a_short, a_long, setter);
+        return match({ a_short, a_long }, a_val);
     }
 
     template <typename Setter, typename T>
     bool match(const std::string& a_short, const std::string& a_long,
                const Setter& a_convert, T* a_val) {
+        return match({ a_short, a_long }, a_convert, a_val);
+    }
+
+    template <typename Setter>
+    bool match(std::initializer_list<std::string> a_opt, const Setter& a_fun) {
+        for (auto& opt : a_opt)
+            if (match_opt(m_argc, m_argv, a_fun, opt, m_idx))
+                return true;
+        return false;
+    }
+
+    template <typename T>
+    bool match(std::initializer_list<std::string> a_opt, T* a_val) {
+        auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
+        return match(a_opt, setter);
+    }
+
+    template <typename Setter, typename T>
+    bool match(std::initializer_list<std::string> a_opt, const Setter& a_convert, T* a_val) {
         assert(a_val);
         auto setter = [&](const char* a) { *a_val = a_convert(a); };
-        return match_opt(m_argc, m_argv, setter, a_short, m_idx)
-            || match_opt(m_argc, m_argv, setter, a_long,  m_idx);
+        for (auto& opt : a_opt)
+            if (match_opt(m_argc, m_argv, setter, opt, m_idx))
+                return true;
+        return false;
     }
 
     /// Find an option identified either by \a a_short name or \a a_long name
@@ -196,11 +217,16 @@ public:
     /// Current fundtion doesn't change internal state variables of this class
     template <typename T>
     bool find(const std::string& a_short, const std::string& a_long, T* a_val) const {
+        return find({a_short, a_long}, a_val);
+    }
+
+    template <typename T>
+    bool find(std::initializer_list<std::string> a_opt, T* a_val) const {
         auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
         for (int i=1; i < m_argc; ++i)
-            if (match_opt(m_argc, m_argv, setter, a_short, i)
-            ||  match_opt(m_argc, m_argv, setter, a_long,  i))
-                return true;
+            for (auto& s : a_opt)
+                if (match_opt(m_argc, m_argv, setter, s, i))
+                    return true;
         return false;
     }
 
@@ -209,6 +235,7 @@ public:
     void            reset()        { m_idx = 0;               }
     bool            next()         { return ++m_idx < m_argc; }
     bool            end()    const { return m_idx >= m_argc;  }
+    int             index()  const { return m_idx;            }
 
     int             argc()   const { return m_argc; }
     const char**    argv()   const { return m_argv; }

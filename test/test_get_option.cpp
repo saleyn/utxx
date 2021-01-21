@@ -39,8 +39,9 @@ using namespace utxx;
 
 BOOST_AUTO_TEST_CASE( test_get_option )
 {
-    const char* argv[] = {"test", "-a", "10", "--out=file", "-t", "true",
-                          "-f", "-", "-x", "--", "-y", "/temp", "-l", "debug"};
+    const char* argv[] = {"test", "-a", "10", "--abc", "20", "--out=file", "-t", "true",
+                          "-f", "-", "-x", "--", "-y", "/temp",
+                          "-l", "debug", "--log", "debug"};
     int         argc   = std::extent< decltype(argv) >::value;
 
     int         a;
@@ -62,11 +63,15 @@ BOOST_AUTO_TEST_CASE( test_get_option )
             BOOST_CHECK_EQUAL(10, a);
             continue;
         }
+        if (opts.match({"-A", "--abc"}, &a)) {
+            BOOST_CHECK_EQUAL(20, a);
+            continue;
+        }
         if (opts.match("", "--out", &out)) {
             BOOST_CHECK_EQUAL("file", out);
             continue;
         }
-        if (opts.match("-t", "", &t)) {
+        if (opts.match({"-t"}, &t)) {
             BOOST_CHECK(t); continue;
         }
         if (opts.match("-f", "", &out)) {
@@ -83,11 +88,20 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         }
         if (opts.match("-l","",logger::parse_log_level, &ll)) {
             BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
+            BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
+            continue;
+        }
+        if (opts.match({"-L","--log"},logger::parse_log_level, &ll)) {
+            BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
             continue;
         }
         BOOST_CHECK(false);
     }
 
     BOOST_CHECK(opts.find("-a", "", &a));
+    BOOST_CHECK_EQUAL(10, a);
+    BOOST_CHECK(opts.find({"-a"}, &a));
+    BOOST_CHECK_EQUAL(10, a);
+    BOOST_CHECK(opts.find({"-a", "--ABC"}, &a));
     BOOST_CHECK_EQUAL(10, a);
 }
