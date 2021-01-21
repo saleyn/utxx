@@ -47,7 +47,7 @@ inline long env(const char* a_var, long a_default) {
 
 namespace {
     template <typename T>
-    typename std::enable_if<!std::is_same<T, bool>::value, T>::type
+    std::enable_if_t<!std::is_same_v<T, bool> && !std::is_same_v<T, std::nullptr_t>, T>
     convert(const char* a) {
         try {
             return boost::lexical_cast<T>(a);
@@ -58,12 +58,18 @@ namespace {
     }
 
     template <typename T>
-    typename std::enable_if<std::is_same<T, bool>::value, T>::type
+    std::enable_if_t<std::is_same_v<T, bool>, T>
     convert(const char* a) {
         return !(strcasecmp(a, "false") == 0 ||
                  strcasecmp(a,   "off") == 0 ||
                  strcasecmp(a,    "no") == 0 ||
                  strcmp    (a,     "0") == 0);
+    }
+
+    template <typename T>
+    std::enable_if_t<std::is_same_v<T, std::nullptr_t>, T>
+    convert(const char* a) {
+        return nullptr;
     }
 
     template <typename Char = const char>
@@ -152,12 +158,12 @@ public:
 
     /// Checks if \a a_opt is present at i-th position in the m_argv list
     /// @param a_opt name of the option to match
-    bool match(const char* a_opt) const {
+    bool test(const char* a_opt) const {
         return strcmp(m_argv[m_idx], a_opt) == 0;
     }
 
-    bool match(const std::string& a_short, const std::string& a_long) {
-        return match({ a_short, a_long }, nullptr);
+    bool match(const std::string& a_opt) {
+        return match({ a_opt }, nullptr);
     }
 
     /// Match current option against \a a_short name or \a a_long name
@@ -177,8 +183,8 @@ public:
         return match({ a_short, a_long }, a_fun);
     }
 
-    template <typename T>
-    bool match(const std::string& a_short, const std::string& a_long, T* a_val) {
+    template <typename T = std::nullptr_t>
+    bool match(const std::string& a_short, const std::string& a_long, T* a_val = nullptr) {
         return match({ a_short, a_long }, a_val);
     }
 
@@ -205,7 +211,7 @@ public:
     template <typename Setter, typename T>
     bool match(std::initializer_list<std::string> a_opt, const Setter& a_convert, T* a_val) {
         assert(a_val);
-        auto setter = [&](const char* a) { *a_val = a_convert(a); };
+        auto setter = [&](const char* a) { if (a_val) *a_val = a_convert(a); };
         for (auto& opt : a_opt)
             if (match_opt(m_argc, m_argv, setter, opt, m_idx))
                 return true;
@@ -215,13 +221,18 @@ public:
     /// Find an option identified either by \a a_short name or \a a_long name
     ///
     /// Current fundtion doesn't change internal state variables of this class
-    template <typename T>
-    bool find(const std::string& a_short, const std::string& a_long, T* a_val) const {
+    template <typename T = std::nullptr_t>
+    bool find(const std::string& a_short, T* a_val = nullptr) const {
+        return find({a_short}, a_val);
+    }
+
+    template <typename T = std::nullptr_t>
+    bool find(const std::string& a_short, const std::string& a_long, T* a_val = nullptr) const {
         return find({a_short, a_long}, a_val);
     }
 
-    template <typename T>
-    bool find(std::initializer_list<std::string> a_opt, T* a_val) const {
+    template <typename T = std::nullptr_t>
+    bool find(std::initializer_list<std::string> a_opt, T* a_val = nullptr) const {
         auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
         for (int i=1; i < m_argc; ++i)
             for (auto& s : a_opt)

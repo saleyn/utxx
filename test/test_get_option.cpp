@@ -40,7 +40,7 @@ using namespace utxx;
 BOOST_AUTO_TEST_CASE( test_get_option )
 {
     const char* argv[] = {"test", "-a", "10", "--abc", "20", "--out=file", "-t", "true",
-                          "-f", "-", "-x", "--", "-y", "/temp",
+                          "-f", "-", "-x", "--", "-y", "/temp", "-e", "-F",
                           "-l", "debug", "--log", "debug"};
     int         argc   = std::extent< decltype(argv) >::value;
 
@@ -56,6 +56,8 @@ BOOST_AUTO_TEST_CASE( test_get_option )
     BOOST_CHECK(get_opt(argc, argv, &t, "-t"));
     BOOST_CHECK(t);
 
+    bool e_found = false, f_found = false;
+
     opts_parser opts(argc, argv);
 
     while (opts.next()) {
@@ -65,6 +67,14 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         }
         if (opts.match({"-A", "--abc"}, &a)) {
             BOOST_CHECK_EQUAL(20, a);
+            continue;
+        }
+        if (opts.match("-e")) {
+            e_found = true;
+            continue;
+        }
+        if (opts.match({"-F"})) {
+            f_found = true;
             continue;
         }
         if (opts.match("", "--out", &out)) {
@@ -98,6 +108,10 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         BOOST_CHECK(false);
     }
 
+    BOOST_CHECK(e_found);
+    BOOST_CHECK(f_found);
+    BOOST_CHECK(opts.find("-a"));
+    BOOST_CHECK(opts.find({"-a"}));
     BOOST_CHECK(opts.find("-a", "", &a));
     BOOST_CHECK_EQUAL(10, a);
     BOOST_CHECK(opts.find({"-a"}, &a));
