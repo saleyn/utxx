@@ -196,6 +196,12 @@ public:
     /// Current write pointer.
     const char* wr_ptr()    const { return m_wr_ptr; }
     char*       wr_ptr()          { return m_wr_ptr; }
+    /// Restore the value of the write pointer
+    void        wr_ptr(char* ptr) {
+      assert(ptr >= m_rd_ptr);
+      m_wr_ptr = ptr;
+    }
+
 
     /// End of buffer space.
     const char* end()       const { return m_end;    }
@@ -333,8 +339,9 @@ public:
     /// Returns true if the buffer space was dynamically allocated.
     bool        allocated() const { return super::allocated(); }
 
-    T*          wr_ptr()        { return reinterpret_cast<T*>(super::m_wr_ptr); }
-    const T*    wr_ptr()  const { return reinterpret_cast<T*>(super::m_wr_ptr); }
+    T*          wr_ptr()        { return reinterpret_cast<T*>(this->m_wr_ptr);  }
+    const T*    wr_ptr()  const { return reinterpret_cast<T*>(this->m_wr_ptr);  }
+    void        wr_ptr(T* p)    { this->wr_ptr(reinterpret_cast<char*>(p));     }
 
     T*          rd_ptr()        { return reinterpret_cast<T*>(super::m_rd_ptr); }
     const T*    rd_ptr()  const { return reinterpret_cast<const T*>(super::m_rd_ptr); }
