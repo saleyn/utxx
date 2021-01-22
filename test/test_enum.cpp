@@ -96,6 +96,12 @@ UTXX_ENUMU
     (E, (char)74)
 );
 
+UTXX_ENUMU
+(mm_enumu5, (uint8_t, NULL_VALUE, (uint8_t)255, (uint8_t)255+1),
+    (A, (uint8_t)0)
+    (B, (uint8_t)1)
+);
+
 int pass_enumu3_arg(mm_enumu3 a)
 {
     return a.code();
@@ -214,7 +220,6 @@ BOOST_AUTO_TEST_CASE( test_enum )
 
     {
         mm_enumu3 en1(0);
-        mm_enumu3 en3(mm_enumu3::NULL_VALUE);
 
         en1 = 1;
 
@@ -222,8 +227,16 @@ BOOST_AUTO_TEST_CASE( test_enum )
         auto ok  = fun(en1);
         BOOST_CHECK(ok);
 
+        mm_enumu3 en3(mm_enumu3::NULL_VALUE);
+        BOOST_CHECK_EQUAL(mm_enumu3::NULL_VALUE, en3);
+        BOOST_CHECK_EQUAL(255, int(mm_enumu3::NULL_VALUE));
         int res = pass_enumu3_arg(en3);
-        BOOST_CHECK_EQUAL(1, res);
+        BOOST_CHECK_EQUAL(255, res);
+
+        auto en5 = mm_enumu5::from_string("A");
+        BOOST_CHECK(mm_enumu5::A == en5);
+        en5 = mm_enumu5(0);
+        BOOST_CHECK(mm_enumu5::A == en5);
     }
 }
 

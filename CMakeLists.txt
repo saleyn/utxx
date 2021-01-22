@@ -80,6 +80,7 @@ add_definitions(
 	-Wno-unused-local-typedefs
   -Wno-deprecated-declarations
 	-DBOOST_SYSTEM_NO_DEPRECATED
+  -DBOOST_ALLOW_DEPRECATED_HEADERS
 )
 
 message(STATUS "Configuring for the "
