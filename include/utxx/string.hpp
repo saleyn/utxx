@@ -707,4 +707,107 @@ namespace utxx {
     using short_string = basic_short_string<>;
     using ustring      = std::basic_string<uint8_t>;
 
+  //----------------------------------------------------------------------------
+  /// Compact string class storing up to \a N-2 characters
+  //----------------------------------------------------------------------------
+  /// The (N-1)'s character is reserved to store string size
+  /// The stored value is '\0' terminated
+  //----------------------------------------------------------------------------
+  template <int N>
+  struct basic_fixed_string {
+    static_assert(N > 2 && N <= 128, "Invalid string size");
+
+    /// Max length that the string can hold
+    static constexpr int MaxSize() { return N-2; }
+
+    basic_fixed_string() { m_data[0] = m_data[N-1] = '\0'; }
+    basic_fixed_string(const std::string&        a) : basic_fixed_string(a.c_str(), a.size()) {}
+    basic_fixed_string(const char*               a) : basic_fixed_string(a, a ? strlen(a) : 0){}
+    basic_fixed_string(const char* a,  size_t a_sz) { set(a, a_sz); }
+    basic_fixed_string(const basic_fixed_string& a) : basic_fixed_string(a.c_str(), a.size()) {}
+    basic_fixed_string(basic_fixed_string&&      a) : basic_fixed_string(a.c_str(), a.size()) {}
+
+    void operator=(basic_fixed_string const& a) { Set(a.c_str(), a.size()); }
+    void operator=(basic_fixed_string&& a)      { Set(a.c_str(), a.size()); }
+
+    const char* c_str()    const { return m_data.data();       }
+    const char* data()     const { return m_data.data();       }
+    size_t      size()     const { return size_t(m_data[N-1]); }
+    bool        empty()    const { return !size();             }
+
+    bool equals(const char* s) const { return strncmp(c_str(), s, size())==0; }
+    bool equals(const std::string& s) const { return equals(s.c_str()); }
+
+    std::string to_string() const { return std::string(c_str(), size()); }
+
+    bool operator== (basic_fixed_string   const& a_rhs) const {
+      return size()==a_rhs.size() && !memcmp(c_str(),a_rhs.c_str(),size());
+    }
+
+    bool operator== (std::string const& a_rhs) const {
+      return size()==a_rhs.size() && !memcmp(c_str(),a_rhs.c_str(),size());
+    }
+
+    bool operator== (char const* a_rhs) const {
+      return size()==strlen(a_rhs) && !memcmp(c_str(),a_rhs, size());
+    }
+
+    template <int M>
+    bool operator== (char  const (&a_rhs)[M]) const {
+      return size()== M-1 && !memcmp(c_str(),a_rhs, size());
+    }
+
+    bool operator!= (basic_fixed_string const& a) const { return !operator==(a); }
+    bool operator!= (std::string        const& a) const { return !operator==(a); }
+    bool operator!= (char               const* a) const { return !operator==(a); }
+    template <int M>
+    bool operator!= (char          const (&a)[M]) const { return !operator==(a); }
+
+    bool operator<  (basic_fixed_string   const& a) const {
+      return strncmp(c_str(), a.c_str(), size()) < 0;
+    }
+
+    bool operator>  (basic_fixed_string   const& a_rhs) const {
+      return strncmp(c_str(), a_rhs.c_str(), size()) > 0;
+    }
+
+    operator const char*() const          { return c_str(); }
+
+    void set(std::string const& a)        { set(a.c_str(), a.size()); }
+
+    void set(const char* a, size_t a_sz)  {
+      //assert(a_sz <= sizeof(m_data)-2);
+      size_t n    = std::min<size_t>(a_sz, sizeof(m_data)-2);
+      if (a) memcpy(m_data.data(), a, n);
+      m_data[n]   = '\0';
+      m_data[N-1] = char(n);
+      assert(n    < N-1);
+    }
+
+    template <typename StreamT>
+    friend inline StreamT& operator<<(StreamT& out, basic_fixed_string<N> const& a) {
+      out << a.c_str(); return out;
+    }
+  private:
+    std::array<char, N> m_data;
+  };
+
 } // namespace utxx
+
+namespace std {
+
+  template<int N>
+  struct hash<utxx::basic_fixed_string<N>> : public __hash_base<size_t, string> {
+    size_t operator()(const utxx::basic_fixed_string<N>& k) const {
+      return _Hash_impl::hash(k.c_str(), k.size());
+    }
+  };
+
+  template<int N>
+  struct equal_to<utxx::basic_fixed_string<N>> {
+    bool operator()(const utxx::basic_fixed_string<N>& a, const utxx::basic_fixed_string<N>& b) const {
+      return a == b;
+    }
+  };
+
+} // namespace std

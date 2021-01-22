@@ -34,6 +34,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <iostream>
+#include <map>
+#include <set>
 
 using namespace utxx;
 
@@ -499,6 +501,24 @@ BOOST_AUTO_TEST_CASE( test_string_short_string )
 
         BOOST_CHECK_EQUAL(4, Allocator::tot_allocations());
         BOOST_CHECK_EQUAL(0, Allocator::allocations());
+    }
+}
+
+BOOST_AUTO_TEST_CASE( test_string_fixed_string )
+{
+    using str = basic_fixed_string<8>;
+    using map = std::unordered_map<str, int>;
+    using set = std::set<str>;
+    {
+        auto s = str("abc");
+        BOOST_CHECK_EQUAL(3, s.size());
+        BOOST_CHECK(!s.empty());
+        BOOST_CHECK(s == "abc");
+        BOOST_CHECK(s == std::string("abc"));
+        s.set("123");
+        BOOST_CHECK(s == "123");
+        s.set(std::string("12345678"));
+        BOOST_CHECK(s == "123456");
     }
 }
 
