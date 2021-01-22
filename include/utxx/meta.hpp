@@ -284,12 +284,18 @@ struct has_type_nocvref
 {};
 
 //-----------------------------------------------------------------------------
-// Remove "const", "volatile", and reference ("&") operators from a type
+/// Remove "const", "volatile", and reference ("&") operators from a type
 //-----------------------------------------------------------------------------
 template <typename T>
 struct remove_cvref {
     using type = typename std::remove_cv<typename std::remove_reference<T>::type>::type;
 };
+
+//-----------------------------------------------------------------------------
+/// Remove "const", "volatile", and reference ("&") operators from a type
+//-----------------------------------------------------------------------------
+template< class T>
+using remove_cvr_t = typename remove_cvref<T>::type;
 
 //-----------------------------------------------------------------------------
 // Check if two types are the same, ignore const, volatile, and ref modifiers
