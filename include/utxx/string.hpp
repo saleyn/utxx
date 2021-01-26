@@ -727,8 +727,10 @@ namespace utxx {
     basic_fixed_string(const basic_fixed_string& a) : basic_fixed_string(a.c_str(), a.size()) {}
     basic_fixed_string(basic_fixed_string&&      a) : basic_fixed_string(a.c_str(), a.size()) {}
 
-    void operator=(basic_fixed_string const& a) { Set(a.c_str(), a.size()); }
-    void operator=(basic_fixed_string&& a)      { Set(a.c_str(), a.size()); }
+    void operator=(basic_fixed_string const& a) { set(a.c_str(), a.size()); }
+    void operator=(basic_fixed_string&& a)      { set(a.c_str(), a.size()); }
+    void operator=(std::string const&   a)      { set(a.c_str(), a.size()); }
+    void operator=(char        const&   a)      { set(a);                   }
 
     const char* c_str()    const { return m_data.data();       }
     const char* data()     const { return m_data.data();       }
