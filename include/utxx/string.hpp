@@ -209,30 +209,46 @@ namespace utxx {
     }
 
     /// Trim from start (in place)
-    inline void ltrim(std::string& s, char c = ' ') {
-        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [c](int ch) {
-            return ch != c;
+    inline void ltrim(std::string& s, std::string const& delim = std::string()) {
+        const std::string& d = delim.empty() ? std::string(" \t\n\r") : delim;
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(), [&d](char ch) {
+            return d.find(ch) == std::string::npos;
         }));
     }
 
     /// Trim from end (in place)
-    inline void rtrim(std::string& s, char c = ' ') {
-        s.erase(std::find_if(s.rbegin(), s.rend(), [c](int ch) {
-            return ch != c;
+    inline void rtrim(std::string& s, std::string const& delim = std::string()) {
+        const std::string& d = delim.empty() ? std::string(" \t\n\r") : delim;
+        s.erase(std::find_if(s.rbegin(), s.rend(), [&d](char ch) {
+            return d.find(ch) == std::string::npos;
         }).base(), s.end());
     }
 
+    inline void ltrim(std::string& s, char c) { auto ss=std::string(1,c); ltrim(s, ss); }
+    inline void rtrim(std::string& s, char c) { auto ss=std::string(1,c); rtrim(s, ss); }
+
     /// Trim from both ends (in place)
-    inline void trim(std::string &s) { ltrim(s); rtrim(s); }
+    inline void trim(std::string &s, std::string const& delim=std::string()) {
+        ltrim(s, delim); rtrim(s, delim);
+    }
 
     /// Trim from start (copying)
-    inline std::string ltrim_copy(std::string s) { ltrim(s); return s; }
+    inline std::string ltrim_copy(std::string s, std::string const& delim=std::string()) {
+        ltrim(s, delim);
+        return s;
+    }
 
     /// Trim from end (copying)
-    inline std::string rtrim_copy(std::string s) { rtrim(s); return s; }
+    inline std::string rtrim_copy(std::string s, std::string const& delim=std::string()) {
+        rtrim(s, delim);
+        return s;
+    }
 
     /// Trim from both ends (copying)
-    inline std::string trim_copy(std::string s)  { trim(s);  return s; }
+    inline std::string trim_copy(std::string s, std::string const& delim=std::string()) {
+        trim(s, delim);
+        return s;
+    }
 
     /// Write a hex representation of the character 'c' to "dst" string
     inline char* hex(char* dst, char c, bool lower=false) {

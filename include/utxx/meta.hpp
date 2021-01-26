@@ -208,8 +208,8 @@ struct last_type<T0> { using type = T0; };
 // functions, functors, lambdas, etc.
 template<
     class F, class... Args,
-    class = typename std::enable_if<!std::is_member_function_pointer<F>::value>::type,
-    class = typename std::enable_if<!std::is_member_object_pointer<F>::value>::type
+    class = std::enable_if_t<!std::is_member_function_pointer<F>::value>,
+    class = std::enable_if_t<!std::is_member_object_pointer<F>::value>
     >
 auto eval(F&& f, Args&&... args) -> decltype(f(std::forward<Args>(args)...))
 {

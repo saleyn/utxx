@@ -103,6 +103,17 @@ BOOST_AUTO_TEST_CASE( test_string_conversion )
     }
 }
 
+BOOST_AUTO_TEST_CASE( test_string_trim )
+{
+  std::string s("\n abc\t \r \n");
+  BOOST_CHECK_EQUAL("abc\t \r \n", ltrim_copy(s));
+  BOOST_CHECK_EQUAL("\n abc",      rtrim_copy(s));
+  BOOST_CHECK_EQUAL("abc",         trim_copy(s));
+  BOOST_CHECK_EQUAL(" abc\t \r \n",ltrim_copy(s, "\n"));
+  BOOST_CHECK_EQUAL("\n abc\t \r ",rtrim_copy(s, "\n"));
+  BOOST_CHECK_EQUAL("abc",         trim_copy("  abc  ", " "));
+}
+
 BOOST_AUTO_TEST_CASE( test_string_length )
 {
     char const* s_values[] = {"One", "Two", "Three"};
