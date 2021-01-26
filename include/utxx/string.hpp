@@ -737,7 +737,11 @@ namespace utxx {
     static constexpr int MaxSize() { return N-2; }
 
     basic_fixed_string() { m_data[0] = m_data[N-1] = '\0'; }
+    explicit
+    basic_fixed_string(std::nullptr_t            a) : basic_fixed_string() {}
+    explicit
     basic_fixed_string(const std::string&        a) : basic_fixed_string(a.c_str(), a.size()) {}
+    explicit
     basic_fixed_string(const char*               a) : basic_fixed_string(a, a ? strlen(a) : 0){}
     basic_fixed_string(const char* a,  size_t a_sz) { set(a, a_sz); }
     basic_fixed_string(const basic_fixed_string& a) : basic_fixed_string(a.c_str(), a.size()) {}
