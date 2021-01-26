@@ -775,9 +775,10 @@ namespace utxx {
 
     void set(std::string const& a)        { set(a.c_str(), a.size()); }
 
+    void set(const char* a)               { set(a, strlen(a)); }
+
     void set(const char* a, size_t a_sz)  {
-      //assert(a_sz <= sizeof(m_data)-2);
-      size_t n    = std::min<size_t>(a_sz, sizeof(m_data)-2);
+      size_t n    = std::min<size_t>(a_sz, MaxSize());
       if (a) memcpy(m_data.data(), a, n);
       m_data[n]   = '\0';
       m_data[N-1] = char(n);
