@@ -530,6 +530,13 @@ BOOST_AUTO_TEST_CASE( test_string_fixed_string )
         BOOST_CHECK(s == "123");
         s.set(std::string("12345678"));
         BOOST_CHECK(s == "123456");
+
+        auto fun = [](char* p, const char* end) {
+            strcpy(p, "efg");
+            return 3;
+        };
+        s.set<decltype(fun), false>(fun);
+        BOOST_CHECK_EQUAL("efg", s);
     }
 }
 

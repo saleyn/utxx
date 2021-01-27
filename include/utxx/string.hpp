@@ -763,20 +763,20 @@ namespace utxx {
     std::string to_string() const { return std::string(c_str(), size()); }
 
     bool operator== (basic_fixed_string   const& a_rhs) const {
-      return size()==a_rhs.size() && !memcmp(c_str(),a_rhs.c_str(),size());
+        return size()==a_rhs.size() && !memcmp(c_str(),a_rhs.c_str(),size());
     }
 
     bool operator== (std::string const& a_rhs) const {
-      return size()==a_rhs.size() && !memcmp(c_str(),a_rhs.c_str(),size());
+        return size()==a_rhs.size() && !memcmp(c_str(),a_rhs.c_str(),size());
     }
 
     bool operator== (char const* a_rhs) const {
-      return size()==strlen(a_rhs) && !memcmp(c_str(),a_rhs, size());
+        return size()==strlen(a_rhs) && !memcmp(c_str(),a_rhs, size());
     }
 
     template <int M>
     bool operator== (char  const (&a_rhs)[M]) const {
-      return size()== M-1 && !memcmp(c_str(),a_rhs, size());
+        return size()== M-1 && !memcmp(c_str(),a_rhs, size());
     }
 
     bool operator!= (basic_fixed_string const& a) const { return !operator==(a); }
@@ -786,11 +786,11 @@ namespace utxx {
     bool operator!= (char          const (&a)[M]) const { return !operator==(a); }
 
     bool operator<  (basic_fixed_string   const& a) const {
-      return strncmp(c_str(), a.c_str(), size()) < 0;
+        return strncmp(c_str(), a.c_str(), size()) < 0;
     }
 
     bool operator>  (basic_fixed_string   const& a_rhs) const {
-      return strncmp(c_str(), a_rhs.c_str(), size()) > 0;
+        return strncmp(c_str(), a_rhs.c_str(), size()) > 0;
     }
 
     operator const char*() const          { return c_str(); }
@@ -800,16 +800,25 @@ namespace utxx {
     void set(const char* a)               { set(a, strlen(a)); }
 
     void set(const char* a, size_t a_sz)  {
-      size_t n    = std::min<size_t>(a_sz, MaxSize());
-      if (a) memcpy(m_data.data(), a, n);
-      m_data[n]   = '\0';
-      m_data[N-1] = char(n);
-      assert(n    < N-1);
+        size_t n    = std::min<size_t>(a_sz, MaxSize());
+        if (a) memcpy(m_data.data(), a, n);
+        m_data[n]   = '\0';
+        m_data[N-1] = char(n);
+        assert(n <= MaxSize());
+    }
+
+    template <typename Lambda, bool SetNull = true>
+    void set(const Lambda& fun) {
+        auto n = fun(m_data.data(), m_data.data()+MaxSize());
+        assert(n <= MaxSize());
+        if (SetNull)
+            m_data[n] = '\0';
+        m_data[N-1] = char(n);
     }
 
     template <typename StreamT>
     friend inline StreamT& operator<<(StreamT& out, basic_fixed_string<N> const& a) {
-      out << a.c_str(); return out;
+        out << a.c_str(); return out;
     }
   private:
     std::array<char, N> m_data;
