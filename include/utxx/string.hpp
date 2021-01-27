@@ -817,8 +817,14 @@ namespace utxx {
     }
 
     template <typename StreamT>
+    inline StreamT& operator<<(StreamT& out) {
+        out << c_str();
+        return out;
+    }
+
+    template <typename StreamT>
     friend inline StreamT& operator<<(StreamT& out, basic_fixed_string<N> const& a) {
-        out << a.c_str(); return out;
+        out << a; return out;
     }
   private:
     std::array<char, N> m_data;

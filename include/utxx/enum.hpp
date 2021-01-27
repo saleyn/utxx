@@ -142,13 +142,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 // For internal use
 //------------------------------------------------------------------------------
-#define UTXX_ENUMZ(ENUM, TYPE, DEF_NAME, DEF_VAL, FIRST, EXPLICIT, ...)        \
+#define UTXX_ENUMZ(ENUM, TYPE, DEF_NAME, DEF_VAL, FIRST_VAL, EXPLICIT, ...)    \
     struct ENUM {                                                              \
         using value_type = TYPE;                                               \
                                                                                \
         enum type : TYPE {                                                     \
             DEF_NAME = DEF_VAL,                                                \
-            _START_   = FIRST-1,                                               \
+            _START_  = (TYPE)(FIRST_VAL-1),                                    \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
                 UTXX_ENUM_INTERNAL_GET_0__, _,                                 \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))),                   \
@@ -156,7 +156,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         };                                                                     \
                                                                                \
         constexpr ENUM()         noexcept: m_val(DEF_NAME) {                   \
-            static_assert(DEF_VAL < FIRST || DEF_VAL >= int(_END_),            \
+            static_assert(DEF_VAL < FIRST_VAL || DEF_VAL >= int(_END_),        \
                           "Init value must be outside of first and last!");    \
         }                                                                      \
         constexpr ENUM(type v)   noexcept: m_val(v) {}                         \
@@ -232,7 +232,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static constexpr size_t size()  { return s_size-1; }                   \
-        static constexpr type   begin() { return type(FIRST); }                \
+        static constexpr type   begin() { return type(FIRST_VAL); }            \
         static constexpr type   end()   { return _END_; }                      \
         static constexpr type   last()  { return type(_END_-1); }              \
         static constexpr type   inc(type x) { return type(int(x)+1);   }       \
@@ -260,7 +260,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static const std::pair<std::string,std::string>& meta(TYPE n) {        \
-            auto   m = n == DEF_NAME ? 0 : int(n)-(FIRST)+1;                   \
+            auto   m = n == DEF_NAME ? 0 : int(n)-(FIRST_VAL)+1;               \
             assert(m >= 0 && m < int(s_size));                                 \
             return names()[m];                                                 \
         }                                                                      \

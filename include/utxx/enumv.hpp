@@ -154,7 +154,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         enum type : TYPE {                                                     \
             DEF_NAME = DEF_VAL,                                                \
-            _START_  = DEF_VAL-1,                                              \
+            _START_  = (TYPE)(FIRST_VAL-1),                                    \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
                 UTXX_ENUM_INTERNAL_GET_NAMEVAL__, _,                           \
                 BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
