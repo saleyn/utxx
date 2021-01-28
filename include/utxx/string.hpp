@@ -729,12 +729,12 @@ namespace utxx {
   /// The (N-1)'s character is reserved to store string size
   /// The stored value is '\0' terminated
   //----------------------------------------------------------------------------
-  template <int N>
+  template <size_t N>
   struct basic_fixed_string {
     static_assert(N > 2 && N <= 128, "Invalid string size");
 
     /// Max length that the string can hold
-    static constexpr int MaxSize() { return N-2; }
+    static constexpr size_t MaxSize() { return N-2; }
 
     basic_fixed_string() { m_data[0] = m_data[N-1] = '\0'; }
     explicit
@@ -809,22 +809,16 @@ namespace utxx {
 
     template <typename Lambda, bool SetNull = true>
     void set(const Lambda& fun) {
-        auto n = fun(m_data.data(), m_data.data()+MaxSize());
-        assert(n <= MaxSize());
+        auto n = int(fun(m_data.data(), m_data.data()+MaxSize()));
+        assert(n <= int(MaxSize()));
         if (SetNull)
             m_data[n] = '\0';
         m_data[N-1] = char(n);
     }
 
     template <typename StreamT>
-    inline StreamT& operator<<(StreamT& out) {
-        out << c_str();
-        return out;
-    }
-
-    template <typename StreamT>
     friend inline StreamT& operator<<(StreamT& out, basic_fixed_string<N> const& a) {
-        out << a; return out;
+        out << a.c_str(); return out;
     }
   private:
     std::array<char, N> m_data;

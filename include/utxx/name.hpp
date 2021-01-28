@@ -276,6 +276,16 @@ namespace utxx {
 
         template <int N>
         name_t (const char (&a_buf)[N]) { this->set_and_check(a_buf, N, false); }
+
+        name_t(const name_t& a) : base(a)            {}
+        name_t(name_t&&      a) : base(std::move(a)) {}
+
+        void operator=(const name_t&      a) { *static_cast<base*>(this) = a; }
+        void operator=(name_t&&           a) { *static_cast<base*>(this) = std::move(a); }
+        void operator=(const char*        a) { this->set(a); }
+        void operator=(const std::string& a) { this->set(a); }
+        template <int N>
+        void operator=(const char   (&a)[N]) { this->set(a); }
     };
 
     template <size_t Size>
