@@ -121,17 +121,17 @@ namespace utxx {
         return copy(a_dest, a_dsize, a_src.c_str(), a_src.size(), a_delim);
     }
 
-    template <int N>
+    template <size_t N>
     inline char* copy(std::array<char, N>& a_dest, const std::string& a_src, char a_delim='\0') {
         return copy(a_dest.data(), N, a_src.c_str(), a_src.size(), a_delim);
     }
 
-    template <int N, int M>
+    template <size_t N, size_t M>
     inline char* copy(std::array<char, N>& a_dest, const std::array<char, M>& a_src, char a_delim='\0') {
         return copy(a_dest.data(), N, a_src.data(), M, a_delim);
     }
 
-    template <int N, int M>
+    template <int N, size_t M>
     inline char* copy(char (&a_dest)[N], const std::array<char, M>& a_src, char a_delim='\0') {
         return copy(a_dest, N, a_src.data(), M, a_delim);
     }

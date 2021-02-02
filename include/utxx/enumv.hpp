@@ -157,7 +157,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             _START_  = (TYPE)(FIRST_VAL-1),                                    \
             BOOST_PP_SEQ_ENUM(BOOST_PP_SEQ_TRANSFORM(                          \
                 UTXX_ENUM_INTERNAL_GET_NAMEVAL__, _,                           \
-                BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__)))                    \
+                BOOST_PP_VARIADIC_SEQ_TO_SEQ(__VA_ARGS__))),                   \
+            _END_                                                              \
         };                                                                     \
                                                                                \
         constexpr ENUM()       noexcept : m_val(DEF_NAME)  {}                  \
@@ -241,6 +242,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         }                                                                      \
                                                                                \
         static constexpr size_t size()  { return s_size-1; }                   \
+        static constexpr type   begin() { return type(FIRST_VAL); }            \
+        static constexpr type   end()   { return _END_; }                      \
+        static constexpr type   last()  { return type(_END_-1); }              \
+        static constexpr type   inc(type x) { return type(int(x)+1);   }       \
                                                                                \
         template <typename Visitor>                                            \
         static void for_each(const Visitor& a_fun) {                           \

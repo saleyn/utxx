@@ -77,43 +77,43 @@ namespace utxx {
     };
 
     struct msecs {
-        explicit msecs(long   ms) : m_nsec(ms*1000000L)         {}
-        explicit msecs(size_t ms) : m_nsec(long(ms)*1000000L)   {}
-        explicit msecs(int    ms) : m_nsec(long(ms)*1000000L)   {}
-        long     value() const { return m_nsec/1000000L;   }
-        long     nsec()  const { return m_nsec;            }
+        constexpr explicit msecs(long   ms) : m_nsec(ms*1000000L)         {}
+        constexpr explicit msecs(size_t ms) : m_nsec(long(ms)*1000000L)   {}
+        constexpr explicit msecs(int    ms) : m_nsec(long(ms)*1000000L)   {}
+        constexpr long     value() const { return m_nsec/1000000L;   }
+        constexpr long     nsec()  const { return m_nsec;            }
     private:
         long m_nsec;
     };
 
     struct usecs {
-        explicit usecs(long   us) : m_nsec(us*1000L)                {}
-        explicit usecs(size_t us) : m_nsec(long(us)*1000L)          {}
-        explicit usecs(int    us) : m_nsec(long(us)*1000L)          {}
-        usecs(long s,  long   us) : m_nsec(s*1000000000L+us*1000L)  {}
-        long     value() const { return m_nsec/1000L; }
-        long     nsec()  const { return m_nsec;       }
+        constexpr explicit usecs(long   us) : m_nsec(us*1000L)               {}
+        constexpr explicit usecs(size_t us) : m_nsec(long(us)*1000L)         {}
+        constexpr explicit usecs(int    us) : m_nsec(long(us)*1000L)         {}
+        constexpr usecs(long s,  long   us) : m_nsec(s*1000000000L+us*1000L) {}
+        constexpr long     value() const { return m_nsec/1000L; }
+        constexpr long     nsec()  const { return m_nsec;       }
     private:
         long m_nsec;
     };
 
     struct nsecs {
-        explicit nsecs(long   ns) : m_nsec(ns)                  {}
-        explicit nsecs(size_t ns) : m_nsec(long(ns))            {}
-        nsecs(long s,  long   ns) : m_nsec(s*1000000000L+ns)    {}
-        long     value() const { return m_nsec; }
-        long     nsec()  const { return m_nsec; }
+        constexpr explicit nsecs(long   ns) : m_nsec(ns)                  {}
+        constexpr explicit nsecs(size_t ns) : m_nsec(long(ns))            {}
+        constexpr nsecs(long s,  long   ns) : m_nsec(s*1000000000L+ns)    {}
+        constexpr long     value() const { return m_nsec; }
+        constexpr long     nsec()  const { return m_nsec; }
     private:
         long m_nsec;
     };
 
     struct secs {
-        explicit secs(size_t   s) : m_nsec(long(s)*1000000000L) {}
-        explicit secs(long     s) : m_nsec(s * 1000000000L)     {}
-        explicit secs(int      s) : m_nsec(long(s)*1000000000L) {}
-        explicit secs(double   s) : m_nsec(long(s*1e9+0.5))     {}
-        long     value() const { return m_nsec/1000000000L; }
-        long     nsec()  const { return m_nsec;             }
+        constexpr explicit secs(size_t   s) : m_nsec(long(s)*1000000000L) {}
+        constexpr explicit secs(long     s) : m_nsec(s * 1000000000L)     {}
+        constexpr explicit secs(int      s) : m_nsec(long(s)*1000000000L) {}
+        constexpr explicit secs(double   s) : m_nsec(long(s*1e9+0.5))     {}
+        constexpr long     value() const { return m_nsec/1000000000L; }
+        constexpr long     nsec()  const { return m_nsec;             }
     private:
         long m_nsec;
     };
