@@ -9,7 +9,7 @@
 
 DATE=$(TZ=GMT date +'%Y%m%d-%H:%M:%S %z')
 DIR=$(readlink -f $0)
-DIR=${DIR%/bin/*}
+DIR=${DIR%/build-aux/*}
 FILE=${DIR}/include/utxx/version.hpp
 GIT_VER=$(git --version | awk '{sub(/\.[0-9]+\.[0-9]+$/, "", $3); print $3}')
 VER_CMD="git describe --dirty --abbrev=7 --tags --always --long"

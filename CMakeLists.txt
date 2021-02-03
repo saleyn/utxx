@@ -267,7 +267,7 @@ endmacro(XML_CFG)
 
 add_custom_target(build-version
     ALL
-    COMMAND ${CMAKE_SOURCE_DIR}/bin/make-version.sh -d ${REBUILD_VERSION}
+    COMMAND ${CMAKE_SOURCE_DIR}/build-aux/make-version.sh -d ${REBUILD_VERSION}
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     COMMENT ">>> Verifying include/utxx/version.hpp"
 )
