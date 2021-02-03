@@ -537,6 +537,12 @@ BOOST_AUTO_TEST_CASE( test_string_fixed_string )
         };
         s.set<decltype(fun), false>(fun);
         BOOST_CHECK_EQUAL("efg", s);
+
+        s.clear();
+        BOOST_CHECK_EQUAL("", s);
+
+        s.fill('a', 6);
+        BOOST_CHECK_EQUAL("aaaaaa", s);
     }
 }
 

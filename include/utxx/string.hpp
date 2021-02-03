@@ -736,7 +736,7 @@ namespace utxx {
     /// Max length that the string can hold
     static constexpr size_t MaxSize() { return N-2; }
 
-    basic_fixed_string() { m_data[0] = m_data[N-1] = '\0'; }
+    basic_fixed_string() { clear(); }
     explicit
     basic_fixed_string(std::nullptr_t            a) : basic_fixed_string() {}
     explicit
@@ -756,6 +756,14 @@ namespace utxx {
     const char* data()     const { return m_data.data();       }
     size_t      size()     const { return size_t(m_data[N-1]); }
     bool        empty()    const { return !size();             }
+
+    void clear() {m_data[0] = m_data[N-1] = '\0'; }
+
+    void fill(char a, uint8_t new_sz = 0) {
+        if (new_sz > MaxSize()) new_sz = MaxSize();
+        memset(m_data.data(), a, new_sz);
+        m_data[N-1] = new_sz;
+    }
 
     bool equals(const char* s) const { return strncmp(c_str(), s, size())==0; }
     bool equals(const std::string& s) const { return equals(s.c_str()); }
