@@ -192,7 +192,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         static const char* c_str(type a)     { return to_string(a).c_str();}   \
                                                                                \
         /* Returns true if the given value is a valid value for this enum */   \
-        static constexpr bool valid(TYPE v)  {                                 \
+        static bool valid(TYPE v) {                                            \
             if (v == DEF_NAME) return true;                                    \
             bool found = false;                                                \
             auto f = [&found, v](type t, auto&) {                              \
