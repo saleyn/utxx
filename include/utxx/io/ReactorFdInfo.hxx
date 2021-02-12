@@ -204,17 +204,23 @@ ReadUntilEAgain(Action const& a_action, ReadDebugAction const& a_debug_act)
       m_sock_src_port = peeraddr.sin_port;
       m_sock_if_addr  = 0;
       m_sock_dst_addr = 0;
+      int cont        = 1 + m_pkt_time_samples;
       // Control messages are always accessed via macros
       // http://www.kernel.org/doc/man-pages/online/pages/man3/cmsg.3.html
-      for(auto cm = CMSG_FIRSTHDR(&msg); cm; cm = CMSG_NXTHDR(&msg, cm)) {
+      for(auto cm = CMSG_FIRSTHDR(&msg); cm && cont; cm = CMSG_NXTHDR(&msg, cm)) {
         // ignore the control headers that don't match what we want
-        if (cm->cmsg_level == IPPROTO_IP &&
-            cm->cmsg_type  == IP_PKTINFO)
+        if (cm->cmsg_level == IPPROTO_IP && cm->cmsg_type == IP_PKTINFO)
         {
-          struct in_pktinfo* pi = (struct in_pktinfo*)CMSG_DATA(cm);
+          auto pi = reinterpret_cast<struct in_pktinfo*>(CMSG_DATA(cm));
           m_sock_if_addr   = pi->ipi_spec_dst.s_addr; // Iface addr
           m_sock_dst_addr  = pi->ipi_addr.s_addr;     // Mcast addr
-          break;
+          cont--;
+        } else if (cm->cmsg_level == SOL_SOCKET && cm->cmsg_type == SO_TIMESTAMPNS) {
+          auto   ts  = reinterpret_cast<timespec const*>(CMSG_DATA(cm));
+          assert(ts != nullptr);
+          m_ts_wire  = time_val(*ts);
+          if (LIKELY(m_pkt_time_samples))
+            cont--;
         }
       }
     }

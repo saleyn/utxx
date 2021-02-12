@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/io/ReactorAIOReader.hpp>
 #include <utxx/io/ReactorCmdExec.hpp>
 #include <utxx/enum.hpp>
+#include <utxx/running_stat.hpp>
 #include <type_traits>
 #include <netinet/in.h>
 
@@ -106,6 +107,10 @@ public:
   /// Identifier used as the logging prefix for this component
   const std::string&       Ident()         const { return m_ident;     }
 
+  /// Kernel timestamp of received UDP packet
+  time_val                 TsWire()        const { return m_ts_wire;   }
+  void                     TsWire(time_val a)    { m_ts_wire = a;      }
+
   template <typename Action>
   void                     RdDebug(Action a_act) { m_rd_debug = a_act; }
   ReadDebugAction   const& RdDebug()       const { return m_rd_debug;  }
@@ -133,6 +138,8 @@ public:
 
   /// Enable receiving of UDP source/destination address
   void EnableDgramPktInfo(bool a_enable = true);
+  /// Enable/disable hardware packet time sampling frequency for UDP packets
+  void PktTimeSamples(bool a_enable);
 
   void Clear();  ///< Unregister m_fd from reactor (set to -1) and call Reset()
   void Reset();  ///< Reset internal state (m_fd must be -1)
@@ -166,12 +173,14 @@ private:
   std::unique_ptr<AIOReader>         m_file_reader;
   std::unique_ptr<POpenCmd>          m_exec_cmd;
   std::string                        m_ident;
-  bool                               m_with_pkt_info  = false;
-  in_addr_t                          m_sock_src_addr  = 0;
-  in_port_t                          m_sock_src_port  = 0;
-  in_addr_t                          m_sock_dst_addr  = 0;
-  in_port_t                          m_sock_dst_port  = 0;
-  in_addr_t                          m_sock_if_addr   = 0;
+  time_val                           m_ts_wire;
+  bool                               m_with_pkt_info    = false;
+  bool                               m_pkt_time_samples = false;
+  in_addr_t                          m_sock_src_addr    = 0;
+  in_port_t                          m_sock_src_port    = 0;
+  in_addr_t                          m_sock_dst_addr    = 0;
+  in_port_t                          m_sock_dst_port    = 0;
+  in_addr_t                          m_sock_if_addr     = 0;
 
   friend class Reactor;
 
