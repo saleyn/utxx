@@ -139,7 +139,7 @@ public:
   /// Enable receiving of UDP source/destination address
   void EnableDgramPktInfo(bool a_enable = true);
   /// Enable/disable hardware packet time sampling frequency for UDP packets
-  void PktTimeSamples(bool a_enable);
+  void EnablePktTimeStamps(bool a_enable);
 
   void Clear();  ///< Unregister m_fd from reactor (set to -1) and call Reset()
   void Reset();  ///< Reset internal state (m_fd must be -1)
@@ -175,7 +175,7 @@ private:
   std::string                        m_ident;
   time_val                           m_ts_wire;
   bool                               m_with_pkt_info    = false;
-  bool                               m_pkt_time_samples = false;
+  bool                               m_pkt_time_stamps  = false;
   in_addr_t                          m_sock_src_addr    = 0;
   in_port_t                          m_sock_src_port    = 0;
   in_addr_t                          m_sock_dst_addr    = 0;

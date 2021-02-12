@@ -204,7 +204,7 @@ ReadUntilEAgain(Action const& a_action, ReadDebugAction const& a_debug_act)
       m_sock_src_port = peeraddr.sin_port;
       m_sock_if_addr  = 0;
       m_sock_dst_addr = 0;
-      int cont        = 1 + m_pkt_time_samples;
+      int cont        = 1 + m_pkt_time_stamps;
       // Control messages are always accessed via macros
       // http://www.kernel.org/doc/man-pages/online/pages/man3/cmsg.3.html
       for(auto cm = CMSG_FIRSTHDR(&msg); cm && cont; cm = CMSG_NXTHDR(&msg, cm)) {
@@ -219,7 +219,7 @@ ReadUntilEAgain(Action const& a_action, ReadDebugAction const& a_debug_act)
           auto   ts  = reinterpret_cast<timespec const*>(CMSG_DATA(cm));
           assert(ts != nullptr);
           m_ts_wire  = time_val(*ts);
-          if (LIKELY(m_pkt_time_samples))
+          if (LIKELY(m_pkt_time_stamps))
             cont--;
         }
       }
