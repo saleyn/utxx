@@ -202,6 +202,23 @@ PktTimeSamples(bool a_enable)
 }
 
 //------------------------------------------------------------------------------
+void FdInfo::
+PktTimeSamples(bool a_enable)
+{
+  UTXX_PRETTY_FUNCTION(); // Cache pretty function name
+
+  if (m_fd_type != FdTypeT::Datagram)
+    UTXX_THROWX_RUNTIME_ERROR("Cannot set pkt time samples on a non-UDP socket!");
+
+  m_pkt_time_samples = a_enable;
+
+  if (setsockopt(m_fd, SOL_SOCKET, SO_TIMESTAMPNS, &a_enable, sizeof(a_enable)) < 0)
+    UTXX_THROWX_IO_ERROR(errno, "Error setting SO_TIMESTAMPNS option on ", m_name);
+
+  m_ts_wire.clear();
+}
+
+//------------------------------------------------------------------------------
 inline int FdInfo::
 ReportError(IOType a_tp, int a_ec, const std::string& a_err,
       utxx::src_info&& a_si, bool a_throw)

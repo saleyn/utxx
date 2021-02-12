@@ -275,6 +275,12 @@ public:
   /// and FdInfo's will use the
   bool UseGetSockName() const { return m_use_getsockname; }
 
+  FdInfo&       Get(int a_fd, utxx::src_info&& a_sinfo)
+  { Check(a_fd, std::move(a_sinfo)); return *m_fds[a_fd]; }
+
+  FdInfo const& Get(int a_fd, utxx::src_info&& a_sinfo) const
+  { Check(a_fd, std::move(a_sinfo)); return *m_fds[a_fd]; }
+
 private:
   bool            m_own_efd;
   int             m_epoll_fd;
@@ -312,12 +318,6 @@ private:
       UTXX_SRC_THROW(utxx::badarg_error, a_sinfo, ": invalid fd=", a_fd,
                      ", maxfd=", m_fds.size());
   }
-
-  FdInfo&       Get(int a_fd, utxx::src_info&& a_sinfo)
-  { Check(a_fd, std::move(a_sinfo)); return *m_fds[a_fd]; }
-
-  FdInfo const& Get(int a_fd, utxx::src_info&& a_sinfo) const
-  { Check(a_fd, std::move(a_sinfo)); return *m_fds[a_fd]; }
 
   template <typename DebugLambda>
   FdInfo&  DoAdd(int a_fd, uint32_t a_ev, FdInfo&& a_fi, DebugLambda a_fun);
