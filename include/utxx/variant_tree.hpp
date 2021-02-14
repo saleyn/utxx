@@ -209,81 +209,116 @@ public:
 
     template <class T>
     T get_value(src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         boost::optional<T> o = get_value_optional<T>();
         if (!o)
-            throw_bad_type<T>(path_type(), this->data(), std::move(si));
+            throw_bad_type<T>(path_type(), this->data(), UTXX_SRCXD(si));
         return *o;
     }
 
     template <class T>
     T get_value(const T& default_value, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         try {
             return detail::variant_translator<T,Ch>().get_value(this->data().value());
         } catch (const std::exception&) {
-            throw_bad_type<T>(root_path(), this->data().value(), std::move(si));
+            throw_bad_type<T>(root_path(), this->data().value(), UTXX_SRCXD(si));
         }
     }
 
     std::basic_string<Ch> get_value(const Ch* default_value, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         try {
             return base::get_value(std::basic_string<Ch>(default_value),
                 detail::variant_translator<std::basic_string<Ch>,Ch>());
         } catch (boost::property_tree::ptree_bad_data& e) {
-            throw_bad_type<std::string>(root_path(), this->data().value(), std::move(si));
+            throw_bad_type<std::string>(root_path(), this->data().value(), UTXX_SRCXD(si));
         }
     }
 
     template <class T>
     boost::optional<T> get_value_optional(src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         if (!this->data().is_null()) {
             try { return detail::variant_translator<T,Ch>().get_value(this->data().value()); }
-            catch (...) { throw_bad_type<T>(path_type(), this->data().value(), std::move(si)); }
+            catch (...) { throw_bad_type<T>(path_type(), this->data().value(), UTXX_SRCXD(si)); }
         }
         return boost::optional<T>();
     }
 
     template <class T>
     T get(const path_type& path, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         boost::optional<T> r = get_optional<T>(path);
         if (r) return *r;
         if (this->data().validator()) {
             const config::option& o = this->data().validator()->get(path, root_path());
             const auto& v = o.default_subst_value();
             if (v.is_null())
-                throw variant_tree_error(std::move(si), root_path()/path,
-                    utxx::to_string("Path missing required option of type: ",
-                                    config::type_to_string(o.value_type)));
+                throw variant_tree_error(UTXX_SRCXD(si), root_path()/path,
+                    "Path missing required option of type: ",
+                    config::type_to_string(o.value_type));
             else if (!v.is_type<T>()) {
                 T res;
-                str_assign_or_throw(res, root_path()/path, v, std::move(si));
+                str_assign_or_throw(res, root_path()/path, v, UTXX_SRCXD(si));
                 return res;
             }
             return v.get<T>();
         }
-        throw variant_tree_bad_path(std::move(si), path, "Path not found");
+        throw variant_tree_bad_path(UTXX_SRCXD(si), path, "Path not found");
+    }
+
+    template <class T>
+    T get(std::initializer_list<const Ch*> paths, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
+        for (auto* p : paths) {
+            auto res = try_get(p, UTXX_SRCXD(si));
+            if (res.is_assigned()) {
+                if (res.template is_type<T>(true))
+                    return res.template get<T>();
+                throw_bad_type<T>(root_path(), res, UTXX_SRCXD(si));
+            }
+        }
+        throw variant_tree_bad_path(UTXX_SRCXD(si), *paths.begin(), "Path not found");
     }
 
     template <class T>
     T get(const path_type& path, const T& default_value, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* t = navigate(this, p, nullptr, false, -1, std::move(si));
+        auto* t = navigate(this, p, nullptr, false, -1, UTXX_SRCXD(si));
         if (t)
             try {
                 return t->data().value().empty()
                      ? default_value
                      : t->base::template get_value<T>(detail::variant_translator<T,Ch>());
             } catch (...) {
-                throw_bad_type<T>(path, t->data(), std::move(si));
+                throw_bad_type<T>(path, t->data(), UTXX_SRCXD(si));
             }
         return default_value;
     }
 
-    /// Returns assigned value (or unassigned value if \a path is not found)
+    template <class T>
+    T get(std::initializer_list<const Ch*> paths, const T& default_value, src_info&& si = src_info()) const
+    {
+        UTXX_PRETTY_FUNCTION();
+        for (auto* p : paths) {
+            auto&  res = try_get(p, UTXX_SRCXD(si));
+            if (res.is_assigned()) {
+                if (res.template is_type<T>(true))
+                    return res.template get<T>();
+                throw_bad_type<T>(root_path(), res, UTXX_SRCXD(si));
+            }
+        }
+        return default_value;
+    }
+
+    /// Returns assigned value (or "unassigned" value if \a path is not found)
     const data_type& try_get(const path_type& path, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* t = navigate(this, p, nullptr, false, -1, std::move(si));
+        auto* t = navigate(this, p, nullptr, false, -1, UTXX_SRCXD(si));
         static const data_type& s_unassigned = data_type::unassigned();
-        //return t ? t->data().value() : s_unassigned;
         if (!t)
             return s_unassigned;
         const data_type& res = t->data();
@@ -292,17 +327,19 @@ public:
 
     std::basic_string<Ch>
     get(const path_type& path, const Ch* default_value, src_info&& si = src_info()) const {
-        return get<std::basic_string<Ch>>(path, std::basic_string<Ch>(default_value), std::move(si));
+        UTXX_PRETTY_FUNCTION();
+        return get<std::basic_string<Ch>>(path, std::basic_string<Ch>(default_value), UTXX_SRCXD(si));
     }
 
     template <typename T>
     boost::optional<T> get_optional(const path_type& path, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* t = navigate(this, p, nullptr, false, -1, std::move(si));
+        auto* t = navigate(this, p, nullptr, false, -1, UTXX_SRCXD(si));
         if (t) {
             if (!t->data().is_null()) {
                 try { return t->base::template get_value<T>(detail::variant_translator<T,Ch>()); }
-                catch (...) { throw_bad_type<T>(path, t->data(), std::move(si)); }
+                catch (...) { throw_bad_type<T>(path, t->data(), UTXX_SRCXD(si)); }
             } else if (std::is_same_v<T, std::string> || std::is_same_v<T, variant>)
                 return T();
         }
@@ -320,27 +357,31 @@ public:
 
     template <class T>
     self_type& put(const path_type& path, const T& value, src_info&& si = src_info()) {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* r = navigate(this, p, &value, true, true, std::move(si));
+        auto* r = navigate(this, p, &value, true, true, UTXX_SRCXD(si));
         BOOST_ASSERT(r);
         return *r;
     }
 
     self_type& put(const path_type& path, const Ch* value, src_info&& si = src_info()) {
-        return put(path, std::basic_string<Ch>(value), std::move(si));
+        UTXX_PRETTY_FUNCTION();
+        return put(path, std::basic_string<Ch>(value), UTXX_SRCXD(si));
     }
 
     template <class T>
     self_type& add(const path_type& path, const T& value, src_info&& si = src_info()) {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* r = navigate(this, p, nullptr, false, true, std::move(si));
+        auto* r = navigate(this, p, nullptr, false, true, UTXX_SRCXD(si));
         BOOST_ASSERT(r);
         *r = value;
         return *r;
     }
 
     self_type& add(const path_type& path, const Ch* value, src_info&& si = src_info()) {
-        return add(path, std::basic_string<Ch>(value), std::move(si));
+        UTXX_PRETTY_FUNCTION();
+        return add(path, std::basic_string<Ch>(value), UTXX_SRCXD(si));
     }
 
     void swap(basic_variant_tree& rhs) {
@@ -358,13 +399,14 @@ public:
      * Throw @c ptree_bad_path if such path doesn't exist
      */
     self_type& get_child(const path_type& path, src_info&& si = src_info()) {
+        UTXX_PRETTY_FUNCTION();
         boost::optional<self_type&> r = get_child_optional(path);
         if (r) return *r;
         if (this->data().validator()) {
             const config::option& o = this->data().validator()->get(path, root_path());
             return put(path, o.default_subst_value());
         }
-        throw variant_tree_bad_path(std::move(si), root_path() / path,
+        throw variant_tree_bad_path(UTXX_SRCXD(si), root_path() / path,
             "Cannot get child - path not found");
     }
 
@@ -377,13 +419,14 @@ public:
      * the given \a path represents a valid option.
      */
     const self_type& get_child(const path_type& path, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         boost::optional<const self_type&> r = get_child_optional(path);
         if (r) return *r;
         if (this->data().validator())
             // default_value will throw if there's no such path
             return reinterpret_cast<const self_type&>
                 (this->data().validator()->def(path, root_path()));
-        throw variant_tree_bad_path(std::move(si), root_path() / path,
+        throw variant_tree_bad_path(UTXX_SRCXD(si), root_path() / path,
             "Cannot get child - path not found");
     }
 
@@ -424,17 +467,19 @@ public:
     }
 
     self_type& add_child(const path_type& path, const self_type& value, src_info&& si = src_info()) {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* c = navigate(this, p, nullptr, false, true, std::move(si));
-        if  (!c)  throw variant_tree_bad_path(std::move(si), p, "Path doesn't exist");
+        auto* c = navigate(this, p, nullptr, false, true, UTXX_SRCXD(si));
+        if  (!c)  throw variant_tree_bad_path(UTXX_SRCXD(si), p, "Path doesn't exist");
         *c = value;
         c->root_path(path);
         return *c;
     }
 
     self_type& put_child(const path_type& path, const self_type& value, src_info&& si = src_info()) {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
-        auto* c = navigate(this, p, nullptr, true, true, std::move(si));
+        auto* c = navigate(this, p, nullptr, true, true, UTXX_SRCXD(si));
         if  (!c)  throw variant_tree_bad_path(std::move(si), p, "Path doesn't exist");
         *c = value;
         c->root_path(path);
@@ -442,6 +487,7 @@ public:
     }
 
     bool exists(const path_type& path, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
         path_type p(path);
         return !!navigate(this, p, nullptr, false, -1, std::move(si));
     }
@@ -517,7 +563,7 @@ public:
         const config::custom_validator& a_custom_validator = nullptr
     ) const {
         if (!a_schema && !this->data().validator())
-            throw std::runtime_error("Unassigned validator!");
+            throw utxx::runtime_error("Unassigned validator!");
         if (a_schema)
             a_schema->validate(*this, a_custom_validator);
         else

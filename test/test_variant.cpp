@@ -270,6 +270,16 @@ BOOST_AUTO_TEST_CASE( test_variant_tree )
             std::cerr << "Path 'md' not found!" << std::endl;
             BOOST_REQUIRE(false);
         }
+
+        cfg.put("md.x", 1);
+        cfg.put("x",    2);
+        cfg.put("y",    5);
+
+        int x = cfg.get({"md.x", "x"}, 0);
+        BOOST_REQUIRE_EQUAL(1, x);
+        int y = cfg.get({"md.y", "y"}, 0);
+        BOOST_REQUIRE_EQUAL(5, y);
+        BOOST_CHECK_THROW(cfg.get<int>({"md.z", "md"}), variant_tree_error);
     }
 
     {

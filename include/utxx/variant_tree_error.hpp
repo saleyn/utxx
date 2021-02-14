@@ -55,27 +55,6 @@ class variant_tree_error : public runtime_error {
         *this << a; stream(std::forward<Args>(args)...);
     }
 public:
-    /*
-    variant_tree_error(const std::string& a_path) : m_path(a_path) {}
-
-    template <class... Args>
-    variant_tree_error(src_info&& a_si, const std::string& a_path, Args&&... args)
-        : runtime_error(std::move(a_si)), m_path(a_path)
-    {
-        stream(std::forward<Args>(args)...);
-    }
-
-    variant_tree_error(src_info&& a_si, const std::string& a_path)
-        : runtime_error(std::move(a_si)), m_path(a_path) {}
-
-    template <class... Args>
-    explicit variant_tree_error(const std::string& a_path, Args&&... args)
-        : m_path(a_path)
-    {
-        stream(std::forward<Args>(args)...);
-    }
-    */
-
     template <class... Args>
     variant_tree_error(src_info&& a_si, const tree_path& a_path, Args&&... args)
         : runtime_error(std::move(a_si)), m_path(a_path.dump())
@@ -110,29 +89,6 @@ class variant_tree_bad_data : public variant_tree_error
 {
     variant m_data;
 public:
-    /*
-    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
-                          const tree_path& a_path = tree_path())
-        : variant_tree_error(std::move(a_si), a_path), m_data(a_data) {}
-    variant_tree_bad_data(const variant&   a_data,
-                          const tree_path& a_path = tree_path())
-        : variant_tree_error(a_path), m_data(a_data) {}
-    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
-                          const std::string&  a_path = std::string())
-        : variant_tree_error(std::move(a_si), a_path), m_data(a_data) {}
-    variant_tree_bad_data(const variant&     a_data,
-                          const std::string& a_path = std::string())
-        : variant_tree_error(a_path), m_data(a_data) {}
-
-    template <class... Args>
-    variant_tree_bad_data(src_info&& a_si, const variant& a_data,
-                          const std::string&  a_path, Args&&... args)
-        : variant_tree_bad_data(std::move(a_si), a_data, tree_path(a_path),
-                                std::forward<Args>(args)...)
-    {}
-
-    */
-
     template <class... Args>
     variant_tree_bad_data(src_info&& a_si, const variant& a_data,
                           const tree_path&  a_path, Args&&... args)

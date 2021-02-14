@@ -185,15 +185,18 @@ public:
     void clear() { *(base*)this = nullptr; }
 
     /// Returns true if the value is null.
-    bool is_null()      const { return type() == TYPE_NULL; }
-    bool is_bool()      const { return type() == TYPE_BOOL; }
-    bool is_int()       const { return type() == TYPE_INT;  }
-    bool is_double()    const { return type() == TYPE_DOUBLE; }
-    bool is_string()    const { return type() == TYPE_STRING; }
+    bool is_assigned()   const { return *this  != unassigned(); }
+    bool is_unassigned() const { return *this  == unassigned(); }
+    bool is_null()       const { return type() == TYPE_NULL; }
+    bool is_bool()       const { return type() == TYPE_BOOL; }
+    bool is_int()        const { return type() == TYPE_INT;  }
+    bool is_double()     const { return type() == TYPE_DOUBLE; }
+    bool is_string()     const { return type() == TYPE_STRING; }
 
+    /// @param relaxed when true, allow integral types to be converted to doubles
     template <typename T>
-    bool is_type()      const {
-        variant::type_visitor<T> v;
+    bool is_type(bool relaxed=false) const {
+        variant::type_visitor<T> v(relaxed);
         return boost::apply_visitor(v, *this);
     }
 
@@ -202,6 +205,7 @@ public:
     double              to_double() const { return is_int()
                                                  ? double(boost::get<long>(*this))
                                                  : boost::get<double>(*this); }
+    [[deprecated]]
     double              to_float()  const { return to_double(); }
     const std::string&  to_str()    const { return boost::get<std::string>(*this); }
     const char*         c_str()     const { return boost::get<std::string>
@@ -260,6 +264,8 @@ public:
         }
     }
 
+    bool operator!= (const variant& rhs) const { return !(operator==(rhs)); }
+
     bool operator< (const variant& rhs) const {
         if (type() < rhs.type()) return true;
         if (type() > rhs.type()) return false;
@@ -306,11 +312,19 @@ private:
 
     template <typename U>
     struct type_visitor: public boost::static_visitor<bool> {
-        typedef typename normal_type<U>::type Type;
-        bool operator() (Type v) const { return true; }
+        /// @param relaxed  when true allow integral types to be convertible to doubles
+        type_visitor(bool relaxed = false) : m_relaxed(relaxed) {}
+
+        using Type = typename normal_type<U>::type;
+
+        bool operator() (double) const {
+            return std::is_same_v<Type,double> || (m_relaxed && std::is_same_v<Type,long>);
+        }
 
         template <typename T>
-        bool operator() (T v)    const { return false; }
+        bool operator() (T)      const { return std::is_same_v<Type, T>; }
+    private:
+        bool m_relaxed;
     };
 };
 
