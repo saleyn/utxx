@@ -326,6 +326,12 @@ public:
     }
 
     std::basic_string<Ch>
+    get(std::initializer_list<const Ch*> paths, const Ch* default_value, src_info&& si = src_info()) const {
+        UTXX_PRETTY_FUNCTION();
+        return get(paths, std::basic_string<Ch>(default_value), UTXX_SRCXD(si));
+    }
+
+    std::basic_string<Ch>
     get(const path_type& path, const Ch* default_value, src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
         return get<std::basic_string<Ch>>(path, std::basic_string<Ch>(default_value), UTXX_SRCXD(si));

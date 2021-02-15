@@ -205,7 +205,6 @@ public:
     double              to_double() const { return is_int()
                                                  ? double(boost::get<long>(*this))
                                                  : boost::get<double>(*this); }
-    [[deprecated]]
     double              to_float()  const { return to_double(); }
     const std::string&  to_str()    const { return boost::get<std::string>(*this); }
     const char*         c_str()     const { return boost::get<std::string>
