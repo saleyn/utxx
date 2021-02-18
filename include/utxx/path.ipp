@@ -70,13 +70,21 @@ inline bool is_dir(const std::string& a_path) {
 
 inline std::string
 replace_env_vars(const std::string& a_path, time_val a_now, bool a_utc,
-                 const std::map<std::string, std::string>*  a_bindings)
+                 const varbinds_t*  a_bindings)
 {
     if (!a_now.empty()) {
         auto tm = a_now.to_tm(a_utc);
         return replace_env_vars(a_path, &tm, a_bindings);
     }
     return replace_env_vars(a_path, nullptr, a_bindings);
+}
+
+inline std::string
+replace_env_and_macros(const std::string& a_path,
+                       const varbinds_t&  a_vars,
+                       const struct tm* a_now)
+{
+    return replace_macros(replace_env_vars(a_path, a_now, &a_vars), a_vars);
 }
 
 inline bool file_unlink(const char* a_path) {

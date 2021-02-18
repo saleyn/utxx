@@ -305,6 +305,11 @@ std::string replace_macros(
     const std::string& a_path,
     const varbinds_t&  a_bindings);
 
+std::string replace_env_and_macros(
+    const std::string& a_path,
+    const varbinds_t&  a_bindings,
+    const struct tm* a_now = nullptr);
+
 /// Returns a pair containing a file name with substituted
 /// environment variables and day-time formatting symbols
 /// replaced (see strptime(3)), and a backup file name to
