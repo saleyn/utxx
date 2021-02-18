@@ -165,11 +165,12 @@ EnableDgramPktInfo(bool a_enable)
     UTXX_THROWX_RUNTIME_ERROR("Cannot ", a_enable ? "enable":"disable",
                               " PktInfo for a non-UDP socket!");
   m_with_pkt_info   = a_enable;
-  socklen_t len     = sizeof(a_enable);
+  int on            = a_enable;
+  socklen_t len     = sizeof(on);
 
-  if (setsockopt(m_fd, SOL_IP, IP_PKTINFO, &a_enable, sizeof(a_enable)) < 0)
+  if (setsockopt(m_fd, SOL_IP, IP_PKTINFO, &on, sizeof(on)) < 0)
     UTXX_THROWX_IO_ERROR(errno, "Error setting IP_PKTINFO option on ", m_name);
-  if (getsockopt(m_fd, SOL_IP, IP_PKTINFO, &a_enable, &len) < 0 || !a_enable)
+  if (getsockopt(m_fd, SOL_IP, IP_PKTINFO, &on, &len) < 0 || !on)
     UTXX_THROWX_IO_ERROR
       (errno, "Error IP_PKTINFO option couldn't be set on ", m_name);
 
@@ -194,8 +195,8 @@ EnablePktTimeStamps(bool a_enable)
     UTXX_THROWX_RUNTIME_ERROR("Cannot set pkt time stamps on a non-UDP socket!");
 
   m_pkt_time_stamps = a_enable;
+  int on            = a_enable;
 
-  int on = a_enable;
   if (setsockopt(m_fd, SOL_SOCKET, SO_TIMESTAMPNS, &on, sizeof(on)) < 0)
     UTXX_THROWX_IO_ERROR
       (errno, "Error setting SO_TIMESTAMPNS option on fd=", m_fd, ' ', m_name);
