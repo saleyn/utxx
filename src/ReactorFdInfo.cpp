@@ -195,8 +195,10 @@ EnablePktTimeStamps(bool a_enable)
 
   m_pkt_time_stamps = a_enable;
 
-  if (setsockopt(m_fd, SOL_SOCKET, SO_TIMESTAMPNS, &a_enable, sizeof(a_enable)) < 0)
-    UTXX_THROWX_IO_ERROR(errno, "Error setting SO_TIMESTAMPNS option on ", m_name);
+  int on = a_enable;
+  if (setsockopt(m_fd, SOL_SOCKET, SO_TIMESTAMPNS, &on, sizeof(on)) < 0)
+    UTXX_THROWX_IO_ERROR
+      (errno, "Error setting SO_TIMESTAMPNS option on fd=", m_fd, ' ', m_name);
 
   m_ts_wire.clear();
 }

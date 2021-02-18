@@ -121,9 +121,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 /// );
 ///
 /// Sample usage:
-/// MyEnumT val = MyEnumT::from_string("Pear");
-/// std::cout << "Value: " << to_string(val) << std::endl;
-/// std::cout << "Value: " << val            << std::endl;
+/// MyEnumT val = MyEnumT::from_name("Pear");
+/// std::cout << "Value: " << val.name() << std::endl;  // Pear
+/// std::cout << "Value: " << val        << std::endl;  // 'y'
 //------------------------------------------------------------------------------
 // NOTE: the last "if" statement unifies possible forms of vararg inputs:
 //   UTXX_ENUM(XXX, int, A, B, C)       ->  UTXX_ENUMZ(XXX, int, (A)(B)(C))
