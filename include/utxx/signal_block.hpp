@@ -44,15 +44,25 @@ namespace utxx
 /// \sa signal_unblock
 class signal_block : private boost::noncopyable {
     sigset_t m_orig_mask;
+    bool     m_restore;
+
+    static sigset_t full()  { sigset_t s; ::sigfillset(&s);  return s; }
+    static sigset_t empty() { sigset_t s; ::sigemptyset(&s); return s; }
 public:
-    signal_block(bool a_block = true) {
-        if (a_block) {
+
+    explicit signal_block(bool a_block = true, bool a_restore = true)
+        : signal_block(a_block ? full() : empty(), a_restore)
+    {}
+
+    explicit signal_block(sigset_t const& a_block, bool a_restore = true)
+        : m_restore(a_restore)
+    {
+        if (sigisemptyset(&a_block))
+            ::sigemptyset(&m_orig_mask);
+        else
             block();
-            return;
-        }
-        ::sigemptyset(&m_orig_mask);
     }
-   
+
     void block() {
         sigset_t block_all;
         if (::sigfillset(&block_all) < 0)
@@ -62,7 +72,7 @@ public:
     }
 
     ~signal_block() {
-        if (!sigisemptyset(&m_orig_mask))
+        if (!sigisemptyset(&m_orig_mask) && m_restore)
             ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
     }
 };
@@ -71,8 +81,11 @@ public:
 /// \sa signal_block
 class signal_unblock : private boost::noncopyable {
     sigset_t m_orig_mask;
+    bool     m_restore;
 public:
-    signal_unblock() {
+    signal_unblock(bool a_restore = true)
+        : m_restore(a_restore)
+    {
         sigset_t l_unblock_all;
         if (::sigemptyset(&l_unblock_all) < 0)
             UTXX_THROW_IO_ERROR(errno, "sigfillset(3)");
@@ -81,7 +94,8 @@ public:
     }
 
     ~signal_unblock() {
-        ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
+        if (m_restore)
+            ::sigprocmask(SIG_SETMASK, &m_orig_mask, static_cast<sigset_t*>(0));
     }
 };
 
