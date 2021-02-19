@@ -267,6 +267,11 @@ std::string home();
 /// @param a_filename file name to append to temp directory name
 std::string temp_path(std::string const& a_filename = "");
 
+/// Merge \a a_add variables to \a a_src variables.
+/// The values from \a a_add only added if they are not already found in \a a_src or if
+/// \a a_overwrite is true.
+varbinds_t merge_vars(varbinds_t const& a_src, varbinds_t const& a_add, bool a_overwrite=false);
+
 /// @brief Substitute all environment variables and day-time
 /// formatting symbols (see strptime(3)) in a given filename.
 /// The variables can be represented by "%VARNAME%" notation

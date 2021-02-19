@@ -93,11 +93,23 @@ std::string basename(const std::string& a_file, const std::string& a_strip_ext, 
     return std::string(p, e - p);
 }
 
-std::string extension(const std::string& a_file, const std::string& a_strip_ext, bool case_sense) {
+std::string extension(const std::string& a_file, const std::string& a_strip_ext, bool case_sense)
+{
     auto p = a_file.c_str();
     auto e = p + a_file.size();
     e = strip_ext(p, e, a_strip_ext, case_sense);
     return boost::filesystem::extension(std::string(p, e - p));
+}
+
+varbinds_t merge_vars(varbinds_t const& a_src, varbinds_t const& a_add, bool a_overwrite)
+{
+    auto res = a_src;
+
+    for (auto& [k,v] : a_add)
+        if (res.find(k) == res.end() || a_overwrite)
+            res[k] = v;
+
+   return res;
 }
 
 std::string
@@ -205,7 +217,7 @@ filename_with_backup(const char* a_filename,
     if (a_backup_dir == NULL)
         n = snprintf(buf, sizeof(buf), "%s", l_backup.c_str());
     else
-        n = snprintf(buf, sizeof(buf), "%s%c%s", 
+        n = snprintf(buf, sizeof(buf), "%s%c%s",
             a_backup_dir, slash(), l_backup.c_str());
     if (a_backup_suffix != NULL)
         snprintf(buf+n, sizeof(buf)-n, "%s.%s", l_ext.c_str(), a_backup_suffix);
@@ -235,7 +247,7 @@ program::program()
 
     // HWND h = ???
     DWORD dwPid=0;
-    ::GetWindowThreadProcessId((HWND)&__ImageBase, &dwPid); 
+    ::GetWindowThreadProcessId((HWND)&__ImageBase, &dwPid);
     HANDLE hProcess = ::OpenProcess(PROCESS_ALL_ACCESS ,0,dwPid);
     if ( hProcess == 0 )
         throw std::runtime_error("Cannot open process in order to get executable path!");
@@ -245,9 +257,9 @@ program::program()
 
     boost::scoped_ptr<HINSTANCE>  hIns(::LoadLibrary("Psapi.dll"), &::FreeLibrary);
 
-    if (hIns) 
+    if (hIns)
         pGetModuleFileNameExA =
-            (tGetModuleFileNameExA)::GetProcAddress(hIns.get(),"GetModuleFileNameExA"); 
+            (tGetModuleFileNameExA)::GetProcAddress(hIns.get(),"GetModuleFileNameExA");
 
     if(pGetModuleFileNameExA)
         pGetModuleFileNameExA(hProcess, 0, str_dll_path, sizeof(str_dll_path));
