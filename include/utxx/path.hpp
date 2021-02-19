@@ -50,6 +50,11 @@ enum class FileMatchT {
 /// Map of bindings in the form {Variable => Value} used for Variable replacement
 using varbinds_t = std::map<std::string, std::string>;
 
+/// Merge \a a_add variables to \a a_src variables.
+/// The values from \a a_add only added if they are not already found in \a a_src or if
+/// \a a_overwrite is true.
+varbinds_t merge_vars(varbinds_t const& a_src, varbinds_t const& a_add, bool a_overwrite=false);
+
 namespace path {
 
 /// Return a platform-specific slash path separator character
@@ -266,11 +271,6 @@ std::string home();
 /// Location of the temp directory (e.g. "/tmp")
 /// @param a_filename file name to append to temp directory name
 std::string temp_path(std::string const& a_filename = "");
-
-/// Merge \a a_add variables to \a a_src variables.
-/// The values from \a a_add only added if they are not already found in \a a_src or if
-/// \a a_overwrite is true.
-varbinds_t merge_vars(varbinds_t const& a_src, varbinds_t const& a_add, bool a_overwrite=false);
 
 /// @brief Substitute all environment variables and day-time
 /// formatting symbols (see strptime(3)) in a given filename.

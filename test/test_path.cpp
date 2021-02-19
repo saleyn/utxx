@@ -95,13 +95,13 @@ BOOST_AUTO_TEST_CASE( test_path_replace_env_vars )
 
     {
         varbinds_t add{ {"env", "four"}, { "key", "three" } };
-        auto res = path::merge_vars(bindings, add);
+        auto res = merge_vars(bindings, add);
         BOOST_REQUIRE_EQUAL(3, res.size());
         BOOST_REQUIRE_EQUAL("one", res["env"]);
     }
     {
         varbinds_t add{ {"env", "four"}, { "key", "three" } };
-        auto res = path::merge_vars(bindings, add, true);
+        auto res = merge_vars(bindings, add, true);
         BOOST_REQUIRE_EQUAL(3, res.size());
         BOOST_REQUIRE_EQUAL("four", res["env"]);
     }

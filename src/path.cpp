@@ -45,6 +45,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #endif
 
 namespace utxx {
+
+varbinds_t merge_vars(varbinds_t const& a_src, varbinds_t const& a_add, bool a_overwrite)
+{
+    auto res = a_src;
+
+    for (auto& [k,v] : a_add)
+        if (res.find(k) == res.end() || a_overwrite)
+            res[k] = v;
+
+   return res;
+}
+
 namespace path {
 
 std::string home() {
@@ -99,17 +111,6 @@ std::string extension(const std::string& a_file, const std::string& a_strip_ext,
     auto e = p + a_file.size();
     e = strip_ext(p, e, a_strip_ext, case_sense);
     return boost::filesystem::extension(std::string(p, e - p));
-}
-
-varbinds_t merge_vars(varbinds_t const& a_src, varbinds_t const& a_add, bool a_overwrite)
-{
-    auto res = a_src;
-
-    for (auto& [k,v] : a_add)
-        if (res.find(k) == res.end() || a_overwrite)
-            res[k] = v;
-
-   return res;
 }
 
 std::string
