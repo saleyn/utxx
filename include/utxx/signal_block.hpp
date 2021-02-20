@@ -132,4 +132,22 @@ sigset_t sig_members_parse(const std::string& a_signals, src_info&& a_si);
 /// Convert a vector of integer signal numbers to sigset
 sigset_t sig_vector_to_set(const std::vector<int>& a_signals);
 
+/// Return a formatted string containing current signals
+inline std::string curr_signals_to_str(utxx::src_info&& si = utxx::src_info(), bool decode=false) {
+    sigset_t old;
+    char res[1024], buf[64];
+    if (sigprocmask(SIG_SETMASK, NULL, &old) < 0)
+        strcpy(buf, "<error>");
+    else
+        snprintf(buf, sizeof(buf), "%lx", reinterpret_cast<uint64_t&>(old));
+
+    auto n = snprintf(res, sizeof(res), "%sPID: %d SigMask: %s",
+                      si.empty() ? "" : si.to_string("[","] ").c_str(), getpid(), res);
+    if (decode)
+      snprintf(res+n, sizeof(res)-n, " %s", utxx::sig_members(old).c_str());
+
+    return res;
+}
+
+
 } // namespace utxx
