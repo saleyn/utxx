@@ -186,7 +186,7 @@ private:
     // Invoked by the async thread to flush messages from queue to file
     int  commit(const struct timespec* tsp = NULL);
     // Invoked by the async thread
-    void run();
+    void run(bool a_block_signals);
     // Enqueues msg to internal queue
     int  internal_enqueue(command_t* a_cmd, const stream_info* a_si);
     // Writes data to internal queue
@@ -785,19 +785,10 @@ start(bool a_block_signals) {
     if (running())
         return -1;
 
-    if (a_block_signals) {
-        sigset_t    set;
-        sigfillset(&set);
-        pthread_sigmask(SIG_SETMASK, &set, nullptr);
-    }
-
     m_event.reset();
     m_cancel = false;
 
-    m_thread.reset(
-        new std::thread(
-            std::bind(&basic_multi_file_async_logger<traits>::run, this))
-    );
+    m_thread.reset(new std::thread([=]() { run(a_block_signals); }));
 
     m_cond_var.wait(lock);
 
@@ -823,7 +814,14 @@ stop() {
 
 template<typename traits>
 void basic_multi_file_async_logger<traits>::
-run() {
+run(bool a_block_signals) {
+
+    if (a_block_signals) {
+        sigset_t    set;
+        sigfillset(&set);
+        pthread_sigmask(SIG_SETMASK, &set, nullptr);
+    }
+
     // Notify the caller that we are ready
     {
         std::unique_lock<std::mutex> lock(m_mutex);
