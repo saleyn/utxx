@@ -269,9 +269,9 @@ public:
     }
 
     template <class T>
-    T get(std::initializer_list<const Ch*> paths, src_info&& si = src_info()) const {
+    T get(std::initializer_list<std::basic_string<Ch>> paths, src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
-        for (auto* p : paths) {
+        for (auto& p : paths) {
             auto res = try_get(p, UTXX_SRCXD(si));
             if (res.is_assigned()) {
                 if (res.template is_type<T>(true))
@@ -299,10 +299,11 @@ public:
     }
 
     template <class T>
-    T get(std::initializer_list<const Ch*> paths, const T& default_value, src_info&& si = src_info()) const
+    T get(std::initializer_list<std::basic_string<Ch>> paths,
+          const T& default_value, src_info&& si = src_info()) const
     {
         UTXX_PRETTY_FUNCTION();
-        for (auto* p : paths) {
+        for (auto& p : paths) {
             auto&  res = try_get(p, UTXX_SRCXD(si));
             if (res.is_assigned()) {
                 if (res.template is_type<T>(true))
@@ -326,7 +327,7 @@ public:
     }
 
     std::basic_string<Ch>
-    get(std::initializer_list<const Ch*> paths, const Ch* default_value, src_info&& si = src_info()) const {
+    get(std::initializer_list<std::basic_string<Ch>> paths, const Ch* default_value, src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
         return get(paths, std::basic_string<Ch>(default_value), UTXX_SRCXD(si));
     }
