@@ -142,7 +142,7 @@ inline std::string curr_signals_to_str(utxx::src_info&& si = utxx::src_info(), b
         snprintf(buf, sizeof(buf), "%lx", reinterpret_cast<uint64_t&>(old));
 
     auto n = snprintf(res, sizeof(res), "%sPID: %d SigMask: %s",
-                      si.empty() ? "" : si.to_string("[","] ").c_str(), getpid(), res);
+                      si.empty() ? "" : si.to_string("[","] ").c_str(), getpid(), buf);
     if (decode)
       snprintf(res+n, sizeof(res)-n, " %s", utxx::sig_members(old).c_str());
 
