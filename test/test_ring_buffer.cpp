@@ -90,8 +90,10 @@ void test(const char* a_desc, size_t a_exp_capacity, size_t a_capacity,
 
 BOOST_AUTO_TEST_CASE( test_ring_buffer )
 {
-    test<ring_buffer<int, 0, false>>("non-atomic", 4, 3, NULL, 0);
-    test<ring_buffer<int, 0, true> >("atomic",     4, 3, NULL, 0);
+    test<ring_buffer<int, 0, false, true>>("non-atomic,pow2", 4, 3, NULL, 0);
+    test<ring_buffer<int, 0, true,  true>>("atomic,pow2",     4, 3, NULL, 0);
+    test<ring_buffer<int, 0, false,false>>("non-atomic",      4, 3, NULL, 0);
+    test<ring_buffer<int, 0, true, false>>("atomic",          4, 3, NULL, 0);
 
     size_t n = ring_buffer<int, 0, true>::memory_size(3);
     char*  p = new char[n];

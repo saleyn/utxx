@@ -1,7 +1,7 @@
 // vim:ts=4:et:sw=4
 //------------------------------------------------------------------------------
 /// \file   ring_buffer.hpp
-/// \author Leonid Timochouk 
+/// \author Leonid Timochouk
 /// \author Serge Aleynikov
 //------------------------------------------------------------------------------
 /// \brief Wait-free circular buffer for single reader multi-writer use cases
@@ -59,7 +59,8 @@ namespace utxx {
 template<
     typename T,
     size_t   StaticCapacity = 0,
-    bool     Atomic         = true
+    bool     Atomic         = true,
+    bool     SizeIsPow2     = true
 >
 struct ring_buffer {
     /// Default constructor does not make much sense unless StaticCapacity > 0
@@ -99,15 +100,15 @@ struct ring_buffer {
             a_construct = true;
         }
 
-        ring_buffer<T, StaticCapacity, Atomic>* p;
+        ring_buffer<T, StaticCapacity, Atomic, SizeIsPow2>* p;
 
         // Optionally run the "placement new" constructor on the given memory:
         if (a_construct)
-            p = new (a_memory) ring_buffer<T, StaticCapacity, Atomic>
+            p = new (a_memory) ring_buffer<T, StaticCapacity, Atomic, SizeIsPow2>
                                (a_capacity, allocated_externally);
         else {
             p = reinterpret_cast
-                    <ring_buffer<T, StaticCapacity, Atomic>*>(a_memory);
+                    <ring_buffer<T, StaticCapacity, Atomic, SizeIsPow2>*>(a_memory);
             if ((p->m_version & ~0x1) != s_version)
                 throw runtime_error
                     ("ring_buffer::create: invalid version of existing "
@@ -158,13 +159,18 @@ struct ring_buffer {
     /// \return a direct access ptr to the entry stored
     template<class ...Args>
     const T* add(Args&&... a_ctor_args) {
-        // Check if the "SeqNo" associated with the new entry is already there:
+        // Check if the item associated with the new entry is already there:
         // The curr front of the Buffer (where next insertion would occur):
         // NB: Since capacity is a power of 2, modular arithmetic can be done as
         // a logical AND:
         //
-        size_t sz  = load_size<Atomic>(std::memory_order_acquire);
-        size_t pos = sz & m_mask;
+        size_t sz = load_size<Atomic>(std::memory_order_acquire);
+        size_t pos;
+
+        if constexpr(SizeIsPow2)
+            pos = sz & m_mask;
+        else
+            pos = sz - ((sz / m_capacity) * m_capacity);
 
         // Store the value at "front" and atomically increment "m_size", so the
         // Reader Clients will always have a consistent view;  "m_size"  itself
@@ -172,32 +178,37 @@ struct ring_buffer {
         // The new entry is constructed in-place (a partial case is applying the
         // Copy Ctor on "T"):
         //
-        T*   at  = m_entries + pos;
+        T* at = m_entries + pos;
         construct<T>(at, a_ctor_args...);
 
         store_size<Atomic>(sz + 1);
+
         return at;
     }
 
     /// Index of the most recent entry in range [0 ... capacity()-1]
     size_t last() const {
-        size_t sz =  load_size<Atomic>();
-        if (unlikely(sz == 0))
+        size_t sz = load_size<Atomic>();
+        if (UNLIKELY(sz == 0))
             // CANNOT produce a valid ptr because there are no, as yet,
             // entries to point to:
             throw std::runtime_error("ring_buffer:last(): no entries");
 
         // GENERIC CASE: The most-recently-inserted pos. Again, using the
         // logical AND for power-of-2 modular arithmetic:
-        //
-        return (sz - 1) & m_mask;
+        if constexpr(SizeIsPow2)
+            return (sz - 1) & m_mask;
+        else {
+            auto   n = sz-1;
+            return n - ((n / m_capacity) * m_capacity);
+        }
     }
 
     /// Ptr to the most recent entry:
-    const T* back() const { return m_entries + last(); }
+    const T* back()        const { return m_entries + last(); }
 
     /// Total number of entries added so far (including over-written ones)
-    size_t total_count() const { return load_size<Atomic>(); }
+    size_t   total_count() const { return load_size<Atomic>(); }
 
     /// Accessing the ring buffer by index
     T const& operator[](size_t a_idx) const {
@@ -213,7 +224,7 @@ struct ring_buffer {
 
     /// Total memory footprint needed to allocate a ring-buffer of a_capacity
     static size_t memory_size(size_t a_capacity) {
-        size_t sz = math::upper_power(a_capacity, 2);
+        size_t sz = SizeIsPow2 ? math::upper_power(a_capacity, 2) : a_capacity;
         return sizeof(ring_buffer<T>) + sizeof(T) * sz;
     }
 
@@ -276,7 +287,8 @@ private:
                  StaticCapacity, ", dynamic=", a_capacity);
 
         assert(m_capacity >= 1);
-        assert((m_capacity & m_mask) == 0);   // Power of 2 indeed!
+        if constexpr(SizeIsPow2)
+            assert((m_capacity & m_mask) == 0);   // Power of 2 indeed!
     }
 
     /// User needs to use destroy() to destruct the object
@@ -304,9 +316,9 @@ private:
         #ifndef NDEBUG
         // If the buffer is full, then any "idx" (< capacity) is OK; otherwise,
         // it must be < size:
-        size_t sz = load_size<Atomic>();
-        unsigned int limit = std::min<size_t>(sz, m_capacity);
-        if (unlikely(a_idx >= limit))
+        auto sz    = load_size<Atomic>();
+        auto limit = std::min<size_t>(sz, m_capacity);
+        if (UNLIKELY(a_idx >= limit))
             throw badarg_error
                 ("ring_buffer[]", "invalid idx=", a_idx, ", capacity=",
                  m_capacity, ", total_size=", sz);
