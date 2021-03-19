@@ -50,11 +50,13 @@ BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
     std::set<int> set{ 3, 4, 7, 9 };
 
     auto x = find_closest(set, 1); //Returns '3'
+    auto y = find_closest(set, 5); //Returns '4'
     auto a = find_closest(set, 6); //Returns '7'
     auto b = find_closest(set, 4); //Returns '4'
     auto c = find_closest(set, 10); //Returns '9'
 
     BOOST_REQUIRE_EQUAL(3, *x);
+    BOOST_REQUIRE_EQUAL(4, *y);
     BOOST_REQUIRE_EQUAL(7, *a);
     BOOST_REQUIRE_EQUAL(4, *b);
     BOOST_REQUIRE_EQUAL(9, *c);

@@ -205,7 +205,7 @@ struct ring_buffer {
     }
 
     /// Ptr to the most recent entry:
-    const T* back()        const { return m_entries + last(); }
+    const T* back()        const { return m_entries + last();  }
 
     /// Total number of entries added so far (including over-written ones)
     size_t   total_count() const { return load_size<Atomic>(); }

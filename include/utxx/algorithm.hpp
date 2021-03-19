@@ -36,6 +36,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+/// Search the container for an item which is closest (less/greater/equal) to the given value
+/// @param s    - the container to search in
+/// @param val  - the value to check
+/// @code
+///   std::set<int> set{ 3, 4, 8 };
+///   auto x = find_closest(set, 1);  // Returns 3
+///   auto y = find_closest(set, 4);  // Returns 4
+///   auto z = find_closest(set, 5);  // Returns 4
+/// @endcode
 template <typename Set>
 typename Set::const_iterator
 find_closest(Set const& s, typename Set::value_type const& val)
@@ -56,6 +65,15 @@ find_closest(Set const& s, typename Set::value_type const& val)
     return val - *it < *nt - val ? it : nt;
 }
 
+/// Search the container for an item which is equal to or greater than the given value
+/// @param s    - the container to search in
+/// @param val  - the value to check
+/// @code
+///   std::set<int> set{ 3, 4, 8 };
+///   auto x = find_ge(set, 1);  // Returns 3
+///   auto y = find_ge(set, 4);  // Returns 4
+///   auto z = find_ge(set, 5);  // Returns 8
+/// @endcode
 template <typename Set>
 typename Set::const_iterator
 find_ge(Set const& s, typename Set::value_type const& val)
