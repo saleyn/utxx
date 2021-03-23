@@ -235,172 +235,8 @@ ReportError(IOType a_tp, int a_ec, const std::string& a_err,
 }
 
 //------------------------------------------------------------------------------
-long FdInfo::
-Handle(uint32_t a_events)
-{
-  UTXX_PRETTY_FUNCTION(); // Cache pretty function name
-
-  switch (Type()) {
-    case HType::IO:     return HandleIO    (a_events);
-    case HType::RawIO:  return HandleRawIO (a_events);
-    case HType::Pipe:   return HandlePipe  (a_events);
-    case HType::File:   return HandleFile  (a_events);
-    case HType::Event:  return HandleEvent (a_events, true);
-    case HType::Timer:  return HandleTimer (a_events);
-    case HType::Accept: return HandleAccept(a_events);
-    case HType::Signal: return HandleSignal(a_events);
-    default:
-      UTXX_RLOG(this, DEBUG, "fd=", m_fd, " undefined handler type");
-      return -1;
-  }
-}
-
-//------------------------------------------------------------------------------
-// Inlined on critical path
-// The actual read/write ops are invoked from here:
-// (*) for read,  it is  ReadUntilEAgain()
-// (*) for write, ...???
-//------------------------------------------------------------------------------
-inline long FdInfo::
-HandleIO(uint32_t a_events)
-{
-  UTXX_PRETTY_FUNCTION();
-
-  bool handled;
-  int  rc;
-
-  // FD error condition is handled by the caller prior to making this call
-  if (Reactor::IsReadable(a_events)) {
-    // Perform Reading:
-    assert(m_rd_buff);
-
-    try {
-
-      // Read handler for edge-triggered and level-triggered FDs.
-      // In this case a continuous read loop is required until we get EAGAIN:
-      std::tie(rc, handled) = ReadUntilEAgain
-      (
-        // Read action -- innermost-level call-back:
-        [this](dynamic_io_buffer& a_buf, int a_last_bytes) {
-          // Invoke the user-level call-back:
-          return m_handler.AsIO().rh(*this, a_buf);
-        },
-
-        // Debug action:
-        m_rd_debug
-      );
-
-      // When m_fd < 0, it means that the file descriptor was closed by user
-      if (handled || rc > 0 || m_fd < 0)
-        return rc;
-
-      rc = SocketError(m_fd);
-      auto err = rc ? strerror(rc) : "connection closed by peer";
-      return ReportError(IOType::Read, rc, err, UTXX_SRCX);
-
-    } catch (utxx::runtime_error& e) {
-      return ReportError(IOType::UserCode, 0, e.str(), src_info(e.src()));
-    } catch (std::exception& e) {
-      return ReportError(IOType::UserCode, 0, e.what(), UTXX_SRCX);
-    }
-  } else if (Reactor::IsWritable(a_events)) {
-    // Perform writing:
-    assert(m_handler.AsIO().wh);
-    assert(m_wr_buff);
-
-    // Unlike io.rh which is an after-read call-back, io.wh should
-    // typically contain a write/send syscall itself.
-    // TODO: better call "write" immediately here:
-    try   { return m_handler.AsIO().wh(*this, *m_wr_buff); }
-    catch ( utxx::runtime_error& e) {
-      return ReportError(IOType::UserCode, 0, e.str(),  src_info(e.src())); }
-    catch ( std::exception& e) {
-      return ReportError(IOType::UserCode, 0, e.what(), UTXX_SRCX);
-    }
-  } else {
-    return 0;
-  }
-
-  // It is really impossible to get here.
-  return ReportError(IOType::AppLogic, 0, "LOGIC ERROR: unhandled branch", UTXX_SRCX);
-}
-
-//------------------------------------------------------------------------------
-// Inlined on critical path
-inline long FdInfo::
-HandleRawIO (uint32_t a_events)
-{
-  UTXX_PRETTY_FUNCTION();
-
-  auto io_type = (a_events & EPOLLOUT) ? IOType::Write : IOType::Read;
-
-  assert( m_handler.AsRawIO() != nullptr );
-  try   { m_handler.AsRawIO()(*this, io_type, a_events); }
-  catch ( utxx::runtime_error& e ) {
-    return ReportError(IOType::Read, 0, e.what(), e.src()); }
-  catch ( std::exception& e ) {
-    return ReportError(IOType::Read, 0, e.what(), UTXX_SRCX);
-  }
-
-  return 0;
-}
-
-//------------------------------------------------------------------------------
-inline long FdInfo::
-HandleEvent (uint32_t a_events, bool a_invoke_handler)
-{
-  UTXX_PRETTY_FUNCTION();
-
-  static const char s_err[] = "error reading eventfd";
-
-  if (UNLIKELY(!Reactor::IsReadable(a_events)))
-    return 0;
-
-  int64_t events = 0;
-  int n;
-
-  // TODO: We can optimize this code in some cases by eliminating the reads.
-  // When using edge-triggered notifications, if you signal an event by
-  // modifying a descriptor's epoll registration then you will get an event
-  // through epoll_wait telling you the current state of the descriptor:
-
-  // Signal:
-  //      epoll_ctl(epoll_fd, EPOLL_CTL_MOD, event_fd, ...);
-
-  // Wait:
-  //      num_events = epoll_wait(...)
-  //      for (int i = 0; i < num_events; ++i)
-  //          if (events[i].data.fd == event_fd)
-  //              ... event_fd got signaled!
-
-  // which is saving the need for read(2) system calls
-
-  do    { n = ::read(m_fd, &events, sizeof(events)); }
-  while (UNLIKELY(n < 0 && errno == EINTR));
-
-  if (UNLIKELY(n <= 0)) {
-    // In case of edge-triggered FD, EAGAIN clears the edge:
-    if (n < 0 && errno == EAGAIN)
-      return 0;
-
-    return ReportError(IOType::Read, errno, s_err, UTXX_SRCX);
-  }
-
-  if (a_invoke_handler) {
-    try   { m_handler.AsEvent()(*this, events); }
-    catch ( utxx::runtime_error& e ) {
-      return ReportError(IOType::UserCode, 0, e.what(), e.src()); }
-    catch ( std::exception& e ) {
-      return ReportError(IOType::UserCode, 0, e.what(), UTXX_SRCX);
-    }
-  }
-
-  return events;
-}
-
-//------------------------------------------------------------------------------
 // TODO:
-inline long FdInfo::HandlePipe(uint32_t a_events)
+long FdInfo::HandlePipe(uint32_t a_events)
 {
   UTXX_PRETTY_FUNCTION();
 
@@ -443,8 +279,9 @@ inline long FdInfo::HandlePipe(uint32_t a_events)
   return 0;
 }
 
+
 //------------------------------------------------------------------------------
-inline long FdInfo::
+long FdInfo::
 HandleFile(uint32_t a_events)
 {
   UTXX_PRETTY_FUNCTION(); // Cache pretty function name
@@ -559,36 +396,7 @@ HandleFile(uint32_t a_events)
 }
 
 //------------------------------------------------------------------------------
-inline long FdInfo::
-HandleTimer (uint32_t a_events)
-{
-  UTXX_PRETTY_FUNCTION();
-
-  if (UNLIKELY(!Reactor::IsReadable(a_events)))
-    return 0;
-
-  int      got;
-  uint64_t exp = 0;
-
-  while (UNLIKELY((got = ::read(m_fd,&exp,sizeof(exp)) < 0) && errno == EINTR));
-
-  if (UNLIKELY(got < 0))
-    return ReportError(IOType::Read, errno, "error reading from timerfd", UTXX_SRCX);
-
-  // got == 0 means no timer expirations since last read
-  // Invoke the user callback
-  try   { m_handler.AsTimer()(*this, exp); }
-  catch ( utxx::runtime_error& e ) {
-    return ReportError(IOType::UserCode, 0, e.what(), e.src()); }
-  catch ( std::exception& e ) {
-    return ReportError(IOType::UserCode, 0, e.what(), UTXX_SRCX);
-  }
-
-  return got;
-}
-
-//------------------------------------------------------------------------------
-inline long FdInfo::
+long FdInfo::
 HandleSignal(uint32_t a_events)
 {
   UTXX_PRETTY_FUNCTION();
@@ -630,7 +438,7 @@ HandleSignal(uint32_t a_events)
 }
 
 //------------------------------------------------------------------------------
-inline long FdInfo::
+long FdInfo::
 HandleAccept(uint32_t a_events)
 {
   UTXX_PRETTY_FUNCTION();
