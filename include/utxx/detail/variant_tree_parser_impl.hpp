@@ -135,7 +135,7 @@ namespace detail {
         std::basic_istream<Ch>&      a_stream,
         basic_variant_tree<Ch>&      a_tree,
         const std::basic_string<Ch>& a_filename  = std::basic_string<Ch>(),
-        const boost::function<bool (std::basic_string<Ch>& a_filename)>
+        const std::function<bool (std::basic_string<Ch>& a_filename)>
                                      a_resolver = inc_file_resolver<Ch>()
     )
     {
@@ -172,7 +172,7 @@ namespace detail {
     (
         const std::basic_string<Ch>& a_filename,
         basic_variant_tree<Ch>&      a_tree,
-        const boost::function<bool (std::basic_string<Ch>& a_filename)>
+        const std::function<bool (std::basic_string<Ch>& a_filename)>
                                      a_resolver = inc_file_resolver<Ch>(),
         const std::locale&           a_loc      = std::locale()
     )

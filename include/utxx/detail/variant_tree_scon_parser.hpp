@@ -18,7 +18,7 @@
 #include <boost/property_tree/detail/file_parser_error.hpp>
 #include <boost/property_tree/detail/info_parser_writer_settings.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/function.hpp>
+#include <functional>
 #include <iterator>
 #include <string>
 #include <stack>
@@ -90,7 +90,7 @@ namespace detail {
         };
 
     private:
-        typedef boost::function<bool (std::string& a_filename)> file_resolver;
+        typedef std::function<bool (std::string& a_filename)> file_resolver;
         typedef std::basic_string<Ch> str_t;
 
         template<class ChDest, class ChSrc>

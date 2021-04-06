@@ -76,7 +76,7 @@ namespace utxx {
         basic_variant_tree<Ch>&      a_tree,
         config_format                a_format,
         const std::basic_string<Ch>& a_filename  = std::basic_string<Ch>(),
-        const boost::function<bool (std::basic_string<Ch>& a_filename)>
+        const std::function<bool (std::basic_string<Ch>& a_filename)>
                                      a_resolver = inc_file_resolver<Ch>(),
         int                          a_flags = 0
     ) {
@@ -133,7 +133,7 @@ namespace utxx {
     (
         const std::basic_string<Ch>& a_filename,
         basic_variant_tree<Ch>&      a_tree,
-        const boost::function<bool (std::basic_string<Ch>& a_filename)>
+        const std::function<bool (std::basic_string<Ch>& a_filename)>
                                      a_resolver = inc_file_resolver<Ch>(),
         int                          a_flags = 0,
         const std::locale &          a_loc   = std::locale(),
@@ -167,11 +167,26 @@ namespace utxx {
     (
         const Ch*               a_filename,
         basic_variant_tree<Ch>& a_tree,
-        const boost::function<bool (std::basic_string<Ch>& a_filename)>
+        const std::function<bool (std::basic_string<Ch>& a_filename)>
                                 a_resolver = inc_file_resolver<Ch>(),
         int                     a_flags = 0,
         const std::locale &     a_loc   = std::locale(),
         config_format           a_fmt   = FORMAT_UNDEFINED
+    ) {
+        read_config(std::basic_string<Ch>(a_filename),
+                    a_tree, a_resolver, a_flags, a_loc, a_fmt);
+    }
+
+    template<class Ch>
+    void read_config
+    (
+        const std::basic_string<Ch>& a_filename,
+        basic_variant_tree<Ch>&      a_tree,
+        config_format                a_fmt,
+        const std::locale &          a_loc      = std::locale(),
+        const std::function<bool (std::basic_string<Ch>& a_filename)>
+                                     a_resolver = inc_file_resolver<Ch>(),
+        int                          a_flags    = 0
     ) {
         read_config(std::basic_string<Ch>(a_filename),
                     a_tree, a_resolver, a_flags, a_loc, a_fmt);
