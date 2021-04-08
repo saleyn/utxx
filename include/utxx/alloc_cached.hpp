@@ -106,8 +106,8 @@ public:
 
     template <typename U>
     struct rebind {
-        typedef typename AllocT::template rebind<U>::other ArenaAlloc;
-        typedef cached_allocator<U, ArenaAlloc, MinSize, SizeClasses> other;
+        using ArenaAlloc = typename std::allocator_traits<AllocT>::template rebind_alloc<U>;
+        using other      = cached_allocator<U, ArenaAlloc, MinSize, SizeClasses>;
     };
 
     cached_allocator() : m_alloc(default_allocator()), m_large_objects(0) {}

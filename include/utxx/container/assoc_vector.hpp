@@ -82,14 +82,14 @@ namespace utxx {
 
         using key_compare           = C;
         using allocator_type        = A;
-        using reference             = typename A::reference;
-        using const_reference       = typename A::const_reference;
+        using reference             = typename A::value_type&;
+        using const_reference       = const typename A::value_type&;
         using iterator              = typename base::iterator;
         using const_iterator        = typename base::const_iterator;
         using size_type             = typename base::size_type;
         using difference_type       = typename base::difference_type;
-        using pointer               = typename A::pointer;
-        using const_pointer         = typename A::const_pointer;
+        using pointer               = typename A::value_type*;
+        using const_pointer         = const typename A::value_type*;
         using reverse_iterator      = typename base::reverse_iterator;
         using const_reverse_iterator= typename base::const_reverse_iterator;
 

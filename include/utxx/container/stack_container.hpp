@@ -31,8 +31,8 @@ template<typename T, size_t stack_capacity>
 class stack_allocator : public std::allocator<T>
 {
 public:
-    typedef typename std::allocator<T>::pointer pointer;
-    typedef typename std::allocator<T>::size_type size_type;
+    using pointer   = typename std::allocator<T>::value_type*;
+    using size_type = typename std::allocator<T>::size_type;
 
     // Backing store for the allocator. The container owner is responsible for
     // maintaining this for as long as any containers using this allocator are
@@ -87,10 +87,20 @@ public:
         : m_src(NULL)
     {}
 
+    template<typename U>
+    stack_allocator(const stack_allocator<U, stack_capacity>& other)
+        : m_src(NULL)
+    {}
+
     // Don't use this allocator directly - it's for compatibility with GCC < 5.1
     // when using with std::string that has __a == __Alloc() comparison
     stack_allocator() : m_src(NULL)
     {}
+
+    template <typename U>
+    struct rebind {
+        using other = stack_allocator<U, stack_capacity>;
+    };
 
     explicit stack_allocator(storage* source) : m_src(source)
     {}
@@ -98,7 +108,7 @@ public:
     // Actually do the allocation. Use the stack buffer if nobody has used it yet
     // and the size requested fits. Otherwise, fall through to the standard
     // allocator.
-    pointer allocate(size_type n, void* hint = 0)
+    pointer allocate(size_type n)
     {
         if (m_src != NULL && !m_src->m_used_stack_buffer && n <= stack_capacity)
         {
@@ -107,7 +117,7 @@ public:
         }
         else
         {
-            return std::allocator<T>::allocate(n, hint);
+            return std::allocator<T>::allocate(n);
         }
     }
 

@@ -323,7 +323,7 @@ destroy(atomic_hash_array* p, Allocator& alloc) {
 
     size_t sz = config::memory_size(p->m_capacity);
 
-    typename Allocator::pointer q(reinterpret_cast<char*>(p));
+    typename Allocator::value_type* q(reinterpret_cast<char*>(p));
     alloc.deallocate(q, sz);
 }
 

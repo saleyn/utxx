@@ -536,7 +536,7 @@ dynamic_io_buffer* Reactor
 
   auto mask = EPOLLIN | EPOLLET | EPOLLERR | EPOLLRDHUP | (a_on ? EPOLLOUT:0);
 
-  epoll_event ev{ .events = mask, {0} };
+  epoll_event ev{ .events = mask, .data{0} };
   ev.data.fd = a_fd;
 
   if (epoll_ctl(m_epoll_fd, EPOLL_CTL_MOD, a_fd, &ev) == -1)
