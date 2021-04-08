@@ -78,11 +78,6 @@ namespace {
             typedef const T*        const_pointer;
             typedef T               value_type;
 
-            template <typename U>
-            struct rebind {
-                typedef no_alloc<U> other;
-            };
-
             T* allocate(size_t n) {
                 assert(n < sizeof(s_arena));
                 return static_cast<T*>(s_arena);

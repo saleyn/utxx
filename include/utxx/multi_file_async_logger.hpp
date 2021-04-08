@@ -79,9 +79,9 @@ namespace utxx {
 
 /// Traits of asynchronous logger
 struct multi_file_async_logger_traits {
-    typedef std::allocator<char>      allocator;
-    typedef std::allocator<char>      fixed_size_allocator;
-    typedef futex                     event_type;
+    using allocator                 = std::allocator<char>;
+    using fixed_size_allocator      = std::allocator<char>;
+    using event_type                = futex;
     static const int commit_timeout = 2000;  // commit this number of usec
     /// Preallocated space for most common category length
     static constexpr const int category_size() { return short_string::round_size(15); }
@@ -116,7 +116,8 @@ struct basic_multi_file_async_logger {
     using msg_writer    = std::function<int (stream_info& a_si, const char** a_categories,
                                              const iovec* a_data, size_t a_size)>;
 
-    using msg_allocator = typename traits::allocator::template rebind<char>::other;
+    using msg_allocator = typename std::allocator_traits<typename traits::allocator>
+                          ::template rebind_alloc<char>;
 
     using err_handler   = std::function<int (stream_info& a_si, int a_errno,
                                              const std::string& a_err)>;
@@ -139,10 +140,10 @@ private:
         bool operator()(const stream_info* a, const stream_info* b) const { return a < b; }
     };
 
-    using cmd_allocator = typename traits::fixed_size_allocator::template
-        rebind<command_t>::other;
-    using ptr_allocator = typename traits::fixed_size_allocator::template
-        rebind<stream_info*>::other;
+    using cmd_allocator = typename std::allocator_traits<typename traits::fixed_size_allocator>
+                          ::template rebind_alloc<command_t>;
+    using ptr_allocator = typename std::allocator_traits<typename traits::fixed_size_allocator>
+                          ::template rebind_alloc<stream_info*>;
 
     using pending_data_streams_set = std::set<stream_info*, stream_info_lt, ptr_allocator>;
 

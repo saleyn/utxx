@@ -342,12 +342,6 @@ public:
 //        : BaseT( *reinterpret_cast<BaseT*>(&a) )
 //    {}
 
-    /// Convert an allocator<Type> to an allocator <Type1>.
-    template <typename U>
-    struct rebind {
-        typedef shmem_allocator<U, Policy> other;
-    };
-
     /// Return address of reference to mutable element.
     pointer address( reference elem ) const { return &elem; }
 

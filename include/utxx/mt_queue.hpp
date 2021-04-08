@@ -51,7 +51,7 @@ template<typename Data, typename Alloc = std::allocator<char> >
 class concurrent_queue
 {
 public:
-    using alloc_type = typename Alloc::template rebind<Data>::other;
+    using alloc_type = typename std::allocator_traits<Alloc>::template rebind_alloc<Data>;
     using queue_type = std::deque<Data, alloc_type>;
 private:
     queue_type                  m_queue;

@@ -68,13 +68,6 @@ public:
         bool m_used_stack_buffer;
     };
 
-    // Used by containers when they want to refer to an allocator of type U.
-    template<typename U>
-    struct rebind
-    {
-        typedef stack_allocator<U, stack_capacity> other;
-    };
-
     // For the straight up copy c-tor, we can share storage.
     stack_allocator(const stack_allocator<T, stack_capacity>& rhs)
         : std::allocator<T>(), m_src(rhs.m_src)

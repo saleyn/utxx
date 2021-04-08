@@ -35,6 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/test/unit_test.hpp>
 #include <utxx/alloc_fixed_page.hpp>
 #include <utxx/verbosity.hpp>
+#include <memory>
+#include <string>
 #include <vector>
 #include <iostream>
 
@@ -64,3 +66,43 @@ BOOST_AUTO_TEST_CASE( test_alloc_fixed_page )
 
 }
 
+// Example allocator, doesn't do anything but implements std::allocator_traits
+template<typename T>
+struct null_allocator {
+  using value_type = T;
+
+  null_allocator() {}
+
+  template<typename U>
+  null_allocator(const null_allocator<U>&) {}
+
+  T* allocate(size_t) { return NULL; }
+
+  void deallocate(T*, size_t) {}
+};
+
+template<typename T, typename U>
+constexpr bool operator== (const null_allocator<T>&, const null_allocator<U>&) noexcept {
+  return true;
+}
+
+template<typename T, typename U>
+constexpr bool operator!= (const null_allocator<T>&, const null_allocator<U>&) noexcept {
+  return false;
+}
+
+template<typename T>
+using RebindAlloc = typename std::allocator_traits<null_allocator<void>>::template rebind_alloc<T>;
+
+using MyString = std::basic_string<char, std::char_traits<char>, RebindAlloc<char>>;
+
+BOOST_AUTO_TEST_CASE( test_rebind_alloc )
+{
+  // check that null_allocator follows allocator_traits
+  null_allocator<char> alloc;
+  void * ptr = std::allocator_traits<null_allocator<char>>().allocate(alloc, 1);
+
+  MyString string;
+
+  BOOST_REQUIRE_EQUAL(nullptr, ptr);
+}

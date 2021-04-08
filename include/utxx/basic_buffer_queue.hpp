@@ -36,7 +36,7 @@ namespace utxx {
 template <typename BufferType, typename Alloc = std::allocator<char> >
 class basic_buffer_queue {
     using buf_t = BufferType;
-    using alloc = typename Alloc::template rebind<buf_t>::other;
+    using alloc = typename std::allocator_traits<Alloc>::template rebind_alloc<buf_t>;
     using deque = std::deque<buf_t, alloc>;
 
     deque  m_q1, m_q2;

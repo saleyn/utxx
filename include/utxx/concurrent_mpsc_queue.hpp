@@ -34,6 +34,7 @@
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
+#include <memory>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
@@ -68,7 +69,7 @@ struct concurrent_mpsc_queue {
         void  next(node* a_node)         { m_next = a_node; }
     };
 
-    typedef typename Allocator::template rebind<node>::other Alloc;
+    using Alloc = typename std::allocator_traits<Allocator>::template rebind_alloc<node>;
 
     explicit concurrent_mpsc_queue(const Alloc& a_alloc = Alloc())
         : m_head     (nullptr)

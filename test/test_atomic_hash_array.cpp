@@ -56,8 +56,6 @@ public:
 
     constexpr size_t max_size() const { return std::numeric_limits<size_t>::max(); }
 
-    template <class U> struct rebind { typedef MmapAllocator<U> other; };
-
     bool operator!=(const MmapAllocator<T>& a) const { return !(*this == a); }
     bool operator==(const MmapAllocator<T>& a) const { return true; }
 

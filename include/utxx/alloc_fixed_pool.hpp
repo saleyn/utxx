@@ -56,6 +56,7 @@ using namespace boost::interprocess;
 template <class PointerType>
 class fixed_size_object_pool {
     typedef PointerType pointer_type;
+    typedef PointerType value_type;
 
     typedef struct {
         #ifdef USE_PID_RECOVERY

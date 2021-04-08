@@ -59,7 +59,7 @@ using namespace container;
 //-----------------------------------------------------------------------------
 
 /// Concurrent cached allocator that manages memory by partitioning it in size
-/// classes of power of 2.  
+/// classes of power of 2.
 /// Template arguments:
 /// @tparam   T - this is a helper argument, leave the default untouched
 /// @tparam   AllocT      - User allocator used when a free list is empty.
@@ -68,13 +68,13 @@ using namespace container;
 ///                         Objects of size >= 2^SizeClasses are allocated/freed
 ///                         directly using the AllocT bypassing caching.
 template <
-    class T, 
+    class T,
     class AllocT        = std::allocator<T>,
-    int   MinSize       = 3 * sizeof(long), 
+    int   MinSize       = 3 * sizeof(long),
     int   SizeClasses   = 21>
 class cached_allocator {
-    typedef typename AllocT::template rebind<T>::other UserAllocT;
-    typedef versioned_stack::node_t node_t;
+    using UserAllocT = typename std::allocator_traits<AllocT>::template rebind_alloc<T>;
+    using node_t     = versioned_stack::node_t;
 
     versioned_stack  m_freelist[SizeClasses];
     UserAllocT&      m_alloc;
@@ -135,7 +135,7 @@ public:
     /// Reallocate an object to new <size>. This operation is thread-safe.
     void* reallocate(void* object, size_t size);
 
-    /// @return number of allocated large objects (whose size is greater than 
+    /// @return number of allocated large objects (whose size is greater than
     ///         1^SizeClasses.
     size_t large_objects() const { return m_large_objects; }
 
@@ -160,13 +160,13 @@ public:
 
 template <class T, class AllocT, int MinSize, int SizeClasses>
 inline T* cached_allocator<T, AllocT, MinSize, SizeClasses>
-::allocate(size_t count) 
+::allocate(size_t count)
 {
     using namespace container;
 
     size_t alloc_sz = sizeof(T)*count + versioned_stack::header_size();
     char size_class = (alloc_sz < min_size)
-              ? upper_power<min_size, 2>::value 
+              ? upper_power<min_size, 2>::value
               : math::upper_log2(alloc_sz);
     return static_cast<T*>(alloc_size_class(size_class));
 }
@@ -185,11 +185,11 @@ inline void cached_allocator<T, AllocT, MinSize, SizeClasses>
 
 template <class T, class AllocT, int MinSize, int SizeClasses>
 void* cached_allocator<T, AllocT, MinSize, SizeClasses>
-::reallocate(void* p, size_t sz) 
+::reallocate(void* p, size_t sz)
 {
     using namespace container;
 
-    if (p == NULL) 
+    if (p == NULL)
         return allocate(sz);
 
     node_t* nd = node_t::to_node(p);
@@ -219,7 +219,7 @@ void* cached_allocator<T, AllocT, MinSize, SizeClasses>
 
 template <class T, class AllocT, int MinSize, int SizeClasses>
 void* cached_allocator<T, AllocT, MinSize, SizeClasses>
-::alloc_size_class(size_t size_class) 
+::alloc_size_class(size_t size_class)
 {
     using namespace container;
 

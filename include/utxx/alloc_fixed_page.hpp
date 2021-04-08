@@ -126,11 +126,6 @@ public:
     typedef size_t      size_type;
     typedef T           value_type;
 
-    template <typename U>
-    struct rebind {
-        typedef aligned_page_allocator<U, PageSize> other;
-    };
-
     aligned_page_allocator() : m_page(page_alloc()) {
         #ifdef _ALLOCATOR_MEM_DEBUG
         printf("Page size: %d\n", PageSize);
@@ -146,6 +141,11 @@ public:
             m_page = NULL;
         }
     }
+
+    template <typename U>
+    struct rebind {
+        typedef aligned_page_allocator<U, PageSize> other;
+    };
 
     pointer allocate(size_type n, const void *hint = 0) {
         if (m_page->avail_chunk >= reinterpret_cast<pointer>(

@@ -167,7 +167,8 @@ template<class KeyT, class ValueT,
          class PSubMap   = SubMap*>
 class atomic_hash_map : boost::noncopyable {
 public:
-    using char_alloc      = typename Allocator::template rebind<char>::other;
+    using char_alloc      = typename std::allocator_traits<Allocator>
+                            ::template rebind_alloc<char>;
     using key_type        = KeyT;
     using mapped_type     = ValueT;
     using value_type      = std::pair<const KeyT, ValueT>;

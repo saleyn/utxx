@@ -2,7 +2,7 @@
 /// \file   buffered_queue.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
-/// \brief This file contains implementation of a buffer class used for 
+/// \brief This file contains implementation of a buffer class used for
 /// storing data for I/O operations.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
@@ -58,7 +58,8 @@ namespace detail {
     template <bool False, typename Alloc>
     struct basic_buffered_queue {
         using buf_t     = boost::asio::const_buffer;
-        using buf_alloc = typename Alloc::template rebind<buf_t>::other;
+
+        using buf_alloc = typename std::allocator_traits<Alloc>::template rebind_alloc<buf_t>;
         using deque     = std::deque<buf_t, buf_alloc>;
         basic_buffered_queue(const Alloc&) {}
         void deallocate(deque *) {}
@@ -67,9 +68,9 @@ namespace detail {
     template <typename Alloc>
     struct basic_buffered_queue<true, Alloc> {
         using buf_t     = boost::asio::const_buffer;
-        using buf_alloc = typename Alloc::template rebind<buf_t>::other;
+        using buf_alloc = typename std::allocator_traits<Alloc>::template rebind_alloc<buf_t>;
         using deque     = std::deque<buf_t, buf_alloc>;
-        using alloc_t   = typename Alloc::template rebind<char>::other;
+        using alloc_t   = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
         alloc_t m_allocator;
 
         basic_buffered_queue(const Alloc& a_alloc) : m_allocator(a_alloc) {}

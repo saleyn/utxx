@@ -55,12 +55,12 @@ namespace detail { template <class Alloc> class basic_dynamic_io_buffer; }
  * A typical use of the buffer is for I/O operations that require tracking
  * of produced and consumed space.
  */
-template <int N, typename Alloc = std::allocator<char> >
+template <int N, typename Alloc = std::allocator<char>>
 class basic_io_buffer
     : boost::noncopyable
-    , Alloc::template rebind<char>::other
+    , std::allocator_traits<Alloc>::template rebind_alloc<char>
 {
-    typedef typename Alloc::template rebind<char>::other alloc_t;
+    using alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
 protected:
     char*   m_begin;
     char*   m_end;
