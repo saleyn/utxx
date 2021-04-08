@@ -21,8 +21,8 @@ string(TOLOWER ${TOOLCHAIN} toolchain)
 
 # Custom extensions
 include(${CMAKE_CURRENT_SOURCE_DIR}/build-aux/CMakeEx.txt)
-if (CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD ${CXX_STANDARD})
+if (DEFINED ENV{CMAKE_CXX_STANDARD})
+  set(CMAKE_CXX_STANDARD $ENV{CMAKE_CXX_STANDARD})
 endif()
 
 #-------------------------------------------------------------------------------
