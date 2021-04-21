@@ -53,6 +53,7 @@ namespace utxx {
         std::string     url;
         connection_type proto;
         std::string     addr;
+        std::string     ip;
         std::string     port;
         std::string     path;
 
