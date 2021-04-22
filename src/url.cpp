@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/url.hpp>
 #include <utxx/string.hpp>
-#include <regex>
+#include <boost/regex.hpp>
 #include <boost/algorithm/string.hpp>
 
 namespace utxx {
@@ -57,7 +57,9 @@ void addr_info::operator=(addr_info const& a_rhs) {
     url   = a_rhs.url;
     proto = a_rhs.proto;
     addr  = a_rhs.addr;
+    mcast = a_rhs.mcast;
     ip    = a_rhs.ip;
+    iface = a_rhs.iface;
     port  = a_rhs.port;
     path  = a_rhs.path;
 }
@@ -66,23 +68,29 @@ void addr_info::operator=(addr_info&& a_rhs) {
     url   = std::move(a_rhs.url);
     proto = a_rhs.proto;
     addr  = std::move(a_rhs.addr);
+    mcast = std::move(a_rhs.mcast);
     ip    = std::move(a_rhs.ip);
+    iface = std::move(a_rhs.iface);
     port  = std::move(a_rhs.port);
     path  = std::move(a_rhs.path);
 }
 
 bool addr_info::assign(
     connection_type    a_proto, std::string const& a_addr, uint16_t a_port,
-    std::string const& a_path,  std::string const& a_iface)
+    std::string const& a_path,  std::string const& a_iface,
+    std::string const& a_mcast)
 {
     proto = a_proto;
     addr  = a_addr;
+    mcast = a_mcast;
     ip    = is_ipv4_addr(a_addr) ? a_addr : "";
     port  = std::to_string(a_port);
     path  = a_path;
+    iface = a_iface;
 
     url   = utxx::to_string(detail::connection_type_to_str(proto), "://",
-                      addr, a_iface.empty() ? "" : ";", a_iface, ':', port,
+                      mcast.empty()   ? "" : "@", mcast,   addr,
+                      a_iface.empty() ? "" : ";", a_iface, ':', port,
                       path.empty() || path[0] == '/' ? "" : "/", path);
     m_is_ipv4 = is_ipv4_addr(addr);
 
@@ -93,8 +101,10 @@ void addr_info::clear()
 {
     url.clear();
     proto = UNDEFINED;
+    mcast.clear();
     addr.clear();
     ip.clear();
+    iface.clear();
     port.clear();
     path.clear();
 }
@@ -103,18 +113,20 @@ std::string addr_info::to_string() const
 {
     std::stringstream s;
     s << m_proto << "://";
-    if (!addr.empty()) s << addr;
-    if (!port.empty()) s << ':' << port;
-    if (!path.empty()) s << path;
+    if (!mcast.empty()) s << mcast << '@';
+    if (!addr.empty())  s << addr;
+    if (!iface.empty()) s << ';' << iface;
+    if (!port.empty())  s << ':' << port;
+    if (!path.empty())  s << path;
     return s.str();
 }
 
 bool is_ipv4_addr(const std::string& a_addr)
 {
-    static const std::regex s_re("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
-    std::smatch m;
+    static const boost::regex s_re("^(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})$");
+    boost::smatch m;
 
-    bool res = std::regex_search(a_addr, m, s_re);
+    bool res = boost::regex_search(a_addr, m, s_re);
     return res
         && std::stoi(m[1]) < 256
         && std::stoi(m[2]) < 256
@@ -133,29 +145,19 @@ bool addr_info::parse(const std::string& a_url) {
 
     clear();
 
-    // The following gives 7 groups
-    // (?:(?:(cmd|file|uds|pipe):\/\/([^\n]+))|(?:([a-z]+):\/\/)(?:(?:(\d{1,3}(?:.\d{1,3}){3})@)?((?:[a-zA-Z][a-zA-Z\d.-]+)|(?:\d{1,3}(?:.\d{1,3}){0,3}))(?::(\d{1,5}))?(?:(/[^ \n]+))?))
+    // The following gives named groups ("(?<group_name>...)")
+    // NOTE: This group syntax is not supported by C++11, but supported by
+    //       boost::regex
     //
-    // For "file:///path/to/file.txt" or "cmd:///bin/bash"
-    // Group1: file                   or  cmd
-    // Group2: /path/to/file.txt      or  /bin/bash
-    //
-    // For "http://2.3.4.5@1.2.3.4:2000/abc123+"
-    // Group3: http
-    // Group4: 2.3.4.5  (that preceeds '@' sign)
-    // Group5: 1.2.3.4
-    // Group6: 2000
-    // Group7: /abc123+
-
-    // Alternative simplified:
-    // (?:(?:(cmd|file|uds|pipe):\/\/([^\n]+))|(?:([a-z]+):\/\/)((?:\d{1,3}(?:.\d{1,3}){3}@)?(?:(?:[a-zA-Z][a-zA-Z\d.-]+)|(\d{1,3}(?:.\d{1,3}){0,3}))(?:;[a-zA-Z0-9]+))(?::(\d{1,5}))?(?:(/[^ \n]+))?)
+    // (?:(?<proto>cmd|file|uds|pipe)://(?<path>[^\n]+))|(?:(?<proto>[a-z]+)://)(?<addr>(?:(?<mcast>\d{1,3}(?:.\d{1,3}){3})@)?(?<ip>(?:[a-zA-Z][a-zA-Z\d.-]+)|(?:\d{1,3}(?:.\d{1,3}){0,3}))(?:;(?<iface>[a-zA-Z][a-zA-Z0-9_-]*)?)?)(?::(?<port>\d{1,5}))?(?:(?<path>/[^ \n]+))?
     // Gives 7 groups:
-    // For "http://2.3.4.5@1.2.3.4;eth1:2000/abc123+"
-    // Group3: http
-    // Group4: 2.3.4.5@1.2.3.4;eth1
-    // Group5: 1.2.3.4
-    // Group6: 2000
-    // Group7: /abc123+
+    // For   "http://2.3.4.5@1.2.3.4;eth1:2000/abc123+"
+    // proto: http
+    // mcast: 2.3.4.5
+    // ip:    1.2.3.4
+    // iface: eth1
+    // port:  2000
+    // path:  /abc123+
 
     // Parse examples:
     // http://1 abc
@@ -163,28 +165,32 @@ bool addr_info::parse(const std::string& a_url) {
     // http://1.2.3.4:2000
     // https://2.3.4.5@1.2.3.4:2000
     // http://2.3.4.5@1.2.3.4:2000/abc123+
-    //
+    // udp://224.0.31.26;:14314/314SA
+    // udp://224.0.31.26;eth0:14314/314SA
+    // udp://224.0.31.26@1.2.3.4;eth0:14314/314SA
     // http://abc.com:200
     // cmd:///bin/bash -x ls /dir
     // file:///bin/bash.txt
 
-    static const std::regex s_url_re(
-        "(?:(?:(cmd|file|uds|pipe)://([^\\n]+))|"
-        "(?:([a-z]+)://)((?:\\d{1,3}(?:.\\d{1,3}){3}@)?(?:(?:[a-zA-Z][a-zA-Z\\d.-]+)|"
-                        "(\\d{1,3}(?:.\\d{1,3}){0,3}))(?:;[a-zA-Z0-9]+)?)(?::(\\d{1,5}))?(?:(/[^ \\n]+))?)");
-    std::smatch m;
-    auto res = std::regex_match(a_url, m, s_url_re);
+    static const boost::regex s_url_re(
+        "(?:(?<proto>cmd|file|uds|pipe)://(?<path>[^\n]+))|"
+        "(?:(?<proto>[a-z]+)://)(?<addr>(?:(?<mcast>\\d{1,3}(?:.\\d{1,3}){3})@)?"
+        "(?<ip>(?:[a-zA-Z][a-zA-Z\\d.-]+)|(?:\\d{1,3}(?:.\\d{1,3}){0,3}))"
+        "(?:;(?<iface>[a-zA-Z][a-zA-Z0-9_-]*)?)?)"
+        "(?::(?<port>\\d{1,5}))?(?:(?<path>/[^ \n]+))?"
+        , boost::regex::perl);
+
+    boost::smatch m;
+    auto res = boost::regex_match(a_url, m, s_url_re);
     if  (res) {
-        if (m[1].matched) {
-            m_proto = m[1];
-            path    = m[2];
-        } else {
-            m_proto = m[3];
-            addr    = m[4];
-            ip      = m[5];
-            port    = m[6].matched ? m[6] : proto_to_port[m_proto];
-            path    = m[7];
-        }
+        m_proto = m["proto"];
+        path    = m["path"];
+        ip      = m["ip"];
+        addr    = m["addr"];
+        if (addr.empty() && !ip.empty()) addr = ip;
+        port    = m["port"];
+        if (port.empty()) port = proto_to_port[m_proto];
+        path    = m["path"];
         boost::to_lower(m_proto);
     }
 

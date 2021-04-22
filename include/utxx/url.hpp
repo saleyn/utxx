@@ -53,8 +53,10 @@ namespace utxx {
         std::string     url;
         connection_type proto;
         std::string     addr;
+        std::string     mcast;
         std::string     ip;
         std::string     port;
+        std::string     iface;  // Network interface ("eth0" in case of "tcp://host.com;eth0")
         std::string     path;
 
         addr_info() : m_is_ipv4(false) {}
@@ -71,15 +73,16 @@ namespace utxx {
 
         void clear();
 
-        /// Parse a URL in the form PROTO://ADDRESS[:PORT][/PATH]
+        /// Parse a URL in the form PROTO://[MCAST@][ADDRESS][;IFACE][:PORT][/PATH]
         ///
         /// PROTO can be one of "tcp", "udp", "uds", "file", "cmd"
         bool parse(const std::string& a_url);
 
-        /// Update addr_info from given components (PROTO://ADDR[;IFACE][:PORT][/PATH])
+        /// Update addr_info from given components (PROTO://[MCAST@][ADDR][;IFACE][:PORT][/PATH])
         ///
         bool assign(connection_type a_proto, std::string const& a_addr, uint16_t a_port,
-                    std::string const& a_path = "", std::string const& a_iface = "");
+                    std::string const& a_path = "", std::string const& a_iface = "",
+                    std::string const& a_mcast = "");
 
         bool is_ipv4() const { return m_is_ipv4; }
 

@@ -57,10 +57,13 @@ public:
   POpenCmd(POpenCmd&& a_rhs) {
     m_pid       = a_rhs.m_pid;
     m_stdout    = a_rhs.m_stdout;
+    m_cmd       = std::move(a_rhs.m_cmd);
     a_rhs.m_pid = -1;
   }
 
-  POpenCmd(const std::string& a_cmd) {
+  POpenCmd(const std::string& a_cmd)
+    : m_cmd(a_cmd)
+  {
     UTXX_PRETTY_FUNCTION(); // Cache pretty function name
 
     int fds[2];
@@ -100,12 +103,14 @@ public:
     waitpid(m_pid, &status, WNOHANG);
   }
 
-  int FD()  const { return m_stdout; }
-  int PID() const { return m_pid;    }
+  int                FD()      const { return m_stdout; }
+  int                PID()     const { return m_pid;    }
+  const std::string& Command() const { return m_cmd;    }
 
 private:
-  pid_t   m_pid    = -1;
-  int     m_stdout = -1;
+  pid_t       m_pid    = -1;
+  int         m_stdout = -1;
+  std::string m_cmd;
 };
 
 } // namespace io
