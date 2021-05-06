@@ -39,6 +39,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
+BOOST_AUTO_TEST_CASE( test_string_int_suffix )
+{
+    auto k = 10_KB;
+    auto m = 11_MB;
+    auto g = 1_GB;
+
+    BOOST_CHECK_EQUAL(10*1024,        k);
+    BOOST_CHECK_EQUAL(11*1024*1024,   m);
+    BOOST_CHECK_EQUAL(1024*1024*1024, g);
+}
+
 BOOST_AUTO_TEST_CASE( test_string_conversion )
 {
     {

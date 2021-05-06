@@ -51,6 +51,26 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // STRING
 //-----------------------------------------------------------------------------
 
+#ifndef UTXX_NO_INTEGER_SUFFIXES
+    /// Suffix _KB can be added to integers for kilobytes
+    /// \code
+    ///  auto x = 1_KB;
+    /// \endcode
+    constexpr size_t operator"" _KB(unsigned long long n) { return size_t(n * 1024); }
+
+    /// Suffix MB can be added to integers for megabytes
+    /// \code
+    ///  auto x = 1_MB;
+    /// \endcode
+    constexpr size_t operator"" _MB(unsigned long long n) { return size_t(n * (1024_KB)); }
+
+    /// Suffix MB can be added to integers for gigabytes
+    /// \code
+    ///  auto x = 1_GB;
+    /// \endcode
+    constexpr size_t operator"" _GB(unsigned long long n) { return size_t(n * (1024_MB)); }
+#endif
+
 namespace utxx {
 
     /// Return the static length of an array of type T
