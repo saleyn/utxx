@@ -73,10 +73,12 @@ class variant: public boost::variant<nullptr_t, bool, long, double, std::string>
     };
 
     template <typename T>
-    T              get(T*)       const { return boost::get<T>(*this); }
-    double         get(double*)  const { return to_double(); }
-    const variant& get(variant*) const { return *this; }
-    variant&       get(variant*)       { return *this; }
+    T              get(const T*)       const { return boost::get<T>(*this); }
+    double         get(const double*)  const { return to_double(); }
+    const variant& get(const variant*) const { return *this; }
+    variant&       get(variant*)             { return *this; }
+    const variant& get(const base*)    const { return *this; }
+    variant&       get(base*)                { return *this; }
 public:
     static const variant& unassigned() { static variant s_val; return s_val; }
 
@@ -196,6 +198,8 @@ public:
     /// @param relaxed when true, allow integral types to be converted to doubles
     template <typename T>
     bool is_type(bool relaxed=false) const {
+        if constexpr(std::is_same_v<T, variant> || std::is_same_v<T, base>)
+            return true;
         variant::type_visitor<T> v(relaxed);
         return boost::apply_visitor(v, *this);
     }

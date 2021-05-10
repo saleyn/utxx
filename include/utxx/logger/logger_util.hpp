@@ -72,4 +72,6 @@ namespace utxx {
     /// Convert a string (e.g. "INFO") to the log levels greater or equal to it.
     int parse_min_log_level(const std::string& a_level);
 
+    inline int def_log_level() { return as_int<LEVEL_INFO>(); }
+
 } // namespace utxx

@@ -289,6 +289,8 @@ public:
         auto* t = navigate(this, p, nullptr, false, -1, UTXX_SRCXD(si));
         if (t)
             try {
+                if constexpr(std::is_same_v<T, value_type>)
+                    return t->data().value();
                 return t->data().value().empty()
                      ? default_value
                      : t->base::template get_value<T>(detail::variant_translator<T,Ch>());
@@ -303,7 +305,7 @@ public:
           const T& default_value, src_info&& si = src_info()) const
     {
         UTXX_PRETTY_FUNCTION();
-        for (auto& p : paths) {
+        for (auto& p   : paths) {
             auto&  res = try_get(p, UTXX_SRCXD(si));
             if (res.is_assigned()) {
                 if (res.template is_type<T>(true))
@@ -347,7 +349,7 @@ public:
             if (!t->data().is_null()) {
                 try { return t->base::template get_value<T>(detail::variant_translator<T,Ch>()); }
                 catch (...) { throw_bad_type<T>(path, t->data(), UTXX_SRCXD(si)); }
-            } else if (std::is_same_v<T, std::string> || std::is_same_v<T, variant>)
+            } else if (std::is_same_v<T, std::string> || std::is_same_v<T, variant> || std::is_same_v<T, base>)
                 return T();
         }
         return boost::optional<T>();
