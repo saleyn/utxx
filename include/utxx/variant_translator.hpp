@@ -48,7 +48,7 @@ namespace property_tree {
         using external_type = std::basic_string<Ch>;
         using internal_type = utxx::basic_variant_tree_data<Ch>;
 
-        explicit translator_between(bool allow_int_suffixes = false)
+        explicit translator_between(bool allow_int_suffixes = true)
             : m_allow_int_suffixes(allow_int_suffixes)
         {}
 
