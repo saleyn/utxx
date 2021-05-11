@@ -318,7 +318,7 @@ namespace detail {
         boost::property_tree::read_json(a_src, pt);
 
         boost::property_tree::translator_between
-            <basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
+            <basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr(false);
 
         auto on_update = [&tr](auto& path, auto& data) {
             boost::optional<variant> v = *tr.put_value(data);

@@ -631,5 +631,24 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
 
 }
 
+BOOST_AUTO_TEST_CASE( test_variant_tree_json_parser )
+{
+    // Note: JSON parser's translator should have int suffixes disabled, so
+    // "7K" should be interpreted as a string
+    std::stringstream s("{\"x\": \"6E\", \"y\": \"7K\"}");
+    variant_tree c;
+    try   { read_config(s, c, FORMAT_JSON); }
+    catch (...) { BOOST_REQUIRE(false); }
+
+    //std::cout << c.to_string() << std::endl;
+    auto x = c.try_get("x", UTXX_SRC);
+    auto y = c.try_get("y", UTXX_SRC);
+    BOOST_REQUIRE(!x.is_null());
+    BOOST_REQUIRE(!y.is_null());
+    BOOST_REQUIRE(x.is_string());
+    BOOST_REQUIRE(y.is_string());
+    BOOST_REQUIRE_EQUAL("6E", x.to_str());
+    BOOST_REQUIRE_EQUAL("7K", y.to_str());
+}
 
 }} // namespace utxx::test

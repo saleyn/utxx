@@ -48,6 +48,10 @@ namespace property_tree {
         using external_type = std::basic_string<Ch>;
         using internal_type = utxx::basic_variant_tree_data<Ch>;
 
+        explicit translator_between(bool allow_int_suffixes = false)
+            : m_allow_int_suffixes(allow_int_suffixes)
+        {}
+
         boost::optional<external_type> get_value(const internal_type& value) const {
             return boost::optional<external_type>(value.is_null() ? "" : value.to_str());
         }
@@ -56,7 +60,6 @@ namespace property_tree {
             if (value.empty())
                 return internal_type();
             const char* end = value.c_str() + value.size();
-            char* e;
             int base = 10;
             if (value.size() > 1 && value[0] == '0') {
                 char c = value[1];
@@ -65,19 +68,22 @@ namespace property_tree {
                 else if ('0' <= c && c <= '7')
                     base = 8;
             }
-            long n = strtol(value.c_str(), &e, base);
+            char* e = nullptr;
+            long  n = strtol(value.c_str(), &e, base);
             // Note that value.size() can be 1, so we need both tests
             if (e > value.c_str() && e >= end-1) { // is an integer and has been decoded fully
                 if (!*e)
                     return boost::optional<internal_type>(internal_type(utxx::variant(n)));
 
-                if (e == end-1) {
+                if (!m_allow_int_suffixes)
+                    return boost::optional<internal_type>(value);
+                else if (e == end-1) {
                     switch (toupper(*e)) {
-                        case 'K': n *= 1024; break;
-                        case 'M': n *= 1024*1024; break;
+                        case 'K': n *= 1024;           break;
+                        case 'M': n *= 1024*1024;      break;
                         case 'G': n *= 1024*1024*1024; break;
                         default:
-                            return internal_type();
+                            return boost::optional<internal_type>(value);
                     }
                     return boost::optional<internal_type>(internal_type(utxx::variant(n)));
                 }
@@ -97,6 +103,8 @@ namespace property_tree {
             return is_str ? boost::optional<internal_type>(internal_type(utxx::variant(value)))
                           : put_value(value);
         }
+    private:
+        bool m_allow_int_suffixes;
     };
 
     template <typename Ch>
