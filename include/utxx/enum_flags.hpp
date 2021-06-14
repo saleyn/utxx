@@ -187,13 +187,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             boost::split(v, a, sep, boost::token_compress_on);                 \
             for (auto& s : v) {                                                \
               TYPE n = 0;                                                      \
-              for (TYPE i=1; i <= s_size; i++)                                 \
+              for (TYPE i=1; i <= s_size; i++) {                               \
                 if (!f((as_names ? meta(i).first : meta(i).second), s)) {      \
                   n |= (1ul << (i-1));                                         \
                   break;                                                       \
                 }                                                              \
-                if (!n) UTXX_THROW_BADARG_ERROR("Invalid flag value: ", s);    \
-                val |= n;                                                      \
+              }                                                                \
+              if (!n) UTXX_THROW_BADARG_ERROR("Invalid flag value: ", s);      \
+              val |= n;                                                        \
             }                                                                  \
             return type(val);                                                  \
         }                                                                      \
