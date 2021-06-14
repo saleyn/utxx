@@ -11,7 +11,7 @@ PROJECT  := $(shell sed -n '/^project/{s/^project. *\([a-zA-Z0-9]\+\).*/\1/p; q}
 VERSION  := $(shell sed -n '/^project/{s/^.\+VERSION \+//; s/[^\.0-9]\+//; p; q}'\
                     CMakeLists.txt)
 
-HOSTNAME := $(shell hostname)
+HOSTNAME := $(shell A=$${HOSTNAME%%.*} && echo ${A,,})
 
 # Options file is either: .cmake-args.$(HOSTNAME) or .cmake-args
 OPT_FILE     := .cmake-args.$(HOSTNAME)
