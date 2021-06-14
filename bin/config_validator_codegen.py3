@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # vim:ts=4:sw=4:et
 """
 config_validator_codegen.py
@@ -20,7 +20,7 @@ Example usage:
 import argparse
 import lxml.etree as et
 import os.path
-import commands
+import subprocess
 import pwd
 import tempfile
 import time
@@ -563,8 +563,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not args.user:  args.user  = commands.getoutput("git config --get user.name")
+    if not args.user:  args.user  = subprocess.getstatusoutput.getoutput("git config --get user.name")
     if not args.user:  args.user  = pwd.getpwuid(os.getuid()).pw_gecos
-    if not args.email: args.email = commands.getoutput("git config --get user.email")
+    if not args.email: args.email = subprocess.getstatusoutput("git config --get user.email")
 
     ConfigGenerator(args).run()
