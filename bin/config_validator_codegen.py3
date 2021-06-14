@@ -563,7 +563,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if not args.user:  args.user  = subprocess.getstatusoutput.getoutput("git config --get user.name")
+    if not args.user:  args.user  = subprocess.getstatusoutput("git config --get user.name")
     if not args.user:  args.user  = pwd.getpwuid(os.getuid()).pw_gecos
     if not args.email: args.email = subprocess.getstatusoutput("git config --get user.email")
 
