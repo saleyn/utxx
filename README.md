@@ -49,6 +49,7 @@ The `utxx` library requires:
 * BOOST
 * Python3 or Python2
 * Python LXML library (`python*-lxml.x86_64` package)
+* libaio
 
 The bootstraping process searches for `python3` and if found uses that
 version. Otherwise it searches for `python2`.  If you have both versions
