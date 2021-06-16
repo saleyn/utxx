@@ -717,6 +717,10 @@ public:
 
     /// Replace all macros in a string that are found in macros() dictionary.
     std::string replace_macros(const std::string& a_value) const;
+    /// Replace env variables and macros in a string
+    std::string replace_env_and_macros(std::string const& a_value,
+                                       time_val    const* a_now = nullptr,
+                                       bool               a_utc = true) const;
 
     /// Set the timestamp type to use in log files.
     /// @param ts the timestamp type.

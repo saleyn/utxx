@@ -75,7 +75,7 @@ bool logger_impl_file::init(const variant_tree& a_config)
 
     try {
         m_filename = a_config.get<std::string>("logger.file.filename");
-        m_filename = m_log_mgr->replace_macros(m_filename);
+        m_filename = m_log_mgr->replace_env_and_macros(m_filename);
     } catch (boost::property_tree::ptree_bad_data&) {
         UTXX_THROW_BADARG_ERROR("logger.file.filename not specified");
     }
@@ -299,7 +299,7 @@ int logger_impl_file::parse_file_index(std::string const& a_file) const
 void logger_impl_file::create_symbolic_link()
 {
     if (!m_symlink.empty()) {
-        m_symlink = m_log_mgr->replace_macros(m_symlink);
+        m_symlink = m_log_mgr->replace_env_and_macros(m_symlink);
         if (!utxx::path::file_symlink(m_filename, m_symlink, true))
             UTXX_THROW_IO_ERROR(errno, "Error creating symlink ", m_symlink,
                                        " -> ", m_filename, ": ");

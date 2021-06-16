@@ -164,15 +164,15 @@ void logger::add_macros(const config_macros& a_macros)
 
 std::string logger::replace_macros(const std::string& a_value) const
 {
-    using namespace boost::posix_time;
-    using namespace boost::xpressive;
-    sregex re = "{{" >> (s1 = +_w) >> "}}";
-    auto replace = [this](const smatch& what) {
-        auto it = this->m_macro_var_map.find(what[1].str());
-        return it == this->m_macro_var_map.end()
-                ? what[1].str() : it->second;
-    };
-    return regex_replace(a_value, re, replace);
+    return path::replace_macros(a_value, m_macro_var_map);
+}
+
+std::string logger::replace_env_and_macros(std::string const& a_value,
+                                           time_val    const* a_now,
+                                           bool               a_utc) const
+{
+    auto t = a_now ? a_now->to_tm(a_utc) : tm();
+    return path::replace_env_and_macros(a_value, m_macro_var_map, &t);
 }
 
 void logger::init(const char* filename, const sigset_t* a_ignore_signals,

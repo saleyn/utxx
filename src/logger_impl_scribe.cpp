@@ -103,7 +103,7 @@ bool logger_impl_scribe::init(const variant_tree& a_config)
     std::string url = a_config.get<std::string>("logger.scribe.address", str.str());
 
     if (m_log_mgr && (url.find("uds://") == 0 || url.find("file://") == 0))
-        url = m_log_mgr->replace_macros(url);
+        url = m_log_mgr->replace_env_and_macros(url);
 
     if (!m_server_addr.parse(url))
         throw std::runtime_error(
