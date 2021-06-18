@@ -69,7 +69,9 @@ BOOST_AUTO_TEST_CASE( test_alloc_fixed_page )
 // Example allocator, doesn't do anything but implements std::allocator_traits
 template<typename T>
 struct null_allocator {
-  using value_type = T;
+  using value_type      = T;
+  using size_type       = size_t;
+  using difference_type = long;
 
   null_allocator() {}
 
