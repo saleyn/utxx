@@ -294,6 +294,14 @@ struct logger : boost::noncopyable {
         pthread_t     m_thread_id;
         char          m_thread_name[16];
 
+        struct str_wrap {
+            str_wrap(const char* a_cstr, size_t a_sz)
+                : m_str(a_cstr), m_size(a_sz)
+            {}
+            const char* m_str;
+            size_t      m_size;
+        };
+
         union U {
             char_function     cf;
             str_function      sf;
@@ -305,6 +313,7 @@ struct logger : boost::noncopyable {
             U() : cf(nullptr) {}
             U(const char_function&    f) : cf(f)  {}
             U(const str_function&     f) : sf(f)  {}
+            U(const str_wrap&         v) : str(v.m_str, v.m_size) {}
             U(const std::string&      v) : str(v) {}
             U(std::string&&           v) : str(std::move(v)) {}
             ~U() {}
@@ -367,6 +376,20 @@ struct logger : boost::noncopyable {
             const char* a_src_loc, std::size_t a_sloc_len,
             const char* a_src_fun, std::size_t a_sfun_len)
             : msg(a_ll, a_cat, payload_t::STR, a_str,
+                  a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
+        {}
+
+        template <int N, int M>
+        msg(log_level a_ll, const std::string& a_cat, const char* a_cstr, size_t a_sz,
+            const char (&a_src_loc)[N], const char (&a_src_fun)[M])
+            : msg(a_ll, a_cat, payload_t::STR, str_wrap(a_cstr, a_sz),
+                  a_src_loc, N-1, a_src_fun, M-1)
+        {}
+
+        msg(log_level a_ll, const std::string& a_cat, const char* a_cstr, size_t a_sz,
+            const char* a_src_loc, std::size_t a_sloc_len,
+            const char* a_src_fun, std::size_t a_sfun_len)
+            : msg(a_ll, a_cat, payload_t::STR, str_wrap(a_cstr, a_sz),
                   a_src_loc, a_sloc_len, a_src_fun, a_sfun_len)
         {}
 
