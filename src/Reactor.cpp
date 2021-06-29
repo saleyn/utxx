@@ -260,7 +260,7 @@ FdInfo& Reactor
   UTXX_RLOG(this, TRACE5, "adding File reader '", a_name, "' for file ", a_filename,
      ", Opaque=",  a_opaque);
 
-  guard1.disable(true);
+  guard1.disable();
 
   auto reader = new AIOReader(efd, a_filename.c_str());
   p->SetFileReader(reader);

@@ -106,7 +106,7 @@ inline void AIOReader::Init(int a_efd, const char* a_filename)
 
   m_piocb[0] = &m_iocb[0];
 
-  guard.disable(true);
+  guard.disable();
 }
 
 //------------------------------------------------------------------------------

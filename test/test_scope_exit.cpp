@@ -65,7 +65,15 @@ BOOST_AUTO_TEST_CASE( test_scope_exit )
     {
         scope_exit g([&i] () { ++i; });
         BOOST_REQUIRE_EQUAL(3, i);
-        g.disable(true);
+        g.disable();
+    }
+    BOOST_REQUIRE_EQUAL(3, i);
+
+    {
+        scope_exit g([&i] () { --i; });
+        BOOST_REQUIRE_EQUAL(4, ++i);
+        g.disable();
+        g.enable();
     }
     BOOST_REQUIRE_EQUAL(3, i);
 

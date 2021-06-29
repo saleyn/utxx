@@ -53,14 +53,13 @@ public:
     {}
 
     on_scope_exit(Lambda&& a_lambda)
-        : m_lambda(a_lambda)
+        : m_lambda(std::move(a_lambda))
         , m_disable(false)
-    {
-        a_lambda = nullptr;
-    }
+    {}
 
     /// If disabled the lambda won't be called at scope exit
-    void disable(bool a_disable = true) { m_disable = a_disable; }
+    void disable() { m_disable = true;  }
+    void enable()  { m_disable = false; }
 
     ~on_scope_exit() {
         if (!m_disable)
