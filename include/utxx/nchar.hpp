@@ -62,7 +62,9 @@ namespace detail {
         Char m_data[N];
         BOOST_STATIC_ASSERT(N > 0);
     public:
+        void set(const Char (&a)[N])            { memcpy(m_data, a, N); }
         void set(const Char (&a)[N+1])          { memcpy(m_data, a, N); }
+        void set(const Char (&a)[N-1])          { memcpy(m_data, a, N-1); m_data[N-1] = '\0'; }
         template <int M>
         void set(const Char (&a)[M])            { copy_from(a, M); }
         void set(const std::string& a)          { copy_from(a.c_str(),a.size());}
@@ -71,8 +73,16 @@ namespace detail {
 
         template <int M>
         size_t copy_from(const basic_nchar<M, Char>& a) {
-            BOOST_STATIC_ASSERT(N <= M);
-            return copy_from(a.data(), M);
+            static_assert(N != M, "The N==M case was handled above");
+            if  constexpr(N <  M) {
+                memcpy(m_data, a, N);
+                return N;
+            } else {
+                assert(N > M);
+                memcpy(m_data, a, M);
+                m_data[N-1] = '\0';
+                return M;
+            }
         }
 
         size_t copy_from(const std::basic_string<Char>& a) {
@@ -87,8 +97,10 @@ namespace detail {
         }
 
         size_t copy_from(const Char* a, size_t n, Char pad) {
-            size_t m = copy_from(a, n);
+            size_t m = std::min((size_t)N, n);
+            memcpy(m_data, a, m);
             fill(pad, m);
+            //if  (m  < N) m_data[N-1] = '\0';
             return N;
         }
 

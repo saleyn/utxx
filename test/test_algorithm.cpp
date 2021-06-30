@@ -45,7 +45,7 @@ namespace utxx {
 BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
 {
     std::set<int> empty_set;
-    BOOST_REQUIRE(find_closest(empty_set, 5) == empty_set.end());
+    BOOST_CHECK(find_closest(empty_set, 5) == empty_set.end());
 
     std::set<int> set{ 3, 4, 7, 9 };
 
@@ -55,17 +55,17 @@ BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
     auto b = find_closest(set, 4); //Returns '4'
     auto c = find_closest(set, 10); //Returns '9'
 
-    BOOST_REQUIRE_EQUAL(3, *x);
-    BOOST_REQUIRE_EQUAL(4, *y);
-    BOOST_REQUIRE_EQUAL(7, *a);
-    BOOST_REQUIRE_EQUAL(4, *b);
-    BOOST_REQUIRE_EQUAL(9, *c);
+    BOOST_CHECK_EQUAL(3, *x);
+    BOOST_CHECK_EQUAL(4, *y);
+    BOOST_CHECK_EQUAL(7, *a);
+    BOOST_CHECK_EQUAL(4, *b);
+    BOOST_CHECK_EQUAL(9, *c);
 }
 
 BOOST_AUTO_TEST_CASE(test_algorithm_find_ge)
 {
     std::set<int> empty_set;
-    BOOST_REQUIRE(find_ge(empty_set, 5) == empty_set.end());
+    BOOST_CHECK(find_ge(empty_set, 5) == empty_set.end());
 
     std::set<int> set{ 3, 4, 7, 9 };
 
@@ -75,11 +75,11 @@ BOOST_AUTO_TEST_CASE(test_algorithm_find_ge)
     auto c = find_ge(set, 8); //Returns '9'
     auto d = find_ge(set, 10); //Returns 'end'
 
-    BOOST_REQUIRE_EQUAL(3, *x);
-    BOOST_REQUIRE_EQUAL(7, *a);
-    BOOST_REQUIRE_EQUAL(4, *b);
-    BOOST_REQUIRE_EQUAL(9, *c);
-    BOOST_REQUIRE(d == set.end());
+    BOOST_CHECK_EQUAL(3, *x);
+    BOOST_CHECK_EQUAL(7, *a);
+    BOOST_CHECK_EQUAL(4, *b);
+    BOOST_CHECK_EQUAL(9, *c);
+    BOOST_CHECK(d == set.end());
 }
 
 } // namespace utxx

@@ -62,6 +62,24 @@ BOOST_AUTO_TEST_CASE( test_io_buffer )
     BOOST_CHECK_EQUAL(16, b.capacity());
     BOOST_CHECK_EQUAL(2,  b.size());
     BOOST_CHECK_EQUAL("cd", std::string(b.rd_ptr(), b.size()));
+
+    auto e = basic_io_buffer<10>();
+    e.reserve(16);
+    BOOST_REQUIRE(e.allocated());
+    e.write("abcdef", 6);
+    e.read(2);
+
+    BOOST_CHECK_EQUAL(16u, e.max_size());
+    BOOST_CHECK_EQUAL(10u, e.capacity());
+    BOOST_CHECK_EQUAL(4,  e.size());
+    BOOST_CHECK_EQUAL("cdef", std::string(e.rd_ptr(), e.size()));
+
+    auto d = std::move(e);
+    BOOST_REQUIRE(!e.allocated());
+    BOOST_REQUIRE( d.allocated());
+    BOOST_CHECK_EQUAL(4,      d.size());
+    BOOST_CHECK_EQUAL("cdef", std::string(d.rd_ptr(), d.size()));
+    BOOST_REQUIRE(e.empty());
 }
 
 #if (BOOST_VERSION < 107000)

@@ -205,7 +205,8 @@ private:
     }
 
     void do_write(const char* a_value, char* a_buf) const {
-        do_write(a_value, strnlen(a_value, Width), a_buf);
+        auto len = std::min(size_t(Width), strlen(a_value));
+        do_write(a_value, len, a_buf);
     }
 
     void do_write(std::string const& a_value, char* a_buf) const {

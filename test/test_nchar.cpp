@@ -73,11 +73,11 @@ BOOST_AUTO_TEST_CASE( test_nchar )
 
         str.str(std::string());
         rc.dump(str, 0, print_opts::hex);
-        BOOST_CHECK_EQUAL(str.str(), "61,62,63,64");
+        BOOST_CHECK_EQUAL(str.str(), "0x61,0x62,0x63,0x64");
 
         str.str(std::string());
         nchar<4>("\r\n@\x15").dump(str, 0, print_opts::hex);
-        BOOST_CHECK_EQUAL(str.str(), "0d,0a,40,15");
+        BOOST_CHECK_EQUAL(str.str(), "0x0d,0x0a,0x40,0x15");
     }
     {
         nchar<4> rc(1);
@@ -132,8 +132,7 @@ BOOST_AUTO_TEST_CASE( test_nchar )
         nchar<4, uint8_t> ss;
         ss.copy_from((const uint8_t*)"ab", 2, ' ');
 
-        const uint8_t* a = (const uint8_t*)ss;
-        BOOST_CHECK_EQUAL(std::string("ab  "), std::string((const char*)a));
+        BOOST_CHECK_EQUAL(std::string("ab  "), std::string((const char*)ss.data(), ss.size()));
     }
 }
 
@@ -285,9 +284,9 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_double )
         BOOST_CHECK_EQUAL("12345.67", rc.to_string());
     }
     {
-        nchar<17> rc;
-        BOOST_CHECK_EQUAL(16, rc.from_double(-12345678901.235, 6, true));
-        BOOST_CHECK_EQUAL("-12345678901.235", rc.to_string());
+        nchar<20> rc;
+        BOOST_CHECK_EQUAL(19, rc.from_double(-12345678901.235, 6, true));
+        BOOST_CHECK_EQUAL("-12345678901.235001", rc.to_string());
 
         BOOST_CHECK_EQUAL(16, rc.from_double(-12345678901.234, 3, true));
         BOOST_CHECK_EQUAL("-12345678901.234", rc.to_string());
@@ -319,9 +318,14 @@ BOOST_AUTO_TEST_CASE( test_nchar_from_double )
         BOOST_CHECK_EQUAL(-1,      rc.from_double(-1,3, ' '));
         BOOST_CHECK_EQUAL(5,       rc.from_double(0, 2, ' '));
         BOOST_CHECK_EQUAL(" 0.00", rc.to_string());
-        BOOST_CHECK_EQUAL(4,       rc.from_double(-1.2, 2, false)); // No space for '\0'
-        BOOST_CHECK_EQUAL("-1.2",  rc.to_string());
+        BOOST_CHECK_EQUAL(5,       rc.from_double(-1.21, 2, false)); // No space for '\0'
+        BOOST_CHECK_EQUAL("-1.21", rc.to_string());
+        BOOST_CHECK_EQUAL('1',     ((char*)rc.data())[4]);
+        BOOST_CHECK_EQUAL(5,       rc.from_double(-1.2, 2, false));
+        BOOST_CHECK_EQUAL('0',     ((char*)rc.data())[4]);
+        BOOST_CHECK_EQUAL("-1.20", rc.to_string());
         BOOST_CHECK_EQUAL(4,       rc.from_double(-1.2, 1, false));
+        BOOST_CHECK_EQUAL('\0',    ((char*)rc.data())[4]);
         BOOST_CHECK_EQUAL(5,       rc.from_double(-1.2, 2, ' '));
         BOOST_CHECK_EQUAL("-1.20", rc.to_string());
     }

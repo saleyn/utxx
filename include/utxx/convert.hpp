@@ -297,11 +297,11 @@ namespace detail {
         template <int M>
         inline static T fast_atoi2(const Char*& bytes) {
             if (*bytes == '-') {
-                long n = unrolled_byte_loops<Char, N-1, LEFT>::
+                long n = unrolled_byte_loops<Char, M-1, LEFT>::
                     load_atoi(++bytes, 0);
                 return static_cast<T>(-n);
             }
-            return unrolled_byte_loops<Char, N, LEFT>::load_atoi(bytes, 0);
+            return unrolled_byte_loops<Char, M, LEFT>::load_atoi(bytes, 0);
         }
     };
 

@@ -57,12 +57,13 @@ find_closest(Set const& s, typename Set::value_type const& val)
     if (it == b) {
         if (it != a) --it;
         return it;
-    }
+    } else if (it == a)
+        return a;
 
-    auto nt = std::next(it);
+    auto p = std::prev(it);
 
-    if (nt == b) return it;
-    return val - *it < *nt - val ? it : nt;
+    if (p == a) return it;
+    return *it - val < val - *p ? it : p;
 }
 
 /// Search the container for an item which is equal to or greater than the given value
