@@ -205,7 +205,7 @@ EnablePktTimeStamps(bool a_enable)
 }
 
 //------------------------------------------------------------------------------
-inline int FdInfo::
+int FdInfo::
 ReportError(IOType a_tp, int a_ec, const std::string& a_err,
       utxx::src_info&& a_si, bool a_throw)
 {
