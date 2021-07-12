@@ -174,7 +174,7 @@ void logger_impl_file::write_file_header(bool exists, bool rotated)
     int  tz = -timezone;
     int  hh = abs(tz / 3600);
     int  mm = abs(tz % 60);
-    p += snprintf(p, p - end, "# %s at: %s %c%02d:%02d (MinLevel: %s)",
+    p += snprintf(p, end - p, "# %s at: %s %c%02d:%02d (MinLevel: %s)",
                   rotated ? "Log rotated" : "Logging started",
                   timestamp::to_string(DATE_TIME).c_str(),
                   tz > 0 ? '+' : '-', hh, mm, ll.c_str());
@@ -183,19 +183,19 @@ void logger_impl_file::write_file_header(bool exists, bool rotated)
         *p++ = '#';
         if (!this->m_log_mgr ||
             this->m_log_mgr->timestamp_type() != stamp_type::NO_TIMESTAMP)
-            p += snprintf(p, p - end, "Timestamp|");
-        p += snprintf(p, p - end, "Level|");
+            p += snprintf(p, end - p, "Timestamp|");
+        p += snprintf(p, end - p, "Level|");
         if (this->m_log_mgr) {
             if (this->m_log_mgr->show_ident())
-                p += snprintf(p, p - end, "Ident|");
+                p += snprintf(p, end - p, "Ident|");
             if (this->m_log_mgr->show_thread() != logger::thr_id_type::NONE)
-                p += snprintf(p, p - end, "Thread|");
+                p += snprintf(p, end - p, "Thread|");
             if (this->m_log_mgr->show_category())
-            p += snprintf(p, p - end, "Category|");
+            p += snprintf(p, end - p, "Category|");
         }
-        p += snprintf(p, p - end, "Message");
+        p += snprintf(p, end - p, "Message");
         if (this->m_log_mgr && this->m_log_mgr->show_location())
-            p += snprintf(p, p - end, " [File:Line%s]",
+            p += snprintf(p, end - p, " [File:Line%s]",
                         this->m_log_mgr->show_fun_namespaces() ? " Function" : "");
     }
     *p++ = '\n';
