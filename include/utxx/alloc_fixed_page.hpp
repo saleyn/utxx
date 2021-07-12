@@ -82,11 +82,12 @@ class aligned_page_allocator : public boost::noncopyable {
     header* m_page;
 
     static header* page_alloc() {
-        union {
-            unsigned long n;
+        union _u {
+            size_t  n;
             void*   pp;
             char*   pc;
             header* p;
+            _u() : n(0) {}
         } u;
         #if defined(_WIN32) || defined (_WIN64)
         u.pp = _aligned_malloc(PageSize, PageSize);

@@ -93,7 +93,10 @@ char* timestamp::write_date(char* a_buf, time_t a_utc_seconds, bool a_utc,
               ||(!a_utc && nsec < s_next_local_midnight_nseconds-86400000000000L))
         return internal_write_date(a_buf, a_utc_seconds, a_utc, eos_pos, a_sep);
     else {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wstringop-truncation"
         strncpy(a_buf, a_utc ? s_utc_timestamp : s_local_timestamp, 9);
+        #pragma GCC diagnostic pop
         if (eos_pos) { a_buf[eos_pos] = '\0'; return a_buf + eos_pos; }
         return a_buf + 9;
     }
