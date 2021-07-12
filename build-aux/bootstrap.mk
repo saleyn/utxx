@@ -55,7 +55,7 @@ build       ?= Debug
 # Convert build to lower case:
 BUILD       := $(shell echo $(build) | tr 'A-Z' 'a-z')
 
-ifeq (,$(findstring $(BUILD),debug release relwithdefinfo minsizerel))
+ifeq (,$(findstring $(BUILD),debug release relwithdebinfo minsizerel))
     $(error Invalid build type: $(build))
 endif
 
