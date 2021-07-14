@@ -6,9 +6,9 @@
 # Date: 2014-08-12
 #-------------------------------------------------------------------------------
 
-build         ?= debug
-BUILD_ARG     := $(shell echo $(build) | tr 'A-Z' 'a-z')
-REBOOSTR_FILE := build/.bootstrap
+build          ?= debug
+BUILD_ARG      := $(shell echo $(build) | tr 'A-Z' 'a-z')
+REBOOTSTR_FILE := .build/.bootstrap
 
 -include build/cache.mk
 
@@ -22,9 +22,9 @@ distclean:
 bootstrap:
 	@$(MAKE) -f build-aux/bootstrap.mk --no-print-directory $@ $(MAKEOVERRIDES)
 
-rebootstrap: $(REBOOSTR_FILE)
-	$(if $(build),$(filter-out build=%,$(shell cat $(REBOOSTR_FILE))) \
-        build=$(BUILD_ARG),$(shell cat $(REBOOSTR_FILE))) --no-print-directory $(MAKEOVERRIDES)
+rebootstrap: $(REBOOTSTR_FILE)
+	$(if $(build),$(filter-out build=%,$(shell cat $(REBOOTSTR_FILE))) \
+        build=$(BUILD_ARG),$(shell cat $(REBOOTSTR_FILE))) --no-print-directory $(MAKEOVERRIDES)
 
 test:
 	CTEST_OUTPUT_ON_FAILURE=TRUE $(generator) -C$(DIR) $(VERBOSE) -j$(shell nproc) $@
@@ -40,7 +40,7 @@ tree:
 
 build/cache.mk:
 
-$(REBOOSTR_FILE):
+$(REBOOTSTR_FILE):
 	@echo "Rerun 'make bootstrap'!" && false
 
 .DEFAULT:
