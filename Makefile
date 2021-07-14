@@ -8,7 +8,7 @@
 
 build         ?= debug
 BUILD_ARG     := $(shell echo $(build) | tr 'A-Z' 'a-z')
-REBOOSTR_FILE := .build/.bootstrap
+REBOOSTR_FILE := build/.bootstrap
 
 -include build/cache.mk
 
@@ -22,7 +22,7 @@ distclean:
 bootstrap:
 	@$(MAKE) -f build-aux/bootstrap.mk --no-print-directory $@ $(MAKEOVERRIDES)
 
-rebootstrap: .build/.bootstrap
+rebootstrap: $(REBOOSTR_FILE)
 	$(if $(build),$(filter-out build=%,$(shell cat $(REBOOSTR_FILE))) \
         build=$(BUILD_ARG),$(shell cat $(REBOOSTR_FILE))) --no-print-directory $(MAKEOVERRIDES)
 
@@ -40,7 +40,7 @@ tree:
 
 build/cache.mk:
 
-.build/.bootstrap:
+$(REBOOSTR_FILE):
 	@echo "Rerun 'make bootstrap'!" && false
 
 .DEFAULT:
