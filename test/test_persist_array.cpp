@@ -109,7 +109,7 @@ void run_test(const char* a_test_name, Init1 a_init_fun1, Init2 a_init_fun2,
         persist_type a;
         blob orig(1, 2);
 
-        bool l_created;
+        bool l_created = true;
         BOOST_REQUIRE_NO_THROW(l_created = a_init_fun1(a));
         BOOST_REQUIRE(!l_created);
 

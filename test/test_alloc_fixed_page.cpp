@@ -49,10 +49,11 @@ namespace {
 BOOST_AUTO_TEST_CASE( test_alloc_fixed_page )
 {
     {
-        void* p;
+        void* p = nullptr;
         BOOST_REQUIRE(posix_memalign(&p, 128, 32) >= 0);
         //BOOST_REQUIRE((p = memory::aligned_malloc(32, 128)) >= 0);
         //memory::aligned_free(p);
+        BOOST_REQUIRE(p);
         free(p);
         BOOST_REQUIRE_EQUAL(0, (static_cast<char*>(p) - static_cast<char*>(0)) % 128);
     }
