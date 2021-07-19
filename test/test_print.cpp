@@ -223,7 +223,7 @@ BOOST_AUTO_TEST_CASE( test_print_perf )
     }
 
     {
-        detail::basic_buffered_print<> b;
+        basic_buffered_print<> b;
         timer tm;
         for (int i=0; i < ITERATIONS; i++) {
             b.print(10000);                     b.reset();

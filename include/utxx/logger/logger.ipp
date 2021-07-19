@@ -140,7 +140,7 @@ inline bool logger::logs(
     if (!is_enabled(a_level))
         return false;
 
-    detail::basic_buffered_print<1024> buf;
+    basic_buffered_print<1024> buf;
     buf.print(std::forward<Args>(a_args)...);
     bool res = m_queue.emplace(a_level, a_cat, buf.to_string(),
                                a_si.srcloc(), a_si.srcloc_len(),
@@ -160,7 +160,7 @@ inline bool logger::logs(
     if (!is_enabled(a_level))
         return false;
 
-    detail::basic_buffered_print<1024> buf;
+    basic_buffered_print<1024> buf;
     buf.print(std::forward<Args>(a_args)...);
     bool res = m_queue.emplace(a_level, a_cat, buf.to_string(),
                                a_src_loc, N-1, a_src_fun, M-1);
@@ -228,7 +228,7 @@ inline bool logger::async_logs(
         return false;
 
     auto fun = [=](const char* pfx, size_t psz, const char* sfx, size_t ssz) {
-        detail::basic_buffered_print<1024> buf;
+        basic_buffered_print<1024> buf;
         buf.sprint(pfx, psz);
         buf.print (std::forward<Args>(a_args)...);
         buf.sprint(sfx, ssz);

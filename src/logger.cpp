@@ -384,7 +384,7 @@ bool logger::flush_internal()
             const msg msg(LEVEL_INFO, "",
                           std::string("Fatal exception in logger"),
                           UTXX_LOG_SRCINFO);
-            detail::basic_buffered_print<1024> buf;
+            basic_buffered_print<1024> buf;
             char  pfx[256], sfx[256];
             char* p = format_header(msg, pfx, pfx + sizeof(pfx));
             char* q = format_footer(msg, sfx, sfx + sizeof(sfx));
@@ -555,7 +555,7 @@ void logger::dolog_msg(const logger::msg& a_msg) {
             case payload_t::STR_VIEW:
 #endif
             case payload_t::STR: {
-                detail::basic_buffered_print<1024> buf;
+                basic_buffered_print<1024> buf;
                 char  pfx[256], sfx[256];
                 char* p = format_header(a_msg, pfx, pfx + sizeof(pfx));
                 char* q = format_footer(a_msg, sfx, sfx + sizeof(sfx));

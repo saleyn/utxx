@@ -449,13 +449,13 @@ struct logger : boost::noncopyable {
     };
 
     struct msg_streamer {
-        detail::basic_buffered_print<512> data;
-        log_level                         level;
-        std::string                       category;
-        const char*                       src_loc;
-        size_t                            src_loc_len;
-        const char*                       src_fun;
-        size_t                            src_fun_len;
+        basic_buffered_print<512> data;
+        log_level                 level;
+        std::string               category;
+        const char*               src_loc;
+        size_t                    src_loc_len;
+        const char*               src_fun;
+        size_t                    src_fun_len;
 
         msg_streamer(log_level a_ll, const std::string& a_cat, src_info&& a_si)
             : level(a_ll), category(a_cat)
