@@ -138,9 +138,12 @@ namespace detail {
         /// Return a string with trailing characters matching \a rtrim removed.
         std::string to_string(Char rtrim = '\0') const {
             const Char* end = m_data+N;
-            if (rtrim)
-                for(const Char* q = end-1, *e = m_data-1; q != e && (*q == rtrim || !*q); end = q--);
-            for(const Char*p = m_data; p != end; ++p)
+            if (rtrim) {
+                auto q = end-1; if (*q == '\0') --q;
+                while (q >= m_data && *q == rtrim)
+                    end = q--;
+            }
+            for(const Char* p = m_data; p != end; ++p)
                 if (!*p) {
                     end = p;
                     break;
