@@ -34,6 +34,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
+BOOST_AUTO_TEST_CASE( test_stream_io_rewind )
+{
+  std::stringstream s; s << "abc";
+  std::string val;
+  s >> val;
+  BOOST_CHECK_EQUAL("abc", val);
+  rewind(s);
+  s >> val;
+  BOOST_CHECK_EQUAL("abc", val);
+}
+
 BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 {
     auto tp = path::temp_path();

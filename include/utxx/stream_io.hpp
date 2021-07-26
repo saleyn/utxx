@@ -41,6 +41,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 
 //------------------------------------------------------------------------------
+/// Rewind a stream to the beginning
+//------------------------------------------------------------------------------
+template <typename Stream>
+void rewind(Stream& s)
+{
+    s.clear(s.goodbit);
+    s.seekg(0);
+}
+
+//------------------------------------------------------------------------------
 /// Read \a a_cnt values from the input stream.
 /// @param in       input stream.
 /// @param a_output array of \a a_cnt double values.
@@ -142,7 +152,7 @@ public:
 
     indented_stream& operator<<(indent_t a)   {
         if      (a.level() > 0) inc_indent(a.level());
-        else if (a.level() < 0) dec_indent(a.level());
+        else if (a.level() < 0) dec_indent(-a.level());
         return indent();
     }
 
