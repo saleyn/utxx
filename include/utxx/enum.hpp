@@ -213,8 +213,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
             return from_string(a, true, as_name);                              \
         }                                                                      \
                                                                                \
+        static ENUM from_name(const std::string& a, bool a_nocase=false) {     \
+            return from_string(a.c_str(), a_nocase, true);                     \
+        }                                                                      \
         static ENUM from_name(const char* a, bool a_nocase=false) {            \
             return from_string(a, a_nocase, true);                             \
+        }                                                                      \
+        static ENUM from_value(const std::string& a, bool a_nocase=false) {    \
+            return from_string(a.c_str(), a_nocase, false);                    \
         }                                                                      \
         static ENUM from_value(const char* a, bool a_nocase=false) {           \
             return from_string(a, a_nocase, false);                            \

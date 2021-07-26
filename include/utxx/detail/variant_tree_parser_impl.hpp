@@ -58,6 +58,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
+    namespace variant_tree_settings {
+        // Don't translate strings to bool/int/double/etc types
+        static const int dont_translate_strings = 0x128;
+    }
+
     template <class Ch>
     struct scon_writer_settings {
         scon_writer_settings
@@ -278,7 +283,7 @@ namespace detail {
     /// @param a_flags are optional flags
     ///                (see boost::property_tree::xml_parser::read_xml())
     template <typename Source, typename Ch>
-    void read_xml(Source& a_src, basic_variant_tree<Ch>& a_tree, int a_flags = 0)
+    void read_xml(Source& a_src, basic_variant_tree<Ch>& a_tree, int a_flags = 1)
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
@@ -309,7 +314,7 @@ namespace detail {
     /// @param a_flags are optional flags
     ///                (see boost::property_tree::xml_parser::read_xml())
     template <typename Source, typename Ch>
-    void read_json(Source& a_src, basic_variant_tree<Ch>& a_tree)
+    void read_json(Source& a_src, basic_variant_tree<Ch>& a_tree, int a_flags = 0)
     {
         // TODO: Implement native support of read_xml for variant_tree instead
         //       of using this workaround of reading to ptree and copying.
@@ -320,13 +325,19 @@ namespace detail {
         boost::property_tree::translator_between
             <basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr(false);
 
+        bool translate = (a_flags & variant_tree_settings::dont_translate_strings) == 0;
+
         auto on_update = [&tr](auto& path, auto& data) {
             boost::optional<variant> v = *tr.put_value(data);
             return *v;
         };
 
         a_tree.clear();
-        merge(a_tree, typename basic_variant_tree<Ch>::path_type(), pt, on_update);
+        if (translate)
+            merge(a_tree, typename basic_variant_tree<Ch>::path_type(), pt, on_update);
+        else
+            merge(a_tree, typename basic_variant_tree<Ch>::path_type(), pt,
+                  [](auto&, auto& v) { return utxx::basic_variant_tree_data<Ch>(v); });
     }
 
 #endif

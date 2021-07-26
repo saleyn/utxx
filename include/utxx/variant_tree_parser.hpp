@@ -100,7 +100,7 @@ namespace utxx {
                 break;
             case FORMAT_JSON:
 #ifndef UTXX_VARIANT_TREE_NO_JSON_PARSER
-                detail::read_json(a_stream, a_tree);
+                detail::read_json(a_stream, a_tree, a_flags);
 #else
                 UTXX_THROW_BADARG_ERROR("JSON format reading is disabled!");
 #endif

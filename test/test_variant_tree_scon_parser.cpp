@@ -2,8 +2,8 @@
 // Copyright (C) 2014 Serge Aleynikov (adapted for checking SCON format)
 // Copyright (C) 2002-2006 Marcin Kalicinski
 //
-// Distributed under the Boost Software License, Version 1.0. 
-// (See accompanying file LICENSE_1_0.txt or copy at 
+// Distributed under the Boost Software License, Version 1.0.
+// (See accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 //
 // For more information, see www.boost.org
@@ -41,7 +41,7 @@ const char *ok_data_0 =
     "{ k8=v8 }\n"
     "k9 v9 { k10=v10, k11=v11 }\n";
 
-const char *ok_data_1 = 
+const char *ok_data_1 =
     "#Test file for scon_parser\n"
     "\n"
     "key { k=10, k=\"abc\"\\\n"
@@ -118,29 +118,29 @@ const char *ok_data_1 =
     "key { k9=100, k10=true }\n"
     "\n";
 
-const char *ok_data_1_inc = 
+const char *ok_data_1_inc =
     "#Test file for scon_parser\n"
     "\n"
     "inc_key inc_data ### comment\\";
 
-const char *ok_data_2 = 
+const char *ok_data_2 =
     "";
 
-const char *ok_data_3 = 
+const char *ok_data_3 =
     "key1 \"\"\n"
     "key2 =\"\"\n"
     "key3= \"\"\n"
     "key4 = \"\"\n";
 
-const char *ok_data_4 = 
+const char *ok_data_4 =
     "key1 data, key2 = data\n"
     "key3 data  key4 = data\n"
     "key5{key6=value}\n";
 
-const char *ok_data_5 = 
+const char *ok_data_5 =
     "key { key \"\", key \"\" }\n";
 
-const char *ok_data_6 = 
+const char *ok_data_6 =
     "\"key with spaces\" = \"data with spaces\"\n"
     "\"key with spaces\"=\"multiline data\"\\\n"
     "\"cont\"\\\n"
@@ -173,19 +173,19 @@ const char *error_data_1 =
     "#Test file for scon_parser\n"
     "$include \"bogus_file\"\n";                // Nonexistent include file
 
-const char *error_data_2 = 
+const char *error_data_2 =
     "#Test file for scon_parser\n"
     "key \"data with bad escape: \\q\"\n";      // Bad escape
 
-const char *error_data_3 = 
+const char *error_data_3 =
     "#Test file for scon_parser\n"
     "{\n";                                      // Opening brace without key
 
-const char *error_data_4 = 
+const char *error_data_4 =
     "#Test file for scon_parser\n"
     "}\n";                                      // Closing brace without opening brace
 
-const char *error_data_5 = 
+const char *error_data_5 =
     "#Test file for scon_parser\n"
     "key data\n"
     "{\n"
@@ -635,20 +635,47 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_json_parser )
 {
     // Note: JSON parser's translator should have int suffixes disabled, so
     // "7K" should be interpreted as a string
-    std::stringstream s("{\"x\": \"6E\", \"y\": \"7K\"}");
-    variant_tree c;
-    try   { read_config(s, c, FORMAT_JSON); }
-    catch (...) { BOOST_REQUIRE(false); }
+    std::stringstream s("{\"x\": \"6E\", \"y\": \"7K\", \"z\": 1}");
+    {
+        variant_tree c;
+        try   { read_config(s, c, FORMAT_JSON); }
+        catch (...) { BOOST_REQUIRE(false); }
 
-    //std::cout << c.to_string() << std::endl;
-    auto x = c.try_get("x", UTXX_SRC);
-    auto y = c.try_get("y", UTXX_SRC);
-    BOOST_REQUIRE(!x.is_null());
-    BOOST_REQUIRE(!y.is_null());
-    BOOST_REQUIRE(x.is_string());
-    BOOST_REQUIRE(y.is_string());
-    BOOST_REQUIRE_EQUAL("6E", x.to_str());
-    BOOST_REQUIRE_EQUAL("7K", y.to_str());
+        //std::cout << c.to_string() << std::endl;
+        auto x = c.try_get("x", UTXX_SRC);
+        auto y = c.try_get("y", UTXX_SRC);
+        auto z = c.try_get("z", UTXX_SRC);
+        BOOST_REQUIRE(!x.is_null());
+        BOOST_REQUIRE(!y.is_null());
+        BOOST_REQUIRE(!z.is_null());
+        BOOST_REQUIRE(x.is_string());
+        BOOST_REQUIRE(y.is_string());
+        BOOST_REQUIRE(z.is_int());
+        BOOST_REQUIRE_EQUAL("6E", x.to_str());
+        BOOST_REQUIRE_EQUAL("7K", y.to_str());
+        BOOST_REQUIRE_EQUAL(1,    z.to_int());
+    }
+    {
+        // Rewind the stream
+        s.clear(std::stringstream::goodbit);
+        s.seekg(0);
+
+        variant_tree cc;
+        try {
+            read_config(s, cc, FORMAT_JSON, std::string(),
+                        std::function<bool (std::string&)>(inc_file_resolver<char>()),
+                        variant_tree_settings::dont_translate_strings);
+        }
+        catch (std::runtime_error& e) {
+            std::cerr << "Error reading JSON config: " << e.what() << std::endl;
+            BOOST_REQUIRE(false);
+        }
+
+        auto z = cc.try_get("z", UTXX_SRC);
+        BOOST_REQUIRE(!z.is_null());
+        BOOST_REQUIRE(z.is_string());
+        BOOST_REQUIRE_EQUAL("1", z.to_str());
+    }
 }
 
 }} // namespace utxx::test
