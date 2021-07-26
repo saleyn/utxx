@@ -326,11 +326,15 @@ BOOST_AUTO_TEST_CASE( test_timestamp_format )
 
     time_val tt(tv);
     timestamp::format(TIME, tt, buf);
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(temp, expected+9, 9);
     BOOST_CHECK_EQUAL(temp, buf);
 
     timestamp::format(TIME, tt, buf, true);
     strncpy(temp, expected_utc+9, 9);
+    #pragma GCC diagnostic pop
+    
     BOOST_REQUIRE_EQUAL(temp, buf);
 
     timestamp::format(TIME_WITH_MSEC, tt, buf);

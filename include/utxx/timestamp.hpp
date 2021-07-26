@@ -91,7 +91,7 @@ protected:
 
 public:
     /// Suggested buffer space type needed for format() calls.
-    typedef char buf_type[32];
+    typedef char buf_type[40];
 
     // These methods are made public for testing only:
     static void        update_midnight_nseconds(time_val a_now);
