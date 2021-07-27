@@ -458,6 +458,10 @@ namespace utxx {
     /// @return true if \a a_src matches the \a a_pattern.
     bool wildcard_match(const char* a_src, const char* a_pattern);
 
+    inline bool wildcard_match(const std::string& a_src, const std::string& a_pattern) {
+        return  wildcard_match(a_src.c_str(), a_pattern.c_str());
+    }
+
     /// Case insensitive traits for implementing string_nocase
     ///
     struct traits_nocase : std::char_traits<char> {
