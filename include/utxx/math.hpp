@@ -87,6 +87,18 @@ T inline upper_power(T n, size_t base) {
     return r == n ? n : r*base;
 }
 
+/// Calculate the number of precision digits after the decimal point
+template <typename T>
+std::enable_if_t<std::is_floating_point_v<T>, size_t>
+precision_digits(T num, T eps = 1e-10) {
+    size_t res = 0;
+    if  (num < 0)  num = -num;
+    // NOTE: Using the following implementation doesn't produce the desired result:
+    // for (T y=num; double(y - floor(y)) > eps; res++, y *= 10);
+    for (T x = 1.0, y = num; double(y - floor(y)) > eps; res++, x *= 10, y = num*x);
+    return res;
+}
+
 /// Calculate greatest common denominator of x and y.
 /// E.g. gcd(18, 4) = 2
 inline long gcd(long x, long y) {

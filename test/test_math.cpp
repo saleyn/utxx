@@ -79,6 +79,20 @@ BOOST_AUTO_TEST_CASE( test_math_upper_power )
     BOOST_REQUIRE_EQUAL(4,      math::upper_power(3,  2));
 }
 
+BOOST_AUTO_TEST_CASE( test_math_precision_digits )
+{
+    BOOST_CHECK_EQUAL(5,        math::precision_digits(0.00001));
+    BOOST_CHECK_EQUAL(5,        math::precision_digits(0.12345));
+    BOOST_CHECK_EQUAL(5,        math::precision_digits(-0.12345));
+    BOOST_CHECK_EQUAL(9,        math::precision_digits(0.123456789, 1e-12));
+    BOOST_CHECK_EQUAL(1,        math::precision_digits(0.1));
+    BOOST_CHECK_EQUAL(0,        math::precision_digits(0.0));
+    BOOST_CHECK_EQUAL(0,        math::precision_digits(1.0));
+    BOOST_CHECK_EQUAL(12,       math::precision_digits(0.000000012345));
+    BOOST_CHECK_EQUAL(12,       math::precision_digits(0.000000012345, 1e-13));
+    BOOST_CHECK_EQUAL(8,        math::precision_digits(0.10000001));
+}
+
 BOOST_AUTO_TEST_CASE( test_math_gcd_lcm )
 {
     BOOST_REQUIRE_EQUAL(2,      math::gcd(18, 4));
