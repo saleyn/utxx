@@ -70,15 +70,21 @@ private:
 //------------------------------------------------------------------------------
 /// Output a float to stream formatted with fixed precision
 //------------------------------------------------------------------------------
-struct fixed {
-    fixed(double a_val, int a_digits, int a_precision, char a_fill = ' ')
-        : m_value(a_val), m_digits(a_digits), m_precision(a_precision)
-        , m_fill(a_fill)
+class fixed {
+    struct U {
+        int8_t  digits;
+        uint8_t precision;
+        char    fill;
+        bool    compact;
+    };
+public:
+
+    fixed(double a_val, int a_digits, int a_precision, char a_fill=' ', bool a_compact=true)
+        : m_value(a_val), m_info{int8_t(a_digits), uint8_t(a_precision), a_fill, a_compact}
     {}
 
     fixed(double a_val, int a_precision)
-        : m_value(a_val), m_digits(-1), m_precision(a_precision)
-        , m_fill(' ')
+        : m_value(a_val), m_info{-1, uint8_t(a_precision), ' ', true}
     {}
 
     template <typename StreamT>
@@ -88,23 +94,22 @@ struct fixed {
             utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
             out.write(buf, a.digits());
         } else {
-            int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), true);
+            int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), a.compact());
             if (likely(n >= 0))
                 out.write(buf, n);
         }
         return out;
     }
 
-    double value()     const { return m_value;     }
-    int    digits()    const { return m_digits;    }
-    int    precision() const { return m_precision; }
-    char   fill()      const { return m_fill;      }
+    double value()     const { return m_value;          }
+    int    digits()    const { return m_info.digits;    }
+    int    precision() const { return m_info.precision; }
+    char   fill()      const { return m_info.fill;      }
+    bool   compact()   const { return m_info.compact;   }
 
 private:
     double m_value;
-    int    m_digits;
-    int    m_precision;
-    char   m_fill;
+    U      m_info;
 };
 
 //------------------------------------------------------------------------------
