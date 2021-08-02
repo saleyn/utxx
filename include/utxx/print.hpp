@@ -313,7 +313,7 @@ class basic_buffered_print : public Alloc
             ftoa_right(a.value(), m_pos, a.digits(), a.precision(), a.fill());
             m_pos += a.digits();
         } else {
-            int n = ftoa_left(a.value(), m_pos, capacity(), a.precision(), true);
+            int n = ftoa_left(a.value(), m_pos, capacity(), a.precision(), a.compact());
             if (likely(n >= 0))
                 m_pos += n;
         }
