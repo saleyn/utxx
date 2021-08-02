@@ -83,8 +83,8 @@ public:
         : m_value(a_val), m_info{int8_t(a_digits), uint8_t(a_precision), a_fill, a_compact}
     {}
 
-    fixed(double a_val, int a_precision)
-        : m_value(a_val), m_info{-1, uint8_t(a_precision), ' ', true}
+    fixed(double a_val, int a_precision, bool a_compact=true)
+        : m_value(a_val), m_info{-1, uint8_t(a_precision), ' ', a_compact}
     {}
 
     template <typename StreamT>

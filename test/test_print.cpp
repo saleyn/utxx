@@ -171,6 +171,8 @@ BOOST_AUTO_TEST_CASE( test_print )
     { sstrm s; s << width<7, RIGHT,double>(2.123, 2); BOOST_CHECK_EQUAL("   2.12", s.str()); }
     { sstrm s; s << fixed(2.123, 6, 3, ' '); BOOST_CHECK_EQUAL(" 2.123", s.str()); }
     { sstrm s; s << fixed(2.123, 2);         BOOST_CHECK_EQUAL("2.12",   s.str()); }
+    { sstrm s; s << fixed(2.100, 3, false);  BOOST_CHECK_EQUAL("2.100",  s.str()); }
+    { sstrm s; s << fixed(2.100, 3);         BOOST_CHECK_EQUAL("2.1",    s.str()); }
 
     std::string str("xxx");
 
