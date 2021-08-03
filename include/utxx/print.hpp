@@ -76,40 +76,93 @@ class fixed {
         uint8_t precision;
         char    fill;
         bool    compact;
+        bool    is_float;
+        bool    is_left;
     };
+    union V {
+        double m_d;
+        long   m_i;
+        V(double d) : m_d(d) {}
+        V(long   v) : m_i(v) {}
+    };
+
 public:
 
     fixed(double a_val, int a_digits, int a_precision, char a_fill=' ', bool a_compact=true)
-        : m_value(a_val), m_info{int8_t(a_digits), uint8_t(a_precision), a_fill, a_compact}
+        : m_value(a_val)
+        , m_info{int8_t(a_digits), uint8_t(a_precision), a_fill, a_compact, true, false}
     {}
 
     fixed(double a_val, int a_precision, bool a_compact=true)
-        : m_value(a_val), m_info{-1, uint8_t(a_precision), ' ', a_compact}
+        : m_value(a_val)
+        , m_info{-1, uint8_t(a_precision), ' ', a_compact, true, false}
+    {}
+
+    fixed(long a_val, int a_width, alignment a_align=RIGHT)
+        : m_value(long(a_val))
+        , m_info{int8_t(a_width), 0, ' ', false, false, a_align == LEFT}
+    {}
+
+    fixed(int a_val, int a_width, alignment a_align=RIGHT)
+        : fixed(long(a_val), a_width, a_align)
+    {}
+
+    fixed(size_t a_val, int a_width, alignment a_align=RIGHT)
+        : fixed(long(a_val), a_width, a_align)
+    {}
+
+    fixed(unsigned a_val, int a_width, alignment a_align=RIGHT)
+        : fixed(long(a_val), a_width, a_align)
+    {}
+
+    fixed(int16_t a_val, int a_width, alignment a_align=RIGHT)
+        : fixed(long(a_val), a_width, a_align)
+    {}
+
+    fixed(uint16_t a_val, int a_width, alignment a_align=RIGHT)
+        : fixed(long(a_val), a_width, a_align)
     {}
 
     template <typename StreamT>
     inline friend StreamT& operator<<(StreamT& out, const fixed& a) {
-        char buf[1024];
-        if (a.digits() > -1 && a.digits() < int(sizeof(buf))) {
-            utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
-            out.write(buf, a.digits());
+        if (a.is_float()) {
+            char buf[1024];
+            if (a.digits() > -1 && a.digits() < int(sizeof(buf))) {
+                utxx::ftoa_right(a.value(), buf, a.digits(), a.precision(), a.fill());
+                out.write(buf, a.digits());
+            } else {
+                int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), a.compact());
+                if (likely(n >= 0))
+                    out.write(buf, n);
+            }
+        } else if (a.is_left()) {
+            char buf[22];
+            auto end = utxx::itoa_left(buf, a.int_value());
+            auto len = std::min<int>(a.digits(), end - buf);
+            out.write(buf, len);
         } else {
-            int n = utxx::ftoa_left(a.value(), buf, sizeof(buf), a.precision(), a.compact());
-            if (likely(n >= 0))
-                out.write(buf, n);
+            char buf[22];
+            auto end = utxx::itoa_left(buf, a.int_value());
+            auto len = std::min<int>(a.digits(), end - buf);
+            auto pad = std::max<int>(0, a.digits() - len);
+            for (int i=0; i < pad; ++i) out << a.fill(); // Pad
+            out.write(buf, len);
         }
         return out;
     }
 
-    double value()     const { return m_value;          }
-    int    digits()    const { return m_info.digits;    }
-    int    precision() const { return m_info.precision; }
-    char   fill()      const { return m_info.fill;      }
-    bool   compact()   const { return m_info.compact;   }
-
+    double     value()     const { return m_value.m_d;      }
+    long       int_value() const { return m_value.m_i;      }
+    int        digits()    const { return m_info.digits;    }
+    int        precision() const { return m_info.precision; }
+    char       fill()      const { return m_info.fill;      }
+    bool       compact()   const { return m_info.compact;   }
+    bool       is_float()  const { return m_info.is_float;  }
+    bool       is_left()   const { return m_info.is_left;   }
+    alignment  align()     const { return m_info.is_left == LEFT ? LEFT : RIGHT; }
 private:
-    double m_value;
-    U      m_info;
+    V m_value;
+    U m_info;
 };
 
 //------------------------------------------------------------------------------
