@@ -481,21 +481,21 @@ public:
     void        pos(const char* p){ assert(p <= m_end); m_pos = const_cast<char*>(p); }
     size_t      max_size()  const { return m_end - m_begin;  }
     size_t      capacity()  const { return m_end - m_pos;    }
-    char&       last()      const { return m_pos == m_begin
-                                         ? *m_begin : *(m_pos - 1); }
-    char&       last()            { return m_pos == m_begin
-                                         ? *m_begin : *(m_pos - 1); }
-    const char* end()       const { return m_end;   }
+    char&       last()      const { return empty() ? *m_begin : *(m_pos - 1); }
+    char&       last()            { return empty() ? *m_begin : *(m_pos - 1); }
+    const char* end()       const { return m_end;            }
+    bool        empty()     const { return m_pos == m_begin; }
 
     /// Max depth of src_info scope printed
-    void        max_src_scope(int a) { m_max_src_scope = a; }
+    void        max_src_scope(int a) { m_max_src_scope = a;  }
     /// Precision of floating point (default: 6)
-    void        precision    (int a) { m_precision     = a; }
+    void        precision    (int a) { m_precision     = a;  }
 
     /// Reserve space in the buffer to hold additional \a a_sz bytes
     void reserve(size_t a_sz) {
-        if (m_pos + a_sz <= m_end) return;
-        auto sz = max_size() + a_sz + N;
+        auto n = a_sz + 1;  // Always include space for '\0' when using c_str()
+        if (m_pos + n <= m_end) return;
+        auto sz = max_size() + n + N;
         char* p = Alloc::allocate(sz);
         strncpy(p, m_begin, size());
         m_pos   = p + size();
@@ -517,7 +517,7 @@ public:
     /// }
     /// buf.advance(n);
     /// \endcode
-    void advance(size_t n) { m_pos += n; }
+    void advance(size_t n) { m_pos += n; assert(m_pos < m_end); }
 
     /// Remove the trailing character equal to \a ch.
     /// If the buffer doesn't end with \a ch, nothing is removed.
