@@ -63,14 +63,17 @@ BOOST_AUTO_TEST_CASE( test_get_option )
     while (opts.next()) {
         if (opts.match("-a", "", &a)) {
             BOOST_CHECK_EQUAL(10, a);
+            BOOST_CHECK_EQUAL("-a", opts.option());
             continue;
         }
         if (opts.match({"-A", "--abc"}, &a)) {
             BOOST_CHECK_EQUAL(20, a);
+            BOOST_CHECK_EQUAL("--abc", opts.option());
             continue;
         }
         if (opts.match("-e")) {
             e_found = true;
+            BOOST_CHECK_EQUAL("-e", opts.option());
             continue;
         }
         if (opts.match({"-F", "-FF"})) {
@@ -86,6 +89,7 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         }
         if (opts.match("-f", "", &out)) {
             BOOST_CHECK_EQUAL("-", out);
+            BOOST_CHECK_EQUAL("-f", opts.option());
             continue;
         }
         if (opts.match("-x", ""))
@@ -103,6 +107,8 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         }
         if (opts.match({"-L","--log"},logger::parse_log_level, &ll)) {
             BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
+            BOOST_CHECK_EQUAL("--log", opts.option());
+            BOOST_CHECK(opts.is_option({"--log"}));
             continue;
         }
         BOOST_CHECK(false);

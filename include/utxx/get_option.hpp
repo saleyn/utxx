@@ -148,6 +148,7 @@ class opts_parser {
     int           m_argc;
     const char**  m_argv;
     int           m_idx;
+    std::string   m_opt;
 
 public:
     template <typename Char = const char>
@@ -210,8 +211,10 @@ public:
     template <typename Setter>
     bool match(std::initializer_list<std::string> a_opt, const Setter& a_fun) {
         for (auto& opt : a_opt)
-            if (match_opt(m_argc, m_argv, a_fun, opt, m_idx))
+            if (match_opt(m_argc, m_argv, a_fun, opt, m_idx)) {
+                m_opt = opt;
                 return true;
+            }
         return false;
     }
 
@@ -224,45 +227,74 @@ public:
     template <typename Setter, typename T>
     bool match(std::initializer_list<std::string> a_opt, const Setter& a_convert, T* a_val) {
         assert(a_val);
+        m_opt.clear();
         auto setter = [&](const char* a) { if (a_val) *a_val = a_convert(a); };
         for (auto& opt : a_opt)
-            if (match_opt(m_argc, m_argv, setter, opt, m_idx))
+            if (match_opt(m_argc, m_argv, setter, opt, m_idx)) {
+                m_opt = opt;
                 return true;
+            }
         return false;
     }
 
     /// Find an option identified either by \a a_short name or \a a_long name
     ///
-    /// Current fundtion doesn't change internal state variables of this class
+    /// Current function doesn't change internal state variables of this class
     template <typename T = std::nullptr_t>
-    bool find(const std::string& a_short, T* a_val = nullptr) const {
+    bool find(const std::string& a_short, T* a_val=nullptr) const {
         return find({a_short}, a_val);
     }
 
+    /// Find an option identified either by \a a_short name or \a a_long name
+    /// @param a_shot       short option name
+    /// @param a_long       long  option name
+    /// @param a_val        value passed to the option (e.g. "MyProgram -s Val")
+    /// @param a_which_opt  which option matched (e.g. if short|long options are
+    ///                     "-s|--sym", either "-s" or "--sym" will be set)
     template <typename T = std::nullptr_t>
-    bool find(const std::string& a_short, const std::string& a_long, T* a_val = nullptr) const {
-        return find({a_short, a_long}, a_val);
+    bool find(const std::string& a_short, const std::string& a_long,
+              T* a_val = nullptr, std::string* a_which_opt = nullptr) const {
+        return find({a_short, a_long}, a_val,  a_which_opt);
     }
 
+    /// Find an option identified by the strings in the initializer list
+    /// @param a_long       list of valid option names
+    /// @param a_val        value passed to the option (e.g. "MyProgram -s Val")
+    /// @param a_which_opt  name of the matched option
     template <typename T = std::nullptr_t>
-    bool find(std::initializer_list<std::string> a_opt, T* a_val = nullptr) const {
+    bool find(std::initializer_list<std::string> a_opt,
+              T* a_val = nullptr, std::string* a_which_opt=nullptr) const {
         auto setter = [=](const char* a) { if (a_val) *a_val = convert<T>(a); };
         for (int i=1; i < m_argc; ++i)
             for (auto& s : a_opt)
-                if (match_opt(m_argc, m_argv, setter, s, i))
+                if (match_opt(m_argc, m_argv, setter, s, i)) {
+                    if (a_which_opt)
+                        *a_which_opt = s;
                     return true;
+                }
         return false;
     }
 
-    bool            is_help() { return match("-h", "--help", (bool*)nullptr); }
+    /// Check if last matched option is in the list of given options
+    bool is_option(std::initializer_list<std::string> a_opts) const {
+        for (auto& s : a_opts)
+            if (s == m_opt)
+                return true;
+        return false;
+    }
 
-    void            reset()        { m_idx = 0;               }
-    bool            next()         { return ++m_idx < m_argc; }
-    bool            end()    const { return m_idx >= m_argc;  }
-    int             index()  const { return m_idx;            }
+    bool               is_help() { return match("-h", "--help", (bool*)nullptr); }
 
-    int             argc()   const { return m_argc; }
-    const char**    argv()   const { return m_argv; }
+    void               reset()        { m_idx = 0;               }
+    bool               next()         { return ++m_idx < m_argc; }
+    bool               end()    const { return m_idx >= m_argc;  }
+    int                index()  const { return m_idx;            }
+
+    /// Last matched option
+    std::string const& option() const { return m_opt;            }
+
+    int                argc()   const { return m_argc;           }
+    const char**       argv()   const { return m_argv;           }
 
     /// Return current option
     const char* operator()() const { return m_idx < m_argc ? m_argv[m_idx]:""; }
