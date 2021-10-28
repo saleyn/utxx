@@ -86,18 +86,24 @@ install(
 )
 
 if (${CMAKE_BUILD_TYPE} STREQUAL "release")
-  install(
-    FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so.${PROJECT_VERSION}
-    DESTINATION lib
-  )
-  install(
-    FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so
-    DESTINATION lib
-  )
-  install(
-    FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.a
-    DESTINATION lib
-  )
+  if (EXISTS ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so.${PROJECT_VERSION})
+    install(
+      FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so.${PROJECT_VERSION}
+      DESTINATION lib
+    )
+  endif()
+  if (EXISTS ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so)
+    install(
+      FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.so
+      DESTINATION lib
+    )
+  endif()
+  if (EXISTS ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.a)
+    install(
+      FILES ${CMAKE_BINARY_DIR}/src/lib${PROJECT_NAME}_d.a
+      DESTINATION lib
+    )
+  endif()
 endif()
 
 install(
