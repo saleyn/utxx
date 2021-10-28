@@ -11,11 +11,11 @@ PROJECT  := $(shell sed -n '/^project/{s/^project. *\([a-zA-Z0-9]\+\).*/\1/p; q}
 VERSION  := $(shell sed -n '/^project/{s/^.\+VERSION \+//; s/[^\.0-9]\+//; p; q}'\
                     CMakeLists.txt)
 
-HOSTNAME := $(shell A=$${HOSTNAME%%.*} && echo ${A,,})
+HOSTNAME := $(shell A=$$(hostname) && A=$${A%%.*} && echo $${A,,})
 
 # Options file is either: .cmake-args.$(HOSTNAME) or .cmake-args
 OPT_FILE_BASE := .cmake-args
-OPT_FILE      := $(OPT_FILE_BASE).$(shell hostname)
+OPT_FILE      := $(OPT_FILE_BASE).$(HOSTNAME)
 ifeq ($(wildcard $(OPT_FILE)),)
     OPT_FILE := .cmake-args
     ifeq ($(wildcard $(OPT_FILE)),)
@@ -23,7 +23,7 @@ ifeq ($(wildcard $(OPT_FILE)),)
         NOT_FOUND := 1
     endif
 endif
-ifeq (,/dev/null)
+ifeq ($(NOT_FOUND),1)
     $(warning Configuration file $(OPT_FILE_BASE) not found!)
 endif
 
@@ -33,7 +33,7 @@ endif
 all:
 	@echo
 	@echo "Run: make bootstrap [toolchain=gcc|clang|intel] [verbose=true] \\"
-	@echo "                    [generator=ninja|make] [build=Debug|Release]"
+	@echo "                    [generator=ninja|make] [build=Debug|Release|RelWithDebInfo]"
 	@echo
 	@echo "To customize cmake variables, create a file with VAR=VALUE pairs:"
 	@echo "  '.cmake-args.$(HOSTNAME)' or '.cmake-args'"
@@ -90,6 +90,8 @@ info:
 	@echo "BLD_DIR:   $(BLD_DIR)"
 	@echo "DIR:       $(DIR)"
 	@echo "build:     $(BUILD)"
+	@echo "toolchain: $(toolchain)"
+	@echo "PREFIX:    $(PREFIX)"
 	@echo "prefix:    $(prefix)"
 	@echo "generator: $(generator)"
 	@echo "toolchain: $(toolchain)"
@@ -125,6 +127,7 @@ bootstrap: | $(DIR)
 	@echo -e "Build directory..: \e[0;36m$(DIR)\e[0m"
 	@echo -e "Install directory: \e[0;36m$(prefix)\e[0m"
 	@echo -e "Build type.......: \e[1;32m$(BUILD)\e[0m"
+	@echo -e "Toolchain........: \e[1;32m$(toolchain)\e[0m"
 	@echo -e "Command-line vars: $(variables)"
 	@echo -e "\n-- \e[1;37mUsing $(generator) generator\e[0m\n"
 	@mkdir -p .build
@@ -135,7 +138,7 @@ bootstrap: | $(DIR)
 	@[ ! -d build ] && ln -s $(DIR) build || true
 	@ln -s $(prefix) inst
 	@echo "make bootstrap $(MAKEOVERRIDES)"            >  $(DIR)/.bootstrap
-	@cp $(DIR)/.bootstrap .build/
+	@cp $(DIR)/.bootstrap .build/.bootstrap
 	@echo "export PROJECT   := $(PROJECT)"             >  $(DIR)/cache.mk
 	@echo "export VERSION   := $(VERSION)"             >> $(DIR)/cache.mk
 	@echo "export OPT_FILE  := $(abspath $(OPT_FILE))" >> $(DIR)/cache.mk
