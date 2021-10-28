@@ -14,12 +14,17 @@ VERSION  := $(shell sed -n '/^project/{s/^.\+VERSION \+//; s/[^\.0-9]\+//; p; q}
 HOSTNAME := $(shell A=$${HOSTNAME%%.*} && echo ${A,,})
 
 # Options file is either: .cmake-args.$(HOSTNAME) or .cmake-args
-OPT_FILE     := .cmake-args.$(HOSTNAME)
-ifeq "$(wildcard $(OPT_FILE))" ""
+OPT_FILE_BASE := .cmake-args
+OPT_FILE      := $(OPT_FILE_BASE).$(shell hostname)
+ifeq ($(wildcard $(OPT_FILE)),)
     OPT_FILE := .cmake-args
-    ifeq "$(wildcard $(OPT_FILE))" ""
-        OPT_FILE := "/dev/null"
+    ifeq ($(wildcard $(OPT_FILE)),)
+        OPT_FILE  := /dev/null
+        NOT_FOUND := 1
     endif
+endif
+ifeq (,/dev/null)
+    $(warning Configuration file $(OPT_FILE_BASE) not found!)
 endif
 
 #-------------------------------------------------------------------------------
