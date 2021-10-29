@@ -141,6 +141,13 @@ BOOST_AUTO_TEST_CASE( test_url )
     BOOST_CHECK( url.assign(TCP,       "127.1.2.3",  1234, "/home", "eth0"));
     BOOST_CHECK_EQUAL("tcp://127.1.2.3;eth0:1234/home", url.url);
 
+    BOOST_REQUIRE(parse_url("udp://224.0.32.11;:15320/320IB", url));
+    BOOST_REQUIRE_EQUAL(UDP,            url.proto);
+    BOOST_REQUIRE_EQUAL("224.0.32.11;", url.addr);
+    BOOST_REQUIRE_EQUAL("15320",        url.port);
+    BOOST_REQUIRE_EQUAL("/320IB",       url.path);
+    BOOST_REQUIRE(url.is_ipv4());
+
     auto url_copy = url;
     BOOST_CHECK( url_copy == url );
 }
