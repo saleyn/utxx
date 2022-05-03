@@ -114,19 +114,18 @@ public:
 
     /// Return the number of available samples given \a a_now current time.
     T        available(time_val a_now = now_utc()) const {
-        if (m_rate == 0)
-            return std::numeric_limits<T>::max();
-        return calc_available(a_now);
+        return UNLIKELY(m_rate == 0) ? m_window_ns : calc_available(a_now);
     }
 
     /// Return the number of used samples given \a a_now current time.
     T        used(time_val a_now=now_utc()) const {
-        return m_rate==0 ? 0 : m_rate-calc_available(a_now);
+        return UNLIKELY(m_rate==0) ? 0 : m_rate-calc_available(a_now);
     }
 
     /// Return currently used rate per second.
     double   curr_rate_per_second(time_val a_now=now_utc()) const {
-        return m_rate==0 ? 0 : (double)(m_rate-calc_available(a_now))*1'000'000'000/m_window_ns;
+        return UNLIKELY(m_rate==0)
+             ? 0 : double((m_rate-calc_available(a_now))*1'000'000'000/m_window_ns);
     }
 
 private:
