@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE( test_rate_throttler_time_spacing )
         time_spacing_throttle thr(0, 50, now);    // Throttle disabled (rate==0)
         n = thr.add(4, now);
         BOOST_CHECK_EQUAL(4,  n);
-        BOOST_CHECK_EQUAL(UINT_MAX, thr.available(now));
+        BOOST_CHECK_EQUAL(thr.window_usec()*1000, thr.available(now));
         BOOST_CHECK_EQUAL(0u, thr.used(now));
         BOOST_CHECK_EQUAL(0.0, thr.curr_rate_per_second(now));
     }
