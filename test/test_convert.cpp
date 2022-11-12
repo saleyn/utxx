@@ -306,10 +306,53 @@ BOOST_AUTO_TEST_CASE( test_convert )
     {
         char buf[10];
         char* p = buf;
-        itoa<int>(0, p);
+        auto  q = itoa<int>(0, p);
         BOOST_CHECK_EQUAL("0", buf);
-        BOOST_CHECK_EQUAL(1, p - buf);
+        BOOST_CHECK_EQUAL(1,   p - buf);
+        BOOST_CHECK_EQUAL(buf, q);
     }
+}
+
+BOOST_AUTO_TEST_CASE( test_convert_deprecated_itoa )
+{
+  char buf1[12], buf2[22];
+  auto p = buf1;
+
+  auto q = deprecated::itoa(123, p);
+
+  BOOST_CHECK_EQUAL(buf1,   q);
+  BOOST_CHECK_EQUAL(buf1+3, p);
+
+  p = buf1;
+
+  BOOST_CHECK_EQUAL("0",                     deprecated::itoa( 0,                      p)); p = buf1;
+  BOOST_CHECK_EQUAL("1",                     deprecated::itoa( 1u,                     p)); p = buf1;
+  BOOST_CHECK_EQUAL("1",                     deprecated::itoa( 1,                      p)); p = buf1;
+  BOOST_CHECK_EQUAL("12",                    deprecated::itoa( 12,                     p)); p = buf1;
+  BOOST_CHECK_EQUAL("12345",                 deprecated::itoa( 12345,                  p)); p = buf1;
+  BOOST_CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890,             p)); p = buf1;
+  BOOST_CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890u,            p)); p = buf1;
+  BOOST_CHECK_EQUAL("-1",                    deprecated::itoa(-1,                      p)); p = buf1;
+  BOOST_CHECK_EQUAL("-12",                   deprecated::itoa(-12,                     p)); p = buf1;
+  BOOST_CHECK_EQUAL("-12345",                deprecated::itoa(-12345,                  p)); p = buf1;
+  BOOST_CHECK_EQUAL("-1234567890",           deprecated::itoa(-1234567890,             p)); p = buf1;
+
+  p = buf2;
+
+  BOOST_CHECK_EQUAL("0",                     deprecated::itoa( 0l,                     p)); p = buf2;
+  BOOST_CHECK_EQUAL("1",                     deprecated::itoa( 1l,                     p)); p = buf2;
+  BOOST_CHECK_EQUAL("12",                    deprecated::itoa( 12l,                    p)); p = buf2;
+  BOOST_CHECK_EQUAL("12345",                 deprecated::itoa( 12345l,                 p)); p = buf2;
+  BOOST_CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890l,            p)); p = buf2;
+  BOOST_CHECK_EQUAL("12345678901",           deprecated::itoa( 12345678901l,           p)); p = buf2;
+  BOOST_CHECK_EQUAL("9223372036854775807",   deprecated::itoa( 9223372036854775807l,   p)); p = buf2;
+  BOOST_CHECK_EQUAL("18446744073709551615",  deprecated::itoa( 18446744073709551615ul, p)); p = buf2;
+  BOOST_CHECK_EQUAL("-1",                    deprecated::itoa(-1l,                     p)); p = buf2;
+  BOOST_CHECK_EQUAL("-12",                   deprecated::itoa(-12l,                    p)); p = buf2;
+  BOOST_CHECK_EQUAL("-12345",                deprecated::itoa(-12345l,                 p)); p = buf2;
+  BOOST_CHECK_EQUAL("-1234567890",           deprecated::itoa(-1234567890l,            p)); p = buf2;
+  BOOST_CHECK_EQUAL("-12345678901",          deprecated::itoa(-12345678901l,           p)); p = buf2;
+  BOOST_CHECK_EQUAL("-9223372036854775807",  deprecated::itoa(-9223372036854775807l,   p)); p = buf2;
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi2 )
@@ -468,6 +511,76 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
     BOOST_CHECK(!fast_atoi( std::string("\0\0\0\000-123", 8), n));
     BOOST_CHECK(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), n));
     BOOST_CHECK_EQUAL(-123, n);
+}
+
+BOOST_AUTO_TEST_CASE( test_convert_fast_itoa_speed )
+{
+    using boost::timer::cpu_timer;
+    using boost::timer::cpu_times;
+    using boost::timer::nanosecond_type;
+
+    const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
+
+    char buf[32];
+    auto p  = buf;
+    auto n1 = 0, n2 = 0, n3 = 0;
+
+    BOOST_TEST_MESSAGE(    "           iterations: " << ITERATIONS);
+    {
+        cpu_timer t;
+
+        for (int i = 0; i < ITERATIONS; i++, p = buf) {
+            p = fast_itoa(i, p);
+            n1 += p - buf;
+        }
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        std::stringstream s;
+        s << boost::format("       fast_itoa time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+        BOOST_TEST_MESSAGE(s.str());
+    }
+    {
+        cpu_timer t;
+        p = buf;
+
+        for (int i = 0; i < ITERATIONS; i++, p = buf) {
+            deprecated::itoa(i, p);
+            n2 += p - buf;
+        }
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        std::stringstream s;
+        s << boost::format("deprecated::itoa time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+
+        BOOST_TEST_MESSAGE(s.str());
+    }
+    {
+        cpu_timer t;
+        p = buf;
+
+        for (int i = 0; i < ITERATIONS; i++, p = buf) {
+            itoa(i, p);
+            n3 += p - buf;
+        }
+
+        cpu_times elapsed_times(t.elapsed());
+        nanosecond_type t1 = elapsed_times.system + elapsed_times.user;
+
+        std::stringstream s;
+        s << boost::format("            itoa time: %.3fs (%.3fus/call)")
+            % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
+
+        BOOST_TEST_MESSAGE(s.str());
+    }
+
+    BOOST_CHECK_EQUAL(n1, n2);
+    BOOST_CHECK_EQUAL(n1, n3);
 }
 
 BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )

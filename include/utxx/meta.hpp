@@ -150,6 +150,10 @@ struct to_int {
     }
 };
 
+/// Syntactic sugar for to_int<Chars>::value
+template <char... Chars>
+inline constexpr uint64_t to_int_v = to_int<Chars...>::value;
+
 // For generic types, directly use the result of the signature of its 'operator()'
 template <typename T>
 struct function_traits : public function_traits<decltype(&T::operator())>
