@@ -204,7 +204,8 @@ namespace utxx {
         else // maybe_add the existing entry
             not_found = m_assign(it->second, std::move(value), now);
 
-        m_lru.push_back(ttl_node{now, key});
+        if (not_found)
+            m_lru.push_back(ttl_node{now, key});
 
         return not_found;
     }
