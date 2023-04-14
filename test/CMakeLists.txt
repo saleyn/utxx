@@ -77,6 +77,7 @@ list(APPEND TEST_SRCS
     test_timestamp.cpp
     test_type_traits.cpp
     test_url.cpp
+    test_unordered_map_with_ttl.cpp
     test_utxx.cpp
     test_variant.cpp
     test_variant_tree_scon_parser.cpp
