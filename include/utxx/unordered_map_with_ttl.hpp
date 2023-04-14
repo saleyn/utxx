@@ -187,16 +187,9 @@ namespace utxx {
     bool unordered_map_with_ttl<K,T,Hash,KeyEq,ValUpdate,Allocator>
     ::try_add(const K& key, T&& value, uint64_t now)
     {
-        assert(now > m_ttl);
+        refresh(now);
 
-        auto ttl = now - m_ttl;
-
-        for (auto i = m_lru.begin(); i != m_lru.end() && i->time <= ttl; i = m_lru.begin()) {
-            m_map.erase(i->key);    // Evict expired node
-            m_lru.pop_front();
-        }
-
-        auto it = m_map.find(key);
+        auto it        = m_map.find(key);
         auto not_found = it == m_map.end();
 
         if (not_found)
