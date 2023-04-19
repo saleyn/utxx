@@ -34,6 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/detail/variant_tree_parser_impl.hpp>
 #include <utxx/error.hpp>
+#include <filesystem>
 
 namespace utxx {
 
@@ -139,7 +140,7 @@ namespace utxx {
         const std::locale &          a_loc   = std::locale(),
         config_format                a_fmt   = FORMAT_UNDEFINED
     ) {
-        std::basic_string<Ch> ext = boost::filesystem::extension(a_filename);
+        std::basic_string<Ch> ext = std::filesystem::path(a_filename).extension();
 
         if (a_fmt == FORMAT_UNDEFINED) {
             if (ext == ".config" || ext == ".conf" || ext == ".cfg" || ext == ".scon")

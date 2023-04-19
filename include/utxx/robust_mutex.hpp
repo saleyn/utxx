@@ -71,7 +71,7 @@ namespace utxx {
             pthread_mutexattr_t* mutex_attr = a_attr ? a_attr : &attr;
             if (pthread_mutexattr_setpshared(mutex_attr, PTHREAD_PROCESS_SHARED) < 0)
                 UTXX_THROW_IO_ERROR(errno);
-            if (pthread_mutexattr_setrobust_np(mutex_attr, PTHREAD_MUTEX_ROBUST_NP) < 0)
+            if (pthread_mutexattr_setrobust(mutex_attr, PTHREAD_MUTEX_ROBUST_NP) < 0)
                 UTXX_THROW_IO_ERROR(errno);
             if (pthread_mutexattr_setprotocol(mutex_attr, PTHREAD_PRIO_INHERIT) < 0)
                 UTXX_THROW_IO_ERROR(errno);
@@ -126,7 +126,7 @@ namespace utxx {
 
         int make_consistent() {
             assert(m);
-            return pthread_mutex_consistent_np(m);
+            return pthread_mutex_consistent(m);
         }
 
         void destroy() {
