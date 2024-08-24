@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include <type_traits>
 #include <tuple>
