@@ -1,5 +1,5 @@
 # vim:ts=2:sw=2:et
-cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
 project(utxx VERSION 1.4.1)
 
 #===============================================================================

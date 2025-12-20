@@ -14,3 +14,5 @@ build
 .idea
 include/utxx/logger/logger_options.generated.hpp
 include/utxx/version.hpp
+CMakeCache.txt
+CMakeFiles/*
