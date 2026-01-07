@@ -276,7 +276,7 @@ public:
             // meta (and lock), so they'd both hold the lock at the same time,
             // which is impossible, which leaves only one possible scenario --
             // *this is empty.  Assert it.
-            assert(&m_meta == &other.meta_);
+            assert(&m_meta == &other.m_meta);
             assert(m_lock  == nullptr);
             std::swap(m_lock, other.m_lock);
             std::swap(m_id, other.m_id);

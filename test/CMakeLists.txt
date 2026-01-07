@@ -122,7 +122,7 @@ add_executable(example_repeating_timer example_repeating_timer.cpp)
 target_link_libraries(example_repeating_timer utxx ${Boost_LIBRARIES} boost_timer boost_chrono rt)
 
 add_executable(example_delegate example_delegate.cpp)
-target_link_libraries(example_delegate utxx boost_timer boost_chrono rt)
+target_link_libraries(example_delegate utxx boost_timer boost_chrono boost_system boost_filesystem rt)
 
 install(
   TARGETS fast_read example_repeating_timer example_delegate
