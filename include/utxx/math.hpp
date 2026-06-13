@@ -42,11 +42,15 @@ namespace math {
 
 /// Calculate <tt>a</tt> raised to the power of <tt>b</tt>.
 template <typename T>
-T inline power(T a, size_t b) {
-    if (a==0) return 0;
-    if (b==0) return 1;
-    if (b==1) return a;
-    return (b & 1) == 0 ? power(a*a, b >> 1) : a*power(a*a, b >> 1);
+inline T power(T a, size_t b) {
+    if (a == 0) return 0;
+    
+    T result = 1;
+    for (; b > 0; b >>= 1) {
+        if (b & 1) result *= a; // If b is odd, multiply the base with the result
+        a *= a;
+    }
+    return result;
 }
 
 /// Calculate logarithm of \a n using \a base.
