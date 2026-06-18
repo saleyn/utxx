@@ -1,6 +1,4 @@
-![Banner](https://github.com/saleyn/eixx/blob/master/assets/utxx-banner.png?raw=true)
-
-[![Build Status](https://travis-ci.org/saleyn/utxx.svg?branch=master)](https://travis-ci.org/saleyn/utxx)
+![Banner](https://github.com/saleyn/utxx/blob/master/assets/utxx-banner.png?raw=true)
 
 `utxx` is an open-source collection of C++ utility components.
 It is dual-licensed, and provides a set of classes that
