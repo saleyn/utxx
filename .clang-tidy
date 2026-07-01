@@ -1,0 +1,32 @@
+Checks: '-*,readability-identifier-naming'
+HeaderFilterRegex: '^(?!.*/\.asdf/).*$'
+CheckOptions:
+  - { key: readability-identifier-naming.MemberPrefix, value: 'm_' }
+  # Allow member variables without m_ prefix in data-only structs
+  - { key: readability-identifier-naming.MemberIgnoredRegexp, value: "^[a-z_][a-z0-9_]*$" }
+  - { key: readability-identifier-naming.ClassMemberPrefix, value: 's_' }
+  # Allow static member variables without s_ prefix in data-only structs
+  - { key: readability-identifier-naming.ClassMemberIgnoredRegexp, value: "^[a-z_][a-z0-9_]*$" }
+  - { key: readability-identifier-naming.PublicMemberPrefix, value: '' }
+  - { key: readability-identifier-naming.PublicClassMemberPrefix, value: '' }
+
+  # General class methods (both static and non-static member functions)
+  - { key: readability-identifier-naming.MethodCase,          value: CamelCase }
+   # Allow lower casing of single word function names
+  - { key: readability-identifier-naming.MethodIgnoredRegexp, value: "^[a-z]+$" }
+
+  # Fine-grained overrides by access modifiers (Optional)
+  - { key: readability-identifier-naming.PublicMethodCase,  value: CamelCase }
+  - { key: readability-identifier-naming.PublicMethodIgnoredRegexp, value: "^[a-z]+$" }
+  - { key: readability-identifier-naming.ProtectedMethodCase, value: CamelCase }
+  - { key: readability-identifier-naming.ProtectedMethodIgnoredRegexp, value: "^[a-z]+$" }
+  - { key: readability-identifier-naming.PrivateMethodCase, value: CamelCase }
+  - { key: readability-identifier-naming.PrivateMethodIgnoredRegexp, value: "^[a-z]+$" }
+
+  # Allow protected and private members without prefixes in data-only structs
+  - { key: readability-identifier-naming.ProtectedMemberIgnoredRegexp, value: "^[a-z_][a-z0-9_]*$" }
+  - { key: readability-identifier-naming.PrivateMemberIgnoredRegexp, value: "^[a-z_][a-z0-9_]*$" }
+
+  # Static member functions specifically (Optional)
+  - { key: readability-identifier-naming.ClassMethodCase,   value: CamelCase }
+  - { key: readability-identifier-naming.ClassMethodIgnoredRegexp, value: "^[a-z]+$" }

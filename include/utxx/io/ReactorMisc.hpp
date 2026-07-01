@@ -156,13 +156,16 @@ inline bool ReadUntilEAgain
     long  n;
 
     // Skip EINTR:
-    while (UNLIKELY((n = ::read(a_fd, buf, space) < 0) && errno==EINTR));
+    while (UNLIKELY((n = ::read(a_fd, buf, space)) < 0 && errno==EINTR));
 
     if (UNLIKELY(n < 0 && errno == EAGAIN))
       // No more data is available -- this is a normal end of reading.
       // Action is not to be invoked here, as there is no new data:
       return true;
-    else if (UNLIKELY(n <= 0)) {
+    else if (UNLIKELY(n == 0))
+      // EOF: peer closed the connection cleanly.
+      return true;
+    else if (UNLIKELY(n < 0)) {
       int ec = SocketError(a_fd);
       if (ec == 0) // Disconnected by user
           return true;

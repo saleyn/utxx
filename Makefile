@@ -52,4 +52,60 @@ $(REBOOTSTR_FILE):
             $(if $(jobs),-j$(jobs),-j$(shell nproc)) $@;\
 	fi
 
-.PHONY: bootstrap rebootstrap distclean info test doc
+.PHONY: bootstrap rebootstrap distclean info test doc \
+        reactor reactor-tests reactor-clean
+
+#-------------------------------------------------------------------------------
+# Standalone reactor build (no CMake / boost required)
+#-------------------------------------------------------------------------------
+REACTOR_INC    := include
+REACTOR_CXX    := g++
+REACTOR_CXXFLAGS := -std=c++17 -I$(REACTOR_INC) -Wall -Wextra -Wpedantic \
+                    $(if $(findstring $(build),debug),-g -O0,-O2 -DNDEBUG)
+REACTOR_LIBS   := -lrt -laio
+REACTOR_OUTDIR := .build/reactor
+
+REACTOR_SRCS   := src/reactor/reactor_platform.cpp \
+                  src/reactor/reactor_misc.cpp \
+                  src/reactor/reactor_fd_info.cpp \
+                  src/reactor/reactor.cpp
+
+REACTOR_TEST_SRCS := test/reactor/test_compat.cpp \
+                     test/reactor/test_reactor_types.cpp \
+                     test/reactor/test_reactor_misc.cpp \
+                     test/reactor/test_aio_reader.cpp \
+                     test/reactor/test_reactor.cpp
+
+REACTOR_OBJS  := $(patsubst src/%.cpp,$(REACTOR_OUTDIR)/%.o,$(REACTOR_SRCS))
+REACTOR_BINS  := $(patsubst test/reactor/%.cpp,$(REACTOR_OUTDIR)/%,$(REACTOR_TEST_SRCS))
+
+$(REACTOR_OUTDIR)/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(REACTOR_CXX) $(REACTOR_CXXFLAGS) -c $< -o $@
+
+$(REACTOR_OUTDIR)/test_%: test/reactor/test_%.cpp $(REACTOR_OBJS)
+	@mkdir -p $(dir $@)
+	$(REACTOR_CXX) $(REACTOR_CXXFLAGS) $^ $(REACTOR_LIBS) -o $@
+
+## Build all reactor object files and test binaries
+reactor: $(REACTOR_BINS)
+
+## Run all reactor test binaries; print per-suite pass/fail counts
+reactor-tests: $(REACTOR_BINS)
+	@pass=0; fail=0; \
+	for t in $(REACTOR_BINS); do \
+		echo "=== $$t ==="; \
+		out=$$($$t 2>&1); rc=$$?; echo "$$out"; \
+		p=$$(echo "$$out" | grep -oP '\d+(?= passed)' | tail -1); \
+		f=$$(echo "$$out" | grep -oP '\d+(?= failed)' | tail -1); \
+		pass=$$((pass + $${p:-0})); \
+		fail=$$((fail + $${f:-0})); \
+		[ $$rc -eq 0 ] || fail=$$((fail + 1)); \
+	done; \
+	echo; \
+	echo "Total: $$pass passed, $$fail failed"; \
+	[ $$fail -eq 0 ]
+
+## Remove reactor build artifacts
+reactor-clean:
+	rm -rf $(REACTOR_OUTDIR)

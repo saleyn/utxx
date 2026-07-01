@@ -370,13 +370,14 @@ public:
     T* write(const T& a_src) {
         BOOST_ASSERT(capacity() > 0);
         *wr_ptr() = a_src;
-        return write(1);
+        return advance(1);
     }
 
     /// Advance the write pointer by \a n records. This doesn't
     /// actually modify the data in the buffer, but adjusts the
     /// position of wr_ptr().
-    T* write(size_t n = 1) { super::commit(n*sizeof(T)); return wr_ptr(); }
+    T* advance(size_t n = 1) { super::commit(n*sizeof(T)); return wr_ptr(); }
+    T* write(size_t n = 1)   { return advance(n); }
 
     /// Reset the read and write pointers.
     /// Any unread records will be lost.

@@ -128,3 +128,5 @@ install(
   TARGETS fast_read example_repeating_timer example_delegate
   RUNTIME DESTINATION test
 )
+
+add_subdirectory(reactor)
