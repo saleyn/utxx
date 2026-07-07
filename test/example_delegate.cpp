@@ -17,6 +17,7 @@ typedef utxx::delegate<
 void m(const char* fmt, int n) {
     static int s_sum;
     s_sum += n;
+    (void)s_sum;
 }
 
 struct Test {
@@ -28,6 +29,7 @@ struct Test {
     static void ms(const char* fmt, int n) {
         static int s_sum;
         s_sum += n;
+        (void)s_sum;
     }
 
     void test_binder(int ITERS, int a_mask, bool a_hist) {

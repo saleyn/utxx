@@ -1356,7 +1356,7 @@ commit(const struct timespec* tsp)
 
         struct iovec iov [si->max_batch_sz];  // Contains pointers to write
         const  char* cats[si->max_batch_sz];  // List of message categories
-        size_t n = 0, sz = 0;
+        size_t n = 0; [[maybe_unused]] size_t sz = 0;
 
         static const int SI_OK               = 0;
         static const int SI_CLOSE_SCHEDULED  = 1 << 0;

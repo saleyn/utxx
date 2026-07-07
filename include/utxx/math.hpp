@@ -91,6 +91,18 @@ T inline upper_power(T n, size_t base) {
     return r == n ? n : r*base;
 }
 
+/// Round up to the next power of two (returns 1 for n=0)
+template <typename T>
+inline T upper_pow2(T n) {
+  if (n-- == 0) return T(1);
+  n |= n >> 1;
+  n |= n >> 2;
+  n |= n >> 4;
+  n |= n >> 8;
+  n |= n >> 16;
+  return n+1;
+}
+
 /// Calculate the number of precision digits after the decimal point
 template <typename T>
 std::enable_if_t<std::is_floating_point_v<T>, size_t>

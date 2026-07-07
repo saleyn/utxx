@@ -133,10 +133,9 @@ struct test2 {
         template <typename F>
         void operator() (F f) {
             time_val start; start.now();
-            int j = 0;
             for (int i=0; i < n; i++) {
                 f();
-                j++;
+                asm volatile("" ::: "memory"); // Don't optimize away the call
             }
             time_val end; end.now();
             end -= start;

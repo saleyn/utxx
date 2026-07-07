@@ -119,3 +119,25 @@ BOOST_AUTO_TEST_CASE( test_math_is_prime )
     BOOST_REQUIRE_EQUAL(false,  math::is_prime(49));
     BOOST_REQUIRE_EQUAL(true ,  math::is_prime(101));
 }
+
+BOOST_AUTO_TEST_CASE( test_math_next_pow2 )
+{
+    // Boundary: 0 and 1 both return 1
+    BOOST_REQUIRE_EQUAL(1u,     math::upper_pow2(0u));
+    BOOST_REQUIRE_EQUAL(1u,     math::upper_pow2(1u));
+    // Exact powers of two are returned unchanged
+    BOOST_REQUIRE_EQUAL(2u,     math::upper_pow2(2u));
+    BOOST_REQUIRE_EQUAL(4u,     math::upper_pow2(4u));
+    BOOST_REQUIRE_EQUAL(8u,     math::upper_pow2(8u));
+    BOOST_REQUIRE_EQUAL(16u,    math::upper_pow2(16u));
+    BOOST_REQUIRE_EQUAL(1024u,  math::upper_pow2(1024u));
+    // Non-powers round up to the next power of two
+    BOOST_REQUIRE_EQUAL(4u,     math::upper_pow2(3u));
+    BOOST_REQUIRE_EQUAL(8u,     math::upper_pow2(5u));
+    BOOST_REQUIRE_EQUAL(8u,     math::upper_pow2(7u));
+    BOOST_REQUIRE_EQUAL(16u,    math::upper_pow2(9u));
+    BOOST_REQUIRE_EQUAL(16u,    math::upper_pow2(15u));
+    BOOST_REQUIRE_EQUAL(32u,    math::upper_pow2(17u));
+    BOOST_REQUIRE_EQUAL(1024u,  math::upper_pow2(1023u));
+    BOOST_REQUIRE_EQUAL(2048u,  math::upper_pow2(1025u));
+}

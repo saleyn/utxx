@@ -16,6 +16,7 @@ set(REACTOR_SRCS
     ${REACTOR_SRC}/reactor_misc.cpp
     ${REACTOR_SRC}/reactor_fd_info.cpp
     ${REACTOR_SRC}/reactor.cpp
+    ${REACTOR_SRC}/reactor_platform.cpp
 )
 
 # ---- test_compat ------------------------------------------------------------
@@ -47,6 +48,7 @@ target_link_libraries(test_reactor_misc rt aio)
 # ---- test_aio_reader --------------------------------------------------------
 add_executable(test_reactor_aio
     test_aio_reader.cpp
+    ${REACTOR_SRCS}
 )
 target_compile_options(test_reactor_aio PRIVATE ${REACTOR_FLAGS})
 target_include_directories(test_reactor_aio PRIVATE ${REACTOR_INC})
