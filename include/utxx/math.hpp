@@ -197,11 +197,15 @@ inline bool is_prime(long x)
     if (x <= 1)
         return false;
 
-    if (x < 4 || x == 5 || x == 7)
+    // Small primes
+    if (x == 2 || x == 3 || x == 5 || x == 7)
         return true;
 
-    if ((x&1) == 0 || div_by(x, 3) || div_by(x, 5) || div_by(x, 7))
+    // Eliminate multiples of small primes
+    if ((x & 1) == 0 || div_by(x, 3) || div_by(x, 5) || div_by(x, 7))
         return false;
+
+    long e = sqrt_helper(x);
 
     // The remaining primes are in the form 6*k-1 and 6*k+1:
     //   11,13,17,19,23..29,31,..37,41,43...
@@ -213,11 +217,18 @@ inline bool is_prime(long x)
     // 3        x        x        x        x        x        x        x
     // 5        x              x              x              x
 
-    // NOTE: for end value use +1 to compensate for round-off errors
-    for(long d=7, e=sqrt_helper(x)+1; d <= e; d += 30)
-        if (div_by(x,d)    || div_by(x,d+4)  || div_by(x,d+6)  || div_by(x,d+10) ||
-            div_by(x,d+12) || div_by(x,d+16) || div_by(x,d+22) || div_by(x,d+24))
-            return false;
+    // 30‑wheel offsets for numbers coprime to 2,3,5
+    const int offsets[8] = {0, 4, 6, 10, 12, 16, 22, 24};
+
+    // Start at 11 (first number > 7 coprime to 2,3,5)
+    for (long d = 11; d <= e; d += 30) {
+        for (int off : offsets) {
+            long t = d + off;
+            if (t > e) return true;
+            if (div_by(x, t)) return false;
+        }
+    }
+
     return true;
 }
 
