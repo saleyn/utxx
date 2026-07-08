@@ -43,13 +43,15 @@ namespace math {
 /// Calculate <tt>a</tt> raised to the power of <tt>b</tt>.
 template <typename T>
 inline T power(T a, size_t b) {
-    if (a == 0) return 0;
-    
     T result = 1;
-    for (; b > 0; b >>= 1) {
-        if (b & 1) result *= a; // If b is odd, multiply the base with the result
+
+    while (b) {
+        if (b & 1)
+            result *= a;
         a *= a;
+        b >>= 1;
     }
+
     return result;
 }
 
