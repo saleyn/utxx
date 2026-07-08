@@ -117,16 +117,26 @@ precision_digits(T num, T eps = 1e-10) {
 
 /// Calculate greatest common denominator of x and y.
 /// E.g. gcd(18, 4) = 2
-inline long gcd(long x, long y) {
-    if (x == 0)
-        return y;
+inline long gcd(long u, long v) {
+    if (u == 0) return v;
+    if (v == 0) return u;
 
-    while (y != 0) {
-        if (x > y) x = x - y;
-        else       y = y - x;
+    int shift = __builtin_ctzl(u | v);
+
+    u >>= __builtin_ctzl(u);
+    v >>= __builtin_ctzl(v);
+
+    while (u != v) {
+        if (u > v) {
+            u -= v;
+            u >>= __builtin_ctzl(u);
+        } else {
+            v -= u;
+            v >>= __builtin_ctzl(v);
+        }
     }
 
-    return x;
+    return u << shift;
 }
 
 /// Calculate least common multiple of x and y.
