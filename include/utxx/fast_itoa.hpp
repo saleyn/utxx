@@ -14,6 +14,7 @@
 
 #include <cassert>
 #include <emmintrin.h>
+#include <limits>
 #include <stdint.h>
 #include <stdio.h>
 

@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger/logger.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/convert.hpp>
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 #include <algorithm>
 
 namespace utxx {

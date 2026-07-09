@@ -34,6 +34,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #pragma once
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <boost/interprocess/sync/file_lock.hpp>
@@ -43,7 +47,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
-#include <boost/filesystem.hpp>
+#include <cassert>
+#include <filesystem>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/meta.hpp>
 #include <utxx/scope_exit.hpp>
@@ -207,7 +212,7 @@ namespace utxx {
 
         /// Add a record with given ID to the store
         void add(size_t a_id, const T& a_rec) {
-            BOOST_ASSERT(a_id < m_header->rec_count.load(std::memory_order_relaxed));
+            assert(\1);
             scoped_lock guard(get_lock(a_id));
             *get(a_id) = a_rec;
         }
@@ -320,12 +325,12 @@ namespace utxx {
 
         bool l_exists;
         try {
-            boost::filesystem::path l_name(a_filename);
+            std::filesystem::path l_name(a_filename);
             try {
-                boost::filesystem::create_directories(l_name.parent_path());
-            } catch (boost::system::system_error& e) {
+                std::filesystem::create_directories(l_name.parent_path());
+            } catch (std::filesystem::filesystem_error& e) {
                 throw io_error(errno, "Cannot create directory: ",
-                    l_name.parent_path(), ": ", e.what());
+                    l_name.parent_path().string(), ": ", e.what());
             }
 
             {
@@ -412,7 +417,7 @@ namespace utxx {
             m_header = static_cast<header*>(addr);
             m_begin  = m_header->records;
             m_end    = m_begin + m_header->max_recs;
-            BOOST_ASSERT(reinterpret_cast<char*>(m_end) <= static_cast<char*>(addr)+size);
+            assert(\1);
 
             //if (!l_exists && !a_read_only) {
             if (!a_read_only) {
@@ -464,7 +469,7 @@ namespace utxx {
                                             a_name, "' (expected=",
                                             sizeof(header), ", got=",
                                             m_header->recs_offset, ')');
-                    BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
+                    assert(\1) <=
                                  reinterpret_cast<char*>(m_header)+fres.second);
                     created = false;
                     goto INIT_LOCKS;
@@ -513,7 +518,7 @@ namespace utxx {
 
             m_storage_name = a_name;
 
-            BOOST_ASSERT(reinterpret_cast<char*>(m_end) <=
+            assert(\1) <=
                          reinterpret_cast<char*>(mem)+size);
             created = true;
         }
@@ -535,3 +540,5 @@ namespace utxx {
         return created;
     }
 } // namespace utxx
+
+#endif // UTXX_HAVE_BOOST

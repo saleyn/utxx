@@ -26,7 +26,7 @@
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/type_traits.hpp>
 #include <iostream>
 
@@ -83,7 +83,7 @@ operator<< (std::ostream& stream, const T& value) {
     return stream;
 }
 
-BOOST_AUTO_TEST_CASE( test_type_traits )
+TEST_CASE( test_type_traits )
 {
     static_assert(has_print<Yes>::value,       "Yes: has print()");
     static_assert(!has_print<No>::value,       "No: doesn't have print()");
@@ -95,5 +95,5 @@ BOOST_AUTO_TEST_CASE( test_type_traits )
 
     static_assert(has_derived_print<DerivedYes<Yes>>::value, "DerivedYes doesn't have x");
 
-    BOOST_REQUIRE(true);
+    REQUIRE(true);
 }

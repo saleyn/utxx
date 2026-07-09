@@ -31,7 +31,6 @@
 #include <thread>
 #include <unordered_map>
 
-#include <boost/thread/tss.hpp>
 
 using namespace utxx;
 
@@ -49,17 +48,17 @@ struct Widget {
 };
 int Widget::m_total_val = 0;
 
-BOOST_AUTO_TEST_CASE( test_thread_local_basic_destructor2 ) {
+TEST_CASE( test_thread_local_basic_destructor2 ) {
     Widget::m_total_val = 0;
     thr_local_ptr<Widget> w;
     std::thread([&w]() {
         w.reset(new Widget());
         w.get()->m_val += 10;
     }).join();
-    BOOST_CHECK_EQUAL(10, Widget::m_total_val);
+    CHECK_EQUAL(10, Widget::m_total_val);
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter1 ) {
+TEST_CASE( test_thread_local_custom_deleter1 ) {
     Widget::m_total_val = 0;
     {
         thr_local_ptr<Widget> w;
@@ -67,22 +66,22 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter1 ) {
             w.reset(new Widget(), Widget::customDeleter);
             w.get()->m_val += 10;
         }).join();
-        BOOST_CHECK_EQUAL(10, Widget::m_total_val);
+        CHECK_EQUAL(10, Widget::m_total_val);
     }
-    BOOST_CHECK_EQUAL(10, Widget::m_total_val);
+    CHECK_EQUAL(10, Widget::m_total_val);
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_reset_null ) {
+TEST_CASE( test_thread_local_reset_null ) {
     thr_local_ptr<int> tl;
-    BOOST_CHECK(!tl);
+    CHECK(!tl);
     tl.reset(new int(4));
-    BOOST_CHECK(static_cast<bool>(tl));
-    BOOST_CHECK_EQUAL(*tl.get(), 4);
+    CHECK(static_cast<bool>(tl));
+    CHECK_EQUAL(*tl.get(), 4);
     tl.reset();
-    BOOST_CHECK(!tl);
+    CHECK(!tl);
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_test_release ) {
+TEST_CASE( test_thread_local_test_release ) {
     Widget::m_total_val = 0;
     thr_local_ptr<Widget> w;
     std::unique_ptr<Widget> wPtr;
@@ -92,13 +91,13 @@ BOOST_AUTO_TEST_CASE( test_thread_local_test_release ) {
 
         wPtr.reset(w.release());
     }).join();
-    BOOST_CHECK_EQUAL(0, Widget::m_total_val);
+    CHECK_EQUAL(0, Widget::m_total_val);
     wPtr.reset();
-    BOOST_CHECK_EQUAL(10, Widget::m_total_val);
+    CHECK_EQUAL(10, Widget::m_total_val);
 }
 
 // Test deleting the thr_local_ptr object
-BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter2) {
+TEST_CASE( test_thread_local_custom_deleter2) {
     Widget::m_total_val = 0;
     std::thread t;
     std::mutex mutex;
@@ -138,12 +137,12 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter2) {
         }
 
         // Thread started but hasn't exited yet
-        BOOST_CHECK_EQUAL(0, Widget::m_total_val);
+        CHECK_EQUAL(0, Widget::m_total_val);
 
         // Destroy thr_local_ptr<Widget> (by letting it go out of scope)
     }
 
-    BOOST_CHECK_EQUAL(1010, Widget::m_total_val);
+    CHECK_EQUAL(1010, Widget::m_total_val);
 
     // Allow thread to exit
     {
@@ -153,17 +152,17 @@ BOOST_AUTO_TEST_CASE( test_thread_local_custom_deleter2) {
     }
     t.join();
 
-    BOOST_CHECK_EQUAL(1010, Widget::m_total_val);
+    CHECK_EQUAL(1010, Widget::m_total_val);
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_basic_destructor ) {
+TEST_CASE( test_thread_local_basic_destructor ) {
     Widget::m_total_val = 0;
     thr_local<Widget> w;
     std::thread([&w]() { w->m_val += 10; }).join();
-    BOOST_CHECK_EQUAL(10, Widget::m_total_val);
+    CHECK_EQUAL(10, Widget::m_total_val);
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_simple_repeat_destructor ) {
+TEST_CASE( test_thread_local_simple_repeat_destructor ) {
     Widget::m_total_val = 0;
     {
         thr_local<Widget> w;
@@ -173,10 +172,10 @@ BOOST_AUTO_TEST_CASE( test_thread_local_simple_repeat_destructor ) {
         thr_local<Widget> w;
         w->m_val += 10;
     }
-    BOOST_CHECK_EQUAL(20, Widget::m_total_val);
+    CHECK_EQUAL(20, Widget::m_total_val);
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_interleaved_destructors ) {
+TEST_CASE( test_thread_local_interleaved_destructors ) {
     Widget::m_total_val = 0;
     std::unique_ptr<thr_local<Widget>> w;
     int wVersion = 0;
@@ -192,7 +191,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_interleaved_destructors ) {
                     return;
                 if (wVersion > wVersionPrev) {
                     // We have a new version of w, so it should be initialized to zero
-                    BOOST_CHECK_EQUAL((*w)->m_val, 0);
+                    CHECK_EQUAL((*w)->m_val, 0);
                     break;
                 }
             }
@@ -221,7 +220,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_interleaved_destructors ) {
         wVersion = wVersionMax + 1;
     }
     th.join();
-    BOOST_CHECK_EQUAL(wVersionMax * 10, Widget::m_total_val);
+    CHECK_EQUAL(wVersionMax * 10, Widget::m_total_val);
 }
 
 class SimpleThreadCachedInt {
@@ -238,7 +237,7 @@ public:
     }
 };
 
-BOOST_AUTO_TEST_CASE( test_thread_local_access_all_threads_counter ) {
+TEST_CASE( test_thread_local_access_all_threads_counter ) {
     const int kNumThreads = 10;
     SimpleThreadCachedInt stci;
     std::atomic<bool> run(true);
@@ -251,20 +250,20 @@ BOOST_AUTO_TEST_CASE( test_thread_local_access_all_threads_counter ) {
             while (run.load()) { usleep(100); }
         }));
     while (totalAtomic.load() != kNumThreads) { usleep(100); }
-    BOOST_CHECK_EQUAL(kNumThreads, stci.read());
+    CHECK_EQUAL(kNumThreads, stci.read());
     run.store(false);
     for (auto& t : threads)
         t.join();
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_reset_null2 ) {
+TEST_CASE( test_thread_local_reset_null2 ) {
     thr_local<int> tl;
     tl.reset(new int(4));
-    BOOST_CHECK_EQUAL(*tl.get(), 4);
+    CHECK_EQUAL(*tl.get(), 4);
     tl.reset();
-    BOOST_CHECK_EQUAL(*tl.get(), 0);
+    CHECK_EQUAL(*tl.get(), 0);
     tl.reset(new int(5));
-    BOOST_CHECK_EQUAL(*tl.get(), 5);
+    CHECK_EQUAL(*tl.get(), 5);
 }
 
 namespace {
@@ -275,17 +274,17 @@ namespace {
     };
 }  // namespace
 
-BOOST_AUTO_TEST_CASE( test_thread_local_movable1 ) {
+TEST_CASE( test_thread_local_movable1 ) {
     Foo a;
     Foo b;
-    BOOST_CHECK(a.tl.get() != b.tl.get());
+    CHECK(a.tl.get() != b.tl.get());
 
     a = Foo();
     b = Foo();
-    BOOST_CHECK(a.tl.get() != b.tl.get());
+    CHECK(a.tl.get() != b.tl.get());
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_movable2 ) {
+TEST_CASE( test_thread_local_movable2 ) {
     std::map<int, Foo> map;
 
     map[42];
@@ -298,7 +297,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_movable2 ) {
         tls.insert(m.second.tl.get());
 
     // Make sure that we have 4 different instances of *tl
-    BOOST_CHECK_EQUAL(4u, tls.size());
+    CHECK_EQUAL(4u, tls.size());
 }
 
 namespace {
@@ -324,7 +323,7 @@ namespace {
         void check() {
             uint64_t v = val();
             for (size_t i = 0; i < kFillObjectSize; ++i)
-                BOOST_CHECK(v == data_[i]);
+                CHECK(v == data_[i]);
         }
 
         ~FillObject() {
@@ -368,9 +367,9 @@ namespace {
 
 }  // namespace
 
-BOOST_AUTO_TEST_CASE( test_thread_local_fork ) {
-    BOOST_CHECK_EQUAL(1, ptr->value());  // ensure created
-    BOOST_CHECK_EQUAL(1, totalValue());
+TEST_CASE( test_thread_local_fork ) {
+    CHECK_EQUAL(1, ptr->value());  // ensure created
+    CHECK_EQUAL(1, totalValue());
     // Spawn a new thread
 
     std::mutex mutex;
@@ -380,7 +379,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork ) {
     std::condition_variable stoppedCond;
 
     std::thread t([&] () {
-        BOOST_CHECK_EQUAL(1, ptr->value());  // ensure created
+        CHECK_EQUAL(1, ptr->value());  // ensure created
         {
             std::unique_lock<std::mutex> lock(mutex);
             started = true;
@@ -399,7 +398,7 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork ) {
             startedCond.wait(lock);
     }
 
-    BOOST_CHECK_EQUAL(2, totalValue());
+    CHECK_EQUAL(2, totalValue());
 
     pid_t pid = fork();
     if (pid == 0) {
@@ -416,15 +415,15 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork ) {
     } else if (pid > 0) {
         // in parent
         int status;
-        BOOST_CHECK_EQUAL(pid, waitpid(pid, &status, 0));
-        BOOST_CHECK(WIFEXITED(status));
-        BOOST_CHECK_EQUAL(0, WEXITSTATUS(status));
+        CHECK_EQUAL(pid, waitpid(pid, &status, 0));
+        CHECK(WIFEXITED(status));
+        CHECK_EQUAL(0, WEXITSTATUS(status));
     } else {
-        BOOST_TEST_MESSAGE("Fork failed");
-        BOOST_CHECK(false);
+        TEST_MESSAGE("Fork failed");
+        CHECK(false);
     }
 
-    BOOST_CHECK_EQUAL(2, totalValue());
+    CHECK_EQUAL(2, totalValue());
 
     {
         std::unique_lock<std::mutex> lock(mutex);
@@ -434,12 +433,12 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork ) {
 
     t.join();
 
-    BOOST_CHECK_EQUAL(1, totalValue());
+    CHECK_EQUAL(1, totalValue());
 }
 
 struct HoldsOneTag2 {};
 
-BOOST_AUTO_TEST_CASE( test_thread_local_fork2 ) {
+TEST_CASE( test_thread_local_fork2 ) {
     // A thread-local tag that was used in the parent from a *different* thread
     // (but not the forking thread) would cause the child to hang in a
     // thr_local_ptr's object destructor. Yeah.
@@ -458,12 +457,12 @@ BOOST_AUTO_TEST_CASE( test_thread_local_fork2 ) {
         _exit(0);
     } else if (pid > 0) {
         int status;
-        BOOST_CHECK_EQUAL(pid, waitpid(pid, &status, 0));
-        BOOST_CHECK(WIFEXITED(status));
-        BOOST_CHECK_EQUAL(0, WEXITSTATUS(status));
+        CHECK_EQUAL(pid, waitpid(pid, &status, 0));
+        CHECK(WIFEXITED(status));
+        CHECK_EQUAL(0, WEXITSTATUS(status));
     } else {
-        BOOST_TEST_MESSAGE("Fork failed");
-        BOOST_CHECK(false);
+        TEST_MESSAGE("Fork failed");
+        CHECK(false);
     }
 }
 

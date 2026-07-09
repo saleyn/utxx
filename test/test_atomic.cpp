@@ -31,13 +31,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 //#define BOOST_TEST_MODULE atomic_test 
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/atomic.hpp>
 #include <stdio.h>
 
 #define DO_REQUIRE_EQUAL(A, B, C) \
     { bool r = A == B; if (!r) { printf("Testing %s failed: %s != %s\n", C, #A, #B); \
-      BOOST_REQUIRE(false); } }
+      REQUIRE(false); } }
 
 using namespace utxx;
 
@@ -83,7 +83,7 @@ template <typename T>
 void do_test_atomic_dcas(const char* str_type) {
     typedef TT<T> TT;
 
-    BOOST_STATIC_ASSERT(sizeof(TT) == 2*sizeof(T));
+    static_assert(sizeof(TT) == 2*sizeof(T));
 
     TT x(10, 5), y(x);
     volatile TT z(x);
@@ -115,100 +115,100 @@ void test_atomic_cmpxchg(const char* str_type) {
     DO_REQUIRE_EQUAL(20, z, str_type);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_cas )
+TEST_CASE( test_atomic_cas )
 {
     do_test_atomic_cas<int>("cas_int");
     do_test_atomic_cas<long>("cas_long");
     do_test_atomic_cas<long long>("cas_long_long");
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_dcas )
+TEST_CASE( test_atomic_dcas )
 {
     do_test_atomic_dcas<int>("dcas_int");
     do_test_atomic_dcas<long>("dcas_long");
     do_test_atomic_dcas<long long>("dcas_long_long");
 }
 
-BOOST_AUTO_TEST_CASE( test_cmpxchg )
+TEST_CASE( test_cmpxchg )
 {
     test_atomic_cmpxchg<int>("cmpxchg int");
     test_atomic_cmpxchg<long>("cmpxchg long");
     test_atomic_cmpxchg<long long>("cmpxchg long long");
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_add )
+TEST_CASE( test_atomic_add )
 {
     volatile long n = 1;
-    BOOST_REQUIRE_EQUAL(1, atomic::add(&n,  1));
-    BOOST_REQUIRE_EQUAL(2, n);
-    BOOST_REQUIRE_EQUAL(2, atomic::add(&n, -1));
-    BOOST_REQUIRE_EQUAL(1, n);
+    REQUIRE_EQUAL(1, atomic::add(&n,  1));
+    REQUIRE_EQUAL(2, n);
+    REQUIRE_EQUAL(2, atomic::add(&n, -1));
+    REQUIRE_EQUAL(1, n);
     volatile int m = 1;
-    BOOST_REQUIRE_EQUAL(1, atomic::add(&m,  1));
-    BOOST_REQUIRE_EQUAL(2, m);
-    BOOST_REQUIRE_EQUAL(2, atomic::add(&m, -1));
-    BOOST_REQUIRE_EQUAL(1, m);
+    REQUIRE_EQUAL(1, atomic::add(&m,  1));
+    REQUIRE_EQUAL(2, m);
+    REQUIRE_EQUAL(2, atomic::add(&m, -1));
+    REQUIRE_EQUAL(1, m);
 
     atomic::inc(&n);
-    BOOST_REQUIRE_EQUAL(2, n);
+    REQUIRE_EQUAL(2, n);
     atomic::dec(&n);
-    BOOST_REQUIRE_EQUAL(1, n);
+    REQUIRE_EQUAL(1, n);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_set_bit )
+TEST_CASE( test_atomic_set_bit )
 {
     volatile unsigned long n = 0;
     atomic::set_bit(0, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 0,  n);
+    REQUIRE_EQUAL(1llu << 0,  n);
     n = 0;
     atomic::set_bit(5, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 5,  n);
+    REQUIRE_EQUAL(1llu << 5,  n);
     n = 0;
     atomic::set_bit(32, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 32, n);
+    REQUIRE_EQUAL(1llu << 32, n);
     n = 0;
     atomic::set_bit(63, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 63, n);
+    REQUIRE_EQUAL(1llu << 63, n);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_clear_bit )
+TEST_CASE( test_atomic_clear_bit )
 {
     volatile unsigned long n = 1llu << 0;
     atomic::clear_bit(0, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 5;
     atomic::clear_bit(5, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 32;
     atomic::clear_bit(32, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 63;
     atomic::clear_bit(63, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 63 | 1llu << 16;
     atomic::clear_bit(63u, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 16,  n);
+    REQUIRE_EQUAL(1llu << 16,  n);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_change_bit )
+TEST_CASE( test_atomic_change_bit )
 {
     volatile unsigned long n = 1llu << 0;
     atomic::change_bit(0, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 5;
     atomic::change_bit(5, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 32;
     atomic::change_bit(32, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 63;
     atomic::change_bit(63, &n);
-    BOOST_REQUIRE_EQUAL(0u,  n);
+    REQUIRE_EQUAL(0u,  n);
     n = 1llu << 63 | 1llu << 16;
     atomic::change_bit(63, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 16,  n);
+    REQUIRE_EQUAL(1llu << 16,  n);
     atomic::change_bit(63, &n);
     atomic::change_bit(16, &n);
-    BOOST_REQUIRE_EQUAL(1llu << 63,  n);
+    REQUIRE_EQUAL(1llu << 63,  n);
 }
 

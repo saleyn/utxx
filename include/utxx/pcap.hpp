@@ -35,9 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <utxx/endian.hpp>
 #include <utxx/time_val.hpp>
-#include <boost/cstdint.hpp>
-#include <boost/assert.hpp>
-#include <boost/static_assert.hpp>
+#include <cassert>
+#include <cstdint>
 #include <stdio.h>
 #include <arpa/inet.h>
 #include <netinet/ip.h>
@@ -191,14 +190,14 @@ struct pcap {
         }
     } __attribute__ ((packed));
 
-    BOOST_STATIC_ASSERT(sizeof(ethhdr)         == 14);
-    BOOST_STATIC_ASSERT(sizeof(iphdr)          == 20);
-    BOOST_STATIC_ASSERT(sizeof(udphdr)         ==  8);
-    BOOST_STATIC_ASSERT(sizeof(tcphdr)         == 20);
-    BOOST_STATIC_ASSERT(sizeof(udp_frame::udp) ==  8);
-    BOOST_STATIC_ASSERT(sizeof(tcp_frame::tcp) == 20);
-    BOOST_STATIC_ASSERT(sizeof(udp_frame)      == 28);
-    BOOST_STATIC_ASSERT(sizeof(tcp_frame)      == 40);
+    static_assert(sizeof(ethhdr)         == 14);
+    static_assert(sizeof(iphdr)          == 20);
+    static_assert(sizeof(udphdr)         ==  8);
+    static_assert(sizeof(tcphdr)         == 20);
+    static_assert(sizeof(udp_frame::udp) ==  8);
+    static_assert(sizeof(tcp_frame::tcp) == 20);
+    static_assert(sizeof(udp_frame)      == 28);
+    static_assert(sizeof(tcp_frame)      == 40);
 
     explicit
     pcap(bool a_big_endian = true, bool a_nsec_time = false)
@@ -294,7 +293,7 @@ struct pcap {
                                   link_type a_tp = link_type::ethernet,
                                   bool      a_big_endian = true,
                                   bool      a_nsec_time  = false) {
-        BOOST_ASSERT(sz >= sizeof(file_header));
+        assert(sz >= sizeof(file_header));
         file_header* p = reinterpret_cast<file_header*>(buf);
         if (a_big_endian) {
             store_be((char*)&p->magic_number , a_nsec_time ? 0xa1b23c4d : 0xa1b2c3d4);

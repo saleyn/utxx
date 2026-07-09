@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <boost/thread/mutex.hpp>
+#include <mutex>
 #include <utxx/delegate.hpp>
 #include <utxx/event.hpp>
 #include <utxx/timestamp.hpp>

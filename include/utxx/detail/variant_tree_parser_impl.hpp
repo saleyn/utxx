@@ -33,8 +33,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_VARIANT_TREE_PARSER_IMPL_HPP_
 #define _UTXX_VARIANT_TREE_PARSER_IMPL_HPP_
 
+#include <utxx/config.h>
 #include <utxx/variant_tree.hpp>
+#include <utxx/detail/variant_tree_scon_parser.hpp>
+#include <filesystem>
 
+#ifdef UTXX_HAVE_BOOST
 #ifndef UTXX_VARIANT_TREE_NO_INFO_PARSER
 #include <boost/property_tree/info_parser.hpp>
 #endif
@@ -53,8 +57,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
 #include <boost/property_tree/ini_parser.hpp>
 #endif
-
-#include <utxx/detail/variant_tree_scon_parser.hpp>
+#endif // UTXX_HAVE_BOOST
 
 namespace utxx {
 
@@ -104,15 +107,15 @@ namespace utxx {
 
         /// Main resolving functor
         bool operator() (string& a_filename) {
-            string name = boost::filesystem::path(a_filename).is_absolute()
-                        ? boost::filesystem::basename(a_filename)
+            namespace fs = std::filesystem;
+            string name = fs::path(a_filename).is_absolute()
+                        ? fs::path(a_filename).filename().string()
                         : a_filename;
             for (typename std::vector<string>::const_iterator
                     it = m_dirs.begin(), e = m_dirs.end(); it != e; ++it)
             {
-                boost::filesystem::path inc_file =
-                    boost::filesystem::path(*it) / name;
-                if (boost::filesystem::exists(inc_file)) {
+                fs::path inc_file = fs::path(*it) / name;
+                if (fs::exists(inc_file)) {
                     a_filename = inc_file.string();
                     return true;
                 }
@@ -243,6 +246,7 @@ namespace detail {
                 (errno, "Config write error ", a_filename);
     }
 
+#ifdef UTXX_HAVE_BOOST
 #ifndef UTXX_VARIANT_TREE_NO_INFO_PARSER
     /**
      * Read INFO format from a the given stream and translate it to a variant tree.
@@ -255,7 +259,7 @@ namespace detail {
     void read_info(Source& a_src, basic_variant_tree<Ch>& a_tree) {
         auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::info_parser::read_info(a_src, tree);
-        boost::property_tree::translator_between<
+        utxx::ptree::translator_between<
             basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
         basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
@@ -289,7 +293,7 @@ namespace detail {
         //       of using this workaround of reading to ptree and copying.
         auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::xml_parser::read_xml(a_src, tree, a_flags);
-        boost::property_tree::translator_between<
+        utxx::ptree::translator_between<
             basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
         basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
@@ -322,13 +326,13 @@ namespace detail {
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(a_src, pt);
 
-        boost::property_tree::translator_between
+        utxx::ptree::translator_between
             <basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr(false);
 
         bool translate = (a_flags & variant_tree_settings::dont_translate_strings) == 0;
 
         auto on_update = [&tr](auto& path, auto& data) {
-            boost::optional<variant> v = *tr.put_value(data);
+            std::optional<variant> v = *tr.put_value(data);
             return *v;
         };
 
@@ -350,7 +354,7 @@ namespace detail {
         //       of using this workaround of reading to ptree and copying.
         auto& tree = static_cast<typename basic_variant_tree<Ch>::base&>(a_tree);
         boost::property_tree::ini_parser::read_ini(a_src, tree);
-        boost::property_tree::translator_between<
+        utxx::ptree::translator_between<
             basic_variant_tree_data<Ch>, std::basic_string<Ch>> tr;
         basic_variant_tree<Ch>::translate_data(a_tree, tr);
     }
@@ -369,6 +373,7 @@ namespace detail {
     }
     */
 #endif
+#endif // UTXX_HAVE_BOOST
 
 } // namespace detail
 } // namespace utxx

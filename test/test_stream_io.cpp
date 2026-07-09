@@ -27,28 +27,28 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/stream_io.hpp>
 #include <utxx/path.hpp>
 #include <utxx/string.hpp>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_stream_io_rewind )
+TEST_CASE( test_stream_io_rewind )
 {
   std::stringstream s; s << "abc";
   std::string val;
   s >> val;
-  BOOST_CHECK_EQUAL("abc", val);
+  CHECK_EQUAL("abc", val);
   rewind(s);
   s >> val;
-  BOOST_CHECK_EQUAL("abc", val);
+  CHECK_EQUAL("abc", val);
 }
 
-BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
+TEST_CASE( test_stream_io_read_values )
 {
     auto tp = path::temp_path();
-    BOOST_REQUIRE(path::is_dir(tp));
+    REQUIRE(path::is_dir(tp));
     auto fn = path::join(tp, "utxx-stream-io.test.txt");
     path::file_unlink(fn);
 
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
     {
         std::ifstream in(fn);
-        BOOST_REQUIRE(in.is_open());
+        REQUIRE(in.is_open());
 
         int output[3];
         bool res;
@@ -69,32 +69,32 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
         res = read_values(in, output, nullptr, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(1, output[0]);
-        BOOST_CHECK_EQUAL(2, output[1]);
-        BOOST_CHECK_EQUAL(3, output[2]);
+        CHECK(res);
+        CHECK_EQUAL(1, output[0]);
+        CHECK_EQUAL(2, output[1]);
+        CHECK_EQUAL(3, output[2]);
 
         res = read_values(in, output, nullptr, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(4, output[0]);
-        BOOST_CHECK_EQUAL(5, output[1]);
-        BOOST_CHECK_EQUAL(6, output[2]);
+        CHECK(res);
+        CHECK_EQUAL(4, output[0]);
+        CHECK_EQUAL(5, output[1]);
+        CHECK_EQUAL(6, output[2]);
 
         res = read_values(in, output, nullptr, 3, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(7, output[0]);
-        BOOST_CHECK_EQUAL(8, output[1]);
-        BOOST_CHECK_EQUAL(9, output[2]);
+        CHECK(res);
+        CHECK_EQUAL(7, output[0]);
+        CHECK_EQUAL(8, output[1]);
+        CHECK_EQUAL(9, output[2]);
 
         res = read_values(in, output, nullptr, fld_count, convert);
 
-        BOOST_CHECK(!res);
+        CHECK(!res);
     }
     {
         std::ifstream in(fn);
-        BOOST_REQUIRE(in.is_open());
+        REQUIRE(in.is_open());
 
         int fields[] = {1, 2};
         const int fld_count = length(fields);
@@ -108,29 +108,29 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(1, output[0]);
-        BOOST_CHECK_EQUAL(2, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(1, output[0]);
+        CHECK_EQUAL(2, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(4, output[0]);
-        BOOST_CHECK_EQUAL(5, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(4, output[0]);
+        CHECK_EQUAL(5, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(7, output[0]);
-        BOOST_CHECK_EQUAL(8, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(7, output[0]);
+        CHECK_EQUAL(8, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(!res);
+        CHECK(!res);
     }
     {
         std::ifstream in(fn);
-        BOOST_REQUIRE(in.is_open());
+        REQUIRE(in.is_open());
 
         int fields[] = {1, 2};
         const int fld_count = length(fields);
@@ -143,32 +143,32 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(1, output[0]);
-        BOOST_CHECK_EQUAL(2, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(1, output[0]);
+        CHECK_EQUAL(2, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(4, output[0]);
-        BOOST_CHECK_EQUAL(5, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(4, output[0]);
+        CHECK_EQUAL(5, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(7, output[0]);
-        BOOST_CHECK_EQUAL(8, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(7, output[0]);
+        CHECK_EQUAL(8, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(!res);
+        CHECK(!res);
     }
 
     path::write_file(fn, "1.0 2.0 abc 10.0\n4.0 5.0 xyz 6\n7.0 8.0 xxx 9\n");
 
     {
         std::ifstream in(fn);
-        BOOST_REQUIRE(in.is_open());
+        REQUIRE(in.is_open());
 
         int fields[] = {1, 2};
         const int fld_count = length(fields);
@@ -182,31 +182,31 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(1, output[0]);
-        BOOST_CHECK_EQUAL(2, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(1, output[0]);
+        CHECK_EQUAL(2, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(4, output[0]);
-        BOOST_CHECK_EQUAL(5, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(4, output[0]);
+        CHECK_EQUAL(5, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(7, output[0]);
-        BOOST_CHECK_EQUAL(8, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(7, output[0]);
+        CHECK_EQUAL(8, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert);
 
-        BOOST_CHECK(!res);
+        CHECK(!res);
     }
 
     path::write_file(fn, "1.0 | 2.0 | 3.0\n4.0|5.0 | 6.0\n");
     {
         std::ifstream in(fn);
-        BOOST_REQUIRE(in.is_open());
+        REQUIRE(in.is_open());
 
         int fields[] = {1, 2};
         const int fld_count = length(fields);
@@ -220,25 +220,25 @@ BOOST_AUTO_TEST_CASE( test_stream_io_read_values )
 
         res = read_values(in, output, fields, fld_count, convert, " |");
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(1, output[0]);
-        BOOST_CHECK_EQUAL(2, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(1, output[0]);
+        CHECK_EQUAL(2, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert, " |");
 
-        BOOST_CHECK(res);
-        BOOST_CHECK_EQUAL(4, output[0]);
-        BOOST_CHECK_EQUAL(5, output[1]);
+        CHECK(res);
+        CHECK_EQUAL(4, output[0]);
+        CHECK_EQUAL(5, output[1]);
 
         res = read_values(in, output, fields, fld_count, convert, " |");
 
-        BOOST_CHECK(!res);
+        CHECK(!res);
     }
 
     path::file_unlink(fn);
 }
 
-BOOST_AUTO_TEST_CASE( test_stream_io_indent_stream )
+TEST_CASE( test_stream_io_indent_stream )
 {
     {
         indented_stream<> stream;
@@ -250,7 +250,7 @@ BOOST_AUTO_TEST_CASE( test_stream_io_indent_stream )
 
         auto out = stream.str();
 
-        BOOST_CHECK_EQUAL("abc\n  efg\nxxx\n", out);
+        CHECK_EQUAL("abc\n  efg\nxxx\n", out);
 
     }
 
@@ -261,6 +261,6 @@ BOOST_AUTO_TEST_CASE( test_stream_io_indent_stream )
 
         auto out = stream.str();
 
-        BOOST_CHECK_EQUAL("abc\n  efg\n  kkk\nxxx\n", out);
+        CHECK_EQUAL("abc\n  efg\n  kkk\nxxx\n", out);
     }
 }

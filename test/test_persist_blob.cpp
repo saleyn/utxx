@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/config.h>
 
+#ifdef UTXX_HAVE_BOOST
+
 #include <iostream>
 #include <iomanip>
 #include <unistd.h>
@@ -44,9 +46,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/string.hpp>
 #include <utxx/verbosity.hpp>
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 
-using namespace boost::unit_test;
 using namespace utxx;
 
 static const char* s_filename = "/tmp/persist_blob.bin";
@@ -66,24 +67,24 @@ struct test_blob {
 };
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
+TEST_CASE( test_persist_blob_get_set )
 {
     ::unlink(s_filename);
     {
         persist_blob<test_blob> o;
         test_blob orig(1, 2);
 
-        BOOST_REQUIRE_NO_THROW(o.init(s_filename, &orig, false));
+        REQUIRE_NO_THROW(o.init(s_filename, &orig, false));
 
         {
             test_blob& val = o.dirty_get();
-            BOOST_REQUIRE_EQUAL( val.i1, 1 );
-            BOOST_REQUIRE_EQUAL( val.i2, 2 );
+            REQUIRE_EQUAL( val.i1, 1 );
+            REQUIRE_EQUAL( val.i2, 2 );
         }
         {
             test_blob val = o.get();
-            BOOST_REQUIRE_EQUAL( val.i1, 1 );
-            BOOST_REQUIRE_EQUAL( val.i2, 2 );
+            REQUIRE_EQUAL( val.i1, 1 );
+            REQUIRE_EQUAL( val.i2, 2 );
         }
 
         orig.i1 = 3;
@@ -92,8 +93,8 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
 
         {
             test_blob& val = o.dirty_get();
-            BOOST_REQUIRE_EQUAL( val.i1, 3 );
-            BOOST_REQUIRE_EQUAL( val.i2, 4 );
+            REQUIRE_EQUAL( val.i1, 3 );
+            REQUIRE_EQUAL( val.i2, 4 );
         }
 
         orig.i1 = 5;
@@ -102,19 +103,19 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_get_set )
 
         {
             test_blob& val = o.dirty_get();
-            BOOST_REQUIRE_EQUAL( val.i1, 5 );
-            BOOST_REQUIRE_EQUAL( val.i2, 6 );
+            REQUIRE_EQUAL( val.i1, 5 );
+            REQUIRE_EQUAL( val.i2, 6 );
         }
     }
     {
         persist_blob<test_blob> o;
 
-        BOOST_REQUIRE_NO_THROW(o.init(s_filename));
+        REQUIRE_NO_THROW(o.init(s_filename));
 
         {
             test_blob& val = o.dirty_get();
-            BOOST_REQUIRE_EQUAL( val.i1, 5 );
-            BOOST_REQUIRE_EQUAL( val.i2, 6 );
+            REQUIRE_EQUAL( val.i1, 5 );
+            REQUIRE_EQUAL( val.i2, 6 );
         }
     }
     unlink(s_filename);
@@ -139,14 +140,14 @@ namespace {
                 test_blob o(i, i<<1);
                 m_logger.set(o);
                 if (i % 5000 == 0) {
-                    BOOST_TEST_MESSAGE(
+                    TEST_MESSAGE(
                         to_string("producer", m_instance, " - ", i) <<
                         to_string(" (o1=", o.i1, ", o2=", o.i2, ")"));
                 }
                 sched_yield();
             }
             if (verbosity::level() > VERBOSE_NONE)
-                BOOST_TEST_MESSAGE(to_string("Producer", m_instance, " finished!"));
+                TEST_MESSAGE(to_string("Producer", m_instance, " finished!"));
         }
     };
 
@@ -186,7 +187,7 @@ namespace {
 
 #ifdef UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 
-BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
+TEST_CASE( test_persist_blob_concurrent )
 {
     using boost::timer::cpu_timer;
     using boost::timer::cpu_times;
@@ -197,7 +198,7 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
     {
         persist_blob<test_blob> l_blob;
 
-        BOOST_REQUIRE_NO_THROW(l_blob.init(s_filename, NULL, false));
+        REQUIRE_NO_THROW(l_blob.init(s_filename, NULL, false));
 
         bool cancel = false;
         int  error  = 0;
@@ -234,9 +235,10 @@ BOOST_AUTO_TEST_CASE( test_persist_blob_concurrent )
                 (double)t1 / 1000000000.0, (double)t1 / ITERATIONS / 1000.0);
             printf("Errors: %d\n", error);
         }
-        BOOST_REQUIRE(!error);
+        REQUIRE(!error);
     }
     ::unlink(s_filename);
 }
 
-#endif
+#endif // UTXX_HAVE_BOOST_TIMER_TIMER_HPP
+#endif // UTXX_HAVE_BOOST

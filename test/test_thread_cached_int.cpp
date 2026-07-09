@@ -16,7 +16,7 @@
 
 #include <utxx/thread_cached_int.hpp>
 #include <utxx/test_helper.hpp>
-#include <boost/lexical_cast.hpp>
+
 #include <atomic>
 #include <thread>
 
@@ -27,37 +27,37 @@ inline T get_opt(const char* a, T a_default) {
     std::string value;
     if (!utxx::get_test_argv(a, value))
         return a_default;
-    return boost::lexical_cast<T>(value);
+    return static_cast<T>(std::stoll(value));
 }
 
-BOOST_AUTO_TEST_CASE( test_thread_local_single_threaded_not_cached ) {
+TEST_CASE( test_thread_local_single_threaded_not_cached ) {
     thread_cached_int<int64_t> val(0, 0);
-    BOOST_CHECK_EQUAL(0, val.read_fast());
+    CHECK_EQUAL(0, val.read_fast());
     ++val;
-    BOOST_CHECK_EQUAL(1, val.read_fast());
+    CHECK_EQUAL(1, val.read_fast());
     for (int i = 0; i < 41; ++i) {
         val.increment(1);
     }
-    BOOST_CHECK_EQUAL(42, val.read_fast());
+    CHECK_EQUAL(42, val.read_fast());
     --val;
-    BOOST_CHECK_EQUAL(41, val.read_fast());
+    CHECK_EQUAL(41, val.read_fast());
 }
 
 // Note: This is somewhat fragile to the implementation.  If this causes
 // problems, feel free to remove it.
-BOOST_AUTO_TEST_CASE( test_thread_local_single_threaded_cached ) {
+TEST_CASE( test_thread_local_single_threaded_cached ) {
     thread_cached_int<int64_t> val(0, 10);
-    BOOST_CHECK_EQUAL(0, val.read_fast());
+    CHECK_EQUAL(0, val.read_fast());
     ++val;
-    BOOST_CHECK_EQUAL(0, val.read_fast());
+    CHECK_EQUAL(0, val.read_fast());
     for (int i = 0; i < 7; ++i)
         val.increment(1);
-    BOOST_CHECK_EQUAL(0, val.read_fast());
-    BOOST_CHECK_EQUAL(0, val.read_fast_and_reset());
-    BOOST_CHECK_EQUAL(8, val.read_full());
-    BOOST_CHECK_EQUAL(8, val.read_full_and_reset());
-    BOOST_CHECK_EQUAL(0, val.read_full());
-    BOOST_CHECK_EQUAL(0, val.read_fast());
+    CHECK_EQUAL(0, val.read_fast());
+    CHECK_EQUAL(0, val.read_fast_and_reset());
+    CHECK_EQUAL(8, val.read_full());
+    CHECK_EQUAL(8, val.read_full_and_reset());
+    CHECK_EQUAL(0, val.read_full());
+    CHECK_EQUAL(0, val.read_fast());
 }
 
 thread_cached_int<int32_t> globalInt32(0, 11);
@@ -76,11 +76,11 @@ CREATE_INC_FUNC(64);
 CREATE_INC_FUNC(32);
 
 // Confirms counts are accurate with competing threads
-BOOST_AUTO_TEST_CASE( test_thread_local_multi_threaded_cached ) {
+TEST_CASE( test_thread_local_multi_threaded_cached ) {
     kNumInserts = 100000;
-    BOOST_TEST_MESSAGE("FLAGS_numThreads must evenly divide kNumInserts ("
+    TEST_MESSAGE("FLAGS_numThreads must evenly divide kNumInserts ("
                   << kNumInserts << ").");
-    BOOST_REQUIRE(0 == kNumInserts % numThreads);
+    REQUIRE(0 == kNumInserts % numThreads);
     const int numPerThread = kNumInserts / numThreads;
     thread_cached_int<int64_t> TCInt64(0, numPerThread - 2);
     {
@@ -107,8 +107,8 @@ BOOST_AUTO_TEST_CASE( test_thread_local_multi_threaded_cached ) {
 
         // Threads are done incrementing, but caches have not been flushed yet, so
         // we have to read_full.
-        BOOST_CHECK(kNumInserts != TCInt64.read_fast());
-        BOOST_CHECK_EQUAL(kNumInserts, TCInt64.read_full());
+        CHECK(kNumInserts != TCInt64.read_fast());
+        CHECK_EQUAL(kNumInserts, TCInt64.read_full());
 
         run.store(false);
         for (auto& t : threads)
@@ -116,5 +116,5 @@ BOOST_AUTO_TEST_CASE( test_thread_local_multi_threaded_cached ) {
 
     }  // Caches are flushed when threads finish
 
-    BOOST_CHECK_EQUAL(kNumInserts, TCInt64.read_fast());
+    CHECK_EQUAL(kNumInserts, TCInt64.read_fast());
 }

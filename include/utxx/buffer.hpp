@@ -33,12 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/static_assert.hpp>
-#include <boost/assert.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/system/error_code.hpp>
-#include <boost/type_traits/has_trivial_constructor.hpp>
+#include <cassert>
 #include <algorithm>
+#include <utxx/noncopyable.hpp>
 #include <deque>
 #include <string.h>
 #include <limits.h>
@@ -57,7 +54,7 @@ namespace detail { template <class Alloc> class basic_dynamic_io_buffer; }
  */
 template <int N, typename Alloc = std::allocator<char>>
 class basic_io_buffer
-    : boost::noncopyable
+    : utxx::noncopyable
     , std::allocator_traits<Alloc>::template rebind_alloc<char>
 {
     using alloc_t = typename std::allocator_traits<Alloc>::template rebind_alloc<char>;
@@ -242,7 +239,7 @@ public:
         char* p = m_rd_ptr;
         if (LIKELY(n)) {
             m_rd_ptr += n;
-            BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+            assert(m_rd_ptr <= m_wr_ptr);
         }
         return p;
     }
@@ -251,7 +248,7 @@ public:
     /// @param n is the number of bytes to read.
     void discard(unsigned n) {
         m_rd_ptr += n;
-        BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+        assert(m_rd_ptr <= m_wr_ptr);
     }
 
     /// Do the same action as read(n), and call crunch() function
@@ -264,7 +261,7 @@ public:
             return -1;
         if (capacity() < m_wr_lwm)
             crunch();
-        BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+        assert(m_rd_ptr <= m_wr_ptr);
         return n;
     }
 
@@ -279,7 +276,7 @@ public:
     }
 
     /// Adjust buffer write pointer by \a n bytes.
-    void commit(int n)   { BOOST_ASSERT(m_wr_ptr+n <= m_end); m_wr_ptr += n; }
+    void commit(int n)   { assert(m_wr_ptr+n <= m_end); m_wr_ptr += n; }
 
     /// Move any unread data to the beginning of the buffer.
     /// This function is similar to reset(), however, no unread
@@ -307,7 +304,7 @@ public:
         discard(a_discard_bytes);
         if (capacity() < m_wr_lwm) {
             crunch();
-            BOOST_ASSERT(m_rd_ptr <= m_wr_ptr);
+            assert(m_rd_ptr <= m_wr_ptr);
         }
     }
 };
@@ -368,7 +365,7 @@ public:
     /// Write a given record to the buffer.
     /// @return pointer to the next possible buffer write location.
     T* write(const T& a_src) {
-        BOOST_ASSERT(capacity() > 0);
+        assert(capacity() > 0);
         *wr_ptr() = a_src;
         return advance(1);
     }

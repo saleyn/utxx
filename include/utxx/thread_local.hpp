@@ -42,7 +42,7 @@
  */
 #pragma once
 
-#include <boost/iterator/iterator_facade.hpp>
+#include <iterator>
 #include <utxx/compiler_hints.hpp>
 #include <type_traits>
 
@@ -208,29 +208,33 @@ public:
 
         // The iterators obtained from accessor are bidirectional iterators.
         class iterator
-            : public boost::iterator_facade<
-                iterator,                               // Derived
-                T,                                      // value_type
-                boost::bidirectional_traversal_tag
-            >
-        {   // traversal
+        {
             friend class accessor;
-            friend class boost::iterator_core_access;
-            const accessor* const m_accessor;
-            thr_local_detail::thread_entry* m_e;
+        public:
+            using iterator_category = std::bidirectional_iterator_tag;
+            using value_type        = T;
+            using difference_type   = std::ptrdiff_t;
+            using pointer           = T*;
+            using reference         = T&;
 
-            void increment() { m_e = m_e->next; incrementToValid(); }
+            T& operator*()  const { return *static_cast<T*>(m_e->elements[m_accessor->m_id].ptr); }
+            T* operator->() const { return  static_cast<T*>(m_e->elements[m_accessor->m_id].ptr); }
 
-            void decrement() { m_e = m_e->prev; decrementToValid(); }
+            iterator& operator++() { m_e = m_e->next; incrementToValid(); return *this; }
+            iterator  operator++(int) { auto tmp = *this; ++*this; return tmp; }
 
-            T& dereference() const {
-                return *static_cast<T*>(m_e->elements[m_accessor->m_id].ptr);
-            }
+            iterator& operator--() { m_e = m_e->prev; decrementToValid(); return *this; }
+            iterator  operator--(int) { auto tmp = *this; --*this; return tmp; }
 
-            bool equal(const iterator& other) const {
+            bool operator==(const iterator& other) const {
                 return (m_accessor->m_id == other.m_accessor->m_id &&
                         m_e == other.m_e);
             }
+            bool operator!=(const iterator& other) const { return !(*this == other); }
+
+        private:
+            const accessor* const m_accessor;
+            thr_local_detail::thread_entry* m_e;
 
             explicit iterator(const accessor* accessor)
                 : m_accessor(accessor),

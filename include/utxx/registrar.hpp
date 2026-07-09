@@ -41,7 +41,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <utxx/typeinfo.hpp>
 #include <utxx/lock.hpp>
-#include <boost/functional/hash.hpp>
+#include <functional>
 
 namespace utxx {
     struct inst_name {
@@ -90,12 +90,8 @@ namespace utxx {
 namespace std {
     template <> struct hash<utxx::inst_name> {
         size_t operator()(const utxx::inst_name& k) const {
-            using boost::hash_value;
-            using boost::hash_combine;
-
-            size_t seed = 0;
-            hash_combine(seed, hash_value(k.m_class));
-            hash_combine(seed, hash_value(k.m_instance));
+            size_t seed = std::hash<std::string>{}(k.m_class);
+            seed ^= std::hash<std::string>{}(k.m_instance) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
             return seed;
         }
     };

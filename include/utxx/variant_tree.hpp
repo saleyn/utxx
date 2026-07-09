@@ -31,20 +31,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
 #include <utxx/variant.hpp>
+#include <utxx/string.hpp>
+#include <string>
+
 #include <utxx/variant_tree_path.hpp>
 #include <utxx/variant_tree_error.hpp>
 #include <utxx/variant_tree_fwd.hpp>
 #include <utxx/variant_translator.hpp>
 #include <utxx/typeinfo.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/throw_exception.hpp>
-#include <boost/type_traits/remove_const.hpp>
 #include <utxx/detail/variant_tree_utils.hpp>
 #include <utxx/config_validator.hpp>
-#include <utxx/string.hpp>
-#include <string>
 
 namespace utxx {
 
@@ -60,7 +58,7 @@ using vt_key = std::basic_string<Ch>;
 template <class Ch>
 class basic_variant_tree : public basic_variant_tree_base<Ch>
 {
-    using ptree          = boost::property_tree::ptree;
+    using ptree          = utxx::ptree::ptree;
 
 public:
     using self_type      = basic_variant_tree<Ch>;
@@ -210,7 +208,7 @@ public:
     template <class T>
     T get_value(src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
-        boost::optional<T> o = get_value_optional<T>();
+        std::optional<T> o = get_value_optional<T>();
         if (!o)
             throw_bad_type<T>(path_type(), this->data(), UTXX_SRCXD(si));
         return *o;
@@ -231,25 +229,25 @@ public:
         try {
             return base::get_value(std::basic_string<Ch>(default_value),
                 detail::variant_translator<std::basic_string<Ch>,Ch>());
-        } catch (boost::property_tree::ptree_bad_data& e) {
+        } catch (utxx::ptree::ptree_bad_data& e) {
             throw_bad_type<std::string>(root_path(), this->data().value(), UTXX_SRCXD(si));
         }
     }
 
     template <class T>
-    boost::optional<T> get_value_optional(src_info&& si = src_info()) const {
+    std::optional<T> get_value_optional(src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
         if (!this->data().is_null()) {
             try { return detail::variant_translator<T,Ch>().get_value(this->data().value()); }
             catch (...) { throw_bad_type<T>(path_type(), this->data().value(), UTXX_SRCXD(si)); }
         }
-        return boost::optional<T>();
+        return std::optional<T>();
     }
 
     template <class T>
     T get(const path_type& path, src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
-        boost::optional<T> r = get_optional<T>(path);
+        std::optional<T> r = get_optional<T>(path);
         if (r) return *r;
         if (this->data().validator()) {
             const config::option& o = this->data().validator()->get(path, root_path());
@@ -341,7 +339,7 @@ public:
     }
 
     template <typename T>
-    boost::optional<T> get_optional(const path_type& path, src_info&& si = src_info()) const {
+    std::optional<T> get_optional(const path_type& path, src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
         path_type p(path);
         auto* t = navigate(this, p, nullptr, false, -1, UTXX_SRCXD(si));
@@ -352,7 +350,7 @@ public:
             } else if (std::is_same_v<T, std::string> || std::is_same_v<T, variant> || std::is_same_v<T, base>)
                 return T();
         }
-        return boost::optional<T>();
+        return std::optional<T>();
     }
 
     template <class T>
@@ -369,7 +367,7 @@ public:
         UTXX_PRETTY_FUNCTION();
         path_type p(path);
         auto* r = navigate(this, p, &value, true, true, UTXX_SRCXD(si));
-        BOOST_ASSERT(r);
+        assert(r);
         return *r;
     }
 
@@ -383,9 +381,9 @@ public:
         UTXX_PRETTY_FUNCTION();
         path_type p(path);
         auto* r = navigate(this, p, nullptr, false, true, UTXX_SRCXD(si));
-        BOOST_ASSERT(r);
+        assert(r);
         *r = value;
-        return *r;
+        return r->get();
     }
 
     self_type& add(const path_type& path, const Ch* value, src_info&& si = src_info()) {
@@ -409,8 +407,8 @@ public:
      */
     self_type& get_child(const path_type& path, src_info&& si = src_info()) {
         UTXX_PRETTY_FUNCTION();
-        boost::optional<self_type&> r = get_child_optional(path);
-        if (r) return *r;
+        std::optional<std::reference_wrapper<self_type>> r = get_child_optional(path);
+        if (r) return r->get();
         if (this->data().validator()) {
             const config::option& o = this->data().validator()->get(path, root_path());
             return put(path, o.default_subst_value());
@@ -429,8 +427,8 @@ public:
      */
     const self_type& get_child(const path_type& path, src_info&& si = src_info()) const {
         UTXX_PRETTY_FUNCTION();
-        boost::optional<const self_type&> r = get_child_optional(path);
-        if (r) return *r;
+        std::optional<std::reference_wrapper<const self_type>> r = get_child_optional(path);
+        if (r) return r->get();
         if (this->data().validator())
             // default_value will throw if there's no such path
             return reinterpret_cast<const self_type&>
@@ -441,14 +439,14 @@ public:
 
     /** Get the child at the given path, or return @p default_value. */
     self_type& get_child(const path_type& path, self_type& default_value) {
-        boost::optional<self_type&> r = get_child_optional(path);
-        return r ? *r : default_value;
+        std::optional<std::reference_wrapper<self_type>> r = get_child_optional(path);
+        return r ? r->get() : default_value;
     }
 
     /** Get the child at the given path, or return @p default_value. */
     const self_type& get_child(const path_type& path, const self_type& default_value) const {
-        boost::optional<const self_type&> r = get_child_optional(path);
-        return r ? *r : default_value;
+        std::optional<std::reference_wrapper<const self_type>> r = get_child_optional(path);
+        return r ? r->get() : default_value;
     }
 
     /**
@@ -465,12 +463,12 @@ public:
      * @param separator is the separating character to use. Defaults to separator
      *                  of the \a path_with_brackets
      */
-    boost::optional<const self_type&>
+    std::optional<std::reference_wrapper<const self_type>>
     get_child_optional(const path_type& path) const {
         return this->get_child_optional(this, path);
     }
 
-    boost::optional<self_type&>
+    std::optional<std::reference_wrapper<self_type>>
     get_child_optional(const path_type& path) {
         return this->get_child_optional(this, path);
     }
@@ -757,17 +755,18 @@ private:
     template <typename PTree>
     static typename std::enable_if<
         std::is_same<self_type, typename remove_cvref<PTree>::type>::value,
-        boost::optional<PTree&>
+        std::optional<std::reference_wrapper<PTree>>
     >::type
     get_child_optional(PTree* tree, const path_type& path, src_info&& si = src_info()) {
-        static const boost::optional<PTree&> s_empty;
+        static const std::optional<std::reference_wrapper<PTree>> s_empty;
 
         path_type p(path);
 
-        BOOST_ASSERT(!p.empty());
+        assert(!p.empty());
 
         auto*  t = navigate(tree, p, nullptr, false, -1, std::move(si));
-        return t ? *t : s_empty;
+        if (!t) return s_empty;
+        return std::optional<std::reference_wrapper<PTree>>(std::ref(*t));
     }
 
     template <class Stream>

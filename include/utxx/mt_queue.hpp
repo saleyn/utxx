@@ -37,8 +37,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/thread.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
+#include <mutex>
+#include <condition_variable>
+#include <chrono>
 #include <utxx/compiler_hints.hpp>
 #include <deque>
 #include <exception>
@@ -55,8 +56,8 @@ public:
     using queue_type = std::deque<Data, alloc_type>;
 private:
     queue_type                  m_queue;
-    mutable boost::mutex        m_mutex;
-    boost::condition_variable   m_condition_variable;
+    mutable std::mutex          m_mutex;
+    std::condition_variable     m_condition_variable;
     bool                        m_is_canceled;
 
 public:
@@ -91,16 +92,15 @@ public:
     int dequeue(Data& value, struct timespec* wait_time) {
         if (!wait_time)
             return dequeue(value);
-        boost::posix_time::time_duration timeout(
-            boost::posix_time::seconds(wait_time->tv_sec) +
-            boost::posix_time::microseconds(wait_time->tv_nsec / 1000));
-        try                     { return timed_pop(value, timeout) ? 0 : -1; }
+        auto dur = std::chrono::seconds(wait_time->tv_sec) +
+                   std::chrono::microseconds(wait_time->tv_nsec / 1000);
+        try                     { return timed_pop(value, dur) ? 0 : -1; }
         catch (queue_canceled&) { return -1; }
     }
 
     void push(Data const& data) {
         {
-            boost::mutex::scoped_lock lock(m_mutex);
+            std::unique_lock<std::mutex> lock(m_mutex);
             if (unlikely(m_is_canceled)) throw queue_canceled();
             m_queue.push_back(data);
         }
@@ -108,13 +108,13 @@ public:
     }
 
     bool empty() const {
-        boost::mutex::scoped_lock lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         if (unlikely(m_is_canceled)) throw queue_canceled();
         return m_queue.empty();
     }
 
     bool try_pop(Data& popped_value) {
-        boost::mutex::scoped_lock lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         if (unlikely(m_is_canceled)) throw queue_canceled();
         if(m_queue.empty())
             return false;
@@ -127,7 +127,7 @@ public:
     /// Wait until the queue is non-empty and dequeue
     /// a single item.
     void pop(Data& popped_value) {
-        boost::mutex::scoped_lock lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
 
         while(m_queue.empty() && !m_is_canceled)
             m_condition_variable.wait(lock);
@@ -140,11 +140,12 @@ public:
 
     /// Wait until the queue is non-empty and dequeue
     /// a single item.
-    bool timed_pop(Data& popped_value, const boost::posix_time::time_duration& timeout) {
-        boost::mutex::scoped_lock lock(m_mutex);
+    template <class Rep, class Period>
+    bool timed_pop(Data& popped_value, const std::chrono::duration<Rep, Period>& timeout) {
+        std::unique_lock<std::mutex> lock(m_mutex);
 
         if (m_queue.empty() && !m_is_canceled)
-            if (!m_condition_variable.timed_wait(lock, timeout))
+            if (m_condition_variable.wait_for(lock, timeout) == std::cv_status::timeout)
                 return false;
 
         if (unlikely(m_is_canceled)) throw queue_canceled();
@@ -157,7 +158,7 @@ public:
     /// Wait until the queue is non-empty and dequeue
     /// all pending items.
     queue_type pop_all() {
-        boost::mutex::scoped_lock lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
 
         while(m_queue.empty() && !m_is_canceled)
             m_condition_variable.wait(lock);
@@ -169,7 +170,7 @@ public:
 
     void terminate() {
         {
-            boost::mutex::scoped_lock lock(m_mutex);
+            std::unique_lock<std::mutex> lock(m_mutex);
             if (m_is_canceled) return;
             m_is_canceled = true;
         }

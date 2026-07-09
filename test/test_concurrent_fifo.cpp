@@ -1,6 +1,8 @@
 //#define BOOST_TEST_MODULE shmem_alloc_test
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/thread.hpp>
 #include <utxx/container/concurrent_fifo.hpp>
@@ -20,28 +22,28 @@ void test_queue_simple(int total)
 
     for(int i=0; i < total; i++) {
         bool res = queue.enqueue(i);
-        BOOST_REQUIRE(i < (int)N ? res : !res);
+        REQUIRE(i < (int)N ? res : !res);
     }
 
     for(int i=0; i < total; i++) {
         unsigned long item;
         bool res = queue.dequeue(item);
-        BOOST_REQUIRE(i < (int)N ? res : !res);
+        REQUIRE(i < (int)N ? res : !res);
         if (res)
-            BOOST_REQUIRE_EQUAL(i, (int)item);
+            REQUIRE_EQUAL(i, (int)item);
     }
 
-    BOOST_REQUIRE(queue.empty());
+    REQUIRE(queue.empty());
 }
 
-BOOST_AUTO_TEST_CASE( test_fifo_bound )
+TEST_CASE( test_fifo_bound )
 {
     const int N = 8;
     typedef container::bound_lock_free_queue<unsigned long, N> queue_t;
     test_queue_simple<queue_t, N>(10);
 }
 
-BOOST_AUTO_TEST_CASE( test_fifo_unbound )
+TEST_CASE( test_fifo_unbound )
 {
     typedef container::unbound_lock_free_queue<unsigned long> queue_t;
     test_queue_simple<queue_t, 10>(10);
@@ -100,8 +102,8 @@ struct producer {
                     sprintf(buf, "%d => put(%p) [%7d]\n", id, p, p->data);
                 }
             }
-            BOOST_ASSERT(p); // , "Out of memory id=" << id << " i=" << i);
-            BOOST_ASSERT(((unsigned long)p & 0x3) == 0); // "Invalid alignment " << p);
+            assert(p); // , "Out of memory id=" << id << " i=" << i);
+            assert(((unsigned long)p & 0x3) == 0); // "Invalid alignment " << p);
 
             if (queue.enqueue(p, NULL) == 0) {
                 if (verbosity::level() >= utxx::VERBOSE_TRACE)
@@ -141,7 +143,7 @@ struct consumer : public producer<Queue> {
         do {
             node_t* p;
             if (base::queue.dequeue(p, NULL) == 0) {
-                BOOST_ASSERT(((unsigned long)p & 0x3) == 0);
+                assert(((unsigned long)p & 0x3) == 0);
                 sum += p->data;
                 atomic::add(&this->count, 1); // cons. total count
                 atomic::add(&prod_counts[p->th-1], 1);
@@ -151,7 +153,7 @@ struct consumer : public producer<Queue> {
                            base::id, p, p->data, base::count, p->th,
                            prod_counts[p->th-1], sum, prod_tot_cnt);
                 }
-                //BOOST_REQUIRE_EQUAL(p->data, count);
+                //REQUIRE_EQUAL(p->data, count);
                 if (p->data != prod_counts[p->th-1]) {
                     printf("!!! Producer %d => %d != %ld\n",
                         p->th, p->data, prod_counts[p->th-1]);
@@ -224,27 +226,29 @@ struct queue_test_runner
         for (int i=0; i < consumer_threads; ++i)
             real_sum += sums[i];
 
-        BOOST_REQUIRE_EQUAL(exp_sum, real_sum);
-        BOOST_REQUIRE_EQUAL(producer_threads*iterations, prod_count);
-        BOOST_REQUIRE_EQUAL(producer_threads*iterations, cons_count);
+        REQUIRE_EQUAL(exp_sum, real_sum);
+        REQUIRE_EQUAL(producer_threads*iterations, prod_count);
+        REQUIRE_EQUAL(producer_threads*iterations, cons_count);
     }
 };
 
-BOOST_AUTO_TEST_CASE( test_concurrent_bound_fifo )
+TEST_CASE( test_concurrent_bound_fifo )
 {
     queue_test_runner<pointer_queue_t> test_case;
     test_case();
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_unbound_fifo )
+TEST_CASE( test_concurrent_unbound_fifo )
 {
     queue_test_runner<pointer_unbound_queue_t> test_case;
     test_case();
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_posix_fifo )
+TEST_CASE( test_concurrent_posix_fifo )
 {
     queue_test_runner<posix_queue_t> test_case;
     test_case();
 }
 
+
+#endif // UTXX_HAVE_BOOST

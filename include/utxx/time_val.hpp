@@ -38,7 +38,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/time.hpp>
 #include <utxx/detail/gettimeofday.hpp>
 #include <utxx/compiler_hints.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
+#ifdef UTXX_HAVE_BOOST_DATE_TIME
+#  include <boost/date_time/posix_time/posix_time.hpp>
+#endif
 #include <cstddef>
 #include <stdint.h>
 #include <type_traits>
@@ -183,7 +185,9 @@ namespace utxx {
             }
         }
 
+#ifdef UTXX_HAVE_BOOST_DATE_TIME
         explicit time_val(boost::posix_time::ptime a) { *this = a; }
+#endif
 
         time_val(const time_val& a)             = default;
         time_val(time_val&& a)                  = default;
@@ -407,12 +411,14 @@ namespace utxx {
 
         time_val& operator= (const struct timeval& t)       { m_tv = time_val(t).m_tv; return *this; }
 
+#ifdef UTXX_HAVE_BOOST_DATE_TIME
         void operator= (boost::posix_time::ptime a_rhs) {
             using namespace boost::posix_time;
             static const ptime epoch(boost::gregorian::date(1970,1,1));
             time_duration diff = a_rhs - epoch;
             m_tv = diff.total_nanoseconds();
         }
+#endif
 
         bool operator== (time_val tv) const { return m_tv == tv.m_tv;  }
         bool operator!= (time_val tv) const { return m_tv != tv.m_tv;  }
@@ -572,6 +578,7 @@ namespace utxx {
     /// Same as gettimeofday() call
     inline time_val now_utc() { return time_val::universal_time(); }
 
+#ifdef UTXX_HAVE_BOOST_DATE_TIME
     /// Convert time_val to boost::posix_time::ptime
     inline boost::posix_time::ptime
     to_ptime (time_val a_tv) {
@@ -580,6 +587,7 @@ namespace utxx {
         return boost::posix_time::from_time_t(s)
              + boost::posix_time::microsec(ns / 1000);
     }
+#endif
 
     /// Convert time_val to chrono::time_point
     inline std::chrono::time_point<std::chrono::system_clock>

@@ -86,21 +86,21 @@ namespace utxx {
                 detail::read_scon(a_stream, a_tree, a_filename, a_resolver);
                 break;
             case FORMAT_INI:
-#ifndef UTXX_VARIANT_TREE_NO_INI_PARSER
+#if !defined(UTXX_VARIANT_TREE_NO_INI_PARSER) && defined(UTXX_HAVE_BOOST)
                 detail::read_ini(a_stream, a_tree, a_flags);
 #else
                 UTXX_THROW_BADARG_ERROR("INI format reading is disabled!");
 #endif
                 break;
             case FORMAT_XML:
-#ifndef UTXX_VARIANT_TREE_NO_XML_PARSER
+#if !defined(UTXX_VARIANT_TREE_NO_XML_PARSER) && defined(UTXX_HAVE_BOOST)
                 detail::read_xml(a_stream, a_tree, a_flags);
 #else
                 UTXX_THROW_BADARG_ERROR("XML format reading is disabled!");
 #endif
                 break;
             case FORMAT_JSON:
-#ifndef UTXX_VARIANT_TREE_NO_JSON_PARSER
+#if !defined(UTXX_VARIANT_TREE_NO_JSON_PARSER) && defined(UTXX_HAVE_BOOST)
                 detail::read_json(a_stream, a_tree, a_flags);
 #else
                 UTXX_THROW_BADARG_ERROR("JSON format reading is disabled!");

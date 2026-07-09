@@ -33,7 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/assert.hpp>
+#include <cassert>
+#include <type_traits>
 #include <utxx/meta.hpp>
 #include <utxx/atomic.hpp>
 #include <utxx/detail/bit_count.hpp>
@@ -46,12 +47,12 @@ template <int N, typename T = unsigned long>
 class bitmap_low {
     T m_data;
 
-    void valid(unsigned int i) const { BOOST_ASSERT(i <= max); }
+    void valid(unsigned int i) const { assert(i <= max); }
 public:
     using value_type = T;
 
     bitmap_low() : m_data(0) {
-        BOOST_STATIC_ASSERT(1 <= N && N <= sizeof(long)*8);
+        static_assert(1 <= N && N <= sizeof(long)*8);
     }
 
     explicit bitmap_low(T a_mask) : m_data(a_mask) {}
@@ -87,7 +88,7 @@ public:
     ///            Valid range [1 ... max].
     /// @return position of previous enabled bit or <end()> if not found.
     int prev(unsigned int i) const { 
-        BOOST_ASSERT(i <= max);
+        assert(i <= max);
         T val = m_data & ((1ul << i)-1);
         return val && i >= 0 ? atomic::bit_scan_reverse(val) : end();
     }
@@ -115,10 +116,10 @@ public:
 private:
     base m_data[s_hi_dim];
 
-    void valid(unsigned int i) const { BOOST_ASSERT(i <= max); }
+    void valid(unsigned int i) const { assert(i <= max); }
 public:
     bitmap_high() {
-        BOOST_STATIC_ASSERT(sizeof(long)*8 < N && N <= sizeof(long)*sizeof(long)*64);
+        static_assert(sizeof(long)*8 < N && N <= sizeof(long)*sizeof(long)*64);
     }
 
     static const unsigned int   max = N - 1;
@@ -215,8 +216,8 @@ public:
 
 using bitmap16   = bitmap_low<16>;
 using bitmap32   = bitmap_low<32>;
-using bitmap48   = boost::mpl::if_c<sizeof(long)==8, bitmap_low<48>, bitmap_high<48> >::type;
-using bitmap64   = boost::mpl::if_c<sizeof(long)==8, bitmap_low<64>, bitmap_high<64> >::type;
+using bitmap48   = std::conditional_t<sizeof(long)==8, bitmap_low<48>, bitmap_high<48>>;
+using bitmap64   = std::conditional_t<sizeof(long)==8, bitmap_low<64>, bitmap_high<64>>;
 using bitmap128  = bitmap_high<128>;
 using bitmap256  = bitmap_high<256>;
 using bitmap512  = bitmap_high<512>;

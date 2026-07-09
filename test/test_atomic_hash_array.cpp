@@ -21,7 +21,10 @@
 #include <stdexcept>
 #include <type_traits>
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
+
+#ifdef UTXX_HAVE_ATOMIC_HASH_MAP
+
 #include <utxx/atomic_hash_array.hpp>
 
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
@@ -99,44 +102,44 @@ void test_map() {
     for (int i = 0; i < 100; ++i) {
         auto e = create_entry<KeyT, ValueT>(i);
         auto ret = arr->insert(e);
-        BOOST_CHECK(!ref.count(e.first) == ret.second);  // succeed if not in ref
+        CHECK(!ref.count(e.first) == ret.second);  // succeed if not in ref
         ref.insert(e);
-        BOOST_CHECK_EQUAL(ref.size(), arr->size());
+        CHECK_EQUAL(ref.size(), arr->size());
         if (ret.first == arr->end()) {
-            BOOST_TEST_MESSAGE("AHA should not have run out of space.");
-            BOOST_CHECK(false);
+            TEST_MESSAGE("AHA should not have run out of space.");
+            CHECK(false);
             continue;
         }
-        BOOST_CHECK_EQUAL(e.first, ret.first->first);
-        BOOST_CHECK_EQUAL(ref.find(e.first)->second, ret.first->second);
+        CHECK_EQUAL(e.first, ret.first->first);
+        CHECK_EQUAL(ref.find(e.first)->second, ret.first->second);
     }
 
     for (int i = 125; i > 0; i -= 10) {
         auto e = create_entry<KeyT, ValueT>(i);
         auto ret    = arr->erase(e.first);
         auto refRet = ref.erase(e.first);
-        BOOST_CHECK_EQUAL(ref.size(), arr->size());
-        BOOST_CHECK_EQUAL(refRet, ret);
+        CHECK_EQUAL(ref.size(), arr->size());
+        CHECK_EQUAL(refRet, ret);
     }
 
     for (int i = 155; i > 0; i -= 10) {
         auto e = create_entry<KeyT, ValueT>(i);
         auto ret    = arr->insert(e);
         auto refRet = ref.insert(e);
-        BOOST_CHECK_EQUAL(ref.size(), arr->size());
-        BOOST_CHECK_EQUAL(*refRet.first, *ret.first);
-        BOOST_CHECK_EQUAL(refRet.second, ret.second);
+        CHECK_EQUAL(ref.size(), arr->size());
+        CHECK_EQUAL(*refRet.first, *ret.first);
+        CHECK_EQUAL(refRet.second, ret.second);
     }
 
     for (const auto& e : ref) {
         auto ret = arr->find(e.first);
         if (ret == arr->end()) {
-            BOOST_TEST_MESSAGE("Key " << e.first << " was not in AHA");
-            BOOST_CHECK(false);
+            TEST_MESSAGE("Key " << e.first << " was not in AHA");
+            CHECK(false);
             continue;
         }
-        BOOST_CHECK_EQUAL(e.first,  ret->first);
-        BOOST_CHECK_EQUAL(e.second, ret->second);
+        CHECK_EQUAL(e.first,  ret->first);
+        CHECK_EQUAL(e.second, ret->second);
     }
 }
 
@@ -151,45 +154,47 @@ void test_noncopyable_map() {
 
     for (int i = 0; i < 100; i++) {
         auto ret = arr->find(i);
-        BOOST_CHECK_EQUAL(*(ret->second), i);
+        CHECK_EQUAL(*(ret->second), i);
     }
 }
 
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_array_insert_i32_i32 ) {
+TEST_CASE( test_atomic_hash_array_insert_i32_i32 ) {
     test_map<int32_t, int32_t>();
     test_map<int32_t, int32_t, MmapAllocator<char>>();
     test_noncopyable_map<int32_t, int32_t>();
     test_noncopyable_map<int32_t, int32_t, MmapAllocator<char>>();
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_array_insert_erase_i64_i32 ) {
+TEST_CASE( test_atomic_hash_array_insert_erase_i64_i32 ) {
     test_map<int64_t, int32_t>();
     test_map<int64_t, int32_t, MmapAllocator<char>>();
     test_noncopyable_map<int64_t, int32_t>();
     test_noncopyable_map<int64_t, int32_t, MmapAllocator<char>>();
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_array_insert_erase_i64_i64 ) {
+TEST_CASE( test_atomic_hash_array_insert_erase_i64_i64 ) {
     test_map<int64_t, int64_t>();
     test_map<int64_t, int64_t, MmapAllocator<char>>();
     test_noncopyable_map<int64_t, int64_t>();
     test_noncopyable_map<int64_t, int64_t, MmapAllocator<char>>();
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_array_insert_erase_i32_i64 ) {
+TEST_CASE( test_atomic_hash_array_insert_erase_i32_i64 ) {
     test_map<int32_t, int64_t>();
     test_map<int32_t, int64_t, MmapAllocator<char>>();
     test_noncopyable_map<int32_t, int64_t>();
     test_noncopyable_map<int32_t, int64_t, MmapAllocator<char>>();
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_array_insert_erase_i32_str ) {
+TEST_CASE( test_atomic_hash_array_insert_erase_i32_str ) {
     test_map<int32_t, string>();
     test_map<int32_t, string, MmapAllocator<char>>();
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_array_insert_erase_i64_str ) {
+TEST_CASE( test_atomic_hash_array_insert_erase_i64_str ) {
     test_map<int64_t, string>();
     test_map<int64_t, string, MmapAllocator<char>>();
 }
+
+#endif // UTXX_HAVE_ATOMIC_HASH_MAP

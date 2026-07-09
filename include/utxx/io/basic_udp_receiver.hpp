@@ -24,15 +24,19 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #ifndef _UTXX_IO_BASIC_UDP_RECEIVER_HPP_
 #define _UTXX_IO_BASIC_UDP_RECEIVER_HPP_
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
 #include <boost/asio.hpp>
-#include <boost/bind/bind.hpp>
+#include <functional>
+#include <utxx/noncopyable.hpp>
 #include <utxx/buffered_queue.hpp>
 
 namespace utxx {
 namespace io {
 
 template <typename Derived, size_t BufSize = 16*1024>
-class basic_udp_receiver : private boost::noncopyable {
+class basic_udp_receiver : private utxx::noncopyable {
 public:
     typedef basic_io_buffer<BufSize> buffer_type;
 
@@ -84,9 +88,9 @@ private:
     /// Start asynchronous socket read.
     void async_read() {
         m_socket.async_receive_from(buffer_space(m_in_buffer), m_sender_endpoint,
-            boost::bind(&basic_udp_receiver::handle_read,
-                this, boost::asio::placeholders::error,
-                boost::asio::placeholders::bytes_transferred));
+            [this](const boost::system::error_code& ec, std::size_t bytes) {
+                handle_read(ec, bytes);
+            });
     }
 
     /// Handle completion of a read operation.
@@ -119,4 +123,5 @@ private:
 } // namespace io
 } // namespace utxx
 
+#endif // UTXX_HAVE_BOOST
 #endif // _UTXX_IO_BASIC_UDP_RECEIVER_HPP_

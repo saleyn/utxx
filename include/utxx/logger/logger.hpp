@@ -47,12 +47,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdarg.h>
 #include <stdio.h>
-#include <boost/current_function.hpp>
 #include <utxx/function.hpp>
 #include <utxx/delegate.hpp>
 #include <utxx/delegate/event.hpp>
 #include <utxx/compiler_hints.hpp>
-#include <utxx/config_tree.hpp>
+#include <utxx/print.hpp>
+#ifdef UTXX_HAVE_BOOST
+#  include <utxx/config_tree.hpp>
+#endif
 #include <utxx/concurrent_mpsc_queue.hpp>
 #include <utxx/logger/logger_enums.hpp>
 #include <utxx/logger/logger_util.hpp>
@@ -160,7 +162,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //------------------------------------------------------------------------------
 // Shortcut for "__FILE__:__LINE__", "__func__" argument passed to the logger
 //------------------------------------------------------------------------------
-#define UTXX_LOG_SRCINFO UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION
+#define UTXX_LOG_SRCINFO UTXX_FILE_SRC_LOCATION, __PRETTY_FUNCTION__
 
 /// We use the macro trickery below to implemenet a UTXX_LOG() macro that
 /// can optionally take the category as the second macro argument. The idea
@@ -219,7 +221,7 @@ inline bool is_gt(int a_lhs, log_level a_rhs) { return a_lhs >  as_int(a_rhs); }
 /// Logging class that supports pluggable back-ends responsible for handling
 /// log messages. Examples of backends are implemented in the logger_impl_console,
 /// logger_impl_file, logger_impl_async_file classes.
-struct logger : boost::noncopyable {
+struct logger {
     friend struct logger_impl;
     enum {
         NLEVELS = log<(int)LEVEL_ALERT, 2>::value
@@ -269,7 +271,10 @@ struct logger : boost::noncopyable {
     /// Convert a `level` to the slot number in the `m_sig_msg` array
     static log_level          signal_slot_to_level(int slot)        noexcept;
 
-    typedef boost::shared_ptr<logger_impl>  impl;
+    logger(const logger&)            = delete;
+    logger& operator=(const logger&) = delete;
+
+    typedef std::shared_ptr<logger_impl>    impl;
     typedef std::vector<impl>               implementations_vector;
 
     using char_function  = function<int (char* a_buf, size_t a_size)>;
@@ -541,7 +546,9 @@ struct logger : boost::noncopyable {
 
     // Maps macros to values that can be used in configuration
     // DEPRECATED
+#ifdef UTXX_HAVE_BOOST
     using macro_var_map = config_macros;
+#endif
 
 private:
     using concurrent_queue = concurrent_mpsc_queue<msg>;
@@ -571,7 +578,9 @@ private:
     long                            m_sched_yield_us        = 250;
     bool                            m_block_signals         = true;
     std::atomic<bool>               m_finalizer_installed;
+#ifdef UTXX_HAVE_BOOST
     config_macros                   m_macro_var_map;
+#endif
 
     /// Signal set handled by the installed crash signal handler
     static std::atomic<sigset_t*>   m_crash_sigset;
@@ -666,6 +675,7 @@ public:
     void init(const char* a_file, const sigset_t* a_ignore_signals = nullptr,
               bool a_install_finalizer = true);
 
+#ifdef UTXX_HAVE_BOOST
     /// Call to initialize the logger from a configuration container.
     /// @param a_file           configuration filename
     /// @param a_ignore_signals optional set of externally handled signals that
@@ -673,6 +683,7 @@ public:
     /// @param a_install_finalier install "at exit" function that calls finalize().
     void init(const config_tree& a_cfg, const sigset_t* a_ignore_signals=nullptr,
               bool a_install_finalizer = true);
+#endif
 
     /// Called on destruction/reinitialization of the logger.
     void finalize();
@@ -731,12 +742,14 @@ public:
     // FIXME: macros are temporary experimental feature that will be
     // replaces in a future release
 
+#ifdef UTXX_HAVE_BOOST
     /// Macro name->value mapping that can be used in configuration
     const config_macros& macros() const { return m_macro_var_map; }
     /// Add a macro value
     void  add_macro(const std::string& a_macro, const std::string& a_value);
     /// Add a macro value
     void  add_macros(const config_macros& a_macros);
+#endif
 
     /// Replace all macros in a string that are found in macros() dictionary.
     std::string replace_macros(const std::string& a_value) const;
@@ -992,7 +1005,9 @@ struct logger_impl {
     /// Name of the logger
     virtual const std::string& name() const = 0;
 
+#ifdef UTXX_HAVE_BOOST
     virtual bool init(const variant_tree& a_config) = 0;
+#endif
 
     /// Dump all settings to stream
     virtual std::ostream& dump(std::ostream& out, const std::string& a_prefix) const = 0;

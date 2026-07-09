@@ -43,7 +43,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_CONCURRENT_FIFO_BASE_HPP_
 #define _UTXX_CONCURRENT_FIFO_BASE_HPP_
 
-#include <boost/noncopyable.hpp>
+#include <utxx/noncopyable.hpp>
 #include <utxx/atomic.hpp>
 #include <utxx/container/concurrent_stack.hpp>
 #include <utxx/container/detail/base_allocator.hpp>
@@ -59,7 +59,7 @@ namespace detail {
 //-----------------------------------------------------------------------------
 
 template <typename T, typename AllocT> 
-class lock_free_queue: node_t<T>, boost::noncopyable {
+class lock_free_queue: node_t<T>, utxx::noncopyable {
     typedef node_t<T>   node_type;
 
     volatile node_type* m_head;

@@ -32,37 +32,37 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 
 #include <utxx/iovec.hpp>
 
 namespace utxx {
 namespace io {
-BOOST_AUTO_TEST_CASE(test_iovec)
+TEST_CASE(test_iovec)
 {
     {
         // default constructor
         basic_iovector<5> v;
-        BOOST_REQUIRE_EQUAL(0u, v.size());
-        BOOST_REQUIRE_EQUAL(0u, v.length());
-        BOOST_REQUIRE(v.empty());
+        REQUIRE_EQUAL(0u, v.size());
+        REQUIRE_EQUAL(0u, v.length());
+        REQUIRE(v.empty());
 
         v.push_back("a", 1);
-        BOOST_REQUIRE_EQUAL(1u, v.size());
-        BOOST_REQUIRE_EQUAL(1u, v.length());
+        REQUIRE_EQUAL(1u, v.size());
+        REQUIRE_EQUAL(1u, v.length());
 
         v.push_back("b", 1);
-        BOOST_REQUIRE_EQUAL(2u, v.size());
-        BOOST_REQUIRE_EQUAL(2u, v.length());
+        REQUIRE_EQUAL(2u, v.size());
+        REQUIRE_EQUAL(2u, v.length());
 
         v.push_back("c", 2);
-        BOOST_REQUIRE_EQUAL(3u, v.size());
-        BOOST_REQUIRE_EQUAL(4u, v.length());
+        REQUIRE_EQUAL(3u, v.size());
+        REQUIRE_EQUAL(4u, v.length());
 
         // testing fn: void reset()
-        BOOST_REQUIRE(!v.empty());
+        REQUIRE(!v.empty());
         v.reset();
-        BOOST_REQUIRE(v.empty());
+        REQUIRE(v.empty());
     }
 }
 } // namespace io

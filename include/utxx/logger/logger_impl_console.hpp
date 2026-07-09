@@ -72,7 +72,9 @@ public:
     /// Dump all settings to stream
     std::ostream& dump(std::ostream& out, const std::string& a_prefix) const;
 
+#ifdef UTXX_HAVE_BOOST
     bool init(const variant_tree& a_config);
+#endif
 
     void log_msg(const logger::msg& a_msg, const char* a_buf, size_t a_size);
 };

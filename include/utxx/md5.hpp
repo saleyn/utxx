@@ -33,6 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
 #if BOOST_VERSION >= 106600
 #  include <boost/uuid/detail/sha1.hpp>
 #  include <boost/uuid/detail/md5.hpp>
@@ -98,3 +101,5 @@ std::string sha1(const std::string& str, bool a_lower=true)
 }
 
 } // namespace utxx
+
+#endif // UTXX_HAVE_BOOST

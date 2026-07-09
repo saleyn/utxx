@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 
 #include <utxx/ring_buffer.hpp>
 #include <memory>
@@ -40,7 +40,7 @@ namespace utxx {
 template <typename Buffer>
 void test(const char* a_desc, size_t a_exp_capacity, size_t a_capacity,
           void* a_memory, size_t a_mem_sz, bool a_construct = true) {
-    BOOST_TEST_MESSAGE("Testing " << a_desc << " ring buffer");
+    TEST_MESSAGE("Testing " << a_desc << " ring buffer");
 
     std::unique_ptr<Buffer, void(*)(Buffer*)>
         buf(
@@ -48,47 +48,47 @@ void test(const char* a_desc, size_t a_exp_capacity, size_t a_capacity,
             &Buffer::destroy_ptr
         );
 
-    BOOST_CHECK_EQUAL(a_exp_capacity, buf->capacity());
-    BOOST_CHECK_EQUAL(0u, buf->size());
-    BOOST_CHECK_EQUAL(0u, buf->total_count());
-    BOOST_CHECK(buf->empty());
-    BOOST_CHECK(!buf->full());
+    CHECK_EQUAL(a_exp_capacity, buf->capacity());
+    CHECK_EQUAL(0u, buf->size());
+    CHECK_EQUAL(0u, buf->total_count());
+    CHECK(buf->empty());
+    CHECK(!buf->full());
 
     buf->add(1);
     buf->add(2);
     buf->add(3);
 
-    BOOST_CHECK_EQUAL(3, *buf->back());
-    BOOST_CHECK_EQUAL(2u, buf->last());
-    BOOST_CHECK_EQUAL(3u, buf->size());
-    BOOST_CHECK_EQUAL(3u, buf->total_count());
-    BOOST_CHECK(!buf->empty());
-    BOOST_CHECK(!buf->full());
+    CHECK_EQUAL(3, *buf->back());
+    CHECK_EQUAL(2u, buf->last());
+    CHECK_EQUAL(3u, buf->size());
+    CHECK_EQUAL(3u, buf->total_count());
+    CHECK(!buf->empty());
+    CHECK(!buf->full());
 
     buf->add(4);
-    BOOST_CHECK_EQUAL(4, *buf->back());
-    BOOST_CHECK_EQUAL(3u, buf->last());
-    BOOST_CHECK_EQUAL(4u, buf->size());
-    BOOST_CHECK_EQUAL(4u, buf->total_count());
-    BOOST_CHECK(buf->full());
+    CHECK_EQUAL(4, *buf->back());
+    CHECK_EQUAL(3u, buf->last());
+    CHECK_EQUAL(4u, buf->size());
+    CHECK_EQUAL(4u, buf->total_count());
+    CHECK(buf->full());
 
     buf->add(5);
-    BOOST_CHECK_EQUAL(5, *buf->back());
-    BOOST_CHECK_EQUAL(0u, buf->last());
-    BOOST_CHECK_EQUAL(4u, buf->size());
-    BOOST_CHECK_EQUAL(5u, buf->total_count());
-    BOOST_CHECK(buf->full());
+    CHECK_EQUAL(5, *buf->back());
+    CHECK_EQUAL(0u, buf->last());
+    CHECK_EQUAL(4u, buf->size());
+    CHECK_EQUAL(5u, buf->total_count());
+    CHECK(buf->full());
 
     buf->clear();
 
-    BOOST_CHECK_EQUAL(4u, buf->capacity());
-    BOOST_CHECK_EQUAL(0u, buf->size());
-    BOOST_CHECK_EQUAL(0u, buf->total_count());
-    BOOST_CHECK(buf->empty());
-    BOOST_CHECK(!buf->full());
+    CHECK_EQUAL(4u, buf->capacity());
+    CHECK_EQUAL(0u, buf->size());
+    CHECK_EQUAL(0u, buf->total_count());
+    CHECK(buf->empty());
+    CHECK(!buf->full());
 }
 
-BOOST_AUTO_TEST_CASE( test_ring_buffer )
+TEST_CASE( test_ring_buffer )
 {
     test<ring_buffer<int, 0, false, true>>("non-atomic,pow2", 4, 3, NULL, 0);
     test<ring_buffer<int, 0, true,  true>>("atomic,pow2",     4, 3, NULL, 0);

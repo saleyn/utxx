@@ -13,7 +13,9 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
 #include <utxx/shared_buffer_queue.hpp>
 
 struct deleter {
@@ -22,7 +24,7 @@ struct deleter {
     void operator()() { cnt++; }
 };
 
-BOOST_AUTO_TEST_CASE( shared_queue_test )
+TEST_CASE( shared_queue_test )
 {
     int val = 0;
     boost::asio::const_buffer cbuf(&val, sizeof(val));
@@ -38,9 +40,9 @@ BOOST_AUTO_TEST_CASE( shared_queue_test )
             bq2.enqueue(sbuf);
             bq3.enqueue(sbuf);
         }
-        BOOST_REQUIRE_EQUAL(0, cnt);
+        REQUIRE_EQUAL(0, cnt);
     }
-    BOOST_REQUIRE_EQUAL(1, cnt);
+    REQUIRE_EQUAL(1, cnt);
 
     cnt = 0;
     {
@@ -51,5 +53,7 @@ BOOST_AUTO_TEST_CASE( shared_queue_test )
         bq2.enqueue(cbuf);
         bq3.enqueue(cbuf);
     }
-    BOOST_REQUIRE_EQUAL(0, cnt);
+    REQUIRE_EQUAL(0, cnt);
 }
+
+#endif // UTXX_HAVE_BOOST

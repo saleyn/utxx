@@ -31,9 +31,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <cassert>
 #include <cmath>
-#include <boost/assert.hpp>
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <utxx/error.hpp>
 #include <utxx/bits.hpp>
 
@@ -68,7 +68,7 @@ int inline log(unsigned long n, uint8_t base = 2) {
 /// Calculate logarithm of \a n using \a base.
 /// If n is 0 or is less than base, the function returns 0.
 int inline log2(unsigned long n) {
-    BOOST_ASSERT(!(n & (n-1)));
+    assert(!(n & (n-1)));
     return bits::bit_scan_forward(n);
 }
 

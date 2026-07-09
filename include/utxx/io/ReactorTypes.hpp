@@ -38,7 +38,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum.hpp>
 #include <utxx/error.hpp>
 #include <utxx/logger/logger_enums.hpp>
-#include <boost/align/aligned_allocator.hpp>
 #include <memory>
 
 namespace utxx {

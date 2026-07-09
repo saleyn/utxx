@@ -139,11 +139,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/variant_tree_error.hpp>
 #include <utxx/variant_tree_fwd.hpp>
 #include <utxx/variant_tree_path.hpp>
-#include <boost/foreach.hpp>
-#include <boost/algorithm/string/join.hpp>
-#include <boost/date_time/posix_time/ptime.hpp>
-#include <boost/date_time/posix_time/conversion.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <type_traits>
 #include <set>
 #include <list>
@@ -486,7 +481,7 @@ namespace config {
             bool a_braces = false);
 
         static inline bool all_anonymous(const option_map& a_opts) {
-            BOOST_FOREACH(const typename option_map::value_type& ovt, a_opts)
+            for (const auto& ovt : a_opts)
                 if (ovt.second.opt_type != ANONYMOUS)
                     return false;
             return true;

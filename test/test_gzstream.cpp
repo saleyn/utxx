@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/path.hpp>
 #include <utxx/gzstream.hpp>
 #include <utxx/scope_exit.hpp>
@@ -54,12 +54,12 @@ static std::string temp_path(const std::string& a_add_str = "") {
 
 #ifdef UTXX_HAVE_LIBZ
 
-BOOST_AUTO_TEST_CASE( test_gzstream_gzip )
+TEST_CASE( test_gzstream_gzip )
 {
     auto ss = temp_path("xxxx");
     auto dd = temp_path("xxxx.gz");
 
-    BOOST_REQUIRE(path::write_file(ss, "this is a test1\nthis is a test2\n"));
+    REQUIRE(path::write_file(ss, "this is a test1\nthis is a test2\n"));
 
     UTXX_SCOPE_EXIT([&]() { path::file_unlink(ss); });
     UTXX_SCOPE_EXIT([&]() { path::file_unlink(dd); });
@@ -68,20 +68,20 @@ BOOST_AUTO_TEST_CASE( test_gzstream_gzip )
     {
         ogzstream out;
         out.open(dd);
-        BOOST_REQUIRE(out.good());
+        REQUIRE(out.good());
         out.close();
-        BOOST_REQUIRE(out.good());
+        REQUIRE(out.good());
     }
 
     // now use the shorter way with the constructor to open the same file
     ogzstream out(dd);
-    BOOST_REQUIRE(out.good());
+    REQUIRE(out.good());
 
     std::ifstream in(ss);
-    BOOST_REQUIRE(in.good());
+    REQUIRE(in.good());
 
     auto res = gzsetparams(out.rdbuf()->native_handle(), 9, Z_DEFAULT_STRATEGY);
-    BOOST_REQUIRE_EQUAL(0, res);
+    REQUIRE_EQUAL(0, res);
 
     char c;
     while (in.get(c))
@@ -90,21 +90,21 @@ BOOST_AUTO_TEST_CASE( test_gzstream_gzip )
     in.close();
     out.close();
 
-    BOOST_REQUIRE(in.eof());
-    BOOST_REQUIRE(out.good());
+    REQUIRE(in.eof());
+    REQUIRE(out.good());
 
-    BOOST_REQUIRE_EQUAL(39, utxx::path::file_size(dd));
+    REQUIRE_EQUAL(39, utxx::path::file_size(dd));
 
     {
         igzstream in(dd);
-        BOOST_REQUIRE(in.good());
+        REQUIRE(in.good());
 
         for (int i=1; i <= 3; ++i) {
             std::string s;
             std::getline(in, s);
-            BOOST_REQUIRE((i == 3) ^ in.good());
+            REQUIRE((i == 3) ^ in.good());
             if (i != 3)
-                BOOST_REQUIRE_EQUAL(utxx::to_string("this is a test", i), s);
+                REQUIRE_EQUAL(utxx::to_string("this is a test", i), s);
         }
     }
 }

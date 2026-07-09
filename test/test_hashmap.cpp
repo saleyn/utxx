@@ -28,8 +28,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
-#include <boost/format.hpp>
+#include <utxx/test_helper.hpp>
+#include <cstdio>
 #include <utxx/hashmap.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/verbosity.hpp>
@@ -47,7 +47,7 @@ static std::string srandom(int a_maxlen) {
     return buf;
 }
 
-BOOST_AUTO_TEST_CASE( test_hashmap )
+TEST_CASE( test_hashmap )
 {
     typedef
         detail::basic_hash_map<const char*, int, detail::hash_fun<const char*> >
@@ -60,15 +60,15 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     tab["efg_xxxxxxx_yyyyyyyyyy"]            = 3;
     tab["Quick fox jumps over the lazy dog"] = 4;
 
-    BOOST_REQUIRE_EQUAL(1, tab["abc"]);
-    BOOST_REQUIRE_EQUAL(2, tab["abc_bcd_def_efgh"]);
-    BOOST_REQUIRE_EQUAL(3, tab["efg_xxxxxxx_yyyyyyyyyy"]);
-    BOOST_REQUIRE_EQUAL(4, tab["Quick fox jumps over the lazy dog"]);
+    REQUIRE_EQUAL(1, tab["abc"]);
+    REQUIRE_EQUAL(2, tab["abc_bcd_def_efgh"]);
+    REQUIRE_EQUAL(3, tab["efg_xxxxxxx_yyyyyyyyyy"]);
+    REQUIRE_EQUAL(4, tab["Quick fox jumps over the lazy dog"]);
 
     {
         std::string s("abc");
         int n = detail::hash_fun<std::string>()(s);
-        BOOST_REQUIRE_EQUAL(-759293558, n);
+        REQUIRE_EQUAL(-759293558, n);
     }
 
     const int ITERATIONS = getenv("ITERATIONS")
@@ -94,9 +94,7 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
     double elapsed1 = perf.elapsed();
 
-    BOOST_TEST_MESSAGE(
-        (boost::format("StrHashFun   speed: %.3f us/call") %
-                       (1000000.0 * elapsed1 / (COUNT*ITERATIONS))).str());
+    { char _buf[128]; snprintf(_buf, sizeof(_buf), "StrHashFun   speed: %.3f us/call", 1000000.0 * elapsed1 / (COUNT*ITERATIONS)); TEST_MESSAGE(_buf); }
 
     #if defined(__GNUC__) && __cplusplus >= 201103L
     perf.reset();
@@ -111,11 +109,8 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     double elapsed2 = elapsed1;
     #endif
 
-    BOOST_TEST_MESSAGE(
-        (boost::format("std::hash    speed: %.3f us/call") %
-                       (1000000.0 * elapsed2 / (COUNT*ITERATIONS))).str());
-
-    BOOST_TEST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed1 / elapsed2)).str());
+    { char _buf[128]; snprintf(_buf, sizeof(_buf), "std::hash    speed: %.3f us/call", 1000000.0 * elapsed2 / (COUNT*ITERATIONS)); TEST_MESSAGE(_buf); }
+    { char _buf[64]; snprintf(_buf, sizeof(_buf), "Ratio: %.3f", (elapsed1 / elapsed2)); TEST_MESSAGE(_buf); }
 
     perf.reset();
     for (int i=0; i < ITERATIONS; ++i)
@@ -126,11 +121,8 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
     double elapsed3 = perf.elapsed();
 
-    BOOST_TEST_MESSAGE(
-        (boost::format("crapwow      speed: %.3f us/call") %
-                       (1000000.0 * elapsed3 / (COUNT*ITERATIONS))).str());
-
-    BOOST_TEST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed3 / elapsed2)).str());
+    { char _buf[128]; snprintf(_buf, sizeof(_buf), "crapwow      speed: %.3f us/call", 1000000.0 * elapsed3 / (COUNT*ITERATIONS)); TEST_MESSAGE(_buf); }
+    { char _buf[64]; snprintf(_buf, sizeof(_buf), "Ratio: %.3f", (elapsed3 / elapsed2)); TEST_MESSAGE(_buf); }
 
     perf.reset();
     for (int i=0; i < ITERATIONS; ++i)
@@ -141,9 +133,6 @@ BOOST_AUTO_TEST_CASE( test_hashmap )
     }
     double elapsed4 = perf.elapsed();
 
-    BOOST_TEST_MESSAGE(
-        (boost::format("murmur_hash  speed: %.3f us/call") %
-                       (1000000.0 * elapsed4 / (COUNT*ITERATIONS))).str());
-
-    BOOST_TEST_MESSAGE((boost::format("Ratio: %.3f") % (elapsed4 / elapsed2)).str());
+    { char _buf[128]; snprintf(_buf, sizeof(_buf), "murmur_hash  speed: %.3f us/call", 1000000.0 * elapsed4 / (COUNT*ITERATIONS)); TEST_MESSAGE(_buf); }
+    { char _buf[64]; snprintf(_buf, sizeof(_buf), "Ratio: %.3f", (elapsed4 / elapsed2)); TEST_MESSAGE(_buf); }
 }

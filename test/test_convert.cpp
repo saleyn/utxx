@@ -33,201 +33,200 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/config.h>
 
 //#define BOOST_TEST_MODULE test_convert
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/convert.hpp>
 #include <utxx/fast_itoa.hpp>
 #include <utxx/verbosity.hpp>
-#include <boost/lexical_cast.hpp>
-#include <boost/format.hpp>
 #ifdef UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
+#include <boost/format.hpp>
 #endif
 #include <limits>
 
 using namespace utxx;
 
 
-BOOST_AUTO_TEST_CASE( test_convert )
+TEST_CASE( test_convert )
 {
     {
         char buf1[] = "0";
         char buf[] = {'0'};
-        BOOST_STATIC_ASSERT(sizeof(buf1) == 1 + sizeof(buf));
-        BOOST_STATIC_ASSERT(sizeof(buf1) == 2);
+        static_assert(sizeof(buf1) == 1 + sizeof(buf));
+        static_assert(sizeof(buf1) == 2);
         int n, m;
         const char* lp = atoi_left (buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(0,  n);
-        BOOST_CHECK_EQUAL(0,  m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(0,  n);
+        CHECK_EQUAL(0,  m);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
 
         char lout[sizeof(buf)], rout[sizeof(buf)];
         lp = itoa_left(lout, n);
         rp = itoa_right(rout, m);
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
-        BOOST_CHECK_EQUAL(0,  n);
-        BOOST_CHECK_EQUAL(0,  m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-lout);
-        BOOST_CHECK_EQUAL(-1, rp-rout);
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
+        CHECK_EQUAL(0,  n);
+        CHECK_EQUAL(0,  m);
+        CHECK_EQUAL((int)sizeof(buf), lp-lout);
+        CHECK_EQUAL(-1, rp-rout);
     }
     {
         char buf[] = {'-','0'};
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(0,  n);
-        BOOST_CHECK_EQUAL(0,  m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(0,  n);
+        CHECK_EQUAL(0,  m);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
 
         char lout[sizeof(buf)], rout[sizeof(buf)];
         lp = itoa_left(lout, n);
         rp = itoa_right(rout, m);
-        BOOST_CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(lout, sizeof(lout)-1));
-        BOOST_CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(rout+1, sizeof(rout)-1));
-        BOOST_CHECK_EQUAL(0,  n);
-        BOOST_CHECK_EQUAL(0,  m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf)-1, lp-lout);
-        BOOST_CHECK_EQUAL(0, rp-rout);
+        CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(lout, sizeof(lout)-1));
+        CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(rout+1, sizeof(rout)-1));
+        CHECK_EQUAL(0,  n);
+        CHECK_EQUAL(0,  m);
+        CHECK_EQUAL((int)sizeof(buf)-1, lp-lout);
+        CHECK_EQUAL(0, rp-rout);
     }
     {
         char buf[] = {'1'};
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(1,  n);
-        BOOST_CHECK_EQUAL(1,  m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(1,  n);
+        CHECK_EQUAL(1,  m);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
 
         char lout[sizeof(buf)], rout[sizeof(buf)];
         lp = itoa_left(lout, n);
         rp = itoa_right(rout, m);
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
-        BOOST_CHECK_EQUAL(1,  n);
-        BOOST_CHECK_EQUAL(1,  m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-lout);
-        BOOST_CHECK_EQUAL(-1, rp-rout);
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
+        CHECK_EQUAL(1,  n);
+        CHECK_EQUAL(1,  m);
+        CHECK_EQUAL((int)sizeof(buf), lp-lout);
+        CHECK_EQUAL(-1, rp-rout);
     }
     {
         char buf[] = {'\0','-','1'};
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(0,  n);
-        BOOST_CHECK_EQUAL(-1, m);
-        BOOST_CHECK_EQUAL(0, lp-buf);
-        BOOST_CHECK_EQUAL(0, rp-buf);
+        CHECK_EQUAL(0,  n);
+        CHECK_EQUAL(-1, m);
+        CHECK_EQUAL(0, lp-buf);
+        CHECK_EQUAL(0, rp-buf);
 
         char lout[sizeof(buf)], rout[sizeof(buf)];
         lp = itoa_left(lout, -1);
         rp = itoa_right(rout, -1);
-        BOOST_CHECK_EQUAL('\0', lout[2]);
-        BOOST_CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), lout);
-        BOOST_CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(rout+1, sizeof(rout)-1));
-        BOOST_CHECK_EQUAL((int)sizeof(buf)-1, lp-lout);
-        BOOST_CHECK_EQUAL(0,  rp-rout);
+        CHECK_EQUAL('\0', lout[2]);
+        CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), lout);
+        CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(rout+1, sizeof(rout)-1));
+        CHECK_EQUAL((int)sizeof(buf)-1, lp-lout);
+        CHECK_EQUAL(0,  rp-rout);
 
         lp = itoa_left(lout, -1,  ' ');
         rp = itoa_right(rout, -1, ' ');
-        BOOST_CHECK_EQUAL("-1 ", std::string(lout, 3));
-        BOOST_CHECK_EQUAL(" -1", std::string(rout, 3));
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-lout);
-        BOOST_CHECK_EQUAL(-1, rp-rout);
+        CHECK_EQUAL("-1 ", std::string(lout, 3));
+        CHECK_EQUAL(" -1", std::string(rout, 3));
+        CHECK_EQUAL((int)sizeof(buf), lp-lout);
+        CHECK_EQUAL(-1, rp-rout);
     }
     {
         char buf[] = {'1', '2', '3', '4', '5'};
-        BOOST_STATIC_ASSERT((int)sizeof(buf) == 5);
+        static_assert((int)sizeof(buf) == 5);
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(12345, n);
-        BOOST_CHECK_EQUAL(12345, m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(12345, n);
+        CHECK_EQUAL(12345, m);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
 
         char lout[sizeof(buf)], rout[sizeof(buf)];
         lp = itoa_left(lout, n);
         rp = itoa_right(rout, m);
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
-        BOOST_CHECK_EQUAL(12345, n);
-        BOOST_CHECK_EQUAL(12345, m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-lout);
-        BOOST_CHECK_EQUAL(-1,    rp-rout);
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
+        CHECK_EQUAL(12345, n);
+        CHECK_EQUAL(12345, m);
+        CHECK_EQUAL((int)sizeof(buf), lp-lout);
+        CHECK_EQUAL(-1,    rp-rout);
     }
     {
         char buf[] = {'-', '2', '3', '4', '5'};
-        BOOST_STATIC_ASSERT(sizeof(buf) == 5);
+        static_assert(sizeof(buf) == 5);
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(-2345, n);
-        BOOST_CHECK_EQUAL(-2345, m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(-2345, n);
+        CHECK_EQUAL(-2345, m);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
 
         char lout[sizeof(buf)], rout[sizeof(buf)];
         lp = itoa_left(lout, n);
         rp = itoa_right(rout, m);
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
-        BOOST_CHECK_EQUAL(-2345, n);
-        BOOST_CHECK_EQUAL(-2345, m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-lout);
-        BOOST_CHECK_EQUAL(-1,    rp-rout);
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(lout, sizeof(lout)));
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
+        CHECK_EQUAL(-2345, n);
+        CHECK_EQUAL(-2345, m);
+        CHECK_EQUAL((int)sizeof(buf), lp-lout);
+        CHECK_EQUAL(-1,    rp-rout);
     }
     {
         char buf[] = {' ', ' ', '1', '2', '3', '4', '5'};
-        BOOST_STATIC_ASSERT(sizeof(buf) == 7);
+        static_assert(sizeof(buf) == 7);
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(0, n);
-        BOOST_CHECK_EQUAL(12345, m);
-        BOOST_CHECK_EQUAL(0, lp-buf);
-        BOOST_CHECK_EQUAL(1, rp-buf);
+        CHECK_EQUAL(0, n);
+        CHECK_EQUAL(12345, m);
+        CHECK_EQUAL(0, lp-buf);
+        CHECK_EQUAL(1, rp-buf);
 
         char lbuf[] = {'1', '2', '3', '4', '5', ' ', ' '};
         char lout[sizeof(buf)], rout[sizeof(buf)] = {};
         lp = itoa_left(lout, 12345);
         rp = itoa_right(rout, 12345);
-        BOOST_CHECK_EQUAL(std::string(lbuf, sizeof(lbuf)-2), std::string(lout, sizeof(lout)-2));
-        BOOST_CHECK_EQUAL(std::string(buf+2, sizeof(buf)-2), std::string(rout+2, sizeof(rout)-2));
-        BOOST_CHECK_EQUAL((int)sizeof(lbuf)-2, lp-lout);
-        BOOST_CHECK_EQUAL(1,    rp-rout);
+        CHECK_EQUAL(std::string(lbuf, sizeof(lbuf)-2), std::string(lout, sizeof(lout)-2));
+        CHECK_EQUAL(std::string(buf+2, sizeof(buf)-2), std::string(rout+2, sizeof(rout)-2));
+        CHECK_EQUAL((int)sizeof(lbuf)-2, lp-lout);
+        CHECK_EQUAL(1,    rp-rout);
 
         bzero(lout, sizeof(lout));
         bzero(rout, sizeof(rout));
         lp = itoa_left(lout, 12345, ' ');
         rp = itoa_right(rout, 12345, ' ');
-        BOOST_CHECK_EQUAL(std::string(lbuf, sizeof(lbuf)), std::string(lout, sizeof(lout)));
-        BOOST_CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
-        BOOST_CHECK_EQUAL((int)sizeof(lbuf), lp-lout);
-        BOOST_CHECK_EQUAL(-1,    rp-rout);
+        CHECK_EQUAL(std::string(lbuf, sizeof(lbuf)), std::string(lout, sizeof(lout)));
+        CHECK_EQUAL(std::string(buf, sizeof(buf)), std::string(rout, sizeof(rout)));
+        CHECK_EQUAL((int)sizeof(lbuf), lp-lout);
+        CHECK_EQUAL(-1,    rp-rout);
     }
     {
         char buf[] = {' ', '-', '1', '2', '3', '4', '5'};
-        BOOST_STATIC_ASSERT((int)sizeof(buf) == 7);
+        static_assert((int)sizeof(buf) == 7);
         int n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(0, n);      // Error
-        BOOST_CHECK_EQUAL(-12345, m); // Success
-        BOOST_CHECK_EQUAL(0, lp-buf); // nothing was parsed - pointing to the beginning of the buffer.
-        BOOST_CHECK_EQUAL(0, rp-buf); // points to buf[0] - parsing was done from right to left.
+        CHECK_EQUAL(0, n);      // Error
+        CHECK_EQUAL(-12345, m); // Success
+        CHECK_EQUAL(0, lp-buf); // nothing was parsed - pointing to the beginning of the buffer.
+        CHECK_EQUAL(0, rp-buf); // points to buf[0] - parsing was done from right to left.
 
         char lbuf[] = {'-', '1', '2', '3', '4', '5', 'X'};
         char lout[sizeof(buf)], rout[sizeof(buf)] = {};
         lp = itoa_left(lout, -12345);
         rp = itoa_right(rout, -12345);
-        BOOST_CHECK_EQUAL(std::string(lbuf, sizeof(lbuf)-1), std::string(lout, sizeof(lout)-1));
-        BOOST_CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(rout+1, sizeof(rout)-1));
-        BOOST_CHECK_EQUAL((int)sizeof(lbuf)-1, lp-lout);
-        BOOST_CHECK_EQUAL(0,    rp-rout);
+        CHECK_EQUAL(std::string(lbuf, sizeof(lbuf)-1), std::string(lout, sizeof(lout)-1));
+        CHECK_EQUAL(std::string(buf+1, sizeof(buf)-1), std::string(rout+1, sizeof(rout)-1));
+        CHECK_EQUAL((int)sizeof(lbuf)-1, lp-lout);
+        CHECK_EQUAL(0,    rp-rout);
     }
     {
         long expect = -1053806107;
@@ -235,127 +234,127 @@ BOOST_AUTO_TEST_CASE( test_convert )
         long n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(expect, n);
-        BOOST_CHECK_EQUAL(expect, m);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(expect, n);
+        CHECK_EQUAL(expect, m);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
     }
     {
         char buf[]  = {'-',' ',' ','1','0','5'};
         long n, m;
         const char* lp = atoi_left(buf, n);
         const char* rp = atoi_right(buf, m);
-        BOOST_CHECK_EQUAL(0,   n); // This is really invalid input
-        BOOST_CHECK_EQUAL(105, m); // Invalid input
-        BOOST_CHECK_EQUAL(1,  lp-buf);
-        BOOST_CHECK_EQUAL(2,  rp-buf);
+        CHECK_EQUAL(0,   n); // This is really invalid input
+        CHECK_EQUAL(105, m); // Invalid input
+        CHECK_EQUAL(1,  lp-buf);
+        CHECK_EQUAL(2,  rp-buf);
     }
     {
         char buf[19];
         int64_t n = std::numeric_limits<int64_t>::max();
         std::stringstream s; s << n;
         strncpy(buf, s.str().c_str(), s.str().size());
-        BOOST_CHECK_EQUAL(sizeof(buf), s.str().size());
-        int64_t k = boost::lexical_cast<int64_t>(s.str());
+        CHECK_EQUAL(sizeof(buf), s.str().size());
+        int64_t k = std::stoll(s.str());
         int64_t i, j;
-        BOOST_CHECK_EQUAL(n, k);
+        CHECK_EQUAL(n, k);
         const char* lp = atoi_left(buf, i);
         const char* rp = atoi_right(buf, j);
-        BOOST_CHECK_EQUAL(n, i);
-        BOOST_CHECK_EQUAL(n, j);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
-        //BOOST_CHECK_EQUAL(0,    rp-rout);
+        CHECK_EQUAL(n, i);
+        CHECK_EQUAL(n, j);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
+        //CHECK_EQUAL(0,    rp-rout);
     }
     {
         char buf[20];
         int64_t n = std::numeric_limits<int64_t>::min();
-        BOOST_CHECK(n < 0);
+        CHECK(n < 0);
         std::stringstream s; s << n;
         strncpy(buf, s.str().c_str(), s.str().size());
-        BOOST_CHECK_EQUAL(sizeof(buf), s.str().size());
-        int64_t k = boost::lexical_cast<int64_t>(s.str());
+        CHECK_EQUAL(sizeof(buf), s.str().size());
+        int64_t k = std::stoll(s.str());
         int64_t i, j;
-        BOOST_CHECK_EQUAL(n, k);
+        CHECK_EQUAL(n, k);
         const char* lp = atoi_left(buf, i);
         const char* rp = atoi_right(buf, j);
-        BOOST_CHECK_EQUAL(n, i);
-        BOOST_CHECK_EQUAL(n, j);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(n, i);
+        CHECK_EQUAL(n, j);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
     }
     {
         char buf[20];
         uint64_t n = std::numeric_limits<uint64_t>::max();
         uint64_t m = std::numeric_limits<uint64_t>::min();
-        BOOST_CHECK(n > 0);
-        BOOST_CHECK(m == 0);
+        CHECK(n > 0);
+        CHECK(m == 0);
         std::stringstream s; s << n;
         strncpy(buf, s.str().c_str(), s.str().size());
-        BOOST_CHECK_EQUAL(sizeof(buf), s.str().size());
-        uint64_t k = boost::lexical_cast<uint64_t>(s.str());
+        CHECK_EQUAL(sizeof(buf), s.str().size());
+        uint64_t k = std::stoull(s.str());
         uint64_t i, j;
-        BOOST_CHECK_EQUAL(n, k);
+        CHECK_EQUAL(n, k);
         const char* lp = atoi_left(buf, i);
         const char* rp = atoi_right(buf, j);
-        BOOST_CHECK_EQUAL(n, i);
-        BOOST_CHECK_EQUAL(n, j);
-        BOOST_CHECK_EQUAL((int)sizeof(buf), lp-buf);
-        BOOST_CHECK_EQUAL(-1, rp-buf);
+        CHECK_EQUAL(n, i);
+        CHECK_EQUAL(n, j);
+        CHECK_EQUAL((int)sizeof(buf), lp-buf);
+        CHECK_EQUAL(-1, rp-buf);
     }
     {
         char buf[10];
         char* p = buf;
         auto  q = itoa<int>(0, p);
-        BOOST_CHECK_EQUAL("0", buf);
-        BOOST_CHECK_EQUAL(1,   p - buf);
-        BOOST_CHECK_EQUAL(buf, q);
+        CHECK_EQUAL("0", buf);
+        CHECK_EQUAL(1,   p - buf);
+        CHECK_EQUAL(buf, q);
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_deprecated_itoa )
+TEST_CASE( test_convert_deprecated_itoa )
 {
   char buf1[12], buf2[22];
   auto p = buf1;
 
   auto q = deprecated::itoa(123, p);
 
-  BOOST_CHECK_EQUAL(buf1,   q);
-  BOOST_CHECK_EQUAL(buf1+3, p);
+  CHECK_EQUAL(buf1,   q);
+  CHECK_EQUAL(buf1+3, p);
 
   p = buf1;
 
-  BOOST_CHECK_EQUAL("0",                     deprecated::itoa( 0,                      p)); p = buf1;
-  BOOST_CHECK_EQUAL("1",                     deprecated::itoa( 1u,                     p)); p = buf1;
-  BOOST_CHECK_EQUAL("1",                     deprecated::itoa( 1,                      p)); p = buf1;
-  BOOST_CHECK_EQUAL("12",                    deprecated::itoa( 12,                     p)); p = buf1;
-  BOOST_CHECK_EQUAL("12345",                 deprecated::itoa( 12345,                  p)); p = buf1;
-  BOOST_CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890,             p)); p = buf1;
-  BOOST_CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890u,            p)); p = buf1;
-  BOOST_CHECK_EQUAL("-1",                    deprecated::itoa(-1,                      p)); p = buf1;
-  BOOST_CHECK_EQUAL("-12",                   deprecated::itoa(-12,                     p)); p = buf1;
-  BOOST_CHECK_EQUAL("-12345",                deprecated::itoa(-12345,                  p)); p = buf1;
-  BOOST_CHECK_EQUAL("-1234567890",           deprecated::itoa(-1234567890,             p)); p = buf1;
+  CHECK_EQUAL("0",                     deprecated::itoa( 0,                      p)); p = buf1;
+  CHECK_EQUAL("1",                     deprecated::itoa( 1u,                     p)); p = buf1;
+  CHECK_EQUAL("1",                     deprecated::itoa( 1,                      p)); p = buf1;
+  CHECK_EQUAL("12",                    deprecated::itoa( 12,                     p)); p = buf1;
+  CHECK_EQUAL("12345",                 deprecated::itoa( 12345,                  p)); p = buf1;
+  CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890,             p)); p = buf1;
+  CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890u,            p)); p = buf1;
+  CHECK_EQUAL("-1",                    deprecated::itoa(-1,                      p)); p = buf1;
+  CHECK_EQUAL("-12",                   deprecated::itoa(-12,                     p)); p = buf1;
+  CHECK_EQUAL("-12345",                deprecated::itoa(-12345,                  p)); p = buf1;
+  CHECK_EQUAL("-1234567890",           deprecated::itoa(-1234567890,             p)); p = buf1;
 
   p = buf2;
 
-  BOOST_CHECK_EQUAL("0",                     deprecated::itoa( 0l,                     p)); p = buf2;
-  BOOST_CHECK_EQUAL("1",                     deprecated::itoa( 1l,                     p)); p = buf2;
-  BOOST_CHECK_EQUAL("12",                    deprecated::itoa( 12l,                    p)); p = buf2;
-  BOOST_CHECK_EQUAL("12345",                 deprecated::itoa( 12345l,                 p)); p = buf2;
-  BOOST_CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890l,            p)); p = buf2;
-  BOOST_CHECK_EQUAL("12345678901",           deprecated::itoa( 12345678901l,           p)); p = buf2;
-  BOOST_CHECK_EQUAL("9223372036854775807",   deprecated::itoa( 9223372036854775807l,   p)); p = buf2;
-  BOOST_CHECK_EQUAL("18446744073709551615",  deprecated::itoa( 18446744073709551615ul, p)); p = buf2;
-  BOOST_CHECK_EQUAL("-1",                    deprecated::itoa(-1l,                     p)); p = buf2;
-  BOOST_CHECK_EQUAL("-12",                   deprecated::itoa(-12l,                    p)); p = buf2;
-  BOOST_CHECK_EQUAL("-12345",                deprecated::itoa(-12345l,                 p)); p = buf2;
-  BOOST_CHECK_EQUAL("-1234567890",           deprecated::itoa(-1234567890l,            p)); p = buf2;
-  BOOST_CHECK_EQUAL("-12345678901",          deprecated::itoa(-12345678901l,           p)); p = buf2;
-  BOOST_CHECK_EQUAL("-9223372036854775807",  deprecated::itoa(-9223372036854775807l,   p)); p = buf2;
+  CHECK_EQUAL("0",                     deprecated::itoa( 0l,                     p)); p = buf2;
+  CHECK_EQUAL("1",                     deprecated::itoa( 1l,                     p)); p = buf2;
+  CHECK_EQUAL("12",                    deprecated::itoa( 12l,                    p)); p = buf2;
+  CHECK_EQUAL("12345",                 deprecated::itoa( 12345l,                 p)); p = buf2;
+  CHECK_EQUAL("1234567890",            deprecated::itoa( 1234567890l,            p)); p = buf2;
+  CHECK_EQUAL("12345678901",           deprecated::itoa( 12345678901l,           p)); p = buf2;
+  CHECK_EQUAL("9223372036854775807",   deprecated::itoa( 9223372036854775807l,   p)); p = buf2;
+  CHECK_EQUAL("18446744073709551615",  deprecated::itoa( 18446744073709551615ul, p)); p = buf2;
+  CHECK_EQUAL("-1",                    deprecated::itoa(-1l,                     p)); p = buf2;
+  CHECK_EQUAL("-12",                   deprecated::itoa(-12l,                    p)); p = buf2;
+  CHECK_EQUAL("-12345",                deprecated::itoa(-12345l,                 p)); p = buf2;
+  CHECK_EQUAL("-1234567890",           deprecated::itoa(-1234567890l,            p)); p = buf2;
+  CHECK_EQUAL("-12345678901",          deprecated::itoa(-12345678901l,           p)); p = buf2;
+  CHECK_EQUAL("-9223372036854775807",  deprecated::itoa(-9223372036854775807l,   p)); p = buf2;
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_fast_atoi2 )
+TEST_CASE( test_convert_fast_atoi2 )
 {
 
     for (int64_t i=1, j=1; j < 100000; ++j) {
@@ -364,11 +363,11 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi2 )
         sprintf(buf, "%-ld", i);
         int64_t n = atol(buf), m;
         atoi_left(buf, m);
-        BOOST_CHECK_EQUAL(n, m);
+        CHECK_EQUAL(n, m);
         const char* p = itoa_left(test, n);
         m = p-test;
-        BOOST_CHECK_EQUAL((int64_t)strlen(buf), m);
-        BOOST_CHECK_EQUAL(buf, std::string(test, m));
+        CHECK_EQUAL((int64_t)strlen(buf), m);
+        CHECK_EQUAL(buf, std::string(test, m));
     }
 }
 
@@ -376,7 +375,7 @@ __attribute__ ((noinline)) void atoi2(const std::string& s, long& n) {
     n = atoi(s.c_str());
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
+TEST_CASE( test_convert_unsafe_fixed_atol )
 {
     struct utest { const char* test; long expected; bool fatoi_success; int len; };
     const utest tests[] = {
@@ -452,68 +451,69 @@ BOOST_AUTO_TEST_CASE( test_convert_unsafe_fixed_atol )
     for (uint32_t i=0; i < sizeof(tests)/sizeof(tests[0]); ++i) {
         bool res = fast_atoi(tests[i].test, n);
         if (tests[i].fatoi_success != res)
-            BOOST_TEST_MESSAGE(
+            TEST_MESSAGE(
                 "Case i=" << i << ", res=" << res <<
                 ", n=" << n << ", test=" << tests[i].test);
-        BOOST_CHECK_EQUAL(tests[i].fatoi_success,
+        CHECK_EQUAL(tests[i].fatoi_success,
                             fast_atoi(tests[i].test, n));
-        if (tests[i].fatoi_success) BOOST_CHECK_EQUAL(tests[i].expected, n);
+        if (tests[i].fatoi_success) CHECK_EQUAL(tests[i].expected, n);
 
         const char* e = fun_signed[tests[i].len](tests[i].test, n);
         bool       ok = !tests[i].expected || e == (tests[i].test + tests[i].len);
 
         if (tests[i].expected != n || !ok)
-            BOOST_TEST_MESSAGE("Test signed #" << i << " failed");
-        BOOST_CHECK_EQUAL(tests[i].expected, n);
-        BOOST_CHECK(ok);
+            TEST_MESSAGE("Test signed #" << i << " failed");
+        CHECK_EQUAL(tests[i].expected, n);
+        CHECK(ok);
 
         if (tests[i].expected >= 0) {
             e  = fun_unsigned[tests[i].len](tests[i].test, u);
             ok = !tests[i].expected || e == (tests[i].test + tests[i].len);
 
             if (tests[i].expected != (long)u || !ok)
-                BOOST_TEST_MESSAGE("Test unsigned #" << i << " failed");
-            BOOST_CHECK_EQUAL(tests[i].expected, (long)u);
-            BOOST_CHECK(ok);
+                TEST_MESSAGE("Test unsigned #" << i << " failed");
+            CHECK_EQUAL(tests[i].expected, (long)u);
+            CHECK(ok);
         }
 
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_fast_atoi )
+TEST_CASE( test_convert_fast_atoi )
 {
     long n;
 
-    BOOST_CHECK(!fast_atoi("123ABC", n));
-    BOOST_CHECK((fast_atoi<long,false>( "123ABC", n)));
-    BOOST_CHECK_EQUAL(123, n);
+    CHECK(!fast_atoi("123ABC", n));
+    CHECK((fast_atoi<long,false>( "123ABC", n)));
+    CHECK_EQUAL(123, n);
 
-    BOOST_CHECK(!fast_atoi( "123  ", n));
-    BOOST_CHECK((fast_atoi<long,false>( "123  ",  n)));
-    BOOST_CHECK_EQUAL(123, n);
+    CHECK(!fast_atoi( "123  ", n));
+    CHECK((fast_atoi<long,false>( "123  ",  n)));
+    CHECK_EQUAL(123, n);
 
-    BOOST_CHECK(!fast_atoi( std::string("\0\0\0\000123", 7), n));
-    BOOST_CHECK(fast_atoi_skip_ws( std::string("\0\0\0\000123", 7), n));
-    BOOST_CHECK_EQUAL(123, n);
+    CHECK(!fast_atoi( std::string("\0\0\0\000123", 7), n));
+    CHECK(fast_atoi_skip_ws( std::string("\0\0\0\000123", 7), n));
+    CHECK_EQUAL(123, n);
 
-    BOOST_CHECK(!fast_atoi( "        -123", n));
-    BOOST_CHECK(fast_atoi_skip_ws( "        -123", n));
-    BOOST_CHECK_EQUAL(-123, n);
+    CHECK(!fast_atoi( "        -123", n));
+    CHECK(fast_atoi_skip_ws( "        -123", n));
+    CHECK_EQUAL(-123, n);
 
-    BOOST_CHECK(!fast_atoi( "-123ABC", n));
-    BOOST_CHECK((fast_atoi<long,false>( "-123ABC",  n)));
-    BOOST_CHECK_EQUAL(-123, n);
+    CHECK(!fast_atoi( "-123ABC", n));
+    CHECK((fast_atoi<long,false>( "-123ABC",  n)));
+    CHECK_EQUAL(-123, n);
 
-    BOOST_CHECK(!fast_atoi( "-123  ",  n));
-    BOOST_CHECK((fast_atoi<long,false>( "-123  ",   n)));
-    BOOST_CHECK_EQUAL(-123, n);
+    CHECK(!fast_atoi( "-123  ",  n));
+    CHECK((fast_atoi<long,false>( "-123  ",   n)));
+    CHECK_EQUAL(-123, n);
 
-    BOOST_CHECK(!fast_atoi( std::string("\0\0\0\000-123", 8), n));
-    BOOST_CHECK(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), n));
-    BOOST_CHECK_EQUAL(-123, n);
+    CHECK(!fast_atoi( std::string("\0\0\0\000-123", 8), n));
+    CHECK(fast_atoi_skip_ws( std::string("\0\0\0\000-123", 8), n));
+    CHECK_EQUAL(-123, n);
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_fast_itoa_speed )
+#ifdef UTXX_HAVE_BOOST_TIMER_TIMER_HPP
+TEST_CASE( test_convert_fast_itoa_speed )
 {
     using boost::timer::cpu_timer;
     using boost::timer::cpu_times;
@@ -525,7 +525,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_itoa_speed )
     auto p  = buf;
     auto n1 = 0, n2 = 0, n3 = 0;
 
-    BOOST_TEST_MESSAGE(    "           iterations: " << ITERATIONS);
+    TEST_MESSAGE(    "           iterations: " << ITERATIONS);
     {
         cpu_timer t;
 
@@ -540,7 +540,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_itoa_speed )
         std::stringstream s;
         s << boost::format("       fast_itoa time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
-        BOOST_TEST_MESSAGE(s.str());
+        TEST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
@@ -558,7 +558,7 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_itoa_speed )
         s << boost::format("deprecated::itoa time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
 
-        BOOST_TEST_MESSAGE(s.str());
+        TEST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
@@ -576,14 +576,14 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_itoa_speed )
         s << boost::format("            itoa time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
 
-        BOOST_TEST_MESSAGE(s.str());
+        TEST_MESSAGE(s.str());
     }
 
-    BOOST_CHECK_EQUAL(n1, n2);
-    BOOST_CHECK_EQUAL(n1, n3);
+    CHECK_EQUAL(n1, n2);
+    CHECK_EQUAL(n1, n3);
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
+TEST_CASE( test_convert_fast_atoi_speed )
 {
     using boost::timer::cpu_timer;
     using boost::timer::cpu_times;
@@ -591,13 +591,13 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
 
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
 
-    BOOST_TEST_MESSAGE(       "             iterations: " << ITERATIONS);
+    TEST_MESSAGE(       "             iterations: " << ITERATIONS);
     {
         cpu_timer t;
         const std::string buf("1234567890");
         long n;
-        BOOST_CHECK(fast_atoi(buf, n));
-        BOOST_CHECK_EQUAL(1234567890, n);
+        CHECK(fast_atoi(buf, n));
+        CHECK_EQUAL(1234567890, n);
 
         for (int i = 0; i < ITERATIONS; i++)
             fast_atoi(buf, n);
@@ -608,14 +608,14 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         std::stringstream s;
         s << boost::format("         fast_atoi time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
-        BOOST_TEST_MESSAGE(s.str());
+        TEST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
         const std::string buf("1234567890");
         const char* p = buf.c_str();
         long n = unsafe_fixed_atoul<10>(p);
-        BOOST_CHECK_EQUAL(1234567890, n);
+        CHECK_EQUAL(1234567890, n);
 
         for (int i = 0; i < ITERATIONS; i++) {
             p = buf.c_str();
@@ -631,13 +631,13 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         s << boost::format("unsafe_fixed_atoul time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
 
-        BOOST_TEST_MESSAGE(s.str());
+        TEST_MESSAGE(s.str());
     }
     {
         cpu_timer t;
         const std::string buf("1234567890");
         long n;
-        BOOST_CHECK_EQUAL(1234567890, atoi(buf.c_str()));
+        CHECK_EQUAL(1234567890, atoi(buf.c_str()));
 
         for (int i = 0; i < ITERATIONS; i++)
             atoi2(buf, n);
@@ -648,231 +648,232 @@ BOOST_AUTO_TEST_CASE( test_convert_fast_atoi_speed )
         std::stringstream s;
         s << boost::format("              atoi time: %.3fs (%.3fus/call)")
             % ((double)t1 / 1000000000.0) % ((double)t1 / ITERATIONS / 1000.0);
-        BOOST_TEST_MESSAGE(s.str());
+        TEST_MESSAGE(s.str());
     }
 }
+#endif // UTXX_HAVE_BOOST_TIMER_TIMER_HPP
 
-BOOST_AUTO_TEST_CASE( test_convert_skip_left )
+TEST_CASE( test_convert_skip_left )
 {
     long n, m;
     char buf[] = {'1','2','3','4','5'};
     atoi_left(buf, n, '1');
     atoi_right(buf, m, '1');
-    BOOST_CHECK_EQUAL(2345, n);
-    BOOST_CHECK_EQUAL(12345, m);
+    CHECK_EQUAL(2345, n);
+    CHECK_EQUAL(12345, m);
 
     m = 0;
     atoi_right<long, 5>("12345", m, '5');
-    BOOST_CHECK_EQUAL(1234, m);
+    CHECK_EQUAL(1234, m);
 
     n = m = 0;
     atoi_left<long, 7> ("12345  ", n, ' ');
     atoi_right<long, 7>("  12345", m, ' ');
-    BOOST_CHECK_EQUAL(12345, n);
-    BOOST_CHECK_EQUAL(12345, m);
+    CHECK_EQUAL(12345, n);
+    CHECK_EQUAL(12345, m);
 
     n = m = 0;
     atoi_left<long, 9> ("  12345  ", n, ' ');
     atoi_right<long, 9>("  12345  ", m, ' ');
-    BOOST_CHECK_EQUAL(12345, n);
-    BOOST_CHECK_EQUAL(12345, m);
+    CHECK_EQUAL(12345, n);
+    CHECK_EQUAL(12345, m);
 
     n = m = 0;
     atoi_left<long, 7>("0012345", n, '0');
     atoi_right<long, 7>("1234500", m, '0');
-    BOOST_CHECK_EQUAL(12345, n);
-    BOOST_CHECK_EQUAL(12345, m);
+    CHECK_EQUAL(12345, n);
+    CHECK_EQUAL(12345, m);
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_ftoa )
+TEST_CASE( test_convert_ftoa )
 {
     char buf[32];
     union {double d; int64_t i;} f;
 
     f.d   = std::numeric_limits<double>::quiet_NaN();
     int n = ftoa_left(f.d, buf, sizeof(buf), 3, false);
-    BOOST_CHECK_EQUAL("nan", buf);
-    BOOST_CHECK_EQUAL(0x7ff8000000000000, f.i);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("nan", buf);
+    CHECK_EQUAL(0x7ff8000000000000, f.i);
+    CHECK_EQUAL(3, n);
 
     f.d = -std::numeric_limits<double>::quiet_NaN();
     n   = ftoa_left(f.d, buf, sizeof(buf), 3, false);
-    BOOST_CHECK_EQUAL("-nan", buf);
-    BOOST_CHECK_EQUAL(0xfff8000000000000, f.i);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("-nan", buf);
+    CHECK_EQUAL(0xfff8000000000000, f.i);
+    CHECK_EQUAL(4, n);
 
     f.d = std::numeric_limits<double>::signaling_NaN();
     n   = ftoa_left(f.d, buf, sizeof(buf), 3, false);
-    BOOST_CHECK_EQUAL("nan", buf);
-    BOOST_CHECK_EQUAL(0x7ff4000000000000, f.i);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("nan", buf);
+    CHECK_EQUAL(0x7ff4000000000000, f.i);
+    CHECK_EQUAL(3, n);
 
     f.d = -std::numeric_limits<double>::signaling_NaN();
     n   = ftoa_left(f.d, buf, sizeof(buf), 3, false);
-    BOOST_CHECK_EQUAL("-nan", buf);
-    BOOST_CHECK_EQUAL(0xfff4000000000000, f.i);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("-nan", buf);
+    CHECK_EQUAL(0xfff4000000000000, f.i);
+    CHECK_EQUAL(4, n);
 
     n = ftoa_left(0.6, buf, sizeof(buf), 3, false);
-    BOOST_CHECK_EQUAL("0.600", buf);
-    BOOST_CHECK_EQUAL(5, n);
+    CHECK_EQUAL("0.600", buf);
+    CHECK_EQUAL(5, n);
 
     n = ftoa_left(123.19, buf, sizeof(buf), 3, true);
-    BOOST_CHECK_EQUAL("123.19", buf);
-    BOOST_CHECK_EQUAL(6, n);
+    CHECK_EQUAL("123.19", buf);
+    CHECK_EQUAL(6, n);
 
     n = ftoa_left(0.999, buf, sizeof(buf), 2, false);
-    BOOST_CHECK_EQUAL("1.00", buf);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("1.00", buf);
+    CHECK_EQUAL(4, n);
 
     // Note that 1.005 is really 1.0049999999...
     n = ftoa_left(1.005, buf, sizeof(buf), 2, false);
-    BOOST_CHECK_EQUAL("1.00", buf);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("1.00", buf);
+    CHECK_EQUAL(4, n);
 
     n = ftoa_left(10.0, buf, sizeof(buf), 2, false);
-    BOOST_CHECK_EQUAL("10.00", buf);
-    BOOST_CHECK_EQUAL(5, n);
+    CHECK_EQUAL("10.00", buf);
+    CHECK_EQUAL(5, n);
 
     n = ftoa_left(10.0, buf, sizeof(buf), 0, false);
-    BOOST_CHECK_EQUAL("10", buf);
-    BOOST_CHECK_EQUAL(2, n);
+    CHECK_EQUAL("10", buf);
+    CHECK_EQUAL(2, n);
 
     n = ftoa_left(10.0, buf, sizeof(buf), 0, true);
-    BOOST_CHECK_EQUAL("10", buf);
-    BOOST_CHECK_EQUAL(2, n);
+    CHECK_EQUAL("10", buf);
+    CHECK_EQUAL(2, n);
 
     // Note that 1.005 is really 1.0049999999...
     n = ftoa_left(1.005, buf, sizeof(buf), 2, true);
-    BOOST_CHECK_EQUAL("1.0", buf);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("1.0", buf);
+    CHECK_EQUAL(3, n);
 
     n = ftoa_left(-1.005, buf, sizeof(buf), 2, false);
-    BOOST_CHECK_EQUAL("-1.00", buf);
-    BOOST_CHECK_EQUAL(5, n);
+    CHECK_EQUAL("-1.00", buf);
+    CHECK_EQUAL(5, n);
 
     n = ftoa_left(-1.005, buf, sizeof(buf), 2, true);
-    BOOST_CHECK_EQUAL("-1.0", buf);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("-1.0", buf);
+    CHECK_EQUAL(4, n);
 
     n = ftoa_left(0.145, buf, sizeof(buf), 1, true);
-    BOOST_CHECK_EQUAL("0.1", buf);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("0.1", buf);
+    CHECK_EQUAL(3, n);
 
     n = ftoa_left(-1.0, buf, sizeof(buf), 20, false);
-    BOOST_CHECK_EQUAL("-1.00000000000000000000", buf);
-    BOOST_CHECK_EQUAL(23, n);
+    CHECK_EQUAL("-1.00000000000000000000", buf);
+    CHECK_EQUAL(23, n);
 
     f.i = 0x7ff0000000000000ll;
     n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
-    BOOST_CHECK_EQUAL("inf", buf);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("inf", buf);
+    CHECK_EQUAL(3, n);
 
     f.i = 0xfff0000000000000ll; // The left-most sign bif means negative inf
     n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
-    BOOST_CHECK_EQUAL("-inf", buf);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("-inf", buf);
+    CHECK_EQUAL(4, n);
 
     f.i = 0x7ff0000000000001ll;
     n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
-    BOOST_CHECK_EQUAL("nan", buf);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("nan", buf);
+    CHECK_EQUAL(3, n);
 
     f.i = 0xfff0000000000001ll; // The left-most sign bif means negative nan
     n = ftoa_left(f.d, buf, sizeof(buf), 29, true);
-    BOOST_CHECK_EQUAL("-nan", buf);
-    BOOST_CHECK_EQUAL(4, n);
+    CHECK_EQUAL("-nan", buf);
+    CHECK_EQUAL(4, n);
 
     n = ftoa_left(1.0, buf, sizeof(buf), 29, true);
-    BOOST_CHECK_EQUAL("1.0", buf);
-    BOOST_CHECK_EQUAL(3, n);
+    CHECK_EQUAL("1.0", buf);
+    CHECK_EQUAL(3, n);
 
     n = ftoa_left(1.0, buf, sizeof(buf), 30, true);
-    BOOST_CHECK_EQUAL(-1, n);
+    CHECK_EQUAL(-1, n);
 
-    BOOST_CHECK_THROW(ftoa_right(1.0, buf, -4, 2), std::invalid_argument);
-    BOOST_CHECK_THROW(ftoa_right(1.0, buf,  4, 4), std::invalid_argument);
+    CHECK_THROW(ftoa_right(1.0, buf, -4, 2), std::invalid_argument);
+    CHECK_THROW(ftoa_right(1.0, buf,  4, 4), std::invalid_argument);
 
     ftoa_right(1.0, buf, 5, 2);
-    BOOST_CHECK_EQUAL(" 1.00", std::string(buf, 5));
+    CHECK_EQUAL(" 1.00", std::string(buf, 5));
     ftoa_right(-1.0, buf, 5, 2);
-    BOOST_CHECK_EQUAL("-1.00", std::string(buf, 5));
-    BOOST_CHECK_THROW(ftoa_right(-1.0, buf, 4, 2), std::invalid_argument);
+    CHECK_EQUAL("-1.00", std::string(buf, 5));
+    CHECK_THROW(ftoa_right(-1.0, buf, 4, 2), std::invalid_argument);
 
     ftoa_right(189.23, buf, 9, 2, '0');
-    BOOST_CHECK_EQUAL("000189.23", std::string(buf, 9));
+    CHECK_EQUAL("000189.23", std::string(buf, 9));
 
     ftoa_right(189.23, buf, 11, 4, '0');
-    BOOST_CHECK_EQUAL("000189.2300", std::string(buf, 11));
+    CHECK_EQUAL("000189.2300", std::string(buf, 11));
 
     ftoa_right(-1.8249376054, buf, 10, 5, ' ');
-    BOOST_CHECK_EQUAL("  -1.82494", std::string(buf, 10));
+    CHECK_EQUAL("  -1.82494", std::string(buf, 10));
 
     ftoa_right(-12.8249376, buf, 10, 5, ' ');
-    BOOST_CHECK_EQUAL(" -12.82494", std::string(buf, 10));
+    CHECK_EQUAL(" -12.82494", std::string(buf, 10));
 
     ftoa_right(-123.8249376, buf, 10, 5, ' ');
-    BOOST_CHECK_EQUAL("-123.82494", std::string(buf, 10));
+    CHECK_EQUAL("-123.82494", std::string(buf, 10));
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_itoa_right_string )
+TEST_CASE( test_convert_itoa_right_string )
 {
-    BOOST_CHECK_EQUAL("0001", (itoa_right<int, 4>(1, '0')));
-    BOOST_CHECK_EQUAL("0000", (itoa_right<int, 4>(0, '0')));
-    BOOST_CHECK_EQUAL("   0", (itoa_right<int, 4>(0, ' ')));
-    BOOST_CHECK_EQUAL("1",    (itoa_right<int, 10>(1)));
+    CHECK_EQUAL("0001", (itoa_right<int, 4>(1, '0')));
+    CHECK_EQUAL("0000", (itoa_right<int, 4>(0, '0')));
+    CHECK_EQUAL("   0", (itoa_right<int, 4>(0, ' ')));
+    CHECK_EQUAL("1",    (itoa_right<int, 10>(1)));
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_itoa_hex )
+TEST_CASE( test_convert_itoa_hex )
 {
     char  buf[6];
     char* p = buf;
 
-    BOOST_CHECK(itoa_hex(0xA23F, p, sizeof(buf)-1));
-    BOOST_CHECK_EQUAL("A23F", buf);
+    CHECK(itoa_hex(0xA23F, p, sizeof(buf)-1));
+    CHECK_EQUAL("A23F", buf);
 
     p = buf;
-    BOOST_CHECK(itoa_hex(0, p, sizeof(buf)-1));
+    CHECK(itoa_hex(0, p, sizeof(buf)-1));
 
     p = buf;
-    BOOST_CHECK(itoa_hex(0x12345678, p, sizeof(buf)-1) > int(sizeof(buf)-1));
+    CHECK(itoa_hex(0x12345678, p, sizeof(buf)-1) > int(sizeof(buf)-1));
 }
 
-BOOST_AUTO_TEST_CASE( test_convert_itoa_bits )
+TEST_CASE( test_convert_itoa_bits )
 {
-    BOOST_CHECK_EQUAL("10000000", (itoa_bits<uint64_t,true, 2>(1ul    << 63, true)));
-    BOOST_CHECK_EQUAL("11000000", (itoa_bits<uint64_t,true, 2>(0xc0ul << 56, true)));
+    CHECK_EQUAL("10000000", (itoa_bits<uint64_t,true, 2>(1ul    << 63, true)));
+    CHECK_EQUAL("11000000", (itoa_bits<uint64_t,true, 2>(0xc0ul << 56, true)));
 
-    BOOST_CHECK_EQUAL("11000000-00010111", (itoa_bits<uint64_t,true, 2>(0xc017ul << 48, true)));
+    CHECK_EQUAL("11000000-00010111", (itoa_bits<uint64_t,true, 2>(0xc017ul << 48, true)));
 
-    BOOST_CHECK_EQUAL(
+    CHECK_EQUAL(
         "00000010-00000000-00000000-00000000-00000000-00000000-00000000-00001000",
         (itoa_bits<uint64_t,true>(1ul << 57 | 1ul << 3)));
 
-    BOOST_CHECK_EQUAL("0xAB00000000000000",(itoa_bits<uint64_t,true,1>(0xab00ul << 48)));
-    BOOST_CHECK_EQUAL("0xAB00000000000000",(itoa_bits<uint64_t,true,-1>(0xab00ul << 48, true)));
-    BOOST_CHECK_EQUAL("10101011",          (itoa_bits<uint64_t,true,1>(0xab00ul << 48, true)));
-    BOOST_CHECK_EQUAL("0xABCD",            (itoa_bits<uint64_t,true,1>(0xabcd)));
-    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,1>(0xabcdef1234ul)));
-    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,2>(0xabcdef1234ul)));
-    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,7>(0xabcdef1234ul)));
+    CHECK_EQUAL("0xAB00000000000000",(itoa_bits<uint64_t,true,1>(0xab00ul << 48)));
+    CHECK_EQUAL("0xAB00000000000000",(itoa_bits<uint64_t,true,-1>(0xab00ul << 48, true)));
+    CHECK_EQUAL("10101011",          (itoa_bits<uint64_t,true,1>(0xab00ul << 48, true)));
+    CHECK_EQUAL("0xABCD",            (itoa_bits<uint64_t,true,1>(0xabcd)));
+    CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,1>(0xabcdef1234ul)));
+    CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,2>(0xabcdef1234ul)));
+    CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,true,7>(0xabcdef1234ul)));
 
     //------
 
-    BOOST_CHECK_EQUAL("10000000",          (itoa_bits<uint64_t,false, 2>(1ul << 7, true)));
-    BOOST_CHECK_EQUAL("11000000",          (itoa_bits<uint64_t,false, 2>(0xc0ul,   true)));
+    CHECK_EQUAL("10000000",          (itoa_bits<uint64_t,false, 2>(1ul << 7, true)));
+    CHECK_EQUAL("11000000",          (itoa_bits<uint64_t,false, 2>(0xc0ul,   true)));
 
-    BOOST_CHECK_EQUAL("11000000-00010111", (itoa_bits<uint64_t,false, 2>(0xc017, true)));
+    CHECK_EQUAL("11000000-00010111", (itoa_bits<uint64_t,false, 2>(0xc017, true)));
 
-    BOOST_CHECK_EQUAL(
+    CHECK_EQUAL(
         "00000010-00000000-00000000-00000000-00000000-00000000-00000000-00001000",
         (itoa_bits<uint64_t,false>(1ul << 57 | 1ul << 3)));
 
-    BOOST_CHECK_EQUAL("0xAB",              (itoa_bits<uint64_t,false,1>(0xab)));
-    BOOST_CHECK_EQUAL("10101011",          (itoa_bits<uint64_t,false,1>(0xab, true)));
-    BOOST_CHECK_EQUAL("0xABCD",            (itoa_bits<uint64_t,false,1>(0xabcd)));
-    BOOST_CHECK_EQUAL("0xAB00",            (itoa_bits<uint64_t,false,-1>(0xab00ul, true)));
-    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,1>(0xabcdef1234ul)));
-    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,2>(0xabcdef1234ul)));
-    BOOST_CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,7>(0xabcdef1234ul)));
+    CHECK_EQUAL("0xAB",              (itoa_bits<uint64_t,false,1>(0xab)));
+    CHECK_EQUAL("10101011",          (itoa_bits<uint64_t,false,1>(0xab, true)));
+    CHECK_EQUAL("0xABCD",            (itoa_bits<uint64_t,false,1>(0xabcd)));
+    CHECK_EQUAL("0xAB00",            (itoa_bits<uint64_t,false,-1>(0xab00ul, true)));
+    CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,1>(0xabcdef1234ul)));
+    CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,2>(0xabcdef1234ul)));
+    CHECK_EQUAL("0xABCDEF1234",      (itoa_bits<uint64_t,false,7>(0xabcdef1234ul)));
 }

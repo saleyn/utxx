@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/noncopyable.hpp>
+#include <utxx/noncopyable.hpp>
 #include <utxx/error.hpp>
 #include <signal.h>
 
@@ -42,7 +42,7 @@ namespace utxx
 
 /// Block all POSIX signals in the current scope.
 /// \sa signal_unblock
-class signal_block : private boost::noncopyable {
+class signal_block : private utxx::noncopyable {
     sigset_t m_orig_mask;
     bool     m_restore;
 
@@ -79,7 +79,7 @@ public:
 
 /// Unblock all POSIX signals in the current scope.
 /// \sa signal_block
-class signal_unblock : private boost::noncopyable {
+class signal_unblock : private utxx::noncopyable {
     sigset_t m_orig_mask;
     bool     m_restore;
 public:

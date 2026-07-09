@@ -38,15 +38,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/futex.hpp>
 #include <utxx/meta.hpp>
 
-#if __cplusplus >= 201103L
 #include <chrono>
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#else
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/condition_variable.hpp>
-#endif
 
 //-----------------------------------------------------------------------------
 
@@ -54,7 +49,6 @@ namespace utxx {
 namespace synch {
 
 // Use this event when futex is not available.
-#if __cplusplus >= 201103L
 
 class posix_event {
     std::atomic<long> m_count;
@@ -118,70 +112,6 @@ public:
              ? 0 : ETIMEDOUT;
     }
 };
-
-#else
-
-class posix_event {
-    volatile int m_count;
-    boost::mutex m_lock;
-    boost::condition_variable m_cond;
-    typedef boost::mutex::scoped_lock scoped_lock;
-
-public:
-    posix_event(bool initialize=true) {
-        if (initialize)
-            m_count = 1;
-    }
-
-    int  value() const { return m_count; }
-
-    void reset(int val = 1) {
-        scoped_lock g(m_lock);
-        m_count = val;
-    }
-
-    int signal() {
-        scoped_lock g(m_lock);
-        m_count = (m_count + 1) & 0xEFFFFFFF;
-        m_cond.notify_one();
-        return 0;
-    }
-
-    int signal_all() {
-        scoped_lock g(m_lock);
-        m_count = (m_count + 1) & 0xEFFFFFFF;
-        m_cond.notify_all();
-        return 0;
-    }
-
-    int wait(int* old_val = NULL) {
-        if (old_val && *old_val != m_count) {
-            *old_val = m_count;
-            return 0;
-        }
-        scoped_lock g(m_lock);
-        try { m_cond.wait(g); } catch(...) { return -1; }
-        return 0;
-    }
-
-    int wait(const boost::system_time& wait_until_abs_time, int* old_val = NULL) {
-        #if 0
-        if (old_val && *old_val != m_count) {
-            *old_val = m_count;
-            return 0;
-        }
-        #endif
-        scoped_lock g(m_lock);
-        try {
-            return m_cond.timed_wait(g, wait_until_abs_time) ? 0 : ETIMEDOUT;
-        } catch (std::exception&) {
-            return -1;
-        }
-    }
-
-};
-
-#endif
 
 #ifdef __linux__
 
@@ -362,20 +292,7 @@ public:
     }
 };
 
-#if __cplusplus >= 201103L
-
 typedef std::mutex mutex_lock;
-
-struct null_lock {
-    typedef std::lock_guard<null_lock> scoped_lock;
-    void lock()     {}
-    int  try_lock() { return 0; }
-    void unlock()   {}
-};
-
-#else
-
-typedef boost::mutex mutex_lock;
 
 struct null_lock {
     using scoped_lock     = std::lock_guard<null_lock>;
@@ -384,8 +301,6 @@ struct null_lock {
     int  try_lock() { return 0; }
     void unlock()   {}
 };
-
-#endif
 
 } // namespace synch
 } // namespace utxx

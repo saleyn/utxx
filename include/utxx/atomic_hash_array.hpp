@@ -43,15 +43,18 @@
  */
 
 #pragma once
+
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_ATOMIC_HASH_MAP
+
 #define _UTXX_ATOMICHASHARRAY_HPP_
 
 #include <atomic>
 #include <type_traits>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/thread_cached_int.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/noncopyable.hpp>
-
+#include <iterator>
+#include <utxx/noncopyable.hpp>
 
 namespace utxx {
 
@@ -66,7 +69,7 @@ class atomic_hash_map;
 template <class KeyT, class ValueT,
           class HashFcn  = std::hash<KeyT>,
           class EqualFcn = std::equal_to<KeyT>>
-class atomic_hash_array : boost::noncopyable {
+class atomic_hash_array : utxx::noncopyable {
     static_assert((std::is_convertible<KeyT, int32_t>::value ||
                    std::is_convertible<KeyT, int64_t>::value ||
                    std::is_convertible<KeyT, const void*>::value),
@@ -356,3 +359,5 @@ private:
 } // namespace utxx
 
 #include <utxx/atomic_hash_array.hxx>
+
+#endif // UTXX_HAVE_ATOMIC_HASH_MAP

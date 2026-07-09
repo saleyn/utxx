@@ -23,10 +23,8 @@
 #include <ifaddrs.h>
 #include <net/if.h>
 #include <regex>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/constants.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <algorithm>
+#include <cctype>
 #include <utxx/scope_exit.hpp>
 #include <utxx/error.hpp>
 #include <utxx/string.hpp>

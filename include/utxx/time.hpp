@@ -37,11 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/compiler_hints.hpp>
 #include <utxx/error.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
-#if __cplusplus >= 201103L
-#  include <chrono>
-#endif
+#include <chrono>
 
 namespace utxx {
 

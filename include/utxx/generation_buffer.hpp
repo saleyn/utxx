@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utility>
 #include <cassert>
 
-#ifdef UTXX_GENERATION_BUFFER_SHMEM
+#if defined(UTXX_GENERATION_BUFFER_SHMEM) && defined(UTXX_HAVE_BOOST)
 #include <boost/interprocess/managed_shared_memory.hpp>
 namespace BIPC = boost::interprocess;
 #endif

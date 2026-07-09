@@ -33,14 +33,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/variant_tree.hpp>
 #include <utxx/config_validator.hpp>
 #include <utxx/string.hpp>
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/date_time/posix_time/ptime.hpp>
-#include <boost/date_time/posix_time/conversion.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
+#include <algorithm>
+#include <cassert>
+#include <cctype>
+#include <ctime>
 #include <regex>
 #include <iomanip>
+
+#ifndef BOOST_ASSERT
+#  define BOOST_ASSERT(x) assert(x)
+#endif
 
 using namespace std;
 
@@ -112,8 +114,9 @@ std::string option::to_string() const {
 }
 
 std::string option::substitute_vars(const std::string& a_value) {
-    namespace pt = boost::posix_time;
-    struct tm tm = pt::to_tm(pt::second_clock::local_time());
+    struct tm tm;
+    time_t t = ::time(nullptr);
+    ::localtime_r(&t, &tm);
     return path::replace_env_vars(a_value, &tm);
 }
 
@@ -307,7 +310,11 @@ void validator::internal_fill_fallback_defaults
         if (a_path.empty()) return res;
 
         vector<string> parts;
-        boost::split(parts, a_path, boost::is_any_of("/"), boost::token_compress_on);
+        for (const char *p = a_path.c_str(), *e; *p; p = *e ? e+1 : e) {
+            while (*p && *p == '/') ++p;
+            e = p; while (*e && *e != '/') ++e;
+            if (e > p) parts.emplace_back(p, e);
+        }
 
         auto* map = &a_scope;
 

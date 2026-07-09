@@ -174,7 +174,7 @@ bool Blocking(int a_fd, bool a_block)
 bool IsUDSAlive(const std::string& a_uds_filename)
 {
   static const size_t s_max_sz    = sizeof(sockaddr_un::sun_path);
-  struct sockaddr_un  server_unix = {0};
+  struct sockaddr_un  server_unix = {};
   server_unix.sun_family          = AF_UNIX;
   strncpy(server_unix.sun_path, a_uds_filename.c_str(), s_max_sz);
   server_unix.sun_path[s_max_sz - 1] = '\0';

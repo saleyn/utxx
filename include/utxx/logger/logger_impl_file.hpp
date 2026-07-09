@@ -47,7 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/enum.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <boost/thread.hpp>
+#include <mutex>
 
 namespace utxx {
 
@@ -65,7 +65,7 @@ class logger_impl_file: public logger_impl {
     uint32_t     m_levels;
     mode_t       m_mode;
     int          m_fd;
-    boost::mutex m_mutex;
+    std::mutex m_mutex;
     bool         m_no_header;
     std::string  m_orig_filename;
     size_t       m_split_size;

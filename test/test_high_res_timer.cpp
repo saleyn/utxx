@@ -1,6 +1,6 @@
 // #define BOOST_TEST_MODULE high_res_timer_test 
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/high_res_timer.hpp>
 #include <utxx/cpu.hpp>
 #include <utxx/verbosity.hpp>
@@ -8,7 +8,7 @@
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( calibration_test )
+TEST_CASE( calibration_test )
 {
     int iter  = atoi(getenv("HR_ITERATIONS") ? getenv("HR_ITERATIONS") : "4");
     int us    = atoi(getenv("HR_USEC")       ? getenv("HR_USEC") : "250000");
@@ -20,15 +20,15 @@ BOOST_AUTO_TEST_CASE( calibration_test )
         printf("high_res_timer::calibrate(%d, %d) = %d\n", us, iter, bfreq);
     }
 
-    BOOST_CHECK((iter*us) > 4000000 ? bfreq >= afreq : true);
+    CHECK((iter*us) > 4000000 ? bfreq >= afreq : true);
 }
 
-BOOST_AUTO_TEST_CASE( get_cpu_time_test )
+TEST_CASE( get_cpu_time_test )
 {
     high_res_timer timer;
     int iterations = 1000000;
     int N = detail::cpu_count();
-    BOOST_REQUIRE(N > 0);
+    REQUIRE(N > 0);
     int cpus[64];
 
     memset(cpus, 0, sizeof(cpus));
@@ -75,16 +75,16 @@ BOOST_AUTO_TEST_CASE( get_cpu_time_test )
 
     if (verbosity::level() != VERBOSE_NONE)
         printf("gettimeofday latency = %llu\n", timer.elapsed_nsec_incr() / iterations);
-    BOOST_CHECK(true);
+    CHECK(true);
 }
 
 #include <sched.h>
 #include <unistd.h>
 
-BOOST_AUTO_TEST_CASE( cpu_calibration )
+TEST_CASE( cpu_calibration )
 {
     cpu_set_t cs;
-    BOOST_REQUIRE(sched_getaffinity (getpid (), sizeof (cs), &cs) >= 0);
+    REQUIRE(sched_getaffinity (getpid (), sizeof (cs), &cs) >= 0);
 
     int cpu = 0;
 
@@ -93,11 +93,11 @@ BOOST_AUTO_TEST_CASE( cpu_calibration )
             cpu_set_t cs2;
             CPU_ZERO (&cs2);
             CPU_SET (cpu, &cs2);
-            BOOST_REQUIRE(sched_setaffinity (getpid (), sizeof (cs2), &cs2) >= 0);
+            REQUIRE(sched_setaffinity (getpid (), sizeof (cs2), &cs2) >= 0);
             int cpu2 = sched_getcpu();
-            BOOST_REQUIRE(cpu2 > -1);   // if -1 && errno == ENOSYS
+            REQUIRE(cpu2 > -1);   // if -1 && errno == ENOSYS
                                         // => getcpu syscall not implemented
-            BOOST_REQUIRE_EQUAL(cpu, cpu2);
+            REQUIRE_EQUAL(cpu, cpu2);
 
             // Perform cpu-specific calibration
             {

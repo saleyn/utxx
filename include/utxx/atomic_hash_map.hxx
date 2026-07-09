@@ -345,15 +345,16 @@ template <class KeyT, class ValueT,
           class HashFcn, class EqualFcn, class Alloc, class SubMap, class PSubMap>
 template<class ContT, class IterVal, class SubIt>
 struct atomic_hash_map<KeyT, ValueT, HashFcn, EqualFcn, Alloc, SubMap, PSubMap>::ahm_iterator
-    : boost::iterator_facade<ahm_iterator<ContT,IterVal,SubIt>,
-                             IterVal,
-                             boost::forward_traversal_tag>
 {
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = IterVal;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = IterVal*;
+    using reference         = IterVal&;
+
     explicit ahm_iterator() : m_ahm(0) {}
 
-    // Conversion ctor for interoperability between const_iterator and
-    // iterator.  The enable_if<> magic keeps us well-behaved for
-    // is_convertible<> (v. the iterator_facade documentation).
+    // Conversion ctor for interoperability between const_iterator and iterator.
     template<class OtherContT, class OtherVal, class OtherSubIt>
     ahm_iterator(const ahm_iterator<OtherContT,OtherVal,OtherSubIt>& o,
                 typename std::enable_if<
@@ -363,14 +364,30 @@ struct atomic_hash_map<KeyT, ValueT, HashFcn, EqualFcn, Alloc, SubMap, PSubMap>:
         , m_subit (o.m_subit)
     {}
 
-    /*
-    * Returns the unique index that can be used for access directly
-    * into the data storage.
-    */
     uint32_t index() const {
         assert(!is_end());
         return m_ahm->encode_idx(m_submap, m_subit.index());
     }
+
+    IterVal& operator*()  const { return *m_subit; }
+    IterVal* operator->() const { return &*m_subit; }
+
+    ahm_iterator& operator++() {
+        assert(!is_end());
+        ++m_subit;
+        check_advance_to_next_submap();
+        return *this;
+    }
+    ahm_iterator operator++(int) { auto tmp = *this; ++*this; return tmp; }
+
+    bool operator==(const ahm_iterator& other) const {
+        if (m_ahm != other.m_ahm)
+            return false;
+        if (is_end() || other.is_end())
+            return is_end() == other.is_end();
+        return m_submap == other.m_submap && m_subit == other.m_subit;
+    }
+    bool operator!=(const ahm_iterator& other) const { return !(*this == other); }
 
 private:
     friend class atomic_hash_map;
@@ -382,26 +399,6 @@ private:
         check_advance_to_next_submap();
     }
 
-    friend class boost::iterator_core_access;
-
-    void increment() {
-        assert(!is_end());
-        ++m_subit;
-        check_advance_to_next_submap();
-    }
-
-    bool equal(const ahm_iterator& other) const {
-        if (m_ahm != other.m_ahm)
-            return false;
-
-        if (is_end() || other.is_end())
-            return is_end() == other.is_end();
-
-        return m_submap == other.m_submap && m_subit == other.m_subit;
-    }
-
-    IterVal& dereference() const { return *m_subit; }
-
     bool is_end() const { return m_ahm == nullptr; }
 
     void check_advance_to_next_submap() {
@@ -410,7 +407,6 @@ private:
 
         auto map = m_ahm->m_submaps[m_submap].load(std::memory_order_relaxed);
         if (m_subit == map->end()) {
-            // This sub iterator is done, advance to next one
             if (m_submap+1 >= m_ahm->m_alloc_num_maps.load(std::memory_order_acquire))
                 m_ahm = nullptr;
             else {
@@ -421,7 +417,6 @@ private:
         }
     }
 
-private:
     ContT*   m_ahm;
     uint32_t m_submap;
     SubIt    m_subit;

@@ -32,10 +32,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #ifdef UTXX_STANDALONE
 #   include <boost/assert.hpp>
-#   define BOOST_REQUIRE(a) BOOST_ASSERT(a);
-#   define BOOST_REQUIRE_EQUAL(a, b) BOOST_ASSERT(a == b);
+#   define REQUIRE(a) assert(a);
+#   define REQUIRE_EQUAL(a, b) assert(a == b);
 #else
-#   include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #endif
 #include <utxx/time_val.hpp>
 #include <utxx/container/clustered_map.hpp>
@@ -63,7 +63,7 @@ double sample() {
 #ifdef UTXX_STANDALONE
 int main(int argc, char* argv[]) {
 #else
-BOOST_AUTO_TEST_CASE( test_clustered_map ) {
+TEST_CASE( test_clustered_map ) {
 #endif
     cmap m;
     static const int s_data[][2] = {
@@ -75,38 +75,38 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
     for (size_t i=0; i < sizeof(s_data)/sizeof(s_data[0]); i++)
         m.insert(s_data[i][0], s_data[i][1]);
 
-    BOOST_REQUIRE_EQUAL(3u, m.group_count());
-    BOOST_REQUIRE_EQUAL(3u, m.item_count(1));
-    BOOST_REQUIRE_EQUAL(3u, m.item_count(65));
-    BOOST_REQUIRE_EQUAL(1u, m.item_count(129));
+    REQUIRE_EQUAL(3u, m.group_count());
+    REQUIRE_EQUAL(3u, m.item_count(1));
+    REQUIRE_EQUAL(3u, m.item_count(65));
+    REQUIRE_EQUAL(1u, m.item_count(129));
 
     for (size_t i = 0; i < sizeof(s_data)/sizeof(s_data[0]); i++) {
         int* p = m.at(s_data[i][0]);
-        BOOST_REQUIRE(p);
-        BOOST_REQUIRE_EQUAL(s_data[i][1], *p);
+        REQUIRE(p);
+        REQUIRE_EQUAL(s_data[i][1], *p);
     }
 
     int n = 0;
     for (cmap::iterator it = m.begin(), e = m.end(); it != e; ++it, ++n) {
-        BOOST_REQUIRE_EQUAL(s_data[n][0], (int)it.key());
-        BOOST_REQUIRE_EQUAL(s_data[n][1], it.data());
+        REQUIRE_EQUAL(s_data[n][0], (int)it.key());
+        REQUIRE_EQUAL(s_data[n][1], it.data());
     }
 
     int j = 0;
     m.for_each(visitor, j);
-    BOOST_REQUIRE_EQUAL(333, j);
+    REQUIRE_EQUAL(333, j);
 
-    BOOST_REQUIRE(m.erase(2));
-    BOOST_REQUIRE_EQUAL(2u, m.item_count(1));
-    BOOST_REQUIRE(m.erase(3));
-    BOOST_REQUIRE_EQUAL(3u, m.group_count());
-    BOOST_REQUIRE(m.erase(129));
-    BOOST_REQUIRE_EQUAL(2u, m.group_count());
-    BOOST_REQUIRE_EQUAL(0u, m.item_count(129));
+    REQUIRE(m.erase(2));
+    REQUIRE_EQUAL(2u, m.item_count(1));
+    REQUIRE(m.erase(3));
+    REQUIRE_EQUAL(3u, m.group_count());
+    REQUIRE(m.erase(129));
+    REQUIRE_EQUAL(2u, m.group_count());
+    REQUIRE_EQUAL(0u, m.item_count(129));
 
     m.clear();
 
-    BOOST_REQUIRE(m.empty());
+    REQUIRE(m.empty());
 
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 1000000;
     {
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
             sprintf(buf, "clustered_map speed=%.0f ins/s, latency=%.3fus, size=%lu",
                    (double)ITERATIONS/elapsed1, elapsed1 * 1000000 / ITERATIONS,
                    m.group_count());
-            BOOST_TEST_MESSAGE(buf);
+            TEST_MESSAGE(buf);
         }
 
         {
@@ -180,10 +180,10 @@ BOOST_AUTO_TEST_CASE( test_clustered_map ) {
             char buf[80];
             sprintf(buf, "std::map      speed=%.0f ins/s, latency=%.3fus, l1size=%lu",
                    (double)ITERATIONS/elapsed2, elapsed2 * 1000000 / ITERATIONS, m.size());
-            BOOST_TEST_MESSAGE(buf);
+            TEST_MESSAGE(buf);
         }
 
-        BOOST_TEST_MESSAGE("Performance(clustered_map / std::map) = " << elapsed2 / elapsed1);
+        TEST_MESSAGE("Performance(clustered_map / std::map) = " << elapsed2 / elapsed1);
     }
 
 #ifdef UTXX_STANDALONE

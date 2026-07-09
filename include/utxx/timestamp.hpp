@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/high_res_timer.hpp>
 #include <utxx/time_val.hpp>
-#include <boost/thread.hpp>
+#include <mutex>
 #include <time.h>
 
 #ifdef DEBUG_TIMESTAMP
@@ -60,7 +60,7 @@ class timestamp {
 protected:
     static const long DAY_NSEC = 86400L * 1000000000L;
 
-    static boost::mutex             s_mutex;
+    static std::mutex               s_mutex;
     static thread_local long        s_next_utc_midnight_nseconds;
     static thread_local long        s_next_local_midnight_nseconds;
     static thread_local long        s_utc_nsec_offset;

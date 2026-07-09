@@ -1,7 +1,7 @@
 //----------------------------------------------------------------------------
 /// \file  nchar.hpp
 //----------------------------------------------------------------------------
-/// \brief Character buffer that offers no padding when included into 
+/// \brief Character buffer that offers no padding when included into
 /// structures and automatic conversion to/from big endian representation.
 //----------------------------------------------------------------------------
 // Copyright (c) 2010 Serge Aleynikov <saleyn@gmail.com>
@@ -32,9 +32,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/static_assert.hpp>
-#include <boost/assert.hpp>
-#include <boost/noncopyable.hpp>
+#include <cassert>
+#include <cstdint>
 #include <algorithm>
 #include <string>
 #include <ostream>
@@ -49,9 +48,9 @@ namespace utxx {
 namespace detail {
 
     /**
-     * \brief A character buffer of size N storing data in 
+     * \brief A character buffer of size N storing data in
      * big endian format.
-     * The buffer allows for easy conversion between big endian and 
+     * The buffer allows for easy conversion between big endian and
      * native data representation.
      * The class doesn't provide constructors and assignment operator
      * overloads so that it can be included in unions.
@@ -60,7 +59,7 @@ namespace detail {
     class basic_nchar {
     protected:
         Char m_data[N];
-        BOOST_STATIC_ASSERT(N > 0);
+        static_assert(N > 0);
     public:
         void set(const Char (&a)[N])            { memcpy(m_data, a, N); }
         void set(const Char (&a)[N+1])          { memcpy(m_data, a, N); }
@@ -206,7 +205,7 @@ namespace detail {
             return res;
         }
 
-        /// Convert the double to a string representation aligned to left 
+        /// Convert the double to a string representation aligned to left
         /// with optional padding on the right.
         /// @param n is the number to convert
         /// @param a_precision number of digits abter decimal point
@@ -237,7 +236,7 @@ namespace detail {
         /// endian encoding.
         template <typename T, bool IsBigEndian = true>
         void from_binary(T a) {
-            BOOST_STATIC_ASSERT(sizeof(T) == N && 
+            static_assert(sizeof(T) == N &&
                 (sizeof(T) <= 8) && (sizeof(T) & 1) == 0);
             if (IsBigEndian) utxx::store_be(m_data, a);
             else
@@ -248,11 +247,11 @@ namespace detail {
                 #endif
         }
 
-        /// Return the result by treating the content as big 
+        /// Return the result by treating the content as big
         /// endian binary integer or double encoding.
         template <typename T, bool IsBigEndian = true>
         T to_binary() const {
-            BOOST_STATIC_ASSERT(sizeof(T) == N && 
+            static_assert(sizeof(T) == N &&
                 (sizeof(T) <= 8) && (sizeof(T) & 1) == 0);
             T n;
             if (IsBigEndian) utxx::cast_be(m_data, n);
@@ -277,9 +276,9 @@ namespace detail {
 } // namespace detail
 
 /**
- * \brief A character buffer of size N storing data in 
+ * \brief A character buffer of size N storing data in
  * big endian format.
- * The buffer allows for easy conversion between big endian and 
+ * The buffer allows for easy conversion between big endian and
  * native data representation.
  */
 template <int N, class Char = char>

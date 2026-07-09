@@ -30,13 +30,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
-
+#include <utxx/test_helper.hpp>
+#include <utxx/config.h>
+#include <utxx/buffer.hpp>
+#ifdef UTXX_HAVE_BOOST
 #include <utxx/buffered_queue.hpp>
+#endif
 
 namespace utxx {
 
-BOOST_AUTO_TEST_CASE( test_io_buffer )
+TEST_CASE( test_io_buffer )
 {
     basic_io_buffer<10> v;
 
@@ -44,47 +47,47 @@ BOOST_AUTO_TEST_CASE( test_io_buffer )
 
     dynamic_io_buffer& b = v.to_dynamic();
 
-    BOOST_CHECK_EQUAL(4u,  b.size());
-    BOOST_CHECK_EQUAL(6u,  b.capacity());
-    BOOST_CHECK_EQUAL(10u, b.max_size());
-    BOOST_REQUIRE(!b.allocated());
+    CHECK_EQUAL(4u,  b.size());
+    CHECK_EQUAL(6u,  b.capacity());
+    CHECK_EQUAL(10u, b.max_size());
+    REQUIRE(!b.allocated());
 
     dynamic_io_buffer c(b);
-    BOOST_CHECK_EQUAL(4u,  c.size());
-    BOOST_CHECK_EQUAL(6u,  c.capacity());
-    BOOST_CHECK_EQUAL(10u, c.max_size());
-    BOOST_REQUIRE(c.allocated());
+    CHECK_EQUAL(4u,  c.size());
+    CHECK_EQUAL(6u,  c.capacity());
+    CHECK_EQUAL(10u, c.max_size());
+    REQUIRE(c.allocated());
 
     b.read(2);
     b.reserve(16);
-    BOOST_REQUIRE(b.allocated());
-    BOOST_CHECK_EQUAL(18, b.max_size());
-    BOOST_CHECK_EQUAL(16, b.capacity());
-    BOOST_CHECK_EQUAL(2,  b.size());
-    BOOST_CHECK_EQUAL("cd", std::string(b.rd_ptr(), b.size()));
+    REQUIRE(b.allocated());
+    CHECK_EQUAL(18, b.max_size());
+    CHECK_EQUAL(16, b.capacity());
+    CHECK_EQUAL(2,  b.size());
+    CHECK_EQUAL("cd", std::string(b.rd_ptr(), b.size()));
 
     auto e = basic_io_buffer<10>();
     e.reserve(16);
-    BOOST_REQUIRE(e.allocated());
+    REQUIRE(e.allocated());
     e.write("abcdef", 6);
     e.read(2);
 
-    BOOST_CHECK_EQUAL(16u, e.max_size());
-    BOOST_CHECK_EQUAL(10u, e.capacity());
-    BOOST_CHECK_EQUAL(4,  e.size());
-    BOOST_CHECK_EQUAL("cdef", std::string(e.rd_ptr(), e.size()));
+    CHECK_EQUAL(16u, e.max_size());
+    CHECK_EQUAL(10u, e.capacity());
+    CHECK_EQUAL(4,  e.size());
+    CHECK_EQUAL("cdef", std::string(e.rd_ptr(), e.size()));
 
     auto d = std::move(e);
-    BOOST_REQUIRE(!e.allocated());
-    BOOST_REQUIRE( d.allocated());
-    BOOST_CHECK_EQUAL(4,      d.size());
-    BOOST_CHECK_EQUAL("cdef", std::string(d.rd_ptr(), d.size()));
-    BOOST_REQUIRE(e.empty());
+    REQUIRE(!e.allocated());
+    REQUIRE( d.allocated());
+    CHECK_EQUAL(4,      d.size());
+    CHECK_EQUAL("cdef", std::string(d.rd_ptr(), d.size()));
+    REQUIRE(e.empty());
 }
 
-#if (BOOST_VERSION < 107000)
+#if defined(UTXX_HAVE_BOOST) && (BOOST_VERSION < 107000)
 
-BOOST_AUTO_TEST_CASE( test_bufferred_queue )
+TEST_CASE( test_bufferred_queue )
 {
     buffered_queue<> v;
     buffered_queue<true> l_buf_owner;

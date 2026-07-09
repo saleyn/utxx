@@ -9,11 +9,13 @@
 // For more information, see www.boost.org
 // ----------------------------------------------------------------------------
 
-#include <boost/test/unit_test.hpp>
-#include <boost/property_tree/detail/ptree_utils.hpp>
-#include <boost/format.hpp>
+#include <utxx/config.h>
+#include <utxx/test_helper.hpp>
+
 #include <utxx/variant_tree_parser.hpp>
 #include <utxx/time_val.hpp>
+#include <filesystem>
+#include <cstdio>
 #include <typeinfo>  //for 'typeid' to work
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,7 +24,7 @@
 namespace utxx {
 namespace test {
 
-namespace bpd = boost::property_tree::detail;
+namespace fs = std::filesystem;
 
 const char *ok_data_00 =
     "k1 # No data\n"
@@ -226,7 +228,6 @@ typename Ptree::size_type calc_total_data_size(const Ptree &pt)
 template<class Ptree>
 Ptree get_test_ptree()
 {
-    using namespace boost::property_tree;
     typedef typename Ptree::key_type::value_type Ch;
     Ptree pt;
     pt.put_value(std::basic_string<Ch>("data0"));
@@ -243,11 +244,11 @@ public:
     {
         if (test_data && filename)
         {
-            m_name = (boost::filesystem::temp_directory_path() / filename).string();
+            m_name = (fs::temp_directory_path() / filename).string();
             std::ofstream stream(m_name.c_str());
             using namespace std;
             stream.write(test_data, strlen(test_data));
-            BOOST_REQUIRE(stream.good());
+            REQUIRE(stream.good());
         }
     }
     ~test_file()
@@ -274,8 +275,6 @@ void generic_parser_test
     const char *filename_out
 )
 {
-    using namespace boost::property_tree;
-    using namespace boost::filesystem;
     typedef typename Ptree::key_type::value_type Ch;
 
     // Create test files
@@ -290,10 +289,10 @@ void generic_parser_test
 
     // Compare original with read
     if (pt != pt2) {
-        BOOST_TEST_MESSAGE("Expected tree:\n" << pt.to_string());
-        BOOST_TEST_MESSAGE("\nActual tree:\n" << pt2.to_string());
+        TEST_MESSAGE("Expected tree:\n" << pt.to_string());
+        TEST_MESSAGE("\nActual tree:\n" << pt2.to_string());
     }
-    BOOST_REQUIRE(pt == pt2);
+    REQUIRE(pt == pt2);
 }
 
 // Generic test for file parser with expected success
@@ -312,9 +311,8 @@ void generic_parser_test_ok
     unsigned int total_keys_size
 )
 {
-    using namespace boost::property_tree;
 
-    BOOST_TEST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
+    TEST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
 
     try
     {
@@ -334,21 +332,21 @@ void generic_parser_test_ok
         if (actual_total_size != total_size ||
             actual_data_size != total_data_size ||
             actual_keys_size != total_keys_size)
-            BOOST_TEST_MESSAGE(
+            TEST_MESSAGE(
                 "File: " << filename_1 << "Sizes: " <<
                 "total={" << actual_total_size << ',' << total_size << "}, " <<
                 "keys={"  << actual_data_size  << ',' << total_data_size << "}, " <<
                 "data={"  << actual_keys_size  << ',' << total_keys_size << "}");
 
         // Check total sizes
-        BOOST_CHECK_EQUAL(actual_total_size, total_size);
-        BOOST_CHECK_EQUAL(actual_data_size, total_data_size);
-        BOOST_CHECK_EQUAL(actual_keys_size, total_keys_size);
+        CHECK_EQUAL(actual_total_size, total_size);
+        CHECK_EQUAL(actual_data_size, total_data_size);
+        CHECK_EQUAL(actual_keys_size, total_keys_size);
 
     }
     catch (std::runtime_error &e)
     {
-        BOOST_ERROR(e.what());
+        TEST_FAIL(e.what());
     }
 }
 
@@ -366,7 +364,7 @@ void generic_parser_test_error
     unsigned long expected_error_line
 )
 {
-    BOOST_TEST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
+    TEST_MESSAGE("(progress) Starting parser test with file \"" << filename_1 << "\"");
 
     {
         // Create ptree as a copy of test ptree (to test if read failure does not damage ptree)
@@ -379,18 +377,18 @@ void generic_parser_test_error
                 test_data_1, test_data_2,
                 filename_1, filename_2, filename_out
             );
-            BOOST_ERROR("No required exception thrown");
+            TEST_FAIL("No required exception thrown");
         }
         catch (Error &e)
         {
-            if (expected_error_line != e.line())
-                BOOST_TEST_MESSAGE("Error test file: " << filename_1);
-            BOOST_CHECK_EQUAL(expected_error_line, e.line()); // Test line number
-            BOOST_REQUIRE(pt == get_test_ptree<Ptree>());   // Test if error damaged contents
+            if (expected_error_line != (unsigned long)e.line())
+                TEST_MESSAGE("Error test file: " << filename_1);
+            CHECK_EQUAL(expected_error_line, (unsigned long)e.line()); // Test line number
+            REQUIRE(pt == get_test_ptree<Ptree>());   // Test if error damaged contents
         }
         catch (std::exception& e)
         {
-            BOOST_ERROR("Invalid exception type '" << typeid(e).name() << "' thrown: "
+            TEST_FAIL("Invalid exception type '" << typeid(e).name() << "' thrown: "
                         << e.what());
             throw;
         }
@@ -401,8 +399,8 @@ void generic_parser_test_error
 struct ReadFunc
 {
     static bool inc_filename_resolver(std::string& a_name) {
-        a_name = (boost::filesystem::temp_directory_path() / a_name).string();
-        return boost::filesystem::exists(a_name);
+        a_name = (fs::temp_directory_path() / a_name).string();
+        return fs::exists(a_name);
     }
 
     template<class Ptree>
@@ -424,8 +422,7 @@ struct WriteFunc
 template<class Ptree>
 bool test_scon_parser()
 {
-    using namespace boost::property_tree;
-    using boost::property_tree::file_parser_error;
+    using utxx::ptree::file_parser_error;
 
     generic_parser_test_ok<Ptree, ReadFunc, WriteFunc>
     (
@@ -526,9 +523,9 @@ bool test_scon_parser()
     return true;
 }
 
-BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parser )
+TEST_CASE( test_variant_tree_scon_parser )
 {
-    BOOST_REQUIRE(test_scon_parser<utxx::variant_tree>());
+    REQUIRE(test_scon_parser<utxx::variant_tree>());
     //test_scon_parser<iptree>();
 //#ifndef BOOST_NO_CWCHAR
     //test_scon_parser<wptree>();
@@ -536,7 +533,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parser )
 //#endif
 }
 
-BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
+TEST_CASE( test_variant_tree_scon_parse_macros )
 {
     std::string home = utxx::path::home();
     std::string home_tmp = home + "/tmp";
@@ -557,17 +554,23 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
     localtime_r(&faketime, &now);
     gmtime_r(&faketime, &now_utc);
 
-    std::string stime = (boost::format("\"%d-%02d-%02d %02d:%02d:%02d\"")
-        % (1900+tm.tm_year) % (tm.tm_mon+1) % tm.tm_mday
-        % tm.tm_hour        % tm.tm_min     % tm.tm_sec).str();
+    auto fmt = [](const char* fmt, auto... args) {
+        char buf[256];
+        snprintf(buf, sizeof(buf), fmt, args...);
+        return std::string(buf);
+    };
 
-    std::string snow = (boost::format("\"%d-%02d-%02d %02d:%02d:%02d\"")
-        % (1900+now.tm_year) % (now.tm_mon+1) % now.tm_mday
-        % now.tm_hour        % now.tm_min     % now.tm_sec).str();
+    std::string stime = fmt("\"%d-%02d-%02d %02d:%02d:%02d\"",
+        1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday,
+        tm.tm_hour,      tm.tm_min,   tm.tm_sec);
 
-    std::string snow_utc = (boost::format("\"%d-%02d-%02d %02d:%02d:%02d\", utc=true")
-        % (1900+now_utc.tm_year) % (now_utc.tm_mon+1) % now_utc.tm_mday
-        % now_utc.tm_hour        % now_utc.tm_min     % now_utc.tm_sec).str();
+    std::string snow = fmt("\"%d-%02d-%02d %02d:%02d:%02d\"",
+        1900+now.tm_year, now.tm_mon+1, now.tm_mday,
+        now.tm_hour,      now.tm_min,   now.tm_sec);
+
+    std::string snow_utc = fmt("\"%d-%02d-%02d %02d:%02d:%02d\", utc=true",
+        1900+now_utc.tm_year, now_utc.tm_mon+1, now_utc.tm_mday,
+        now_utc.tm_hour,      now_utc.tm_min,   now_utc.tm_sec);
 //            % (1900+now_utc.year) % now_utc.tm_mon % now_utc.tm_mday
 //            % now_utc.tm_hour     % now_utc.tm_min % now_utc.tm_sec;
 
@@ -579,7 +582,7 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
             {
                 std::stringstream s;
                 t.dump(s, 2, false);
-                //BOOST_TEST_MESSAGE("Tree=====\n" << s.str());
+                //TEST_MESSAGE("Tree=====\n" << s.str());
             }
             return t.get<std::string>(key);
         }
@@ -590,48 +593,49 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_scon_parse_macros )
     };
 
     std::string home_tmp_file_time =
-        (boost::format("%s/tmp/file%d%02d%02d-%02d%02d.log")
-            % home % (1900+tm.tm_year) % (tm.tm_mon+1) % tm.tm_mday
-            % tm.tm_hour % tm.tm_min).str();
+        fmt("%s/tmp/file%d%02d%02d-%02d%02d.log",
+            home.c_str(), 1900+tm.tm_year, tm.tm_mon+1, tm.tm_mday,
+            tm.tm_hour, tm.tm_min);
     std::string home_tmp_file_now =
-        (boost::format("%s/tmp/file%d%02d%02d-%02d%02d.log")
-            % home % (1900+now.tm_year) % (now.tm_mon+1) % now.tm_mday
-            % now.tm_hour % now.tm_min).str();
+        fmt("%s/tmp/file%d%02d%02d-%02d%02d.log",
+            home.c_str(), 1900+now.tm_year, now.tm_mon+1, now.tm_mday,
+            now.tm_hour, now.tm_min);
     std::string home_tmp_file_now_utc =
-        (boost::format("%s/tmp/file%d%02d%02d-%02d%02d.log")
-            % home % (1900+now_utc.tm_year) % (now_utc.tm_mon+1) % now_utc.tm_mday
-            % now_utc.tm_hour % now_utc.tm_min).str();
-    std::string date = (boost::format("%d%02d%02d-%02d")
-            % (1900+tm.tm_year) % (tm.tm_mon+1) % tm.tm_mday % tm.tm_hour).str();
-    std::string date_now = (boost::format("%d%02d%02d-%02d")
-            % (1900+now.tm_year) % (now.tm_mon+1) % now.tm_mday % now.tm_hour).str();
-    std::string date_now_utc = (boost::format("%d%02d%02d-%02d")
-            % (1900+now_utc.tm_year) % (now_utc.tm_mon+1) % now_utc.tm_mday
-            % now_utc.tm_hour).str();
+        fmt("%s/tmp/file%d%02d%02d-%02d%02d.log",
+            home.c_str(), 1900+now_utc.tm_year, now_utc.tm_mon+1, now_utc.tm_mday,
+            now_utc.tm_hour, now_utc.tm_min);
+    std::string date     = fmt("%d%02d%02d-%02d",
+            1900+tm.tm_year,     tm.tm_mon+1,     tm.tm_mday,     tm.tm_hour);
+    std::string date_now = fmt("%d%02d%02d-%02d",
+            1900+now.tm_year,    now.tm_mon+1,    now.tm_mday,    now.tm_hour);
+    std::string date_now_utc = fmt("%d%02d%02d-%02d",
+            1900+now_utc.tm_year, now_utc.tm_mon+1, now_utc.tm_mday,
+            now_utc.tm_hour);
     std::string time_home_date = std::string("Time: ") + home + date;
 
-    BOOST_REQUIRE_EQUAL(home,                   t::get("k1 ${HOME}\n",      "k1"));
-    BOOST_REQUIRE_EQUAL("abc",                  t::get("k2 ${\"TTT\"}\n",   "k2"));
-    BOOST_REQUIRE_EQUAL("abc",                  t::get("k3 $env{TTT}\n",    "k3"));
-    BOOST_REQUIRE_EQUAL(home_tmp,               t::get("k4 $path{~/tmp}\n", "k4"));
-    BOOST_REQUIRE_EQUAL(home_tmp_file_time,     t::get("k5 $path{~/tmp/file%Y%m%d-%H%M.log}\n", "k5"));
-    BOOST_REQUIRE_EQUAL(home_tmp_file_now,      t::get("k6 $path{\"~/tmp/file%Y%m%d-%H%M.log\", now=",
+    REQUIRE_EQUAL(home,                   t::get("k1 ${HOME}\n",      "k1"));
+    REQUIRE_EQUAL("abc",                  t::get("k2 ${\"TTT\"}\n",   "k2"));
+    REQUIRE_EQUAL("abc",                  t::get("k3 $env{TTT}\n",    "k3"));
+    REQUIRE_EQUAL(home_tmp,               t::get("k4 $path{~/tmp}\n", "k4"));
+    REQUIRE_EQUAL(home_tmp_file_time,     t::get("k5 $path{~/tmp/file%Y%m%d-%H%M.log}\n", "k5"));
+    REQUIRE_EQUAL(home_tmp_file_now,      t::get("k6 $path{\"~/tmp/file%Y%m%d-%H%M.log\", now=",
                                                        snow, "}\n", "k6"));
-    BOOST_REQUIRE_EQUAL(home_tmp_file_now_utc,  t::get("k7 $path{\"~/tmp/file%Y%m%d-%H%M.log\", now=",
+    REQUIRE_EQUAL(home_tmp_file_now_utc,  t::get("k7 $path{\"~/tmp/file%Y%m%d-%H%M.log\", now=",
                                                        snow_utc, "}\n", "k7"));
-    BOOST_REQUIRE_EQUAL(home+"abc",             t::get("k8 \"${HOME}${TTT}\"\n", "k8"));
-    BOOST_CHECK_THROW  (t::get("k9 ${HOME}${TTT}\n", "k9"), boost::property_tree::file_parser_error);
-    BOOST_REQUIRE_EQUAL(home+" abc",            t::get("k10 \"${HOME} $env{TTT}\"\n", "k10"));
-    BOOST_REQUIRE_EQUAL(date,                   t::get("k11 $date{\"%Y%m%d-%H\"}\n", "k11"));
-    BOOST_REQUIRE_EQUAL(date_now,               t::get("k12 $date{\"%Y%m%d-%H\", now=", snow,     "}\n", "k12"));
-    BOOST_REQUIRE_EQUAL(date_now_utc,           t::get("k13 $date{'%Y%m%d-%H', now=", snow_utc, "}\n", "k13"));
-    BOOST_REQUIRE_EQUAL(time_home_date,         t::get("k14 \"Time: ${HOME}$date{'%Y%m%d-%H'}\"\n", "k14"));
-    BOOST_REQUIRE_EQUAL(home+"-abc/file.log",   t::get("k15 $path{'${HOME}-${TTT}/file.log'}", "k15"));
-    BOOST_REQUIRE_EQUAL(path::program::abs_path()+"/f", t::get("k16 $path{'${EXEPATH}/f'}", "k16"));
+    REQUIRE_EQUAL(home+"abc",             t::get("k8 \"${HOME}${TTT}\"\n", "k8"));
+    CHECK_THROW(t::get("k9 ${HOME}${TTT}\n", "k9"), utxx::ptree::file_parser_error);
+    REQUIRE_EQUAL(home+" abc",            t::get("k10 \"${HOME} $env{TTT}\"\n", "k10"));
+    REQUIRE_EQUAL(date,                   t::get("k11 $date{\"%Y%m%d-%H\"}\n", "k11"));
+    REQUIRE_EQUAL(date_now,               t::get("k12 $date{\"%Y%m%d-%H\", now=", snow,     "}\n", "k12"));
+    REQUIRE_EQUAL(date_now_utc,           t::get("k13 $date{'%Y%m%d-%H', now=", snow_utc, "}\n", "k13"));
+    REQUIRE_EQUAL(time_home_date,         t::get("k14 \"Time: ${HOME}$date{'%Y%m%d-%H'}\"\n", "k14"));
+    REQUIRE_EQUAL(home+"-abc/file.log",   t::get("k15 $path{'${HOME}-${TTT}/file.log'}", "k15"));
+    REQUIRE_EQUAL(path::program::abs_path()+"/f", t::get("k16 $path{'${EXEPATH}/f'}", "k16"));
 
 }
 
-BOOST_AUTO_TEST_CASE( test_variant_tree_json_parser )
+#ifdef UTXX_HAVE_BOOST
+TEST_CASE( test_variant_tree_json_parser )
 {
     // Note: JSON parser's translator should have int suffixes disabled, so
     // "7K" should be interpreted as a string
@@ -639,21 +643,21 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_json_parser )
     {
         variant_tree c;
         try   { read_config(s, c, FORMAT_JSON); }
-        catch (...) { BOOST_REQUIRE(false); }
+        catch (...) { REQUIRE(false); }
 
         //std::cout << c.to_string() << std::endl;
         auto x = c.try_get("x", UTXX_SRC);
         auto y = c.try_get("y", UTXX_SRC);
         auto z = c.try_get("z", UTXX_SRC);
-        BOOST_REQUIRE(!x.is_null());
-        BOOST_REQUIRE(!y.is_null());
-        BOOST_REQUIRE(!z.is_null());
-        BOOST_REQUIRE(x.is_string());
-        BOOST_REQUIRE(y.is_string());
-        BOOST_REQUIRE(z.is_int());
-        BOOST_REQUIRE_EQUAL("6E", x.to_str());
-        BOOST_REQUIRE_EQUAL("7K", y.to_str());
-        BOOST_REQUIRE_EQUAL(1,    z.to_int());
+        REQUIRE(!x.is_null());
+        REQUIRE(!y.is_null());
+        REQUIRE(!z.is_null());
+        REQUIRE(x.is_string());
+        REQUIRE(y.is_string());
+        REQUIRE(z.is_int());
+        REQUIRE_EQUAL("6E", x.to_str());
+        REQUIRE_EQUAL("7K", y.to_str());
+        REQUIRE_EQUAL(1,    z.to_int());
     }
     {
         // Rewind the stream
@@ -668,14 +672,15 @@ BOOST_AUTO_TEST_CASE( test_variant_tree_json_parser )
         }
         catch (std::runtime_error& e) {
             std::cerr << "Error reading JSON config: " << e.what() << std::endl;
-            BOOST_REQUIRE(false);
+            REQUIRE(false);
         }
 
         auto z = cc.try_get("z", UTXX_SRC);
-        BOOST_REQUIRE(!z.is_null());
-        BOOST_REQUIRE(z.is_string());
-        BOOST_REQUIRE_EQUAL("1", z.to_str());
+        REQUIRE(!z.is_null());
+        REQUIRE(z.is_string());
+        REQUIRE_EQUAL("1", z.to_str());
     }
 }
+#endif // UTXX_HAVE_BOOST
 
 }} // namespace utxx::test

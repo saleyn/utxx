@@ -33,7 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <stdarg.h>
 #include <syslog.h>
 #include <thread>
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <cctype>
 #ifndef UTXX_SKIP_LOG_MACROS
 #   define __UTXX_TEMP_SET_UTXX_SKIP_LOG_MACROS__
 #   define UTXX_SKIP_LOG_MACROS
@@ -51,7 +52,7 @@ static logger_impl_mgr::registrar reg("syslog", f);
 static int parse_syslog_facility(const std::string& facility) 
 {
     std::string s = facility;
-    boost::to_lower(s);
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
     if      (s == "log-user")   return LOG_USER;
     else if (s == "log-local0") return LOG_LOCAL0;
     else if (s == "log-local1") return LOG_LOCAL1;

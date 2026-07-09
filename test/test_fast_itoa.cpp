@@ -32,37 +32,37 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/config.h>
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/fast_itoa.hpp>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_fast_itoa )
+TEST_CASE( test_fast_itoa )
 {
     char buf[20];
     auto p = fast_itoa(12345,  buf);
-    BOOST_CHECK_EQUAL("12345", buf);
-    BOOST_CHECK_EQUAL(5, p - buf);
+    CHECK_EQUAL("12345", buf);
+    CHECK_EQUAL(5, p - buf);
 
     p = fast_itoa(0,  buf);
-    BOOST_CHECK_EQUAL("0", buf);
-    BOOST_CHECK_EQUAL(1, p - buf);
+    CHECK_EQUAL("0", buf);
+    CHECK_EQUAL(1, p - buf);
 
     p = fast_itoa(-1,  buf);
-    BOOST_CHECK_EQUAL("-1", buf);
-    BOOST_CHECK_EQUAL(2, p - buf);
+    CHECK_EQUAL("-1", buf);
+    CHECK_EQUAL(2, p - buf);
 
     p = fast_itoa(12345u,  buf);
-    BOOST_CHECK_EQUAL("12345", buf);
-    BOOST_CHECK_EQUAL(5, p - buf);
+    CHECK_EQUAL("12345", buf);
+    CHECK_EQUAL(5, p - buf);
 
     p = fast_itoa(0u,  buf);
-    BOOST_CHECK_EQUAL("0", buf);
-    BOOST_CHECK_EQUAL(1, p - buf);
+    CHECK_EQUAL("0", buf);
+    CHECK_EQUAL(1, p - buf);
 
     p = fast_itoa(-123456781234545L,  buf);
-    BOOST_CHECK_EQUAL("-123456781234545", buf);
-    BOOST_CHECK_EQUAL(16, p - buf);
+    CHECK_EQUAL("-123456781234545", buf);
+    CHECK_EQUAL(16, p - buf);
 }
 
 

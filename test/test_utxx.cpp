@@ -30,10 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#define BOOST_TEST_MODULE test_utxx
-
-#include <boost/test/unit_test.hpp>
-
+#include <utxx/test_helper.hpp>
 #include <utxx/detail/handler_traits.hpp>
 
 struct Msg1;
@@ -55,28 +52,31 @@ struct Processor3 {
     void on_message(const Msg1&);
 };
 
-BOOST_AUTO_TEST_CASE( test_handler_traits )
+TEST_CASE( test_handler_traits )
 {
     using namespace utxx;
 
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg1>::on_packet));
-    BOOST_REQUIRE_EQUAL(true,  (bool)(has_method<Processor1, Msg1>::on_data));
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg1>::on_message));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg1>::on_packet));
+    REQUIRE_EQUAL(true,  (bool)(has_method<Processor1, Msg1>::on_data));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg1>::on_message));
 
-    BOOST_REQUIRE_EQUAL(true,  (bool)(has_method<Processor1, Msg2>::on_packet));
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg2>::on_data));
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg2>::on_message));
+    REQUIRE_EQUAL(true,  (bool)(has_method<Processor1, Msg2>::on_packet));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg2>::on_data));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg2>::on_message));
 
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg3>::on_packet));
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg3>::on_data));
-    BOOST_REQUIRE_EQUAL(true,  (bool)(has_method<Processor1, Msg3>::on_message));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg3>::on_packet));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor1, Msg3>::on_data));
+    REQUIRE_EQUAL(true,  (bool)(has_method<Processor1, Msg3>::on_message));
 
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor2, Msg1>::on_packet));
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor2, Msg1>::on_data));
-    BOOST_REQUIRE_EQUAL(false, (bool)(has_method<Processor2, Msg1>::on_message));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor2, Msg1>::on_packet));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor2, Msg1>::on_data));
+    REQUIRE_EQUAL(false, (bool)(has_method<Processor2, Msg1>::on_message));
 
-    BOOST_REQUIRE_EQUAL(true,  (bool)(has_method<Processor3, Msg1>::on_packet));
-    BOOST_REQUIRE_EQUAL(true,  (bool)(has_method<Processor3, Msg1>::on_data));
-    BOOST_REQUIRE_EQUAL(true,  (bool)(has_method<Processor3, Msg1>::on_message));
+    REQUIRE_EQUAL(true,  (bool)(has_method<Processor3, Msg1>::on_packet));
+    REQUIRE_EQUAL(true,  (bool)(has_method<Processor3, Msg1>::on_data));
+    REQUIRE_EQUAL(true,  (bool)(has_method<Processor3, Msg1>::on_message));
 }
 
+int main(int argc, char* argv[]) {
+    return test_harness::run_all(argc, argv);
+}

@@ -31,7 +31,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 #include <utxx/logger/logger_util.hpp>
-#include <boost/algorithm/string.hpp>
+#include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <sstream>
 #include <vector>
 
@@ -141,8 +143,11 @@ std::string log_levels_to_str(uint32_t a_levels) noexcept
 int parse_log_levels(const std::string& a_levels)
 {
     std::vector<std::string> str_levels;
-    boost::split(str_levels, a_levels, boost::is_any_of(" |,;"),
-        boost::algorithm::token_compress_on);
+    for (const char *p = a_levels.c_str(), *e; *p; p = *e ? e+1 : e) {
+        while (*p && strchr(" |,;", *p)) ++p;
+        e = p; while (*e && !strchr(" |,;", *e)) ++e;
+        if (e > p) str_levels.emplace_back(p, e);
+    }
     int result = LEVEL_NONE;
     for (std::vector<std::string>::iterator it=str_levels.begin();
         it != str_levels.end(); ++it)
@@ -155,7 +160,8 @@ log_level parse_log_level(const std::string& a_level)
 {
     if (a_level.empty()) return LEVEL_NONE;
 
-    auto s = boost::to_upper_copy(a_level);
+    auto s = a_level;
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::toupper(c); });
     if (s == "WIRE")     return LEVEL_DEBUG;  // Backward compatibility
     if (s == "NONE" ||
         s == "FALSE")    return LEVEL_NONE;

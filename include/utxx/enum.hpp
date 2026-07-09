@@ -32,6 +32,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+#include <utxx/string.hpp>
+#include <cassert>
+
+#ifdef UTXX_HAVE_BOOST
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/preprocessor/seq/enum.hpp>
@@ -47,9 +52,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/preprocessor/control/expr_iif.hpp>
 #include <utxx/detail/enum_helper.hpp>
-#include <utxx/string.hpp>
-#include <utxx/config.h>
-#include <cassert>
 
 //------------------------------------------------------------------------------
 /// Strongly typed reflectable enum declaration
@@ -275,3 +277,5 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                                                                                \
         type m_val;                                                            \
     }
+
+#endif // UTXX_HAVE_BOOST

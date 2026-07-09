@@ -11,13 +11,13 @@
 #ifndef _UTXX_VARIANT_TREE_SCON_PARSER_HPP_
 #define _UTXX_VARIANT_TREE_SCON_PARSER_HPP_
 
+#include <utxx/config.h>
+
 //#include <utxx/variant_tree.hpp>
 #include <utxx/variant.hpp>
 #include <utxx/string.hpp>
 #include <utxx/path.hpp>
-#include <boost/property_tree/detail/file_parser_error.hpp>
-#include <boost/property_tree/detail/info_parser_writer_settings.hpp>
-#include <boost/filesystem.hpp>
+#include <utxx/ptree.hpp>
 #include <functional>
 #include <iterator>
 #include <string>
@@ -183,7 +183,7 @@ namespace detail {
             // Check if stack has initial size, otherwise some {'s have not been closed
             if (stack.size() != 1)
                 BOOST_PROPERTY_TREE_THROW(
-                    boost::property_tree::file_parser_error(
+                    utxx::ptree::file_parser_error(
                         "unmatched {", filename, lineno));
         }
 
@@ -199,12 +199,12 @@ namespace detail {
                     std::getline(stream, last_line);
                     if (!stream.good() && !stream.eof())
                         BOOST_PROPERTY_TREE_THROW(
-                            boost::property_tree::file_parser_error(
+                            utxx::ptree::file_parser_error(
                                 "read error", filename, lineno));
                     text = last_line.c_str();
                 }
 
-                BOOST_ASSERT(text);
+                assert(text);
 
                 internal_parse_line();
             }
@@ -226,7 +226,7 @@ namespace detail {
                 if (iseol()) {
                     if (state == s_data) // Key =   # No data before comnnent not allowed
                         BOOST_PROPERTY_TREE_THROW(
-                            boost::property_tree::file_parser_error(
+                            utxx::ptree::file_parser_error(
                                 "key is missing value", filename, lineno));
                     if (state == s_data_delim)  // Key     # With no data before comment
                         state = s_kv_delim;
@@ -279,7 +279,7 @@ namespace detail {
 
                             if (recursive_depth > 100)
                                 BOOST_PROPERTY_TREE_THROW(
-                                    boost::property_tree::file_parser_error(
+                                    utxx::ptree::file_parser_error(
                                         "recursive depth too large, "
                                         "probably recursive include",
                                         filename, lineno));
@@ -297,7 +297,7 @@ namespace detail {
 
                             if (it == temp.end())
                                 BOOST_PROPERTY_TREE_THROW(
-                                    boost::property_tree::file_parser_error(
+                                    utxx::ptree::file_parser_error(
                                         "missing required '$' directive", filename, lineno));
 
                             bool err = false;
@@ -308,7 +308,7 @@ namespace detail {
                                 // Expecting the following macro format: $NAME{...}
                                 if (!it->second.data().is_null() || it->second.empty())
                                     BOOST_PROPERTY_TREE_THROW(
-                                        boost::property_tree::file_parser_error(
+                                        utxx::ptree::file_parser_error(
                                             std::string("Invalid format of macro '")
                                             + it->first + "': " + orig_text,
                                             filename, lineno));
@@ -325,7 +325,7 @@ namespace detail {
 
                             if (err)
                                 BOOST_PROPERTY_TREE_THROW(
-                                    boost::property_tree::file_parser_error(
+                                    utxx::ptree::file_parser_error(
                                         str_t("invalid '$' directive: ") + it->first,
                                         filename, lineno));
 
@@ -342,7 +342,7 @@ namespace detail {
                                         std::make_pair(CS_ENV, Ptree()))->second);
                                 else
                                     BOOST_PROPERTY_TREE_THROW(
-                                        boost::property_tree::file_parser_error(
+                                        utxx::ptree::file_parser_error(
                                             "unexpected {", filename, lineno));
                             }
                             stack.push(last);
@@ -353,7 +353,7 @@ namespace detail {
                         {
                             if (stack.size() <= 1)
                                 BOOST_PROPERTY_TREE_THROW(
-                                    boost::property_tree::file_parser_error(
+                                    utxx::ptree::file_parser_error(
                                         "unmatched }", filename, lineno));
                             stack.pop();
                             last = NULL;
@@ -367,7 +367,7 @@ namespace detail {
                                 // This is the case of "{ key, }" or "{k1 d1, , k2 ...}"
                                 // but not             "{ ,key=value }"
                                 BOOST_PROPERTY_TREE_THROW(
-                                    boost::property_tree::file_parser_error(
+                                    utxx::ptree::file_parser_error(
                                         std::string("unexpected key-value ',' "
                                                     "delimiter: ") + text,
                                         filename, lineno));
@@ -401,7 +401,7 @@ namespace detail {
                     case s_data:
                     {
                         // Last ptree must be defined because we are going to add data to it
-                        BOOST_ASSERT(last);
+                        assert(last);
 
                         if (*text == Ch('{'))   // Brace opening found
                         {
@@ -414,7 +414,7 @@ namespace detail {
                         {
                             if (stack.size() <= 1)
                                 BOOST_PROPERTY_TREE_THROW(
-                                    boost::property_tree::file_parser_error(
+                                    utxx::ptree::file_parser_error(
                                         "unmatched }", filename, lineno));
                             stack.pop();
                             last = NULL;
@@ -436,7 +436,7 @@ namespace detail {
                     case s_data_cont:
                     {
                         // Last ptree must be defined because we are going to update its data
-                        BOOST_ASSERT(last);
+                        assert(last);
 
                         // Continuation must be wrapped in quotes
                         if (isquote())
@@ -456,7 +456,7 @@ namespace detail {
                         }
                         else
                             BOOST_PROPERTY_TREE_THROW(
-                                boost::property_tree::file_parser_error(
+                                utxx::ptree::file_parser_error(
                                     "expected \" after \\ in previous line",
                                     filename, lineno));
 
@@ -464,7 +464,7 @@ namespace detail {
 
                     // Should never happen
                     default:
-                        BOOST_ASSERT(0);
+                        assert(0);
                 }
             }
         }
@@ -480,7 +480,7 @@ namespace detail {
             if (inc_name.empty() && !node.empty()) {
                 if (!node.data().is_null())
                     BOOST_PROPERTY_TREE_THROW(
-                        boost::property_tree::file_parser_error(
+                        utxx::ptree::file_parser_error(
                             std::string(
                                 "$include filename node cannot contain data") +
                                 orig_text,
@@ -490,7 +490,7 @@ namespace detail {
 
             if (inc_name.empty())
                 BOOST_PROPERTY_TREE_THROW(
-                    boost::property_tree::file_parser_error(
+                    utxx::ptree::file_parser_error(
                         std::string(
                             "$include directive missing file name: ") +
                             orig_text,
@@ -516,7 +516,7 @@ namespace detail {
             std::basic_ifstream<Ch> inc_stream(inc_name.c_str());
             if (!inc_stream.good())
                 BOOST_PROPERTY_TREE_THROW(
-                    boost::property_tree::file_parser_error(
+                    utxx::ptree::file_parser_error(
                         std::string(found ? "cannot open include file"
                                         : "include file not found")
                         + ": '" + inc_name + "'",
@@ -535,16 +535,16 @@ namespace detail {
                            resolver);
 
             if (!inc_root.empty()) {
-                boost::optional<Ptree&> tt = temp.get_child_optional(inc_root);
+                auto tt = temp.get_child_optional(inc_root);
 
                 if (!tt)
                     BOOST_PROPERTY_TREE_THROW(
-                        boost::property_tree::file_parser_error(
+                        utxx::ptree::file_parser_error(
                             std::string("required include root path not found: ") +
                                 convert_chtype(inc_root.dump()),
                             inc_name, inc_lineno));
                 for (typename Ptree::const_iterator
-                        tit = tt->begin(), e = tt->end(); tit != e; ++tit)
+                        tit = tt->get().begin(), e = tt->get().end(); tit != e; ++tit)
                     last = static_cast<Ptree*>(&stack.top()->push_back(*tit)->second);
             }
         }
@@ -597,7 +597,7 @@ namespace detail {
                 if (*b == Ch('\\')) {
                     if (++b == text)
                         BOOST_PROPERTY_TREE_THROW(
-                            boost::property_tree::file_parser_error(
+                            utxx::ptree::file_parser_error(
                                 "character expected after backslash", filename, lineno));
                     else if (*b == Ch('0')) result << Ch('\0');
                     else if (*b == Ch('a')) result << Ch('\a');
@@ -613,7 +613,7 @@ namespace detail {
                     else if (*b == Ch('\\'))result << Ch('\\');
                     else if (*b == Ch('#')) result << Ch('#');
                     else
-                        BOOST_PROPERTY_TREE_THROW(boost::property_tree::file_parser_error(
+                        BOOST_PROPERTY_TREE_THROW(utxx::ptree::file_parser_error(
                             std::string("unknown escape sequence: ") + b,
                             filename, lineno));
                 }
@@ -631,7 +631,7 @@ namespace detail {
 
                     if (temp.data().is_null())
                         BOOST_PROPERTY_TREE_THROW(
-                            boost::property_tree::file_parser_error(
+                            utxx::ptree::file_parser_error(
                                 std::string("invalid macro '$' directive: ") + orig_text,
                                 filename, lineno));
                     result << temp.data().to_string();
@@ -683,7 +683,7 @@ namespace detail {
         str_t read_string(bool *need_more_lines, bool is_data) {
             Ch qchar = *text;
 
-            BOOST_ASSERT(qchar == Ch('\"') || qchar == Ch('\''));
+            assert(qchar == Ch('\"') || qchar == Ch('\''));
 
             // Skip \"
             ++text;
@@ -698,7 +698,7 @@ namespace detail {
             // If end of string found
             if (*text != qchar)
                 BOOST_PROPERTY_TREE_THROW(
-                    boost::property_tree::file_parser_error(
+                    utxx::ptree::file_parser_error(
                         "unexpected end of line", filename, lineno));
 
             str_t result = expand_escapes(start, is_data);
@@ -708,14 +708,14 @@ namespace detail {
             if (*text == Ch('\\'))
             {
                 if (!need_more_lines)
-                    BOOST_PROPERTY_TREE_THROW(boost::property_tree::file_parser_error(
+                    BOOST_PROPERTY_TREE_THROW(utxx::ptree::file_parser_error(
                         "unexpected \\", filename, lineno));
                 ++text;
                 skip_whitespace();
                 if (iseol())
                     *need_more_lines = true;
                 else
-                    BOOST_PROPERTY_TREE_THROW(boost::property_tree::file_parser_error(
+                    BOOST_PROPERTY_TREE_THROW(utxx::ptree::file_parser_error(
                         "expected end of line after \\", filename, lineno));
             }
             else if (need_more_lines)
@@ -755,7 +755,7 @@ namespace detail {
                 return;
             } else if (!::strptime(now.c_str(), "%Y-%m-%d %H:%M:%S", tm)) {
                 BOOST_PROPERTY_TREE_THROW(
-                    boost::property_tree::file_parser_error(
+                    utxx::ptree::file_parser_error(
                         std::string("Invalid format of now time '") +
                             now + "' in the $date{} function: " + orig_text,
                         filename, lineno));
@@ -766,4 +766,4 @@ namespace detail {
 
 }}  // namespace utxx::detail
 
-#endif
+#endif // _UTXX_VARIANT_TREE_SCON_PARSER_HPP_

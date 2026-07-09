@@ -3,7 +3,6 @@
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE)
 
 list(APPEND UTXX_SRCS
-  config_validator.cpp
   error.cpp
   futex.cpp
   gzstream.cpp
@@ -11,26 +10,34 @@ list(APPEND UTXX_SRCS
   logger.cpp
   logger_crash_handler.cpp
   logger_impl.cpp
-  logger_impl_console.cpp
-  logger_impl_file.cpp
-  logger_impl_scribe.cpp
-  logger_impl_syslog.cpp
   logger_util.cpp
   path.cpp
   polynomial.cpp
-  Reactor.cpp
-  ReactorFdInfo.cpp
-  ReactorMisc.cpp
   signal_block.cpp
   string.cpp
   time.cpp
   timestamp.cpp
   url.cpp
-  variant.cpp
   verbosity.cpp
 )
 
-XML_CFG(UTXX_SRCS ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME}/logger/logger_options.xml)
+list(APPEND UTXX_SRCS
+  config_validator.cpp
+  variant.cpp
+)
+
+if(UTXX_HAVE_BOOST)
+  list(APPEND UTXX_SRCS
+    logger_impl_console.cpp
+    logger_impl_file.cpp
+    logger_impl_scribe.cpp
+    logger_impl_syslog.cpp
+    Reactor.cpp
+    ReactorFdInfo.cpp
+    ReactorMisc.cpp
+  )
+  XML_CFG(UTXX_SRCS ${CMAKE_SOURCE_DIR}/include/${PROJECT_NAME}/logger/logger_options.xml)
+endif()
 
 # this is the "object library" target: compiles the sources only once
 #add_library(objlib OBJECT ${UTXX_SRCS})

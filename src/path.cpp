@@ -30,12 +30,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/algorithm/string/replace.hpp>
-#include <boost/date_time/posix_time/ptime.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-#include <boost/date_time/posix_time/conversion.hpp>
-#include <boost/filesystem/convenience.hpp>
-#include <boost/xpressive/xpressive.hpp>
+#include <ctime>
+#include <regex>
 #include <utxx/path.ipp>
 #include <utxx/error.hpp>
 #include <string.h>
@@ -110,52 +106,64 @@ std::string extension(const std::string& a_file, const std::string& a_strip_ext,
     auto p = a_file.c_str();
     auto e = p + a_file.size();
     e = strip_ext(p, e, a_strip_ext, case_sense);
-    return boost::filesystem::extension(std::string(p, e - p));
+    std::string s(p, e - p);
+    auto dot = s.rfind('.');
+    auto sep = s.rfind('/');
+    return (dot != std::string::npos && (sep == std::string::npos || dot > sep))
+        ? s.substr(dot) : std::string();
 }
+
+namespace {
+// Apply a substitution regex to str, calling replace_fn(match_group_1) for each match.
+template <typename Fn>
+std::string regex_replace_fn(const std::string& str, const std::regex& re, Fn replace_fn) {
+    std::string result;
+    result.reserve(str.size());
+    auto it  = std::sregex_iterator(str.begin(), str.end(), re);
+    auto end = std::sregex_iterator();
+    std::string::size_type pos = 0;
+    for (; it != end; ++it) {
+        const auto& m = *it;
+        result.append(str, pos, m.position() - pos);
+        result += replace_fn(m);
+        pos = m.position() + m.length();
+    }
+    result.append(str, pos, std::string::npos);
+    return result;
+}
+} // anonymous namespace
 
 std::string
 replace_env_vars(const std::string& a_path, const struct tm* a_now,
                  const varbinds_t*  a_bindings)
 {
-    using namespace boost::posix_time;
-    using namespace boost::xpressive;
-
-    auto regex_format_fun = [a_bindings](const smatch& what) {
-        if (what[1].str() == "EXEPATH") // special case
+    auto lookup = [a_bindings](const std::string& name) -> std::string {
+        if (name == "EXEPATH")
             return program::abs_path();
-
         if (a_bindings) {
-            auto it = a_bindings->find(what[1].str());
+            auto it = a_bindings->find(name);
             if (it != a_bindings->end())
                 return it->second;
         }
-
-        const char* env = getenv(what[1].str().c_str());
-        return std::string(env ? env : "");
+        const char* env = getenv(name.c_str());
+        return env ? env : "";
     };
 
-    auto regex_home_var = [](const smatch& what) { return home(); };
-
     std::string x(a_path);
-    {
-        #if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
-        sregex re = "%"  >> (s1 = +_w) >> '%';
-        #else
-        sregex re = "${" >> (s1 = +_w) >> '}';
-        #endif
+#if defined(_MSC_VER) || defined(_WIN32) || defined(__CYGWIN32__)
+    static const std::regex re_braced("%([\\w]+)%");
+#else
+    static const std::regex re_braced("\\$\\{([\\w]+)\\}");
+#endif
+    x = regex_replace_fn(x, re_braced, [&](const std::smatch& m){ return lookup(m[1].str()); });
 
-        x = regex_replace(x, re, regex_format_fun);
-    }
-    #if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
-    {
-        sregex re = '$' >> (s1 = +_w);
-        x = regex_replace(x, re, regex_format_fun);
-    }
-    {
-        sregex re = bos >> '~';
-        x = regex_replace(x, re, regex_home_var);
-    }
-    #endif
+#if !defined(_MSC_VER) && !defined(_WIN32) && !defined(__CYGWIN32__)
+    static const std::regex re_plain("\\$([\\w]+)");
+    x = regex_replace_fn(x, re_plain, [&](const std::smatch& m){ return lookup(m[1].str()); });
+
+    static const std::regex re_home("^~");
+    x = regex_replace_fn(x, re_home, [](const std::smatch&){ return home(); });
+#endif
 
     if (a_now != NULL && x.find('%') != std::string::npos) {
         char buf[384];
@@ -170,20 +178,11 @@ std::string
 replace_macros(const std::string& a_path,
                const varbinds_t&  a_bindings)
 {
-    using namespace boost::posix_time;
-    using namespace boost::xpressive;
-
-    auto regex_format_fun = [&](const smatch& what) {
-        auto it = a_bindings.find(what[1].str());
-        if (it != a_bindings.end())
-            return it->second;
-        return std::string();
-    };
-
-    std::string x(a_path);
-    //sregex re = "{{" >> (s1 = +_w) >> "}}";
-    sregex re = sregex::compile( "\\{\\{([\\w-_]+)\\}\\}");
-    return regex_replace(x, re, regex_format_fun);
+    static const std::regex re("\\{\\{([\\w_-]+)\\}\\}");
+    return regex_replace_fn(a_path, re, [&](const std::smatch& m) -> std::string {
+        auto it = a_bindings.find(m[1].str());
+        return it != a_bindings.end() ? it->second : std::string();
+    });
 }
 
 std::pair<std::string, std::string>
@@ -203,14 +202,13 @@ filename_with_backup(const char* a_filename,
         l_backup.erase(dot_pos);
     }
 
-    using namespace boost::posix_time;
     struct tm  tm;
     const struct tm* ptm = &tm;
     if (a_now != NULL) {
         ptm = a_now;
     } else {
-        ptime now = second_clock::local_time();
-        tm = boost::posix_time::to_tm(now);
+        time_t t = time(nullptr);
+        localtime_r(&t, &tm);
     }
 
     int n;
@@ -256,7 +254,7 @@ program::program()
     typedef DWORD (WINAPI *tGetModuleFileNameExA)(  HANDLE, HMODULE,LPTSTR,DWORD);
     tGetModuleFileNameExA pGetModuleFileNameExA =0;
 
-    boost::scoped_ptr<HINSTANCE>  hIns(::LoadLibrary("Psapi.dll"), &::FreeLibrary);
+    std::unique_ptr<HINSTANCE, decltype(&::FreeLibrary)> hIns(::LoadLibrary("Psapi.dll"), &::FreeLibrary);
 
     if (hIns)
         pGetModuleFileNameExA =

@@ -9,7 +9,7 @@
 // Created:  2015-03-10
 // License:  property of Omnibius licensed under terms found in LICENSE.txt
 //------------------------------------------------------------------------------
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/test_helper.hpp>
 #include <utxx/path.hpp>
 #include <utxx/buffer.hpp>
@@ -55,10 +55,10 @@ static long WaitAsync(int a_efd, int a_timeout)
     return 1;
 }
 
-BOOST_AUTO_TEST_CASE( test_reactor_file1 )
+TEST_CASE( test_reactor_file1 )
 {
     int efd = eventfd(0, EFD_NONBLOCK);
-    BOOST_REQUIRE(efd >= 0);
+    REQUIRE(efd >= 0);
 
     temp_file f;
     AIOReader file;
@@ -69,7 +69,7 @@ BOOST_AUTO_TEST_CASE( test_reactor_file1 )
 
     int rc = file.AsyncRead(buf.wr_ptr(), buf.capacity());
 
-    BOOST_CHECK(rc >= 0);
+    CHECK(rc >= 0);
 
     int it = 0;
 
@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE( test_reactor_file1 )
 
         long a_events = 0;
 /*
-        BOOST_REQUIRE(rc >= 0);
+        REQUIRE(rc >= 0);
 
         if (read(efd, &eval, sizeof(eval)) != sizeof(eval))
             perror("read");
@@ -90,8 +90,8 @@ BOOST_AUTO_TEST_CASE( test_reactor_file1 )
         if (rc == 0) continue;
 
         if (rc < 0)
-            BOOST_TEST_MESSAGE(err << ": " << strerror(errno));
-        BOOST_REQUIRE(rc >= 0);
+            TEST_MESSAGE(err << ": " << strerror(errno));
+        REQUIRE(rc >= 0);
 
         buf.read_and_crunch(rc);
 
@@ -100,13 +100,13 @@ BOOST_AUTO_TEST_CASE( test_reactor_file1 )
         it++;
     } while (rc > 0);
 
-    BOOST_CHECK_EQUAL(4096, it);
+    CHECK_EQUAL(4096, it);
 }
 
-BOOST_AUTO_TEST_CASE( test_reactor_file )
+TEST_CASE( test_reactor_file )
 {
     int efd = eventfd(0, EFD_NONBLOCK);
-    BOOST_REQUIRE(efd >= 0);
+    REQUIRE(efd >= 0);
 
     temp_file f;
     AIOReader file;
@@ -119,25 +119,25 @@ BOOST_AUTO_TEST_CASE( test_reactor_file )
 
     int rc = file.AsyncRead(buf.wr_ptr(), buf.capacity());
 
-    BOOST_REQUIRE(rc >= 0);
+    REQUIRE(rc >= 0);
 
     while (file.Remaining() > 0) {
         int rc = WaitAsync(efd, 5000);
 
-        BOOST_REQUIRE(rc >= 0);
+        REQUIRE(rc >= 0);
 
         if (rc == 0) continue;
 
         rc = file.CheckEvents();
 
-        BOOST_REQUIRE(rc == 1);
+        REQUIRE(rc == 1);
 
         auto res = file.ReadEvents(rc);
 
         if (res.first < 0)
-            BOOST_TEST_MESSAGE(res.second << ": " << strerror(errno));
+            TEST_MESSAGE(res.second << ": " << strerror(errno));
 
-        BOOST_REQUIRE(res.first >= 0);
+        REQUIRE(res.first >= 0);
 
         //progress += res.first;
 

@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_CONCURRENT_PRI_QUEUE_HPP_
 #define _UTXX_CONCURRENT_PRI_QUEUE_HPP_
 
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <utxx/bitmap.hpp>
 
 template <typename T, int Priorities, typename Queue>

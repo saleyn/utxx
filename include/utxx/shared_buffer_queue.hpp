@@ -24,15 +24,19 @@ at http://www.boost.org/LICENSE_1_0.txt)
 
 #pragma once
 
-#include <boost/function.hpp>
-#include <boost/shared_ptr.hpp>
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
+
+#include <functional>
+#include <memory>
 #include <utxx/basic_buffer_queue.hpp>
 
 namespace utxx {
 
 class shared_const_buffer : public boost::asio::const_buffer {
 
-    typedef boost::function<void()> del_t;
+    typedef std::function<void()> del_t;
 
     struct shadow {
          del_t m_del;
@@ -40,7 +44,7 @@ class shared_const_buffer : public boost::asio::const_buffer {
          ~shadow() { m_del(); }
     };
 
-    boost::shared_ptr<shadow> m_ptr;
+    std::shared_ptr<shadow> m_ptr;
 
 public:
     shared_const_buffer(const boost::asio::const_buffer& a_buf, del_t a_del)
@@ -54,7 +58,7 @@ class shared_buffer_queue
         : public basic_buffer_queue<shared_const_buffer, Alloc> {
 
     typedef basic_buffer_queue<shared_const_buffer, Alloc> base_t;
-    typedef boost::function<void()> del_t;
+    typedef std::function<void()> del_t;
 
     struct nodel { void operator()() {} };
 
@@ -95,3 +99,5 @@ public:
 };
 
 } // namespace utxx
+
+#endif // UTXX_HAVE_BOOST

@@ -29,8 +29,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
 #ifndef UTXX_STANDALONE
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #endif
 
 #include <iostream>
@@ -59,92 +61,92 @@ namespace {
 }
 
 #ifndef UTXX_STANDALONE
-BOOST_AUTO_TEST_CASE( test_logger1 )
+TEST_CASE( test_logger1 )
 {
     variant_tree pt;
 
-    BOOST_CHECK_EQUAL(0, (as_int(LEVEL_NONE)));
-    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ALERT)));
-    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_FATAL)));
-    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_ERROR)));
-    BOOST_CHECK_EQUAL(1, (as_int(LEVEL_WARNING)));
-    BOOST_CHECK_EQUAL(2, (as_int(LEVEL_NOTICE)));
-    BOOST_CHECK_EQUAL(3, (as_int(LEVEL_INFO)));
-    BOOST_CHECK_EQUAL(4, (as_int(LEVEL_DEBUG)));
-    BOOST_CHECK_EQUAL(5, (as_int(LEVEL_TRACE)));
-    BOOST_CHECK_EQUAL(6, (as_int(LEVEL_TRACE1)));
-    BOOST_CHECK_EQUAL(7, (as_int(LEVEL_TRACE2)));
-    BOOST_CHECK_EQUAL(8, (as_int(LEVEL_TRACE3)));
-    BOOST_CHECK_EQUAL(9, (as_int(LEVEL_TRACE4)));
-    BOOST_CHECK_EQUAL(10,(as_int(LEVEL_TRACE5)));
+    CHECK_EQUAL(0, (as_int(LEVEL_NONE)));
+    CHECK_EQUAL(1, (as_int(LEVEL_ALERT)));
+    CHECK_EQUAL(1, (as_int(LEVEL_FATAL)));
+    CHECK_EQUAL(1, (as_int(LEVEL_ERROR)));
+    CHECK_EQUAL(1, (as_int(LEVEL_WARNING)));
+    CHECK_EQUAL(2, (as_int(LEVEL_NOTICE)));
+    CHECK_EQUAL(3, (as_int(LEVEL_INFO)));
+    CHECK_EQUAL(4, (as_int(LEVEL_DEBUG)));
+    CHECK_EQUAL(5, (as_int(LEVEL_TRACE)));
+    CHECK_EQUAL(6, (as_int(LEVEL_TRACE1)));
+    CHECK_EQUAL(7, (as_int(LEVEL_TRACE2)));
+    CHECK_EQUAL(8, (as_int(LEVEL_TRACE3)));
+    CHECK_EQUAL(9, (as_int(LEVEL_TRACE4)));
+    CHECK_EQUAL(10,(as_int(LEVEL_TRACE5)));
 
-    BOOST_CHECK(LEVEL_NONE    == as_log_level(0 ));
-    BOOST_CHECK(LEVEL_WARNING == as_log_level(1 ));
-    BOOST_CHECK(LEVEL_NOTICE  == as_log_level(2 ));
-    BOOST_CHECK(LEVEL_INFO    == as_log_level(3 ));
-    BOOST_CHECK(LEVEL_DEBUG   == as_log_level(4 ));
-    BOOST_CHECK(LEVEL_TRACE   == as_log_level(5 ));
-    BOOST_CHECK(LEVEL_TRACE1  == as_log_level(6 ));
-    BOOST_CHECK(LEVEL_TRACE2  == as_log_level(7 ));
-    BOOST_CHECK(LEVEL_TRACE3  == as_log_level(8 ));
-    BOOST_CHECK(LEVEL_TRACE4  == as_log_level(9 ));
-    BOOST_CHECK(LEVEL_TRACE5  == as_log_level(10));
+    CHECK(LEVEL_NONE    == as_log_level(0 ));
+    CHECK(LEVEL_WARNING == as_log_level(1 ));
+    CHECK(LEVEL_NOTICE  == as_log_level(2 ));
+    CHECK(LEVEL_INFO    == as_log_level(3 ));
+    CHECK(LEVEL_DEBUG   == as_log_level(4 ));
+    CHECK(LEVEL_TRACE   == as_log_level(5 ));
+    CHECK(LEVEL_TRACE1  == as_log_level(6 ));
+    CHECK(LEVEL_TRACE2  == as_log_level(7 ));
+    CHECK(LEVEL_TRACE3  == as_log_level(8 ));
+    CHECK(LEVEL_TRACE4  == as_log_level(9 ));
+    CHECK(LEVEL_TRACE5  == as_log_level(10));
 
-    BOOST_CHECK(LEVEL_INFO    == debug_to_log_level<0>());
-    BOOST_CHECK(LEVEL_DEBUG   == debug_to_log_level<1>());
-    BOOST_CHECK(LEVEL_TRACE   == debug_to_log_level<2>());
-    BOOST_CHECK(LEVEL_TRACE1  == debug_to_log_level<3>());
-    BOOST_CHECK(LEVEL_TRACE2  == debug_to_log_level<4>());
-    BOOST_CHECK(LEVEL_TRACE3  == debug_to_log_level<5>());
-    BOOST_CHECK(LEVEL_TRACE4  == debug_to_log_level<6>());
-    BOOST_CHECK(LEVEL_TRACE5  == debug_to_log_level<7>());
+    CHECK(LEVEL_INFO    == debug_to_log_level<0>());
+    CHECK(LEVEL_DEBUG   == debug_to_log_level<1>());
+    CHECK(LEVEL_TRACE   == debug_to_log_level<2>());
+    CHECK(LEVEL_TRACE1  == debug_to_log_level<3>());
+    CHECK(LEVEL_TRACE2  == debug_to_log_level<4>());
+    CHECK(LEVEL_TRACE3  == debug_to_log_level<5>());
+    CHECK(LEVEL_TRACE4  == debug_to_log_level<6>());
+    CHECK(LEVEL_TRACE5  == debug_to_log_level<7>());
 
-    BOOST_CHECK(LEVEL_TRACE   == parse_log_level("trace"));
-    BOOST_CHECK(LEVEL_TRACE5  == parse_log_level("trace5"));
-    BOOST_CHECK(LEVEL_TRACE1  == parse_log_level("trace1"));
-    BOOST_CHECK(LEVEL_INFO    == parse_log_level("info"));
-    BOOST_CHECK(LEVEL_WARNING == parse_log_level("warning"));
-    BOOST_CHECK(LEVEL_ERROR   == parse_log_level("error"));
-    BOOST_CHECK(LEVEL_WARNING == parse_log_level("1"));
-    BOOST_CHECK(LEVEL_NONE    == parse_log_level("none"));
-    BOOST_CHECK_EQUAL(int(LEVEL_INFO),  int(parse_log_level("3")));
-    BOOST_CHECK_EQUAL(int(LEVEL_DEBUG), int(parse_log_level("4")));
-    BOOST_CHECK_EQUAL(int(LEVEL_TRACE), int(parse_log_level("5")));
-    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(parse_log_level("11")));
-    BOOST_CHECK_EQUAL(int(LEVEL_TRACE5),int(parse_log_level("110")));
-    BOOST_CHECK_THROW(logger::parse_log_level("trace6"), std::runtime_error);
+    CHECK(LEVEL_TRACE   == parse_log_level("trace"));
+    CHECK(LEVEL_TRACE5  == parse_log_level("trace5"));
+    CHECK(LEVEL_TRACE1  == parse_log_level("trace1"));
+    CHECK(LEVEL_INFO    == parse_log_level("info"));
+    CHECK(LEVEL_WARNING == parse_log_level("warning"));
+    CHECK(LEVEL_ERROR   == parse_log_level("error"));
+    CHECK(LEVEL_WARNING == parse_log_level("1"));
+    CHECK(LEVEL_NONE    == parse_log_level("none"));
+    CHECK_EQUAL(int(LEVEL_INFO),  int(parse_log_level("3")));
+    CHECK_EQUAL(int(LEVEL_DEBUG), int(parse_log_level("4")));
+    CHECK_EQUAL(int(LEVEL_TRACE), int(parse_log_level("5")));
+    CHECK_EQUAL(int(LEVEL_TRACE5),int(parse_log_level("11")));
+    CHECK_EQUAL(int(LEVEL_TRACE5),int(parse_log_level("110")));
+    CHECK_THROW(logger::parse_log_level("trace6"), std::runtime_error);
 
-    BOOST_CHECK_EQUAL("TRACE5", log_level_to_string(utxx::LEVEL_TRACE5, false));
-    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE5));
-    BOOST_CHECK_EQUAL("TRACE1", log_level_to_string(utxx::LEVEL_TRACE1, false));
-    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE1));
-    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE, false));
-    BOOST_CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE));
-    BOOST_CHECK_EQUAL("DEBUG",  log_level_to_string(utxx::LEVEL_DEBUG, false));
-    BOOST_CHECK_EQUAL("DEBUG",  log_level_to_string(utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL("FATAL",  log_level_to_string(utxx::LEVEL_FATAL));
-    BOOST_CHECK_EQUAL("ALERT",  log_level_to_string(utxx::LEVEL_ALERT));
-    BOOST_CHECK_EQUAL("LOG",    log_level_to_string(utxx::LEVEL_LOG));
+    CHECK_EQUAL("TRACE5", log_level_to_string(utxx::LEVEL_TRACE5, false));
+    CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE5));
+    CHECK_EQUAL("TRACE1", log_level_to_string(utxx::LEVEL_TRACE1, false));
+    CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE1));
+    CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE, false));
+    CHECK_EQUAL("TRACE",  log_level_to_string(utxx::LEVEL_TRACE));
+    CHECK_EQUAL("DEBUG",  log_level_to_string(utxx::LEVEL_DEBUG, false));
+    CHECK_EQUAL("DEBUG",  log_level_to_string(utxx::LEVEL_DEBUG));
+    CHECK_EQUAL("FATAL",  log_level_to_string(utxx::LEVEL_FATAL));
+    CHECK_EQUAL("ALERT",  log_level_to_string(utxx::LEVEL_ALERT));
+    CHECK_EQUAL("LOG",    log_level_to_string(utxx::LEVEL_LOG));
 
-    BOOST_CHECK_EQUAL("TRACE5|TRACE|DEBUG", log_levels_to_str(utxx::LEVEL_TRACE5 | utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL("TRACE|DEBUG",        log_levels_to_str(utxx::LEVEL_TRACE  | utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL("DEBUG|INFO",         log_levels_to_str(utxx::LEVEL_INFO   | utxx::LEVEL_DEBUG));
+    CHECK_EQUAL("TRACE5|TRACE|DEBUG", log_levels_to_str(utxx::LEVEL_TRACE5 | utxx::LEVEL_DEBUG));
+    CHECK_EQUAL("TRACE|DEBUG",        log_levels_to_str(utxx::LEVEL_TRACE  | utxx::LEVEL_DEBUG));
+    CHECK_EQUAL("DEBUG|INFO",         log_levels_to_str(utxx::LEVEL_INFO   | utxx::LEVEL_DEBUG));
 
-    BOOST_CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE1));
-    BOOST_CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE5));
-    BOOST_CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE));
-    BOOST_CHECK_EQUAL("D",                  log_level_to_abbrev(utxx::LEVEL_DEBUG));
+    CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE1));
+    CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE5));
+    CHECK_EQUAL("T",                  log_level_to_abbrev(utxx::LEVEL_TRACE));
+    CHECK_EQUAL("D",                  log_level_to_abbrev(utxx::LEVEL_DEBUG));
 
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE1));
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE5));
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE));
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_DEBUG));
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_ERROR));
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_FATAL));
-    BOOST_CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_ALERT));
-    BOOST_CHECK_EQUAL(7u,                   log_level_size(utxx::LEVEL_WARNING));
-    BOOST_CHECK_EQUAL(3u,                   log_level_size(utxx::LEVEL_LOG));
-    BOOST_CHECK_EQUAL(4u,                   log_level_size(utxx::LEVEL_NONE));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE1));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE5));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_TRACE));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_DEBUG));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_ERROR));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_FATAL));
+    CHECK_EQUAL(5u,                   log_level_size(utxx::LEVEL_ALERT));
+    CHECK_EQUAL(7u,                   log_level_size(utxx::LEVEL_WARNING));
+    CHECK_EQUAL(3u,                   log_level_size(utxx::LEVEL_LOG));
+    CHECK_EQUAL(4u,                   log_level_size(utxx::LEVEL_NONE));
 
     pt.put("logger.timestamp",             "time-usec");
     pt.put("logger.min-level-filter",      "debug");
@@ -159,8 +161,8 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
         pt.dump(std::cout, 2, false, true, ' ', 2);
 
     auto count = pt.count("logger");
-    BOOST_REQUIRE_EQUAL(1u, count);
-    BOOST_REQUIRE(pt.get_child_optional("logger.console"));
+    REQUIRE_EQUAL(1u, count);
+    REQUIRE(pt.get_child_optional("logger.console"));
 
     logger& log = logger::instance();
 
@@ -169,29 +171,29 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 
     log.set_min_level_filter(LEVEL_DEBUG);
     auto ll = log.min_level_filter();
-    BOOST_CHECK(ll == LEVEL_DEBUG);
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE ) != (int)LEVEL_TRACE );
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_DEBUG ) == (int)LEVEL_DEBUG );
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
+    CHECK(ll == LEVEL_DEBUG);
+    CHECK((log.level_filter() & (int)LEVEL_TRACE ) != (int)LEVEL_TRACE );
+    CHECK((log.level_filter() & (int)LEVEL_DEBUG ) == (int)LEVEL_DEBUG );
+    CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
+    CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
 
     log.set_min_level_filter(LEVEL_TRACE);
     ll = log.min_level_filter();
-    BOOST_CHECK(ll == LEVEL_TRACE);
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE2) != (int)LEVEL_TRACE2);
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE1) != (int)LEVEL_TRACE1);
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_TRACE ) == (int)LEVEL_TRACE );
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_DEBUG ) == (int)LEVEL_DEBUG );
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
-    BOOST_CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
+    CHECK(ll == LEVEL_TRACE);
+    CHECK((log.level_filter() & (int)LEVEL_TRACE2) != (int)LEVEL_TRACE2);
+    CHECK((log.level_filter() & (int)LEVEL_TRACE1) != (int)LEVEL_TRACE1);
+    CHECK((log.level_filter() & (int)LEVEL_TRACE ) == (int)LEVEL_TRACE );
+    CHECK((log.level_filter() & (int)LEVEL_DEBUG ) == (int)LEVEL_DEBUG );
+    CHECK((log.level_filter() & (int)LEVEL_INFO  ) == (int)LEVEL_INFO  );
+    CHECK((log.level_filter() & (int)LEVEL_NOTICE) == (int)LEVEL_NOTICE);
 
     log.init(pt, nullptr, false);
 
     auto console = static_cast<const logger_impl_console*>(log.get_impl("console"));
 
-    BOOST_REQUIRE(console);
+    REQUIRE(console);
 
-    BOOST_REQUIRE_EQUAL(
+    REQUIRE_EQUAL(
         LEVEL_DEBUG | LEVEL_INFO  | LEVEL_NOTICE | LEVEL_WARNING |
         LEVEL_ERROR | LEVEL_FATAL | LEVEL_ALERT,
         console->stdout_levels());
@@ -231,10 +233,10 @@ BOOST_AUTO_TEST_CASE( test_logger1 )
 
     log.finalize();
 
-    BOOST_REQUIRE(true); // to remove run-time warning
+    REQUIRE(true); // to remove run-time warning
 }
 
-BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
+TEST_CASE( test_logger_split_file_size )
 {
     logger& log = logger::instance();
 
@@ -262,7 +264,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
         if (files.size() != n)
           std::cerr << title << " has wrong number of files ("
                     << files.size() << ", expected: " << n << ')' << std::endl;
-        BOOST_CHECK_EQUAL(n, files.size());
+        CHECK_EQUAL(n, files.size());
         auto pad_wid = static_cast<int>(std::ceil(std::log10(n))) + ((n%10 == 0) ? 1 : 0);
         for (uint i=1; i <= n; ++i) {
             //auto file  = static_cast<logger_impl_file*>(log.get_impl("file"))->get_file_name(i, false);
@@ -271,7 +273,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
             auto found = std::find(files.begin(), files.end(), file) != files.end();
             if (!found)
                 std::cerr << title << ": file " << file << " is missing!" << std::endl;
-            BOOST_CHECK(found);
+            CHECK(found);
         }
     };
 
@@ -302,8 +304,8 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..8}.log" are created
     check("first unrestricted", res.second, 8);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_1.log"));
-    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_8.log")
+    CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_1.log"));
+    CHECK(utxx::path::read_file("/tmp/logger.file_8.log")
                                       .find("I|write count: 0\n") == 0);
 
     // Reopen the log
@@ -312,11 +314,11 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     LOG_INFO("write count: 100");
     log.finalize();
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n"
+    CHECK_EQUAL("I|write count: 99\n"
                       "I|write count: 100\n",
                       utxx::path::read_file("/tmp/logger.file_1.log"));
 
-    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK_EQUAL("/tmp/logger.file_1.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -330,9 +332,9 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..3}.log" are created
     check("first restricted 3", res.second, 3);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_1.log"));
+    CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_1.log"));
 
-    BOOST_CHECK_EQUAL("/tmp/logger.file_1.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK_EQUAL("/tmp/logger.file_1.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -345,7 +347,7 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{01..11}.log" are created (note zero padding)
     check("first restricted 11", res.second, 11);
 
-    BOOST_CHECK_EQUAL("/tmp/logger.file_01.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK_EQUAL("/tmp/logger.file_01.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -362,8 +364,8 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..8}.log" are created
     check("last unrestricted", res.second, 8);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_8.log"));
-    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_1.log")
+    CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_8.log"));
+    CHECK(utxx::path::read_file("/tmp/logger.file_1.log")
                                       .find("I|write count: 0\n") == 0);
     // Reopen the log
     pt.put  ("logger.file.append", true);
@@ -371,10 +373,10 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     LOG_INFO("write count: 100");
     log.finalize();
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n"
+    CHECK_EQUAL("I|write count: 99\n"
                       "I|write count: 100\n",
                       utxx::path::read_file("/tmp/logger.file_8.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_8.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK_EQUAL("/tmp/logger.file_8.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -388,8 +390,8 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
     // Check that "/tmp/logger.file_{1..3}.log" are created
     check("last restricted", res.second, 3);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_3.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_3.log"));
+    CHECK_EQUAL("/tmp/logger.file_3.log", utxx::path::file_readlink("/tmp/logger.log"));
 
     cleanup(res.second);
 
@@ -401,9 +403,9 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
 
     res = write_test_data(pt);
 
-    BOOST_CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_3.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_3.log", utxx::path::file_readlink("/tmp/logger.log"));
-    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_4.log")
+    CHECK_EQUAL("I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_3.log"));
+    CHECK_EQUAL("/tmp/logger.file_3.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK(utxx::path::read_file("/tmp/logger.file_4.log")
                                       .find("I|write count: 43\n") == 0);
 
     cleanup(res.second);
@@ -414,27 +416,27 @@ BOOST_AUTO_TEST_CASE( test_logger_split_file_size )
 
     res = write_test_data(pt);
 
-    BOOST_CHECK_EQUAL("I|write count: 98\n"
+    CHECK_EQUAL("I|write count: 98\n"
                       "I|write count: 99\n", utxx::path::read_file("/tmp/logger.file_02.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_01.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_02.log"));
-    BOOST_CHECK      (!utxx::path::file_exists("/tmp/logger.file_03.log"));
-    BOOST_CHECK      (!utxx::path::file_exists("/tmp/logger.file_04.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_05.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_06.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_07.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_08.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_09.log"));
-    BOOST_CHECK      ( utxx::path::file_exists("/tmp/logger.file_10.log"));
-    BOOST_CHECK_EQUAL("/tmp/logger.file_02.log", utxx::path::file_readlink("/tmp/logger.log"));
-    BOOST_CHECK      (utxx::path::read_file("/tmp/logger.file_05.log")
+    CHECK( utxx::path::file_exists("/tmp/logger.file_01.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_02.log"));
+    CHECK(!utxx::path::file_exists("/tmp/logger.file_03.log"));
+    CHECK(!utxx::path::file_exists("/tmp/logger.file_04.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_05.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_06.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_07.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_08.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_09.log"));
+    CHECK( utxx::path::file_exists("/tmp/logger.file_10.log"));
+    CHECK_EQUAL("/tmp/logger.file_02.log", utxx::path::file_readlink("/tmp/logger.log"));
+    CHECK(utxx::path::read_file("/tmp/logger.file_05.log")
                                       .find("I|write count: -1\n"
                                             "I|write count: 0\n") == 0);
     cleanup(res.second);
 }
 
 
-BOOST_AUTO_TEST_CASE( test_logger2 )
+TEST_CASE( test_logger2 )
 {
     variant_tree pt;
     pt.put("logger.timestamp",             utxx::variant("time-usec"));
@@ -453,7 +455,7 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
 
         log.init(pt, nullptr, false);
 
-        BOOST_REQUIRE(log.initialized());
+        REQUIRE(log.initialized());
     }
 
     {
@@ -475,12 +477,12 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
 
         try {
             log.init(pt, nullptr, false);
-            BOOST_CHECK(false);
+            CHECK(false);
         } catch (utxx::runtime_error& e) {
             auto exp = "Console logger's stdout levels filter "
                        "'TRACE|DEBUG|NOTICE|WARNING|ERROR' is less granular "
                        "than logger's default 'DEBUG'";
-            BOOST_CHECK_EQUAL(exp, e.str());
+            CHECK_EQUAL(exp, e.str());
         }
     }
 
@@ -525,7 +527,7 @@ BOOST_AUTO_TEST_CASE( test_logger2 )
 
 int main(int argc, char* argv[])
 #else
-BOOST_AUTO_TEST_CASE( test_logger_crash )
+TEST_CASE( test_logger_crash )
 #endif
 {
     variant_tree pt;
@@ -550,7 +552,7 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
         perror("sigprocmask");
 
     for (auto& p : sigs)
-        BOOST_TEST_MESSAGE("Process has " << p.second.c_str() << " handler -> "
+        TEST_MESSAGE("Process has " << p.second.c_str() << " handler -> "
                            << sigismember(&mask, p.first));
 
     bool crash = getenv("UTXX_LOGGER_CRASH") && atoi(getenv("UTXX_LOGGER_CRASH"));
@@ -562,6 +564,8 @@ BOOST_AUTO_TEST_CASE( test_logger_crash )
     }
 
     #ifndef UTXX_STANDALONE
-    BOOST_REQUIRE(true); // Keep the warning off
+    REQUIRE(true); // Keep the warning off
     #endif
 }
+
+#endif // UTXX_HAVE_BOOST

@@ -1,12 +1,14 @@
 //#define BOOST_TEST_MODULE logger_test
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <utxx/logger.hpp>
 
 using namespace boost::property_tree;
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_logger_syslog )
+TEST_CASE( test_logger_syslog )
 {
     variant_tree pt;
 
@@ -26,4 +28,6 @@ BOOST_AUTO_TEST_CASE( test_logger_syslog )
     }
 }
 
-//BOOST_AUTO_TEST_SUITE_END()
+//TEST_SUITE_END()
+
+#endif // UTXX_HAVE_BOOST

@@ -5,7 +5,6 @@
 */
 #ifndef SRUTXX_EVENT_INCLUDED
 #define SRUTXX_EVENT_INCLUDED
-#include <boost/iterator/iterator_concepts.hpp>
 #include <list>
 
 namespace utxx

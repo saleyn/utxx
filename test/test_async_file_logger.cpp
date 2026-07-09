@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <unistd.h>
 
 //#define BOOST_TEST_MAIN
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/logger/async_file_logger.hpp>
 #include <utxx/perf_histogram.hpp>
 #include <utxx/verbosity.hpp>
@@ -48,7 +48,6 @@ const char* s_str3     = "This is another const char* string without line\n";
 static const int32_t ITERATIONS =
     getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 100000u;
 
-using namespace boost::unit_test;
 using namespace utxx;
 
 struct T {
@@ -60,7 +59,7 @@ struct T {
 
 void on_error(int, const char*) {} 
 
-BOOST_AUTO_TEST_CASE( test_async_file_logger_err_handler )
+TEST_CASE( test_async_file_logger_err_handler )
 {
     text_file_logger<> logger;
     logger.on_error = &on_error;
@@ -68,11 +67,11 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_err_handler )
     T t;
 
     logger.on_error = [&t](int ec, const char* s) { t.on_error(ec, s); };
-    BOOST_CHECK_EQUAL(-2, logger.start("/proc/xxxx/yyyy"));
+    CHECK_EQUAL(-2, logger.start("/proc/xxxx/yyyy"));
     logger.stop();
 }
 
-BOOST_AUTO_TEST_CASE( test_async_file_logger_perf )
+TEST_CASE( test_async_file_logger_perf )
 {
     enum { ITERATIONS = 500000 };
 
@@ -83,7 +82,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_perf )
 
         int ok = logger.start(s_filename);
 
-        BOOST_CHECK_EQUAL(0, ok);
+        CHECK_EQUAL(0, ok);
 
         perf_histogram perf("Async logger latency");
 
@@ -91,7 +90,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_perf )
             perf.start();
             int n = logger.fwrite(s_str1, i);
             perf.stop();
-            BOOST_REQUIRE(n > 0);
+            REQUIRE(n > 0);
         }
 
         perf.dump(std::cout);
@@ -99,7 +98,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_perf )
 }
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_async_file_logger_append )
+TEST_CASE( test_async_file_logger_append )
 {
     enum { ITERATIONS = 10 };
 
@@ -111,11 +110,11 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_append )
         for (int k=0; k < 2; k++) {
 
             int ok = logger.start(s_filename);
-            BOOST_REQUIRE_EQUAL(0, ok);
+            REQUIRE_EQUAL(0, ok);
 
             for (int i = 0; i < ITERATIONS; i++) {
                 int n = logger.fwrite(s_str1, i);
-                BOOST_CHECK(n > 0);
+                CHECK(n > 0);
             }
 
             logger.stop();
@@ -126,19 +125,19 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_append )
             for (int i = 0; i < ITERATIONS; i++) {
                 std::string s;
                 std::getline(file, s);
-                BOOST_REQUIRE(!file.fail());
+                REQUIRE(!file.fail());
 
                 char buf[256];
                 sprintf(buf, s_str1, i);
                 s += '\n';
-                BOOST_CHECK_EQUAL(s, buf);
+                CHECK_EQUAL(s, buf);
             }
 
         {
             std::string s;
             std::getline(file, s);
-            BOOST_CHECK(file.fail());
-            BOOST_CHECK(file.eof());
+            CHECK(file.fail());
+            CHECK(file.eof());
             file.close();
         }
         ::unlink(s_filename);
@@ -181,7 +180,7 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
+TEST_CASE( test_async_file_logger_concurrent )
 {
     const int nthreads  =  ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 2;
     const int immediate = !::getenv("NO_WAKEUP");
@@ -191,7 +190,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
     text_file_logger<> logger;
 
     int ok = logger.start(s_filename, immediate);
-    BOOST_CHECK ( ok == 0 );
+    CHECK( ok == 0 );
 
     perf_histogram totals("Total async_file_logger performance");
 
@@ -215,7 +214,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
     s << "Max queue size: " << logger.max_queue_size() << std::endl;
     if (::getenv("VERBOSE"))
         totals.dump(s);
-    BOOST_TEST_MESSAGE(s.str());
+    TEST_MESSAGE(s.str());
 
     int cur_count[nthreads];
 
@@ -225,20 +224,20 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
     for (int i = 0; i < ITERATIONS*nthreads; i++) {
         std::string s;
         std::getline(file, s);
-        BOOST_REQUIRE( ! file.fail() );
+        REQUIRE( ! file.fail() );
 
         size_t n1 = s.find_first_of('|');
-        BOOST_CHECK( n1 != std::string::npos );
+        CHECK( n1 != std::string::npos );
 
         std::string num = s.substr(0, n1);
         int thread_num = atoi(num.c_str());
-        BOOST_CHECK( thread_num >= 1 && thread_num <= nthreads );
+        CHECK( thread_num >= 1 && thread_num <= nthreads );
 
         size_t n2 = s.find_first_of(':');
-        BOOST_CHECK( n2 != std::string::npos );
+        CHECK( n2 != std::string::npos );
         num = s.substr(n2+1);
         int count = atoi(num.c_str());
-        BOOST_CHECK_EQUAL( count, cur_count[thread_num-1] );
+        CHECK_EQUAL( count, cur_count[thread_num-1] );
 
         std::stringstream str;
         str << thread_num << "| " << s_str1;
@@ -247,7 +246,7 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
         sprintf(buf, str.str().c_str(), cur_count[thread_num-1]);
         s += '\n';
 
-        BOOST_CHECK_EQUAL( s, buf );
+        CHECK_EQUAL( s, buf );
 
         cur_count[thread_num-1]++;
     }
@@ -256,12 +255,12 @@ BOOST_AUTO_TEST_CASE( test_async_file_logger_concurrent )
         std::string s;
         std::getline(file, s);
     }
-    BOOST_CHECK(file.fail());
-    BOOST_CHECK(file.eof() );
+    CHECK(file.fail());
+    CHECK(file.eof() );
     file.close();
 
     for (int i=0; i < nthreads; i++)
-        BOOST_CHECK(cur_count[i] == ITERATIONS);
+        CHECK(cur_count[i] == ITERATIONS);
 
     ::unlink(s_filename);
 }

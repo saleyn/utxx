@@ -30,25 +30,25 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/container/assoc_vector.hpp>
 #include <stdio.h>
 
 using namespace std;
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_assoc_vector )
+TEST_CASE( test_assoc_vector )
 {
     assoc_vector<int, string> v{{1,"a"}, {2, "b"}, {4, "c"}, {7, "d"}};
 
     auto it = v.find(2);
-    BOOST_CHECK(it != v.end());
-    BOOST_CHECK_EQUAL("b", it->second);
+    CHECK(it != v.end());
+    CHECK_EQUAL("b", it->second);
     it = v.find(4);
-    BOOST_CHECK_EQUAL("c", it->second);
+    CHECK_EQUAL("c", it->second);
 
     it = v.lower_bound(3);
-    BOOST_CHECK_EQUAL(4, it->first);
+    CHECK_EQUAL(4, it->first);
     it = v.upper_bound(3);
-    BOOST_CHECK_EQUAL(4, it->first);
+    CHECK_EQUAL(4, it->first);
 }

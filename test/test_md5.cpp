@@ -30,20 +30,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
+#include <utxx/config.h>
 #include <utxx/md5.hpp>
 
 using namespace utxx;
 
-#if BOOST_VERSION >= 106600
+#if defined(UTXX_HAVE_BOOST) && BOOST_VERSION >= 106600
 
-BOOST_AUTO_TEST_CASE( test_md5 )
+TEST_CASE( test_md5 )
 {
     auto res = md5("abc");
-    BOOST_CHECK_EQUAL("900150983cd24fb0d6963f7d28e17f72", res);
+    CHECK_EQUAL("900150983cd24fb0d6963f7d28e17f72", res);
 
     auto res1 = sha1("abc");
-    BOOST_CHECK_EQUAL("a9993e364706816aba3e25717850c26c9cd0d89d", res1);
+    CHECK_EQUAL("a9993e364706816aba3e25717850c26c9cd0d89d", res1);
 }
 
 #endif

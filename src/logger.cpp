@@ -45,11 +45,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger/logger_crash_handler.hpp>
 #include <utxx/logger/logger_impl.hpp>
 #include <utxx/signal_block.hpp>
-#include <utxx/variant_tree_parser.hpp>
-#include <utxx/logger/generated/logger_options.generated.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/xpressive/xpressive.hpp>
-#include <boost/thread/locks.hpp>
+#ifdef UTXX_HAVE_BOOST
+#  include <utxx/variant_tree_parser.hpp>
+#  include <utxx/logger/generated/logger_options.generated.hpp>
+#endif
+#include <algorithm>
+#include <cctype>
+#include <mutex>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -151,6 +153,7 @@ void logger::add_level_filter(log_level level)
 const char* logger::default_log_levels = "INFO|NOTICE|WARNING|ERROR|ALERT|FATAL";
 std::atomic<sigset_t*> logger::m_crash_sigset;
 
+#ifdef UTXX_HAVE_BOOST
 void logger::add_macro(const std::string& a_macro, const std::string& a_value)
 {
     m_macro_var_map[a_macro] = a_value;
@@ -161,20 +164,30 @@ void logger::add_macros(const config_macros& a_macros)
     for (auto& p : a_macros)
       m_macro_var_map[p.first] = p.second;
 }
+#endif
 
 std::string logger::replace_macros(const std::string& a_value) const
 {
+#ifdef UTXX_HAVE_BOOST
     return path::replace_macros(a_value, m_macro_var_map);
+#else
+    return a_value;
+#endif
 }
 
 std::string logger::replace_env_and_macros(std::string const& a_value,
                                            time_val    const* a_now,
                                            bool               a_utc) const
 {
+#ifdef UTXX_HAVE_BOOST
     auto t = a_now ? a_now->to_tm(a_utc) : tm();
     return path::replace_env_and_macros(a_value, m_macro_var_map, &t);
+#else
+    return a_value;
+#endif
 }
 
+#ifdef UTXX_HAVE_BOOST
 void logger::init(const char* filename, const sigset_t* a_ignore_signals,
                   bool a_install_finalizer)
 {
@@ -309,6 +322,7 @@ void logger::init(const config_tree& a_cfg, const sigset_t* a_ignore_signals,
             throw;
     }
 }
+#endif // UTXX_HAVE_BOOST
 
 void logger::run()
 {
@@ -653,8 +667,10 @@ std::ostream& logger::dump(std::ostream& out) const
     auto val = [](bool a) { return a ? "true" : "false"; };
     std::stringstream s;
     s   << "Logger settings:\n"
-        << "    level-filter        = " << boost::to_upper_copy
-                                    (log_levels_to_str(m_level_filter)) << '\n'
+        << "    level-filter        = " << [](std::string s) {
+                                       std::transform(s.begin(),s.end(),s.begin(),[](unsigned char c){return std::toupper(c);});
+                                       return s;
+                                    }(log_levels_to_str(m_level_filter)) << '\n'
         << "    show-location       = " << val(m_show_location)         << '\n'
         << "    show-fun-namespaces = " << m_show_fun_namespaces        << '\n'
         << "    show-ident          = " << val(m_show_ident)            << '\n'

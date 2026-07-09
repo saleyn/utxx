@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/scope_exit.hpp>
 #include <iostream>
 
@@ -39,56 +39,56 @@ using namespace utxx;
 
 #if __cplusplus >= 201103L
 
-BOOST_AUTO_TEST_CASE( test_scope_exit )
+TEST_CASE( test_scope_exit )
 {
     int i = 0;
     {
         scope_exit g([&i] () { ++i; });
-        BOOST_REQUIRE_EQUAL(0, i);
+        REQUIRE_EQUAL(0, i);
     }
-    BOOST_REQUIRE_EQUAL(1, i);
+    REQUIRE_EQUAL(1, i);
 
     {
         std::function<void()> f = [&i] () { i = 2; };
         scope_exit g(std::move(f));
-        BOOST_REQUIRE_EQUAL(1, i);
+        REQUIRE_EQUAL(1, i);
     }
-    BOOST_REQUIRE_EQUAL(2, i);
+    REQUIRE_EQUAL(2, i);
 
     {
         std::function<void()> f = [&i] () { ++i; };
         scope_exit g(f);
-        BOOST_REQUIRE_EQUAL(2, i);
+        REQUIRE_EQUAL(2, i);
     }
-    BOOST_REQUIRE_EQUAL(3, i);
+    REQUIRE_EQUAL(3, i);
 
     {
         scope_exit g([&i] () { ++i; });
-        BOOST_REQUIRE_EQUAL(3, i);
+        REQUIRE_EQUAL(3, i);
         g.disable();
     }
-    BOOST_REQUIRE_EQUAL(3, i);
+    REQUIRE_EQUAL(3, i);
 
     {
         scope_exit g([&i] () { --i; });
-        BOOST_REQUIRE_EQUAL(4, ++i);
+        REQUIRE_EQUAL(4, ++i);
         g.disable();
         g.enable();
     }
-    BOOST_REQUIRE_EQUAL(3, i);
+    REQUIRE_EQUAL(3, i);
 
     {
         auto fun = [&i] () { ++i; };
         on_scope_exit<decltype(fun)> g(fun);
-        BOOST_REQUIRE_EQUAL(3, i);
+        REQUIRE_EQUAL(3, i);
     }
-    BOOST_REQUIRE_EQUAL(4, i);
+    REQUIRE_EQUAL(4, i);
 
     {
         UTXX_SCOPE_EXIT([&i] () { ++i; });
-        BOOST_REQUIRE_EQUAL(4, i);
+        REQUIRE_EQUAL(4, i);
     }
-    BOOST_REQUIRE_EQUAL(5, i);
+    REQUIRE_EQUAL(5, i);
 
     UTXX_SCOPE_EXIT([]() { return 0; });
     UTXX_SCOPE_EXIT([]() { return 1; });

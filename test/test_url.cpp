@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/url.hpp>
 #include <utxx/verbosity.hpp>
 #include <iostream>
@@ -38,116 +38,116 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 using namespace std;
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_url )
+TEST_CASE( test_url )
 {
     addr_info url;
-    BOOST_REQUIRE(parse_url("tcp://127.0.0.1", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("127.0.0.1", url.addr);
-    BOOST_REQUIRE_EQUAL("",          url.port);
-    BOOST_REQUIRE_EQUAL("",          url.path);
-    BOOST_REQUIRE(url.is_ipv4());
+    REQUIRE(parse_url("tcp://127.0.0.1", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("127.0.0.1", url.addr);
+    REQUIRE_EQUAL("",          url.port);
+    REQUIRE_EQUAL("",          url.path);
+    REQUIRE(url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("tcp://localhost:2345", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("localhost", url.addr);
-    BOOST_REQUIRE_EQUAL("2345",      url.port);
-    BOOST_REQUIRE_EQUAL("",          url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("tcp://localhost:2345", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("localhost", url.addr);
+    REQUIRE_EQUAL("2345",      url.port);
+    REQUIRE_EQUAL("",          url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("http://127.0.0.1", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("127.0.0.1", url.addr);
-    BOOST_REQUIRE_EQUAL("80",        url.port);
-    BOOST_REQUIRE_EQUAL("",          url.path);
-    BOOST_REQUIRE(url.is_ipv4());
+    REQUIRE(parse_url("http://127.0.0.1", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("127.0.0.1", url.addr);
+    REQUIRE_EQUAL("80",        url.port);
+    REQUIRE_EQUAL("",          url.path);
+    REQUIRE(url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("tcp://233.37.0.10@127.0.0.1;eth1:1024/temp", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("233.37.0.10@127.0.0.1;eth1", url.addr);
-    BOOST_REQUIRE_EQUAL("1024",      url.port);
-    BOOST_REQUIRE_EQUAL("/temp",     url.path);
-    BOOST_REQUIRE(url.is_ipv4());
+    REQUIRE(parse_url("tcp://233.37.0.10@127.0.0.1;eth1:1024/temp", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("233.37.0.10@127.0.0.1;eth1", url.addr);
+    REQUIRE_EQUAL("1024",      url.port);
+    REQUIRE_EQUAL("/temp",     url.path);
+    REQUIRE(url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("udp://myhome.com:1234", url));
-    BOOST_REQUIRE_EQUAL(UDP,         url.proto);
-    BOOST_REQUIRE_EQUAL("myhome.com",url.addr);
-    BOOST_REQUIRE_EQUAL("1234",      url.port);
-    BOOST_REQUIRE_EQUAL("",          url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("udp://myhome.com:1234", url));
+    REQUIRE_EQUAL(UDP,         url.proto);
+    REQUIRE_EQUAL("myhome.com",url.addr);
+    REQUIRE_EQUAL("1234",      url.port);
+    REQUIRE_EQUAL("",          url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("http://localhost", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("localhost", url.addr);
-    BOOST_REQUIRE_EQUAL("80",        url.port);
-    BOOST_REQUIRE_EQUAL("",          url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("http://localhost", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("localhost", url.addr);
+    REQUIRE_EQUAL("80",        url.port);
+    REQUIRE_EQUAL("",          url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("https://localhost", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("https",     url.proto_str());
-    BOOST_REQUIRE_EQUAL("localhost", url.addr);
-    BOOST_REQUIRE_EQUAL("443",       url.port);
-    BOOST_REQUIRE_EQUAL("",          url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("https://localhost", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("https",     url.proto_str());
+    REQUIRE_EQUAL("localhost", url.addr);
+    REQUIRE_EQUAL("443",       url.port);
+    REQUIRE_EQUAL("",          url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("http://google.com:8000/a/b/d?a=3", url));
-    BOOST_REQUIRE_EQUAL(TCP,         url.proto);
-    BOOST_REQUIRE_EQUAL("google.com",url.addr);
-    BOOST_REQUIRE_EQUAL("8000",      url.port);
-    BOOST_REQUIRE_EQUAL("/a/b/d?a=3",url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("http://google.com:8000/a/b/d?a=3", url));
+    REQUIRE_EQUAL(TCP,         url.proto);
+    REQUIRE_EQUAL("google.com",url.addr);
+    REQUIRE_EQUAL("8000",      url.port);
+    REQUIRE_EQUAL("/a/b/d?a=3",url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("uds:///tmp/path", url));
-    BOOST_REQUIRE_EQUAL(UDS,         url.proto);
-    BOOST_REQUIRE_EQUAL("",          url.addr);
-    BOOST_REQUIRE_EQUAL("",          url.port);
-    BOOST_REQUIRE_EQUAL("/tmp/path", url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("uds:///tmp/path", url));
+    REQUIRE_EQUAL(UDS,         url.proto);
+    REQUIRE_EQUAL("",          url.addr);
+    REQUIRE_EQUAL("",          url.port);
+    REQUIRE_EQUAL("/tmp/path", url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("file:///tmp/path", url));
-    BOOST_REQUIRE_EQUAL(FILENAME,    url.proto);
-    BOOST_REQUIRE_EQUAL("",          url.addr);
-    BOOST_REQUIRE_EQUAL("",          url.port);
-    BOOST_REQUIRE_EQUAL("/tmp/path", url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("file:///tmp/path", url));
+    REQUIRE_EQUAL(FILENAME,    url.proto);
+    REQUIRE_EQUAL("",          url.addr);
+    REQUIRE_EQUAL("",          url.port);
+    REQUIRE_EQUAL("/tmp/path", url.path);
+    REQUIRE(!url.is_ipv4());
 
-    BOOST_REQUIRE(parse_url("cmd://7z -so x temp.7z", url));
-    BOOST_REQUIRE_EQUAL(CMD,         url.proto);
-    BOOST_REQUIRE_EQUAL("",          url.addr);
-    BOOST_REQUIRE_EQUAL("",          url.port);
-    BOOST_REQUIRE_EQUAL("cmd://7z -so x temp.7z", url.url);
-    BOOST_REQUIRE_EQUAL("7z -so x temp.7z",       url.path);
-    BOOST_REQUIRE(!url.is_ipv4());
+    REQUIRE(parse_url("cmd://7z -so x temp.7z", url));
+    REQUIRE_EQUAL(CMD,         url.proto);
+    REQUIRE_EQUAL("",          url.addr);
+    REQUIRE_EQUAL("",          url.port);
+    REQUIRE_EQUAL("cmd://7z -so x temp.7z", url.url);
+    REQUIRE_EQUAL("7z -so x temp.7z",       url.path);
+    REQUIRE(!url.is_ipv4());
 
     string ip = "123.45.67.89";
-    BOOST_REQUIRE(make_pair(ip, 10) == split_addr("123.45.67.89:10"));
-    BOOST_REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89"));
-    BOOST_REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89:99999"));
-    BOOST_CHECK_THROW(split_addr(ip, true), runtime_error);
-    BOOST_CHECK_THROW(split_addr("123.45.67.89:99999", true), runtime_error);
+    REQUIRE(make_pair(ip, 10) == split_addr("123.45.67.89:10"));
+    REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89"));
+    REQUIRE(make_pair(ip, -1) == split_addr("123.45.67.89:99999"));
+    CHECK_THROW(split_addr(ip, true), std::runtime_error);
+    CHECK_THROW(split_addr("123.45.67.89:99999", true), std::runtime_error);
 
-    BOOST_CHECK(!url.assign(TCP,       "google.com", 1234));
-    BOOST_CHECK(!url.assign(UNDEFINED, "google.com", 1234));
-    BOOST_CHECK( url.assign(TCP,       "127.1.2.3",  1234));
-    BOOST_CHECK_EQUAL("tcp://127.1.2.3:1234", url.url);
+    CHECK(!url.assign(TCP,       "google.com", 1234));
+    CHECK(!url.assign(UNDEFINED, "google.com", 1234));
+    CHECK( url.assign(TCP,       "127.1.2.3",  1234));
+    CHECK_EQUAL("tcp://127.1.2.3:1234", url.url);
 
-    BOOST_CHECK( url.assign(TCP,       "127.1.2.3",  1234, "home"));
-    BOOST_CHECK_EQUAL("tcp://127.1.2.3:1234/home", url.url);
+    CHECK( url.assign(TCP,       "127.1.2.3",  1234, "home"));
+    CHECK_EQUAL("tcp://127.1.2.3:1234/home", url.url);
 
-    BOOST_CHECK( url.assign(TCP,       "127.1.2.3",  1234, "/home"));
-    BOOST_CHECK_EQUAL("tcp://127.1.2.3:1234/home", url.url);
+    CHECK( url.assign(TCP,       "127.1.2.3",  1234, "/home"));
+    CHECK_EQUAL("tcp://127.1.2.3:1234/home", url.url);
 
-    BOOST_CHECK( url.assign(TCP,       "127.1.2.3",  1234, "/home", "eth0"));
-    BOOST_CHECK_EQUAL("tcp://127.1.2.3;eth0:1234/home", url.url);
+    CHECK( url.assign(TCP,       "127.1.2.3",  1234, "/home", "eth0"));
+    CHECK_EQUAL("tcp://127.1.2.3;eth0:1234/home", url.url);
 
-    BOOST_REQUIRE(parse_url("udp://224.0.32.11;:15320/320IB", url));
-    BOOST_REQUIRE_EQUAL(UDP,            url.proto);
-    BOOST_REQUIRE_EQUAL("224.0.32.11;", url.addr);
-    BOOST_REQUIRE_EQUAL("15320",        url.port);
-    BOOST_REQUIRE_EQUAL("/320IB",       url.path);
-    BOOST_REQUIRE(url.is_ipv4());
+    REQUIRE(parse_url("udp://224.0.32.11;:15320/320IB", url));
+    REQUIRE_EQUAL(UDP,            url.proto);
+    REQUIRE_EQUAL("224.0.32.11;", url.addr);
+    REQUIRE_EQUAL("15320",        url.port);
+    REQUIRE_EQUAL("/320IB",       url.path);
+    REQUIRE(url.is_ipv4());
 
     auto url_copy = url;
-    BOOST_CHECK( url_copy == url );
+    CHECK( url_copy == url );
 }

@@ -29,9 +29,8 @@
 
 #include <atomic>
 
-#include <boost/noncopyable.hpp>
-
 #include <utxx/compiler_hints.hpp>
+#include <utxx/noncopyable.hpp>
 #include <utxx/thread_local.hpp>
 
 namespace utxx {
@@ -41,7 +40,7 @@ namespace utxx {
 // thread_cached_int's you should considering breaking up the Tag space even
 // further.
 template <class IntT, class Tag=IntT>
-class thread_cached_int : boost::noncopyable {
+class thread_cached_int : utxx::noncopyable {
     struct int_cache;
 
 public:

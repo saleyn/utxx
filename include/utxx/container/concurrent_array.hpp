@@ -42,8 +42,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_CONCURRENT_ARRAY_HPP_
 #define _UTXX_CONCURRENT_ARRAY_HPP_
 
-#include <boost/tuple/tuple.hpp>
-#include <boost/static_assert.hpp>
+#include <tuple>
 #include <utxx/meta.hpp>
 
 #ifndef CACHELINE_SIZE
@@ -122,16 +121,16 @@ public:
     /// <code>
     ///     {
     ///         typedef synch::scoped_lock(concurrent_array<T>::lock_type lock_t;
-    ///         boost::tuple<lock_t, data_t&> tuple = array.locked_get(10);
+    ///         std::tuple<lock_t, data_t&> tuple = array.locked_get(10);
     ///         ... Do something with item without making blocking or system calls!
     ///         ... The lock will be released automatically at the scope exit.
     ///     }
     /// </code>
-    boost::tuple<synch::lock_guard<Lock>, T&> 
+    std::tuple<synch::lock_guard<Lock>, T&>
     locked_get(int i) {
         int lock_num = i & max_lock_num;
         synch::lock_guard<Lock> guard(m_header.lock[lock_num]);
-        return boost::tuple<synch::lock_guard<Lock>, T&>(guard, m_data[i]);
+        return std::tuple<synch::lock_guard<Lock>, T&>(guard, m_data[i]);
     }
 
     T       get(int i)              { return operator[] (i); }

@@ -1,5 +1,7 @@
 //#define BOOST_TEST_MODULE logger_test
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <utxx/config_tree.hpp>
 #if __cplusplus >= 201703L
 #include <string_view>
@@ -10,14 +12,12 @@
 #include <utxx/perf_histogram.hpp>
 #include <utxx/logger.hpp>
 #include <utxx/verbosity.hpp>
-#include <utxx/test_helper.hpp>
 #include <utxx/high_res_timer.hpp>
 #include <atomic>
 
-using namespace boost::property_tree;
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_async_logger )
+TEST_CASE( test_async_logger )
 {
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
@@ -33,9 +33,9 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
     pt.put("logger.file.ho-header",utxx::variant(true));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
-        BOOST_TEST_MESSAGE(pt.to_string(2, false, true));
+        TEST_MESSAGE(pt.to_string(2, false, true));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.file"));
+    REQUIRE(pt.get_child_optional("logger.file"));
 
     logger& log = logger::instance();
     log.init(pt);
@@ -53,32 +53,32 @@ BOOST_AUTO_TEST_CASE( test_async_logger )
 
     {
         std::ifstream in(filename);
-        BOOST_REQUIRE(in);
+        REQUIRE(in);
         std::string s, exp;
         for (int i = 0, n = 0; i < iterations; i++) {
             char buf[128];
             getline(in, s);
             sprintf(buf, "|E||(%d) This is an error #%d", ++n, 123); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exp, s);
             getline(in, s);
             sprintf(buf, "|W||(%d) This is a %s", ++n, "warning"); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exp, s);
             getline(in, s);
             sprintf(buf, "|F||(%d) This is a %s", ++n, "fatal error"); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exp, s);
             getline(in, s);
             sprintf(buf, "|E|Cat1|(%d) This is an error #%d", ++n, 456); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exp, s);
             getline(in, s);
             sprintf(buf, "|W|Cat2|(%d) This is a warning", ++n); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exp, s);
             getline(in, s);
             sprintf(buf, "|F|Cat3|(%d) This is a fatal error", ++n); exp = buf;
-            BOOST_REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exp, s);
         }
-        BOOST_REQUIRE(getline(in, s));
-        BOOST_REQUIRE_EQUAL("|I||Logger thread finished", s);
-        BOOST_REQUIRE(!getline(in, s));
+        REQUIRE(getline(in, s));
+        REQUIRE_EQUAL("|I||Logger thread finished", s);
+        REQUIRE(!getline(in, s));
     }
 
     ::unlink(filename);
@@ -111,7 +111,7 @@ std::string get_data(std::ifstream& in, int& thread, int& num, struct tm& tm) {
 void verify_result(const char* filename, int threads, int iterations, int thr_msgs)
 {
     std::ifstream in(filename);
-    BOOST_REQUIRE(!in.fail());
+    REQUIRE(!in.fail());
     std::string s, exp;
     long num[threads], last_time[threads];
 
@@ -138,16 +138,16 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
             th = 1, j = 1;
             s = get_data(in, th, j, tm);
             if (s.empty())
-                BOOST_TEST_MESSAGE("Thread" << th << ", line=" << j);
-            BOOST_REQUIRE(s != "");
+                TEST_MESSAGE("Thread" << th << ", line=" << j);
+            REQUIRE(s != "");
             int idx = (j-1) % thr_msgs;
             sprintf(buf, "|%s|%d %9ld %s", my_data[idx].type, th, ++num[th-1], my_data[idx].msg);
             exp = buf;
             if (exp != s) std::cerr << "File " << filename << ":" << n << std::endl;
-            BOOST_REQUIRE_EQUAL(exp, s);
-            BOOST_REQUIRE_EQUAL(exptm.tm_year, tm.tm_year);
-            BOOST_REQUIRE_EQUAL(exptm.tm_mon,  tm.tm_mon);
-            BOOST_REQUIRE_EQUAL(exptm.tm_mday, tm.tm_mday);
+            REQUIRE_EQUAL(exp, s);
+            REQUIRE_EQUAL(exptm.tm_year, tm.tm_year);
+            REQUIRE_EQUAL(exptm.tm_mon,  tm.tm_mon);
+            REQUIRE_EQUAL(exptm.tm_mday, tm.tm_mday);
             cur_time = tm.tm_hour * 3600 + tm.tm_min * 60 + tm.tm_sec;
             if (last_time[th-1] > (long)cur_time)
                 std::cerr << "File " << filename << ":" << n
@@ -157,12 +157,12 @@ void verify_result(const char* filename, int threads, int iterations, int thr_ms
                           << tm.tm_min << ':' << tm.tm_sec << std::endl;
             if (l_time > cur_time)
                 time_miss++;
-            BOOST_REQUIRE(last_time[th-1] <= (long)cur_time);
+            REQUIRE(last_time[th-1] <= (long)cur_time);
             last_time[th-1] = cur_time;
             l_time = cur_time;
         }
     }
-    BOOST_REQUIRE(!getline(in, s));
+    REQUIRE(!getline(in, s));
 
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE) {
         for(int i=1; i <= threads; i++)
@@ -195,7 +195,7 @@ struct worker {
     }
 };
 
-BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
+TEST_CASE( test_async_logger_concurrent )
 {
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE( test_async_logger_concurrent )
     pt.put("logger.file.append",        variant(false));
     pt.put("logger.file.no-header",     variant(true));
 
-    BOOST_REQUIRE(pt.get_child_optional("logger.file"));
+    REQUIRE(pt.get_child_optional("logger.file"));
 
     logger& log = logger::instance();
     log.init(pt);
@@ -269,7 +269,7 @@ struct latency_worker {
                     return snprintf(a_buf, a_size, "%d %9d This is an error #123", id, i+1);
                 };
                 utxx::logger::instance().async_logf(LEVEL_ERROR, s_cat, f,
-                        __FILE__, BOOST_CURRENT_FUNCTION);
+                        __FILE__, __func__);
             }
 #if __cplusplus >= 201703L
             else if (LogAsync == 2) {
@@ -307,7 +307,7 @@ const int THREADS    = getenv("THREADS")    ? atoi(getenv("THREADS"))      : 3;
 template <int LogAsync>
 void run_test(const char* config_type, open_mode mode, int def_threads)
 {
-    BOOST_TEST_MESSAGE("Testing back-end: " << config_type);
+    TEST_MESSAGE("Testing back-end: " << config_type);
     variant_tree pt;
     const char* filename = "/tmp/logger.file.log";
 
@@ -347,7 +347,7 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
 
     barrier.wait();
 
-    BOOST_TEST_MESSAGE("Producers started");
+    TEST_MESSAGE("Producers started");
 
     perf_histogram totals(to_string("Total ",config_type," performance"));
     double sum_time = 0;
@@ -376,22 +376,22 @@ void run_test(const char* config_type, open_mode mode, int def_threads)
     ::unlink(filename);
 }
 
-BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite )
+TEST_CASE( test_logger_file_perf_overwrite )
 {
     run_test<0>("file", MODE_OVERWRITE, THREADS);
 }
 
-BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite_async )
+TEST_CASE( test_logger_file_perf_overwrite_async )
 {
     run_test<1>("file", MODE_OVERWRITE, THREADS);
 }
 
-BOOST_AUTO_TEST_CASE( test_logger_file_perf_overwrite_sview )
+TEST_CASE( test_logger_file_perf_overwrite_sview )
 {
     run_test<2>("file", MODE_OVERWRITE, THREADS);
 }
 
-BOOST_AUTO_TEST_CASE( test_logger_file_perf_append )
+TEST_CASE( test_logger_file_perf_append )
 {
     run_test<0>("file", MODE_APPEND, THREADS);
 }
@@ -399,8 +399,10 @@ BOOST_AUTO_TEST_CASE( test_logger_file_perf_append )
 // Note that this test should fail when THREAD environment is set to
 // a value > 1 for thread-safety reasons described in the logger_impl_file.hpp.
 // We use default thread count = 1 to avoid the failure.
-BOOST_AUTO_TEST_CASE( test_logger_file_perf_no_mutex )
+TEST_CASE( test_logger_file_perf_no_mutex )
 {
     run_test<false>("file", MODE_NO_MUTEX, 1);
 }
 
+
+#endif // UTXX_HAVE_BOOST

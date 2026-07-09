@@ -11,7 +11,7 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/collections.hpp>
 
 namespace collections_test {
@@ -33,18 +33,18 @@ public:
     }
 };
 
-BOOST_AUTO_TEST_SUITE( test_collections )
+TEST_SUITE( test_collections )
 
-BOOST_AUTO_TEST_CASE( int_seq_merge_test )
+TEST_CASE( int_seq_merge_test )
 {
     utxx::collections<iseq> m;
     for (int i=0; i<100; i++) {
         m.add(iseq(rand() % 100));
     }
     v.sort(&iseq::compare);
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(m.begin(), m.end(), v.begin(), v.end());
+    CHECK_EQUAL_COLLECTIONS(m.begin(), m.end(), v.begin(), v.end());
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+TEST_SUITE_END()
 
 } // namespace collections_test

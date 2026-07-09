@@ -5,9 +5,11 @@ project(utxx VERSION 1.4.1)
 #===============================================================================
 # CMAKE options customization
 #===============================================================================
+option(WITH_BOOST              "Enable Boost-dependent components"          ON)
 option(WITH_THRIFT             "Enable to compile UTXX with Thrift"         OFF)
 option(VERBOSE                 "Turn verbosity on|off"                      OFF)
 option(WITH_ENUM_SERIALIZATION "Turn enum serialization support on|off"     OFF)
+option(WITH_ATOMIC_HASH_MAP    "Enable Folly-based atomic_hash_map/array (needs resync)" OFF)
 
 if(VERBOSE)
   set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -123,6 +125,10 @@ if(ZLIB_FOUND)
 	list(APPEND UTXX_LIBS ${ZLIB_LIBRARIES})
 endif()
 
+if(WITH_ATOMIC_HASH_MAP)
+  set(UTXX_HAVE_ATOMIC_HASH_MAP 1)
+endif()
+
 execute_process(COMMAND getconf LEVEL1_DCACHE_LINESIZE OUTPUT_VARIABLE UTXX_CL_SIZE)
 
 #check_type_size(size_t SIZE_T)
@@ -167,7 +173,7 @@ endif()
 
 # Find python-lxml
 execute_process(COMMAND ${Python_EXECUTABLE} -c
-                  "from distutils.sysconfig import *;print(get_python_lib(plat_specific=True))"
+                  "import sysconfig;print(sysconfig.get_path('platlib'))"
                 OUTPUT_VARIABLE PYTHON_SITE_PACKAGES OUTPUT_STRIP_TRAILING_WHITESPACE)
 if(NOT EXISTS "${PYTHON_SITE_PACKAGES}/lxml")
   message(FATAL_ERROR "${Python_LXML} is not installed!")
@@ -189,32 +195,37 @@ if(WITH_THRIFT)
 endif()
 
 # Boost (with local modifications):
-set(Boost_USE_STATIC_LIBS OFF)
-set(Boost_USE_MULTITHREAD ON)
-set(Boost_NO_SYSTEM_PATHS ON)
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build")
+if(WITH_BOOST)
+  set(Boost_USE_STATIC_LIBS OFF)
+  set(Boost_USE_MULTITHREAD ON)
+  set(Boost_NO_SYSTEM_PATHS ON)
+  set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/build")
 
-find_package(Boost 1.58.0 REQUIRED COMPONENTS
-             system filesystem date_time program_options thread regex
-             unit_test_framework timer)
+  find_package(Boost 1.58.0 COMPONENTS
+               system filesystem date_time program_options thread regex
+               unit_test_framework timer)
 
-if(Boost_FOUND)
-  #include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-  #link_directories(${Boost_LIBRARY_DIRS})
-  set(UTXX_HAVE_BOOST_TIMER_TIMER_HPP 1)
-	message(STATUS "Found boost: ${Boost_LIBRARY_DIRS}")
+  if(Boost_FOUND)
+    set(UTXX_HAVE_BOOST 1)
+    set(UTXX_HAVE_BOOST_TIMER_TIMER_HPP 1)
+    message(STATUS "Found boost: ${Boost_LIBRARY_DIRS}")
+  else()
+    message(STATUS "Boost not found - building without Boost-dependent components")
+  endif()
+
+  set(Boost_LIBRARIES
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_THREAD_LIBRARY}
+    ${Boost_REGEX_LIBRARY}
+    ${Boost_DATE_TIME_LIBRARY}
+    ${Boost_FILESYSTEM_LIBRARY}
+    ${Boost_SYSTEM_LIBRARY}
+    ${Boost_PROGRAM_OPTIONS_LIBRARY}
+    ${Boost_IOSTREAMS_LIBRARY}
+  )
+else()
+  message(STATUS "Building without Boost (WITH_BOOST=OFF)")
 endif()
-
-set(Boost_LIBRARIES
-  ${Boost_SYSTEM_LIBRARY}
-  ${Boost_THREAD_LIBRARY}
-  ${Boost_REGEX_LIBRARY}
-  ${Boost_DATE_TIME_LIBRARY}
-  ${Boost_FILESYSTEM_LIBRARY}
-  ${Boost_SYSTEM_LIBRARY}
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
-  ${Boost_IOSTREAMS_LIBRARY}
-)
 
 set(AddCleanFiles)  # Additional clean files
 
@@ -279,18 +290,17 @@ add_custom_target(build-version
 #  COMMAND ${CMAKE_COMMAND} -H${CMAKE_SOURCE_DIR} -B${CMAKE_BINARY_DIR} -LA
 #)
 
-include_directories(
-  SYSTEM
-  ${Boost_INCLUDE_DIRS}
-  ${Thrift_INCLUDE_DIRS}
-)
+if(UTXX_HAVE_BOOST)
+  include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+  link_directories(${Boost_LIBRARY_DIRS})
+endif()
+if(Thrift_INCLUDE_DIRS)
+  include_directories(SYSTEM ${Thrift_INCLUDE_DIRS})
+  link_directories(${Thrift_LIBRARY_DIRS})
+endif()
 include_directories(
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_BINARY_DIR}/include
-)
-link_directories(
-  ${Boost_LIBRARY_DIRS}
-  ${Thrift_LIBRARY_DIRS}
 )
 
 #-------------------------------------------------------------------------------

@@ -25,10 +25,11 @@ at http://www.boost.org/LICENSE_1_0.txt)
 */
 #pragma once
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
 #include <deque>
 #include <boost/system/error_code.hpp>
-#include <boost/bind/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/asio/write.hpp>
 
 namespace utxx {
@@ -126,3 +127,5 @@ public:
 };
 
 } // namespace utxx
+
+#endif // UTXX_HAVE_BOOST

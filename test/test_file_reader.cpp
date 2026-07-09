@@ -13,9 +13,11 @@
  * at http://www.boost.org/LICENSE_1_0.txt)
  */
 
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
 #include <utxx/file_writer.hpp>
 #include <utxx/file_reader.hpp>
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 
 #include <boost/assign/std/list.hpp>
 using namespace boost::assign;
@@ -40,7 +42,7 @@ struct string_codec {
 
     // Decoder
     ssize_t operator()(data_t& a_msg, const char *a_buf, size_t a_len, size_t a_offset) const {
-        // BOOST_TEST_MESSAGE( getpid() << ": decode at " << a_offset );
+        // TEST_MESSAGE( getpid() << ": decode at " << a_offset );
         size_t h = sizeof(size_t);
         if (a_len < h)
             return 0;
@@ -98,63 +100,63 @@ struct f1 {
     }
 };
 
-BOOST_AUTO_TEST_SUITE( test_file_reader )
+TEST_SUITE( test_file_reader )
 
-BOOST_AUTO_TEST_CASE( exceptions )
+TEST_CASE( exceptions )
 {
     // unexisting file case
-    BOOST_REQUIRE_THROW(reader_t r("hf/sdf/hfhd/fvdfk"), std::ifstream::failure);
+    REQUIRE_THROW(reader_t r("hf/sdf/hfhd/fvdfk"), std::ifstream::failure);
     // non-regular file case
     reader_t r("/");
-    BOOST_REQUIRE_THROW(r.begin(), std::ifstream::failure);
+    REQUIRE_THROW(r.begin(), std::ifstream::failure);
 }
 
-BOOST_FIXTURE_TEST_CASE( simple_write, f0 )
+FIXTURE_TEST_CASE( simple_write, f0 )
 {
     std::list<std::string> lst;
     lst += "couple", "strings";
     size_t n = write_file(fname, lst);
     size_t exp = 2 * sizeof(size_t) + 6 + 7;
-    BOOST_REQUIRE_EQUAL(exp, n);
+    REQUIRE_EQUAL(exp, n);
 }
 
-BOOST_FIXTURE_TEST_CASE( initial_value, f1 ) {
+FIXTURE_TEST_CASE( initial_value, f1 ) {
     reader_t r;
     r.open(fname);
 
     it_t it = r.begin();
     it_t e = r.end();
-    BOOST_REQUIRE_EQUAL(false, it == e);
-    BOOST_REQUIRE_EQUAL(true, it != e);
+    REQUIRE_EQUAL(false, it == e);
+    REQUIRE_EQUAL(true, it != e);
 
     it_t it1 = r.begin(), e1 = r.end();
-    BOOST_REQUIRE_EQUAL(false, it1 == e1);
-    BOOST_REQUIRE_EQUAL(true, it1 != e1);
+    REQUIRE_EQUAL(false, it1 == e1);
+    REQUIRE_EQUAL(true, it1 != e1);
 
     reader_t r2;
-    BOOST_REQUIRE_EQUAL((r2.begin() == r2.end()), true);
+    REQUIRE_EQUAL((r2.begin() == r2.end()), true);
 }
 
-BOOST_FIXTURE_TEST_CASE( simple_read, f1 )
+FIXTURE_TEST_CASE( simple_read, f1 )
 {
     reader_t r(fname);
     std::list<std::string> out;
     for (it_t it = r.begin(), e = r.end(); it != e; ++it) {
         out.push_back(*it);
     }
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+    CHECK_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 
-BOOST_FIXTURE_TEST_CASE( foreach, f1 )
+FIXTURE_TEST_CASE( foreach, f1 )
 {
     reader_t r(fname);
     std::list<std::string> out;
     for(auto& s : r)
         out.push_back(s);
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+    CHECK_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 
-BOOST_FIXTURE_TEST_CASE( foreach_2, f1 )
+FIXTURE_TEST_CASE( foreach_2, f1 )
 {
     reader_t r(fname);
     std::list<std::string> out;
@@ -168,10 +170,10 @@ BOOST_FIXTURE_TEST_CASE( foreach_2, f1 )
     for(auto& s : r)
         out.push_back(s);
     // compare...
-    BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+    CHECK_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 }
 
-BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
+FIXTURE_TEST_CASE( fork_writer, f0 )
 {
     std::list<std::string> in;
     in += "couple", "strings", "more";
@@ -187,18 +189,18 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
         close(c2p[0]);
         close(p2c[1]);
 
-        BOOST_TEST_MESSAGE( "CHILD: 1st writing..." );
+        TEST_MESSAGE( "CHILD: 1st writing..." );
         write_file(fname, in);
 
-        BOOST_TEST_MESSAGE( "CHILD: 1st write done, signalling..." );
+        TEST_MESSAGE( "CHILD: 1st write done, signalling..." );
         (void)write(c2p[1], &marker, sizeof(marker));
 
-        BOOST_TEST_MESSAGE( "CHILD: 1st write done, waiting..." );
+        TEST_MESSAGE( "CHILD: 1st write done, waiting..." );
         (void)read(p2c[0], &marker, sizeof(marker));
 
         write_file(fname, in);
 
-        BOOST_TEST_MESSAGE( "CHILD: 2nd write done, signalling..." );
+        TEST_MESSAGE( "CHILD: 2nd write done, signalling..." );
         (void)write(c2p[1], &marker, sizeof(marker));
 
         exit(0);
@@ -207,32 +209,34 @@ BOOST_FIXTURE_TEST_CASE( fork_writer, f0 )
         close(c2p[1]);
         close(p2c[0]);
 
-        BOOST_TEST_MESSAGE( "PARNT: waiting for 1st write to complete..." );
+        TEST_MESSAGE( "PARNT: waiting for 1st write to complete..." );
         (void)read(c2p[0], &marker, sizeof(marker));
 
-        BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
+        TEST_MESSAGE( "PARNT: got marker, reading..." );
 
         reader_t r(fname, 0);
         std::list<std::string> out;
         for(auto& s : r) out.push_back(s);
-        BOOST_TEST_MESSAGE( "PARNT: compare collections" );
-        BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+        TEST_MESSAGE( "PARNT: compare collections" );
+        CHECK_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
 
-        BOOST_TEST_MESSAGE( "PARNT: 1st read done, signalling..." );
+        TEST_MESSAGE( "PARNT: 1st read done, signalling..." );
         (void)write(p2c[1], &marker, sizeof(marker));
 
-        BOOST_TEST_MESSAGE( "PARNT: waiting for 2nd write to complete..." );
+        TEST_MESSAGE( "PARNT: waiting for 2nd write to complete..." );
         (void)read(c2p[0], &marker, sizeof(marker));
 
-        BOOST_TEST_MESSAGE( "PARNT: got marker, reading..." );
+        TEST_MESSAGE( "PARNT: got marker, reading..." );
 
         out.clear();
         for(auto& s : r) out.push_back(s);
-        BOOST_TEST_MESSAGE( "PARNT: compare collections" );
-        BOOST_REQUIRE_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
+        TEST_MESSAGE( "PARNT: compare collections" );
+        CHECK_EQUAL_COLLECTIONS(in.begin(), in.end(), out.begin(), out.end());
     }
 }
 
-BOOST_AUTO_TEST_SUITE_END()
+TEST_SUITE_END()
 
 } // namespace file_reader_test
+
+#endif // UTXX_HAVE_BOOST

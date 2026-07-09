@@ -32,6 +32,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+#include <utxx/string.hpp>
+#include <utxx/error.hpp>
+#include <algorithm>
+#include <cstring>
+#include <cassert>
+#include <vector>
+
+#ifdef UTXX_HAVE_BOOST
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/preprocessor/seq/enum.hpp>
@@ -40,12 +49,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/seq/transform.hpp>
 #include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
-#include <boost/algorithm/string.hpp>
 #include <utxx/detail/enum_helper.hpp>
-#include <utxx/string.hpp>
-#include <utxx/error.hpp>
-#include <cassert>
-#include <vector>
 
 //------------------------------------------------------------------------------
 /// Strongly typed reflectable enum flags declaration
@@ -179,12 +183,15 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                     const char* a_delims=nullptr)                              \
         {                                                                      \
             const auto delim = a_delims ? a_delims : "|,; ";                   \
-            const auto sep   = boost::is_any_of(delim);                        \
             const auto f     = [=](auto& s1, auto& s2) {                       \
                 return (a_nocase ? &strcasecmp:&strcmp)(s1.c_str(),s2.c_str());\
             };                                                                 \
             std::vector<std::string> v; TYPE val = 0;                          \
-            boost::split(v, a, sep, boost::token_compress_on);                 \
+            for (const char* p = a, *e; *p; p = *e ? e+1 : e) {               \
+                while (*p && strchr(delim, *p)) ++p;                           \
+                e = p; while (*e && !strchr(delim, *e)) ++e;                   \
+                if (e > p) v.emplace_back(p, e);                               \
+            }                                                                  \
             for (auto& s : v) {                                                \
               TYPE n = 0;                                                      \
               for (TYPE i=1; i <= s_size; i++) {                               \
@@ -273,3 +280,5 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 // Internal macro for supporting BOOST_PP_SEQ_TRANSFORM
 #define UTXX_ENUM_INTERNAL_INIT__(x, _, i, item)                               \
             (BOOST_PP_TUPLE_ELEM(0, item) = 1ul << i)
+
+#endif // UTXX_HAVE_BOOST

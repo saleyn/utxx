@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <utxx/base64.hpp>
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <iostream>
 
 using namespace utxx;
@@ -44,7 +44,7 @@ static inline std::string rtrim(std::string s, char c = '=') {
     return s;
 }
 
-BOOST_AUTO_TEST_CASE( test_base64 )
+TEST_CASE( test_base64 )
 {
 	const std::string s_sources[] = {
         ""
@@ -75,17 +75,17 @@ BOOST_AUTO_TEST_CASE( test_base64 )
 
 	for(auto i=0u; i < std::extent<decltype(s_encoded)>::value; ++i) {
 		auto enc = base64::encode(s_sources[i]);
-		BOOST_CHECK_EQUAL(s_encoded[i], enc);
+		CHECK_EQUAL(s_encoded[i], enc);
         enc = base64::encode(s_sources[i], base64::STANDARD, false);
-		BOOST_CHECK_EQUAL(rtrim(s_encoded[i]), enc);
+		CHECK_EQUAL(rtrim(s_encoded[i]), enc);
 
         auto dec = base64::decode(s_encoded[i]);
         auto res = std::string(&*dec.begin(), dec.size());
-		BOOST_CHECK_EQUAL(s_sources[i], res);
+		CHECK_EQUAL(s_sources[i], res);
 
         dec = base64::decode(rtrim(s_encoded[i]));
         res = std::string(&*dec.begin(), dec.size());
-		BOOST_CHECK_EQUAL(s_sources[i], res);
+		CHECK_EQUAL(s_sources[i], res);
     }
 }
 

@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/algorithm.hpp>
 #include <utxx/error.hpp>
 #include <set>
@@ -42,10 +42,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
+TEST_CASE(test_algorithm_find_closest)
 {
     std::set<int> empty_set;
-    BOOST_CHECK(find_closest(empty_set, 5) == empty_set.end());
+    CHECK(find_closest(empty_set, 5) == empty_set.end());
 
     std::set<int> set{ 3, 4, 7, 9 };
 
@@ -55,17 +55,17 @@ BOOST_AUTO_TEST_CASE(test_algorithm_find_closest)
     auto b = find_closest(set, 4); //Returns '4'
     auto c = find_closest(set, 10); //Returns '9'
 
-    BOOST_CHECK_EQUAL(3, *x);
-    BOOST_CHECK_EQUAL(4, *y);
-    BOOST_CHECK_EQUAL(7, *a);
-    BOOST_CHECK_EQUAL(4, *b);
-    BOOST_CHECK_EQUAL(9, *c);
+    CHECK_EQUAL(3, *x);
+    CHECK_EQUAL(4, *y);
+    CHECK_EQUAL(7, *a);
+    CHECK_EQUAL(4, *b);
+    CHECK_EQUAL(9, *c);
 }
 
-BOOST_AUTO_TEST_CASE(test_algorithm_find_ge)
+TEST_CASE(test_algorithm_find_ge)
 {
     std::set<int> empty_set;
-    BOOST_CHECK(find_ge(empty_set, 5) == empty_set.end());
+    CHECK(find_ge(empty_set, 5) == empty_set.end());
 
     std::set<int> set{ 3, 4, 7, 9 };
 
@@ -75,11 +75,11 @@ BOOST_AUTO_TEST_CASE(test_algorithm_find_ge)
     auto c = find_ge(set, 8); //Returns '9'
     auto d = find_ge(set, 10); //Returns 'end'
 
-    BOOST_CHECK_EQUAL(3, *x);
-    BOOST_CHECK_EQUAL(7, *a);
-    BOOST_CHECK_EQUAL(4, *b);
-    BOOST_CHECK_EQUAL(9, *c);
-    BOOST_CHECK(d == set.end());
+    CHECK_EQUAL(3, *x);
+    CHECK_EQUAL(7, *a);
+    CHECK_EQUAL(4, *b);
+    CHECK_EQUAL(9, *c);
+    CHECK(d == set.end());
 }
 
 } // namespace utxx

@@ -41,10 +41,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <string>
 #include <sstream>
 #include <cmath>
-#include <boost/utility.hpp>
-#include <boost/tuple/tuple.hpp>
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <vector>
+#include <utxx/noncopyable.hpp>
 #include <utxx/print.hpp>
 
 //-----------------------------------------------------------------------------
@@ -80,7 +79,7 @@ inline std::string encode_base64(const std::string& str) {
 }
 */
 
-class base64 : public boost::noncopyable {
+class base64 : public utxx::noncopyable {
 public:
     enum encoding { STANDARD, URL };
   
@@ -152,6 +151,7 @@ public:
         auto dest_sz = std::ceil(static_cast<float>(size) * 0.75f);
 
         dest.clear();
+        if (size == 0) return 0;
         dest.resize(static_cast<unsigned int>(dest_sz));
 
         auto len = decode_unchecked(s.c_str(), size, &dest[0], enc);

@@ -35,7 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/alloc_cached.hpp>
 #include <utxx/alloc_fixed_pool.hpp>
-#include <boost/noncopyable.hpp>
+#include <cassert>
+#include <utxx/noncopyable.hpp>
 #include <utxx/atomic.hpp>
 #include <utxx/container/concurrent_stack.hpp>
 
@@ -102,7 +103,7 @@ public:
         : m_pool(memory::heap_fixed_size_object_pool::create(
                     &m_memory, sizeof(m_memory), sizeof(node_t<T>)))
     {
-        BOOST_ASSERT(m_pool.capacity() == Size);
+        assert(\1);
             // "Wrong capacity of the pool " << m_pool.capacity() << " (expected " << Size << ')');
     }
 

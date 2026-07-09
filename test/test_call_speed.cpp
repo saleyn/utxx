@@ -30,7 +30,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <iostream>
 #include <functional>
 #include <utxx/function.hpp>
@@ -42,7 +44,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 #include <boost/date_time/posix_time/posix_time_io.hpp>
 
-#include <boost/format.hpp>
+#include <format>
 
 const int iterations_count = 100000000;
 
@@ -185,7 +187,7 @@ int use_variant_fun() {
     return n;
 }
 
-BOOST_AUTO_TEST_CASE( test_call_speed )
+TEST_CASE( test_call_speed )
 {
     using namespace boost::posix_time;
 
@@ -223,8 +225,10 @@ BOOST_AUTO_TEST_CASE( test_call_speed )
         char buf[128];
         sprintf(buf, "  %-30s:  %.3fns (%d)",
             p.first.c_str(), 1000.0 * double(d.total_microseconds()) / iterations_count, i);
-        BOOST_TEST_MESSAGE(buf);
+        TEST_MESSAGE(buf);
     }
 
-    BOOST_CHECK(true);
+    CHECK(true);
 }
+
+#endif // UTXX_HAVE_BOOST

@@ -30,52 +30,50 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
-#include <boost/bind/bind.hpp>
-#include <boost/concept_check.hpp>
+#include <utxx/test_helper.hpp>
 #include <algorithm>
+#include <iomanip>
 #include <utxx/running_stat.hpp>
 #include <utxx/detail/mean_variance.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/persist_array.hpp>
 
 using namespace utxx;
-using namespace boost::placeholders;
 
 using running_sum      = basic_running_sum<double>;
 using running_variance = basic_running_variance<double>;
 
-BOOST_AUTO_TEST_CASE( test_running_stat_sum )
+TEST_CASE( test_running_stat_sum )
 {
     running_sum stat;
-    BOOST_REQUIRE_EQUAL(0u,  stat.count());
-    BOOST_REQUIRE_EQUAL(0.0, stat.mean());
-    BOOST_REQUIRE_EQUAL(0.0, stat.min());
-    BOOST_REQUIRE_EQUAL(0.0, stat.max());
+    REQUIRE_EQUAL(0u,  stat.count());
+    REQUIRE_EQUAL(0.0, stat.mean());
+    REQUIRE_EQUAL(0.0, stat.min());
+    REQUIRE_EQUAL(0.0, stat.max());
     running_sum s = stat;
-    BOOST_REQUIRE_EQUAL(0u,  s.count());
-    BOOST_REQUIRE_EQUAL(0.0, s.sum());
-    BOOST_REQUIRE_EQUAL(0.0, s.min());
-    BOOST_REQUIRE_EQUAL(0.0, s.max());
+    REQUIRE_EQUAL(0u,  s.count());
+    REQUIRE_EQUAL(0.0, s.sum());
+    REQUIRE_EQUAL(0.0, s.min());
+    REQUIRE_EQUAL(0.0, s.max());
     s.add(10);
     s.add(15);
-    BOOST_REQUIRE_EQUAL(2u,   s.count());
-    BOOST_REQUIRE_EQUAL(25.0, s.sum());
-    BOOST_REQUIRE_EQUAL(10.0, s.min());
-    BOOST_REQUIRE_EQUAL(15.0, s.max());
+    REQUIRE_EQUAL(2u,   s.count());
+    REQUIRE_EQUAL(25.0, s.sum());
+    REQUIRE_EQUAL(10.0, s.min());
+    REQUIRE_EQUAL(15.0, s.max());
     stat += s;
-    BOOST_REQUIRE_EQUAL(2u,   stat.count());
-    BOOST_REQUIRE_EQUAL(25.0, stat.sum());
-    BOOST_REQUIRE_EQUAL(10.0, stat.min());
-    BOOST_REQUIRE_EQUAL(15.0, stat.max());
+    REQUIRE_EQUAL(2u,   stat.count());
+    REQUIRE_EQUAL(25.0, stat.sum());
+    REQUIRE_EQUAL(10.0, stat.min());
+    REQUIRE_EQUAL(15.0, stat.max());
     stat -= s;
-    BOOST_REQUIRE_EQUAL(0u,   stat.count());
-    BOOST_REQUIRE_EQUAL(0.0,  stat.sum());
-    BOOST_REQUIRE_EQUAL(10.0, stat.min());
-    BOOST_REQUIRE_EQUAL(15.0, stat.max());
+    REQUIRE_EQUAL(0u,   stat.count());
+    REQUIRE_EQUAL(0.0,  stat.sum());
+    REQUIRE_EQUAL(10.0, stat.min());
+    REQUIRE_EQUAL(15.0, stat.max());
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stat_variance )
+TEST_CASE( test_running_stat_variance )
 {
     running_sum      sum;
     running_variance var;
@@ -83,37 +81,37 @@ BOOST_AUTO_TEST_CASE( test_running_stat_variance )
     for (int i=0; i < 10; i++) {
         sum.add(i);
         var.add(i);
-        BOOST_CHECK_EQUAL(sum.mean(), var.mean());
-        BOOST_TEST_MESSAGE("Mean: " << sum.mean() << " Variance: " << var.variance());
+        CHECK_EQUAL(sum.mean(), var.mean());
+        TEST_MESSAGE("Mean: " << sum.mean() << " Variance: " << var.variance());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stat )
+TEST_CASE( test_running_stat )
 {
     running_variance rs;
     int num[] = {2, 4, 6, 8, 10, 12, 14, 16, 18};
-    std::for_each(num, *(&num+1), boost::bind(&running_variance::add, &rs, _1));
+    std::for_each(num, *(&num+1), [&rs](auto v){ rs.add(v); });
 
     double avg  = detail::mean(num, *(&num+1));
     double var  = detail::variance(num, *(&num+1));
     double stdd = sqrtl(var);
 
-    BOOST_REQUIRE_EQUAL(2.0, rs.min());
-    BOOST_REQUIRE_EQUAL(18.0,rs.max());
-    BOOST_REQUIRE_EQUAL(9u,  rs.count());
-    BOOST_REQUIRE_EQUAL(10.0,rs.mean());
-    BOOST_REQUIRE_EQUAL(avg, rs.mean());
-    BOOST_REQUIRE_EQUAL(var, rs.variance());
-    BOOST_REQUIRE_EQUAL(stdd,rs.deviation());
+    REQUIRE_EQUAL(2.0, rs.min());
+    REQUIRE_EQUAL(18.0,rs.max());
+    REQUIRE_EQUAL(9u,  rs.count());
+    REQUIRE_EQUAL(10.0,rs.mean());
+    REQUIRE_EQUAL(avg, rs.mean());
+    REQUIRE_EQUAL(var, rs.variance());
+    REQUIRE_EQUAL(stdd,rs.deviation());
 
     rs.clear();
-    BOOST_REQUIRE_EQUAL(0.0, rs.min());
-    BOOST_REQUIRE_EQUAL(0.0, rs.max());
-    BOOST_REQUIRE_EQUAL(0u,  rs.count());
-    BOOST_REQUIRE_EQUAL(0.0, rs.mean());
-    BOOST_REQUIRE_EQUAL(0.0, rs.mean());
-    BOOST_REQUIRE_EQUAL(0.0, rs.variance());
-    BOOST_REQUIRE_EQUAL(0.0, rs.deviation());
+    REQUIRE_EQUAL(0.0, rs.min());
+    REQUIRE_EQUAL(0.0, rs.max());
+    REQUIRE_EQUAL(0u,  rs.count());
+    REQUIRE_EQUAL(0.0, rs.mean());
+    REQUIRE_EQUAL(0.0, rs.mean());
+    REQUIRE_EQUAL(0.0, rs.variance());
+    REQUIRE_EQUAL(0.0, rs.deviation());
 }
 
 namespace std
@@ -124,7 +122,7 @@ namespace std
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stat_moving_average )
+TEST_CASE( test_running_stat_moving_average )
 {
     #if __cplusplus >= 201103L
     {
@@ -135,12 +133,12 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average )
         auto sum = a.sum();
 
         moving_avg b(a);
-        BOOST_CHECK_EQUAL(sum, a.sum());
+        CHECK_EQUAL(sum, a.sum());
 
         moving_avg c(std::move(a));
-        BOOST_CHECK_EQUAL(sum,      c.sum());
-        BOOST_CHECK_EQUAL(0,        a.sum());
-        BOOST_CHECK(a.samples() == nullptr);
+        CHECK_EQUAL(sum,      c.sum());
+        CHECK_EQUAL(0,        a.sum());
+        CHECK(a.samples() == nullptr);
     }
     #endif
 
@@ -150,58 +148,58 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average )
         auto ZERO = std::make_pair
             (std::numeric_limits<int>::max(), std::numeric_limits<int>::min());
 
-        BOOST_CHECK_EQUAL(ZERO, ma.minmax());
+        CHECK_EQUAL(ZERO, ma.minmax());
 
         ma.add(0);
-        BOOST_REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
+        REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
         ma.clear();
 
-        BOOST_CHECK_EQUAL(4u, ma.capacity());
-        BOOST_CHECK_EQUAL(0u, ma.total());
+        CHECK_EQUAL(4u, ma.capacity());
+        CHECK_EQUAL(0u, ma.total());
 
-        ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
-        ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+        ma.add(2); REQUIRE_EQUAL(2.0, ma.mean());
+        ma.add(4); REQUIRE_EQUAL(3.0, ma.mean());
 
-        BOOST_CHECK_EQUAL(2u, ma.total());
-        BOOST_CHECK_EQUAL(2u, ma.size());
+        CHECK_EQUAL(2u, ma.total());
+        CHECK_EQUAL(2u, ma.size());
 
         auto mm = ma.minmax();
-        BOOST_CHECK_EQUAL(std::make_pair(2, 4), mm);
+        CHECK_EQUAL(std::make_pair(2, 4), mm);
 
-        ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
-        ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
-
-        mm = ma.minmax();
-        BOOST_CHECK_EQUAL  (std::make_pair(2, 8), mm);
-        BOOST_REQUIRE_EQUAL(4u, ma.size());
-
-        ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
-        ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+        ma.add(6); REQUIRE_EQUAL(4.0, ma.mean());
+        ma.add(8); REQUIRE_EQUAL(5.0, ma.mean());
 
         mm = ma.minmax();
-        BOOST_CHECK_EQUAL  (std::make_pair(6,10), mm);
+        CHECK_EQUAL(std::make_pair(2, 8), mm);
+        REQUIRE_EQUAL(4u, ma.size());
 
-        ma.add(2);  BOOST_REQUIRE_EQUAL(7.0, ma.mean());
-        ma.add(16); BOOST_REQUIRE_EQUAL(9.0, ma.mean());
-
-        mm = ma.minmax();
-        BOOST_CHECK_EQUAL  (std::make_pair(2,16), mm);
-
-        ma.add(6);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
-        ma.add(4);  BOOST_REQUIRE_EQUAL(7.0, ma.mean());
-        ma.add(10); BOOST_REQUIRE_EQUAL(9.0, ma.mean());
+        ma.add(10); REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(8);  REQUIRE_EQUAL(8.0, ma.mean());
 
         mm = ma.minmax();
-        BOOST_CHECK_EQUAL  (std::make_pair(4,16), mm);
+        CHECK_EQUAL(std::make_pair(6,10), mm);
 
-        BOOST_CHECK_EQUAL(4u,  ma.size());
-        BOOST_CHECK_EQUAL(36,  ma.sum());
-        BOOST_CHECK_EQUAL(11u, ma.total());
+        ma.add(2);  REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(16); REQUIRE_EQUAL(9.0, ma.mean());
+
+        mm = ma.minmax();
+        CHECK_EQUAL(std::make_pair(2,16), mm);
+
+        ma.add(6);  REQUIRE_EQUAL(8.0, ma.mean());
+        ma.add(4);  REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(10); REQUIRE_EQUAL(9.0, ma.mean());
+
+        mm = ma.minmax();
+        CHECK_EQUAL(std::make_pair(4,16), mm);
+
+        CHECK_EQUAL(4u,  ma.size());
+        CHECK_EQUAL(36,  ma.sum());
+        CHECK_EQUAL(11u, ma.total());
         ma.clear();
 
-        BOOST_REQUIRE_EQUAL(0u,   ma.size());
-        BOOST_REQUIRE_EQUAL(0.0,  ma.mean());
-        BOOST_REQUIRE_EQUAL(ZERO, ma.minmax());
+        REQUIRE_EQUAL(0u,   ma.size());
+        REQUIRE_EQUAL(0.0,  ma.mean());
+        REQUIRE_EQUAL(ZERO, ma.minmax());
     }
 
     {
@@ -210,40 +208,40 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average )
         auto ZERO = std::make_pair
             (std::numeric_limits<int>::max(), std::numeric_limits<int>::min());
 
-        BOOST_REQUIRE_EQUAL(ZERO, ma.minmax());
+        REQUIRE_EQUAL(ZERO, ma.minmax());
 
         ma.add(0);
-        BOOST_REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
+        REQUIRE_EQUAL(std::make_pair(0,0), ma.minmax());
         ma.clear();
 
-        BOOST_REQUIRE_EQUAL(4u, ma.capacity());
+        REQUIRE_EQUAL(4u, ma.capacity());
 
-        ma.add(2); BOOST_REQUIRE_EQUAL(2.0, ma.mean());
-        ma.add(4); BOOST_REQUIRE_EQUAL(3.0, ma.mean());
+        ma.add(2); REQUIRE_EQUAL(2.0, ma.mean());
+        ma.add(4); REQUIRE_EQUAL(3.0, ma.mean());
 
-        BOOST_REQUIRE_EQUAL(std::make_pair(2, 4), ma.minmax());
+        REQUIRE_EQUAL(std::make_pair(2, 4), ma.minmax());
 
-        ma.add(6); BOOST_REQUIRE_EQUAL(4.0, ma.mean());
-        ma.add(8); BOOST_REQUIRE_EQUAL(5.0, ma.mean());
+        ma.add(6); REQUIRE_EQUAL(4.0, ma.mean());
+        ma.add(8); REQUIRE_EQUAL(5.0, ma.mean());
 
-        BOOST_REQUIRE_EQUAL(std::make_pair(2, 8), ma.minmax());
-        BOOST_REQUIRE_EQUAL(4u, ma.size());
+        REQUIRE_EQUAL(std::make_pair(2, 8), ma.minmax());
+        REQUIRE_EQUAL(4u, ma.size());
 
-        ma.add(10); BOOST_REQUIRE_EQUAL(7.0, ma.mean());
-        ma.add(8);  BOOST_REQUIRE_EQUAL(8.0, ma.mean());
+        ma.add(10); REQUIRE_EQUAL(7.0, ma.mean());
+        ma.add(8);  REQUIRE_EQUAL(8.0, ma.mean());
 
-        BOOST_REQUIRE_EQUAL(std::make_pair(6,10), ma.minmax());
-        BOOST_REQUIRE_EQUAL(4u, ma.size());
-        BOOST_REQUIRE_EQUAL(32, ma.sum());
+        REQUIRE_EQUAL(std::make_pair(6,10), ma.minmax());
+        REQUIRE_EQUAL(4u, ma.size());
+        REQUIRE_EQUAL(32, ma.sum());
 
         ma.clear();
 
-        BOOST_REQUIRE_EQUAL(0u,  ma.size());
-        BOOST_REQUIRE_EQUAL(0.0, ma.mean());
+        REQUIRE_EQUAL(0u,  ma.size());
+        REQUIRE_EQUAL(0.0, ma.mean());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
+TEST_CASE( test_running_stats_moving_average_perf )
 {
     const long ITERATIONS = getenv("ITERATIONS")
                           ? atoi(getenv("ITERATIONS")) : 10000;
@@ -256,7 +254,7 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
     char buf[256];
 
     sprintf(buf, "== Add == (win) | std (us) | fast (us)| Ratio");
-    BOOST_TEST_MESSAGE(buf);
+    TEST_MESSAGE(buf);
 
     for (auto i : windows) {
         double elapsed1, elapsed2;
@@ -285,11 +283,11 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
                 (elapsed1 / elapsed2),
                 dummy != 0 ? "ok" : "not ok"
                );
-        BOOST_TEST_MESSAGE(buf);
+        TEST_MESSAGE(buf);
     }
 
     sprintf(buf, "== MinMax (win) | std (us) | fast (us)| Ratio");
-    BOOST_TEST_MESSAGE(buf);
+    TEST_MESSAGE(buf);
 
     for (auto i : windows) {
         double elapsed1, elapsed2;
@@ -318,11 +316,11 @@ BOOST_AUTO_TEST_CASE( test_running_stats_moving_average_perf )
                 (elapsed1 / elapsed2),
                 dummy != 0 ? "ok" : "not ok"
                );
-        BOOST_TEST_MESSAGE(buf);
+        TEST_MESSAGE(buf);
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
+TEST_CASE( test_running_stat_moving_average_check )
 {
     const long ITERATIONS = getenv("ITERATIONS")
                           ? atoi(getenv("ITERATIONS")) : 100000;
@@ -330,7 +328,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
     char buf[256];
 
     sprintf(buf, "== Match  (win) | Result");
-    BOOST_TEST_MESSAGE(buf);
+    TEST_MESSAGE(buf);
 
     {
         std::vector<int> data(ITERATIONS);
@@ -347,7 +345,7 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
                 mf.add(v); auto rf = mf.minmax();
 
                 if (rs != rf) {
-                    BOOST_TEST_MESSAGE("Window " << i << " mismatch at " <<
+                    TEST_MESSAGE("Window " << i << " mismatch at " <<
                                     j << " (value=" << v <<
                                     ") diff: " << (rs.first - rf.first));
                     int k = 0;
@@ -363,16 +361,16 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
 
                         if (k++ == j+5) break;
 
-                        BOOST_TEST_MESSAGE("[" << std::setw(8) << k << "]: "
+                        TEST_MESSAGE("[" << std::setw(8) << k << "]: "
                                       << std::setw(15) << d
                                       << std::setw(25) << rrs
                                       << std::setw(25) << rrf);
                     }
-                    BOOST_REQUIRE_EQUAL(rs, rf);
+                    REQUIRE_EQUAL(rs, rf);
                 }
             }
             sprintf(buf, "  %13d | ok", i);
-            BOOST_TEST_MESSAGE(buf);
+            TEST_MESSAGE(buf);
         }
     }
 
@@ -395,21 +393,21 @@ BOOST_AUTO_TEST_CASE( test_running_stat_moving_average_check )
                 static const double eps = 0.0000000001;
                 if (j++ > 0 && (rs.first - rf.first) > eps) {
                     if (rs != rf) {
-                        BOOST_TEST_MESSAGE("Window " << i << " mismatch at " <<
+                        TEST_MESSAGE("Window " << i << " mismatch at " <<
                                       j << " (value=" << v <<
                                       ") diff: " << (rs.first - rf.first));
                         int k = 0;
 
                         for (auto d : data) {
-                            BOOST_TEST_MESSAGE("[" << std::setw(8) << k++ << "]: " << d);
+                            TEST_MESSAGE("[" << std::setw(8) << k++ << "]: " << d);
                             if (k == j) break;
                         }
                     }
-                    BOOST_REQUIRE((rs.first - rf.first) < eps);
+                    REQUIRE((rs.first - rf.first) < eps);
                 }
             }
             sprintf(buf, "  %13d | ok", i);
-            BOOST_TEST_MESSAGE(buf);
+            TEST_MESSAGE(buf);
         }
     }
 }

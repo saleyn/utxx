@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/pcap.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/path.hpp>
@@ -94,7 +94,7 @@ static int cmp(const uint8_t* a_exp, const char* a_got, size_t a_sz) {
 
     uint i;
     for (i=0; i < a_sz && uint8_t(a_got[i]) == a_exp[i]; ++i);
-    BOOST_TEST_MESSAGE(
+    TEST_MESSAGE(
         "  Mismatch at " << i << " (0x" << std::hex
         << (int)*(uint8_t*)(a_got+i)    << std::dec
         << "):\n  Exp:\n             "  << hex(a_exp)
@@ -102,28 +102,28 @@ static int cmp(const uint8_t* a_exp, const char* a_got, size_t a_sz) {
     return res;
 }
 
-BOOST_AUTO_TEST_CASE( test_pcap_reader )
+TEST_CASE( test_pcap_reader )
 {
-    BOOST_STATIC_ASSERT(sizeof(pcap::file_header)   == 24);
-    BOOST_STATIC_ASSERT(sizeof(pcap::packet_header) == 16);
+    static_assert(sizeof(pcap::file_header)   == 24);
+    static_assert(sizeof(pcap::packet_header) == 16);
 
     pcap reader;
 
     const char* p = reinterpret_cast<const char*>(s_buffer);
-    BOOST_REQUIRE_EQUAL(24,     reader.read_file_header(p, sizeof(s_buffer)));
-    BOOST_REQUIRE_EQUAL(77,     reader.read_packet_header(p, sizeof(s_buffer)));
+    REQUIRE_EQUAL(24,     reader.read_file_header(p, sizeof(s_buffer)));
+    REQUIRE_EQUAL(77,     reader.read_packet_header(p, sizeof(s_buffer)));
 
-    BOOST_REQUIRE_EQUAL(2u,     reader.header().version_major);
-    BOOST_REQUIRE_EQUAL(4u,     reader.header().version_minor);
-    BOOST_REQUIRE_EQUAL(0,      reader.header().thiszone);
-    BOOST_REQUIRE_EQUAL(0u,     reader.header().sigfigs);
-    BOOST_REQUIRE_EQUAL(65535u, reader.header().snaplen);
-    BOOST_REQUIRE_EQUAL(1u,     reader.header().network);
+    REQUIRE_EQUAL(2u,     reader.header().version_major);
+    REQUIRE_EQUAL(4u,     reader.header().version_minor);
+    REQUIRE_EQUAL(0,      reader.header().thiszone);
+    REQUIRE_EQUAL(0u,     reader.header().sigfigs);
+    REQUIRE_EQUAL(65535u, reader.header().snaplen);
+    REQUIRE_EQUAL(1u,     reader.header().network);
 
-    BOOST_REQUIRE_EQUAL(1288962261u, reader.packet().ts_sec);
-    BOOST_REQUIRE_EQUAL(341636u,     reader.packet().ts_usec);
-    BOOST_REQUIRE_EQUAL(77u,         reader.packet().incl_len);
-    BOOST_REQUIRE_EQUAL(77u,         reader.packet().orig_len);
+    REQUIRE_EQUAL(1288962261u, reader.packet().ts_sec);
+    REQUIRE_EQUAL(341636u,     reader.packet().ts_usec);
+    REQUIRE_EQUAL(77u,         reader.packet().incl_len);
+    REQUIRE_EQUAL(77u,         reader.packet().orig_len);
 
     while ( (p - reinterpret_cast<const char*>(s_buffer)) < (int)sizeof(s_buffer) ) {
         size_t n = reader.packet().incl_len;
@@ -131,11 +131,11 @@ BOOST_AUTO_TEST_CASE( test_pcap_reader )
         if (verbosity::level() >= VERBOSE_DEBUG)
             std::cout << "  Got packet len " << n << std::endl;
         int rc = reader.read_packet_header(p, sizeof(s_buffer));
-        BOOST_REQUIRE(rc == (int)reader.packet().incl_len);
+        REQUIRE(rc == (int)reader.packet().incl_len);
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_pcap_writer )
+TEST_CASE( test_pcap_writer )
 {
     static const uint8_t  s_data[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
     const time_val        s_now    = time_val::universal_time(2015,1,2,3,4,5);
@@ -149,18 +149,18 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
     // Write UDP packet with ETHERNET header
     {
         int res = writer.open_write(file, false, pcap::link_type::ethernet);
-        BOOST_REQUIRE_EQUAL(0, res);
+        REQUIRE_EQUAL(0, res);
 
         res = writer.write_packet(true, s_now, pcap::proto::udp,
                 inet_addr("127.1.1.1"), htons(2000),
                 inet_addr("127.0.0.1"), htons(3000),
                 reinterpret_cast<const char*>(s_data), sizeof(s_data));
 
-        BOOST_REQUIRE(res > 0);
+        REQUIRE(res > 0);
 
         writer.close();
 
-        BOOST_REQUIRE_EQUAL(92, path::file_size(file));
+        REQUIRE_EQUAL(92, path::file_size(file));
 
         static const uint8_t s_exp[] = {
              0xa1,0xb2,0xc3,0xd4,0x00,0x02,0x00,0x04,0x00,0x00,0x00,0x00
@@ -175,26 +175,26 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
 
         auto s = path::read_file(file);
 
-        BOOST_REQUIRE_EQUAL(length(s_exp), s.size());
+        REQUIRE_EQUAL(length(s_exp), s.size());
         res = cmp(s_exp, s.c_str(), s.size());
-        BOOST_REQUIRE(memcmp(s_exp, s.c_str(), s.size()) == 0);
+        REQUIRE(memcmp(s_exp, s.c_str(), s.size()) == 0);
     }
 
     // Write TCP packet with ETHERNET header
     {
         int res = writer.open_write(file, false, pcap::link_type::ethernet);
-        BOOST_REQUIRE_EQUAL(0, res);
+        REQUIRE_EQUAL(0, res);
 
         res = writer.write_packet(true, s_now, pcap::proto::tcp,
                 inet_addr("127.1.1.1"), htons(2000),
                 inet_addr("127.0.0.1"), htons(3000),
                 reinterpret_cast<const char*>(s_data), sizeof(s_data));
 
-        BOOST_REQUIRE(res > 0);
+        REQUIRE(res > 0);
 
         writer.close();
 
-        BOOST_REQUIRE_EQUAL(104, path::file_size(file));
+        REQUIRE_EQUAL(104, path::file_size(file));
 
         static const uint8_t s_exp[] = {
              0xa1,0xb2,0xc3,0xd4,0x00,0x02,0x00,0x04,0x00,0x00,0x00,0x00
@@ -210,9 +210,9 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
 
         auto s = path::read_file(file);
 
-        BOOST_REQUIRE_EQUAL(length(s_exp), s.size());
+        REQUIRE_EQUAL(length(s_exp), s.size());
         res = cmp(s_exp, s.c_str(), s.size());
-        BOOST_REQUIRE(memcmp(s_exp, s.c_str(), s.size()) == 0);
+        REQUIRE(memcmp(s_exp, s.c_str(), s.size()) == 0);
     }
 
     path::file_unlink(file);
@@ -220,18 +220,18 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
     // Write UDP packet without ETHERNET header
     {
         int res = writer.open_write(file, false, pcap::link_type::raw_tcp);
-        BOOST_REQUIRE_EQUAL(0, res);
+        REQUIRE_EQUAL(0, res);
 
         res = writer.write_packet(true, s_now, pcap::proto::udp,
                 inet_addr("127.1.1.1"), htons(2000),
                 inet_addr("127.0.0.1"), htons(3000),
                 reinterpret_cast<const char*>(s_data), sizeof(s_data));
 
-        BOOST_REQUIRE(res > 0);
+        REQUIRE(res > 0);
 
         writer.close();
 
-        BOOST_REQUIRE_EQUAL(78, path::file_size(file));
+        REQUIRE_EQUAL(78, path::file_size(file));
 
         static const uint8_t s_exp[] = {
              0xa1,0xb2,0xc3,0xd4,0x00,0x02,0x00,0x04,0x00,0x00,0x00,0x00
@@ -245,9 +245,9 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
 
         auto s = path::read_file(file);
 
-        BOOST_REQUIRE_EQUAL(length(s_exp), s.size());
+        REQUIRE_EQUAL(length(s_exp), s.size());
         res = cmp(s_exp, s.c_str(), s.size());
-        BOOST_REQUIRE(res == 0);
+        REQUIRE(res == 0);
     }
 
     path::file_unlink(file);
@@ -255,18 +255,18 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
     // Write TCP packet without ETHERNET header
     {
         int res = writer.open_write(file, false, pcap::link_type::raw_tcp);
-        BOOST_REQUIRE_EQUAL(0, res);
+        REQUIRE_EQUAL(0, res);
 
         res = writer.write_packet(true, s_now, pcap::proto::tcp,
                 inet_addr("127.1.1.1"), htons(2000),
                 inet_addr("127.0.0.1"), htons(3000),
                 reinterpret_cast<const char*>(s_data), sizeof(s_data));
 
-        BOOST_REQUIRE(res > 0);
+        REQUIRE(res > 0);
 
         writer.close();
 
-        BOOST_REQUIRE_EQUAL(90, path::file_size(file));
+        REQUIRE_EQUAL(90, path::file_size(file));
 
         static const uint8_t s_exp[] = {
              0xa1,0xb2,0xc3,0xd4,0x00,0x02,0x00,0x04,0x00,0x00,0x00,0x00
@@ -281,9 +281,9 @@ BOOST_AUTO_TEST_CASE( test_pcap_writer )
 
         auto s = path::read_file(file);
 
-        BOOST_REQUIRE_EQUAL(length(s_exp), s.size());
+        REQUIRE_EQUAL(length(s_exp), s.size());
         res = cmp(s_exp, s.c_str(), s.size());
-        BOOST_REQUIRE(res == 0);
+        REQUIRE(res == 0);
     }
 
     path::file_unlink(file);

@@ -32,10 +32,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <cassert>
 #include <sys/uio.h>
 #include <string.h>
-#include <boost/assert.hpp>
-#include <boost/static_assert.hpp>
 
 namespace utxx {
 
@@ -65,7 +64,7 @@ public:
     basic_iovector(const iovec(&a_data)[M])
         : m_begin(m_data), m_end(m_data + M), m_length(0)
     {
-        BOOST_STATIC_ASSERT(M <= N);
+        static_assert(M <= N);
         for (int i = 0; i < M; m_length += a_data[i].iov_len, i++)
             m_data[i] = a_data[i];
     }
@@ -73,19 +72,19 @@ public:
     basic_iovector(const iovec *a_data, size_t a_size)
         : m_begin(m_data), m_end(m_data + a_size), m_length(0)
     {
-        BOOST_ASSERT(a_size <= N);
+        assert(a_size <= N);
         for (int i = 0; i < a_size; m_length += a_data[i++].iov_len)
             m_data[i] = a_data[i];
     }
 
     const iovec & operator[](int i) const {
-        BOOST_ASSERT (m_begin + i < m_end);
+        assert (m_begin + i < m_end);
         return *(m_begin + i);
     }
 
     /// Push \a a_bytes to the end of the vector array
     void push_back(const char *a_bytes, size_t a_size) {
-        BOOST_ASSERT(m_end < m_data + N);
+        assert(m_end < m_data + N);
         m_end->iov_len = a_size;
         m_end->iov_base = (void *) a_bytes;
         m_length += a_size;
@@ -105,7 +104,7 @@ public:
 
     /// Erase \a a_bytes from the beginning of the vector
     void erase(int a_bytes) {
-        BOOST_ASSERT(a_bytes <= m_length);
+        assert(a_bytes <= m_length);
         for (iovec *p = m_begin; p < m_end && a_bytes >= p->iov_len;
                 m_length -= p->iov_len, a_bytes -= p->iov_len,
                         m_begin = ++p) {}
@@ -132,7 +131,7 @@ public:
             return -1;
         for (const iovec *p = m_begin; p < m_end; a_buf += p->iov_len, p++)
             memcpy(a_buf, p->iov_base, p->iov_len);
-        BOOST_ASSERT(a_buf - begin == m_length);
+        assert(a_buf - begin == m_length);
         return m_length;
     }
 };

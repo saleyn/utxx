@@ -1,5 +1,6 @@
-#include <boost/test/unit_test.hpp>
-#define BOOST_TEST_MODULE logger_test
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-variable"
@@ -8,7 +9,6 @@
 
 #include <utxx/logger.hpp>
 #include <utxx/time_val.hpp>
-#include <utxx/config.h>
 
 #ifdef UTXX_HAVE_THRIFT_H
 #   include <utxx/logger/logger_impl_scribe.hpp>
@@ -19,7 +19,7 @@ using namespace utxx;
 
 #ifdef UTXX_HAVE_THRIFT_H
 
-BOOST_AUTO_TEST_CASE( test_logger_scribe1 )
+TEST_CASE( test_logger_scribe1 )
 {
     std::shared_ptr<logger_impl_scribe> log( logger_impl_scribe::create("test") );
 
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe1 )
     } catch (utxx::runtime_error& e) {
         static const char s_err[] = "Failed to open connection";
         if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
-            BOOST_TEST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            TEST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
             return;
         }
         throw;
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe1 )
     log.reset();
 }
 
-BOOST_AUTO_TEST_CASE( test_logger_scribe2 )
+TEST_CASE( test_logger_scribe2 )
 {
     variant_tree pt;
 
@@ -82,7 +82,7 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe2 )
     } catch (utxx::runtime_error& e) {
         static const char s_err[] = "Failed to open connection";
         if (strncmp(s_err, e.what(), sizeof(s_err)-1) == 0) {
-            BOOST_TEST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
+            TEST_MESSAGE("SCRIBED server not running - skipping scribed logging test!");
             return;
         }
         throw;
@@ -103,9 +103,11 @@ BOOST_AUTO_TEST_CASE( test_logger_scribe2 )
     // Unregister scribe implementation from the logging framework
     log.delete_impl("scribe");
 
-    BOOST_REQUIRE(true); // Just to suppress the warning
+    REQUIRE(true); // Just to suppress the warning
 }
 
 #endif // UTXX_HAVE_THRIFT_H
 
-//BOOST_AUTO_TEST_SUITE_END()
+//TEST_SUITE_END()
+
+#endif // UTXX_HAVE_BOOST

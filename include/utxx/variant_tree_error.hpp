@@ -33,11 +33,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #pragma once
 
+#include <utxx/config.h>
 #include <utxx/error.hpp>
-#include <utxx/variant_tree_path.hpp>
-#include <boost/property_tree/exceptions.hpp>
-#include <boost/property_tree/detail/file_parser_error.hpp>
 #include <stdexcept>
+
+#include <utxx/variant_tree_path.hpp>
+#include <utxx/ptree.hpp>
 
 namespace utxx {
 

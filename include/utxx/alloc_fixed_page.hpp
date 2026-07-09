@@ -32,8 +32,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #pragma once
 
 #include <new>
-#include <boost/noncopyable.hpp>
-#include <boost/cstdint.hpp>
+#include <cassert>
+#include <cstdint>
+#include <utxx/noncopyable.hpp>
 #include <utxx/atomic.hpp>
 #include <stdlib.h>
 #ifdef _ALLOCATOR_MEM_DEBUG
@@ -59,7 +60,7 @@ template <
       typename T
     , size_t   PageSize  = 64*1024
 >
-class aligned_page_allocator : public boost::noncopyable {
+class aligned_page_allocator : public utxx::noncopyable {
     struct header {
         static const uint32_t s_magic = 1234567890;
         const uint32_t magic;       ///< Magic version that must match s_magic.
@@ -75,9 +76,9 @@ class aligned_page_allocator : public boost::noncopyable {
     static const int    s_max_chunks   = ((PageSize-s_begin_offset) / sizeof(T));
 
     // Page size must be a power of 2
-    BOOST_STATIC_ASSERT((PageSize & (PageSize-1)) == 0);
-    BOOST_STATIC_ASSERT(s_begin_offset < PageSize);
-    BOOST_STATIC_ASSERT(s_max_chunks > 0);
+    static_assert((PageSize & (PageSize-1)) == 0);
+    static_assert(s_begin_offset < PageSize);
+    static_assert(s_max_chunks > 0);
 
     header* m_page;
 
@@ -97,7 +98,7 @@ class aligned_page_allocator : public boost::noncopyable {
         if (posix_memalign(&u.pp, PageSize, PageSize) < 0)
             throw std::bad_alloc();
         #endif
-        BOOST_ASSERT((u.n & s_page_mask) == 0);
+        assert((u.n & s_page_mask) == 0);
         new (u.p) header();
         u.p->avail_chunk = reinterpret_cast<T*>(u.pc + s_begin_offset);
         u.p->alloc_count = 0;
@@ -167,7 +168,7 @@ public:
         #ifdef _ALLOCATOR_MEM_DEBUG
         printf("  Deallocating %p, page=%p\n", p, h);
         #endif
-        BOOST_ASSERT(h->magic == header::s_magic);
+        assert(h->magic == header::s_magic);
         if (atomic::add(&h->alloc_count, -1) == 0 && h != m_page)
             page_free(h);
     }

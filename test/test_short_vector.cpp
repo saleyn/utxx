@@ -31,7 +31,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <utxx/short_vector.hpp>
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <iostream>
 
 using namespace utxx;
@@ -58,112 +58,112 @@ struct X {
     int m_i;
 };
 
-BOOST_AUTO_TEST_CASE( test_short_vector )
+TEST_CASE( test_short_vector )
 {
     using Allocator = Alloc<int>;
     using ss = basic_short_vector<int, 16, Allocator, 1>;
 
     Allocator salloc;
 
-    { ss s; BOOST_CHECK_EQUAL(0, s.size()); }
+    { ss s; CHECK_EQUAL(0, s.size()); }
     {
         ss s(salloc);
-        BOOST_CHECK_EQUAL(0,   s.size());
-        BOOST_CHECK(!s.is_null());
-        BOOST_CHECK(!s.allocated());
-        BOOST_CHECK(s.begin() == s.end());
+        CHECK_EQUAL(0,   s.size());
+        CHECK(!s.is_null());
+        CHECK(!s.allocated());
+        CHECK(s.begin() == s.end());
         s.push_back(5);
-        BOOST_CHECK_EQUAL(1,   s.size());
-        BOOST_CHECK_EQUAL(5,   s[0]);
+        CHECK_EQUAL(1,   s.size());
+        CHECK_EQUAL(5,   s[0]);
         s[0] = 20;
-        BOOST_CHECK_EQUAL(20,  s[0]);
+        CHECK_EQUAL(20,  s[0]);
         s.resize(10);
-        BOOST_CHECK_EQUAL(10,  s.size());
-        BOOST_CHECK(s.begin()+10 == s.end());
-        BOOST_CHECK(!s.is_null());
-        BOOST_CHECK(!s.allocated());
+        CHECK_EQUAL(10,  s.size());
+        CHECK(s.begin()+10 == s.end());
+        CHECK(!s.is_null());
+        CHECK(!s.allocated());
 
-        BOOST_CHECK_EQUAL(0, Allocator::tot_allocations());
+        CHECK_EQUAL(0, Allocator::tot_allocations());
 
         s.reset();
-        BOOST_CHECK_EQUAL(0,   s.size());
-        BOOST_CHECK(!s.is_null());
-        BOOST_CHECK(!s.allocated());
+        CHECK_EQUAL(0,   s.size());
+        CHECK(!s.is_null());
+        CHECK(!s.allocated());
         s.set_null();
-        BOOST_CHECK(s.is_null());
-        BOOST_CHECK_EQUAL(-1, s.size());
-        BOOST_CHECK(s.begin()  == s.end());
-        BOOST_CHECK(s.cbegin() == s.cend());
+        CHECK(s.is_null());
+        CHECK_EQUAL(-1, s.size());
+        CHECK(s.begin()  == s.end());
+        CHECK(s.cbegin() == s.cend());
 
         int dummy[] = {1, 2, 3, 4};
         s.append(dummy, 4);
-        BOOST_CHECK(!s.is_null());
-        BOOST_CHECK_EQUAL(4, s.size());
-        BOOST_CHECK(s.begin()+4  == s.end());
-        BOOST_CHECK(s.cbegin()+4 == s.cend());
+        CHECK(!s.is_null());
+        CHECK_EQUAL(4, s.size());
+        CHECK(s.begin()+4  == s.end());
+        CHECK(s.cbegin()+4 == s.cend());
 
-        BOOST_CHECK(!s.allocated());
+        CHECK(!s.allocated());
 
         s.set(nullptr, -1);
-        BOOST_CHECK(s.is_null());
-        BOOST_CHECK_EQUAL(-1, s.size());
+        CHECK(s.is_null());
+        CHECK_EQUAL(-1, s.size());
         s.push_back(5);
-        BOOST_CHECK(!s.is_null());
-        BOOST_CHECK_EQUAL(1, s.size());
-        BOOST_CHECK_EQUAL(5, s[0]);
-        BOOST_CHECK_EQUAL(5, s[0]);
-        BOOST_CHECK(s.begin()+1  == s.end());
-        BOOST_CHECK(s.cbegin()+1 == s.cend());
+        CHECK(!s.is_null());
+        CHECK_EQUAL(1, s.size());
+        CHECK_EQUAL(5, s[0]);
+        CHECK_EQUAL(5, s[0]);
+        CHECK(s.begin()+1  == s.end());
+        CHECK(s.cbegin()+1 == s.cend());
 
-        BOOST_CHECK_EQUAL(0, Allocator::tot_allocations());
+        CHECK_EQUAL(0, Allocator::tot_allocations());
 
         const std::vector<int> test(80, 100);
 
         s = test;                                   // <-- allocation 1
 
-        BOOST_CHECK(s.allocated());
-        BOOST_CHECK_EQUAL(1, Allocator::tot_allocations());
-        BOOST_CHECK(s == test);
+        CHECK(s.allocated());
+        CHECK_EQUAL(1, Allocator::tot_allocations());
+        CHECK(s == test);
 
-        BOOST_CHECK_EQUAL(1, Allocator::tot_allocations());
+        CHECK_EQUAL(1, Allocator::tot_allocations());
         s.reset();
-        BOOST_CHECK(!s.allocated());
-        BOOST_CHECK_EQUAL(0, s.size());
+        CHECK(!s.allocated());
+        CHECK_EQUAL(0, s.size());
 
-        BOOST_CHECK_EQUAL(1, Allocator::tot_allocations());
-        BOOST_CHECK_EQUAL(0, Allocator::allocations());
+        CHECK_EQUAL(1, Allocator::tot_allocations());
+        CHECK_EQUAL(0, Allocator::allocations());
 
         s.reserve(1000);
 
-        BOOST_CHECK(s.allocated());
-        BOOST_CHECK_EQUAL(0, s.size());
-        BOOST_CHECK_EQUAL(2, Allocator::tot_allocations());
-        BOOST_CHECK_EQUAL(1, Allocator::allocations());
+        CHECK(s.allocated());
+        CHECK_EQUAL(0, s.size());
+        CHECK_EQUAL(2, Allocator::tot_allocations());
+        CHECK_EQUAL(1, Allocator::allocations());
 
         s.resize(1100);
 
-        BOOST_CHECK(s.allocated());
-        BOOST_CHECK_EQUAL(1100, s.size());
-        BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
-        BOOST_CHECK_EQUAL(1, Allocator::allocations());
+        CHECK(s.allocated());
+        CHECK_EQUAL(1100, s.size());
+        CHECK_EQUAL(3, Allocator::tot_allocations());
+        CHECK_EQUAL(1, Allocator::allocations());
 
         s.size(20);
-        BOOST_CHECK(s.allocated());
-        BOOST_CHECK_EQUAL(20, s.size());
+        CHECK(s.allocated());
+        CHECK_EQUAL(20, s.size());
 
         s.reset();
-        BOOST_CHECK(!s.allocated());
-        BOOST_CHECK_EQUAL(0, s.size());
-        BOOST_CHECK_EQUAL(3, Allocator::tot_allocations());
-        BOOST_CHECK_EQUAL(0, Allocator::allocations());
+        CHECK(!s.allocated());
+        CHECK_EQUAL(0, s.size());
+        CHECK_EQUAL(3, Allocator::tot_allocations());
+        CHECK_EQUAL(0, Allocator::allocations());
 
         ss s2({{1,2,3}}, salloc);
         ss s1{{1, 2, 3}};
 
-        BOOST_CHECK_EQUAL(3, s1.size());
-        BOOST_CHECK_EQUAL(3, s2.size());
-        BOOST_CHECK(!s1.allocated());
-        BOOST_CHECK(!s2.allocated());
+        CHECK_EQUAL(3, s1.size());
+        CHECK_EQUAL(3, s2.size());
+        CHECK(!s1.allocated());
+        CHECK(!s2.allocated());
     }
 
     {
@@ -175,11 +175,11 @@ BOOST_AUTO_TEST_CASE( test_short_vector )
 
         vec v(std::make_tuple("abc", 3));
 
-        BOOST_CHECK(!v.allocated());
-        BOOST_CHECK_EQUAL(3, v.size());
+        CHECK(!v.allocated());
+        CHECK_EQUAL(3, v.size());
 
         v = std::make_tuple("abcdefg", 7);
-        BOOST_CHECK(v.allocated());
-        BOOST_CHECK_EQUAL(7, v.size());
+        CHECK(v.allocated());
+        CHECK_EQUAL(7, v.size());
     }
 }

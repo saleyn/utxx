@@ -33,7 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#define _ALLOCATOR_MEM_DEBUG 1
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <utxx/io/basic_udp_receiver.hpp>
 #include <utxx/verbosity.hpp>
 #include <iostream>
@@ -49,16 +51,16 @@ public:
 };
 
 
-BOOST_AUTO_TEST_CASE( test_basic_udp_receiver )
+TEST_CASE( test_basic_udp_receiver )
 {
     boost::asio::io_service l_service;
     client c(l_service);
     try {
         c.init(12345);
         c.init("localhost", "12345");
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (std::exception& e) {
-        BOOST_REQUIRE_EQUAL("open: Already open", e.what());
+        REQUIRE_EQUAL("open: Already open", e.what());
         c.stop();
     }
 
@@ -67,10 +69,10 @@ BOOST_AUTO_TEST_CASE( test_basic_udp_receiver )
         c.start();
         c.stop();
         l_service.run();
-        BOOST_REQUIRE(true);
+        REQUIRE(true);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 
     try {
@@ -78,10 +80,12 @@ BOOST_AUTO_TEST_CASE( test_basic_udp_receiver )
         c.start();
         c.stop();
         l_service.run();
-        BOOST_REQUIRE(true);
+        REQUIRE(true);
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 }
 
+
+#endif // UTXX_HAVE_BOOST

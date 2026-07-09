@@ -33,6 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
 #include <utxx/buffer.hpp>
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/write.hpp>
@@ -201,3 +204,5 @@ public:
 #endif // Boost version < 1.70.0
 
 } // namespace utxx
+
+#endif // UTXX_HAVE_BOOST

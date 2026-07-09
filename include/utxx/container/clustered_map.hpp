@@ -36,9 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_CLUSTERED_MAP_HPP_
 #define _UTXX_CLUSTERED_MAP_HPP_
 
-#include <boost/type_traits/is_same.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/int.hpp>
+#include <type_traits>
 #include <utxx/bitmap.hpp>
 #include <map>
 #include <functional>
@@ -55,13 +53,13 @@ template <
     class SortOrder = ascending
 >
 class clustered_map {
-    BOOST_STATIC_ASSERT(sizeof(Key) <= sizeof(int64_t));
-    BOOST_STATIC_ASSERT(LowBits     <= 6);
+    static_assert(sizeof(Key) <= sizeof(int64_t));
+    static_assert(LowBits     <= 6);
     typedef bitmap_low<1 << LowBits> bitmap_t;
     static const size_t s_lo_mask = (1 << LowBits) - 1;
     static const size_t s_hi_mask = ~s_lo_mask;
     static const int    s_level2_init_value =
-        boost::is_same<SortOrder, ascending>::value ? -1 : bitmap_t::cend;
+        std::is_same<SortOrder, ascending>::value ? -1 : bitmap_t::cend;
 
     struct key_data {
         bitmap_t    index;
@@ -71,10 +69,8 @@ class clustered_map {
     typedef std::map<
         Key,
         key_data,
-        typename boost::mpl::if_<
-            boost::is_same<SortOrder, ascending>,
-            std::less<Key>, std::greater<Key>
-        >::type
+        std::conditional_t<std::is_same_v<SortOrder, ascending>,
+            std::less<Key>, std::greater<Key>>
     > gross_map;
 
     typedef typename gross_map::iterator l1_iterator;
@@ -237,7 +233,7 @@ class clustered_map<Key, Data, LowBits, SortOrder>::iterator
     int find_first_level2() {
         if (m_level1 == m_owner->end())
             return s_level2_init_value;
-        return boost::is_same<SortOrder, ascending>::value
+        return std::is_same<SortOrder, ascending>::value
             ? m_level1->second.index.first()
             : m_level1->second.index.last();
     }
@@ -245,7 +241,7 @@ class clustered_map<Key, Data, LowBits, SortOrder>::iterator
     int find_next_level2(int a_level2 = s_level2_init_value) {
         if (m_level1 == m_owner->end())
             return a_level2;
-        return boost::is_same<SortOrder, ascending>::value
+        return std::is_same<SortOrder, ascending>::value
             ? m_level1->second.index.next(a_level2)
             : m_level1->second.index.prev(a_level2);
     }
@@ -291,7 +287,7 @@ public:
     {}
 
     Key key() const {
-        BOOST_ASSERT(m_level1 != m_owner->end());
+        assert(m_level1 != m_owner->end());
         return m_level1->first | m_level2;
     }
 

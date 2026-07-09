@@ -33,21 +33,43 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_VARIANT_TREE_UTILS_HPP_
 #define _UTXX_VARIANT_TREE_UTILS_HPP_
 
+#include <utxx/config.h>
 #include <utxx/variant_tree.hpp>
-#include <boost/property_tree/info_parser.hpp>
 
 namespace utxx {
 
     namespace detail {
 
+        // Replicate boost info_parser::create_escapes: escape special chars
         template<class Ch>
         std::basic_string<Ch> create_escapes(const std::basic_string<Ch>& s) {
-            return boost::property_tree::info_parser::create_escapes(s);
+            std::basic_string<Ch> result;
+            result.reserve(s.size());
+            for (Ch c : s) {
+                switch (c) {
+                    case Ch('\\'): result += Ch('\\'); result += Ch('\\'); break;
+                    case Ch('"') : result += Ch('\\'); result += Ch('"');  break;
+                    case Ch('\n'): result += Ch('\\'); result += Ch('n');  break;
+                    case Ch('\r'): result += Ch('\\'); result += Ch('r');  break;
+                    case Ch('\t'): result += Ch('\\'); result += Ch('t');  break;
+                    default:      result += c;                             break;
+                }
+            }
+            return result;
         }
 
+        // A key is "simple" if it contains no whitespace, quotes, braces,
+        // equal signs, or hash signs (mirrors boost info_parser::is_simple_key)
         template<class Ch>
-        bool is_simple_key(const std::basic_string<Ch> &key) {
-            return boost::property_tree::info_parser::is_simple_key(key);
+        bool is_simple_key(const std::basic_string<Ch>& key) {
+            if (key.empty()) return false;
+            for (Ch c : key) {
+                if (c == Ch(' ')  || c == Ch('\t') || c == Ch('\n') ||
+                    c == Ch('\r') || c == Ch('"')  || c == Ch('{')  ||
+                    c == Ch('}')  || c == Ch('=')  || c == Ch('#'))
+                    return false;
+            }
+            return true;
         }
     }
 

@@ -32,8 +32,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+#include <utxx/string.hpp>
 #include <cassert>
 #include <map>
+
+#ifdef UTXX_HAVE_BOOST
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/preprocessor/seq/enum.hpp>
@@ -43,9 +47,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/seq/variadic_seq_to_seq.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/push_back.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <utxx/detail/enum_helper.hpp>
-#include <utxx/string.hpp>
 #include <utxx/enumu.hpp>
 
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
@@ -305,3 +307,5 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
                         BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),         \
                         BOOST_PP_TUPLE_ELEM(1, val),                           \
                         BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(0, val))) )
+
+#endif // UTXX_HAVE_BOOST

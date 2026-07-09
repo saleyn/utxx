@@ -56,7 +56,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/logger.hpp>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <boost/thread.hpp>
+#include <thread>
 
 namespace utxx {
 

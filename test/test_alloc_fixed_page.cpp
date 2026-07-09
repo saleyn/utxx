@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 //#define _ALLOCATOR_MEM_DEBUG 1
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/alloc_fixed_page.hpp>
 #include <utxx/verbosity.hpp>
 #include <memory>
@@ -46,16 +46,16 @@ namespace {
     struct test { char buf[44]; };
 }
 
-BOOST_AUTO_TEST_CASE( test_alloc_fixed_page )
+TEST_CASE( test_alloc_fixed_page )
 {
     {
         void* p = nullptr;
-        BOOST_REQUIRE(posix_memalign(&p, 128, 32) >= 0);
-        //BOOST_REQUIRE((p = memory::aligned_malloc(32, 128)) >= 0);
+        REQUIRE(posix_memalign(&p, 128, 32) >= 0);
+        //REQUIRE((p = memory::aligned_malloc(32, 128)) >= 0);
         //memory::aligned_free(p);
-        BOOST_REQUIRE(p);
+        REQUIRE(p);
         free(p);
-        BOOST_REQUIRE_EQUAL(0, (static_cast<char*>(p) - static_cast<char*>(0)) % 128);
+        REQUIRE_EQUAL(0, (static_cast<char*>(p) - static_cast<char*>(0)) % 128);
     }
 
     memory::aligned_page_allocator<test, 128> alloc;
@@ -99,7 +99,7 @@ using RebindAlloc = typename std::allocator_traits<null_allocator<void>>::templa
 
 using MyString = std::basic_string<char, std::char_traits<char>, RebindAlloc<char>>;
 
-BOOST_AUTO_TEST_CASE( test_rebind_alloc )
+TEST_CASE( test_rebind_alloc )
 {
   // check that null_allocator follows allocator_traits
   null_allocator<char> alloc;
@@ -107,5 +107,5 @@ BOOST_AUTO_TEST_CASE( test_rebind_alloc )
 
   MyString string;
 
-  BOOST_REQUIRE_EQUAL(nullptr, ptr);
+  REQUIRE_EQUAL(nullptr, ptr);
 }

@@ -30,14 +30,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/get_option.hpp>
 #include <utxx/logger/logger.hpp>
 #include <iostream>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_get_option )
+TEST_CASE( test_get_option )
 {
     const char* argv[] = {"test", "-a", "10", "--abc", "20", "--out=file", "-t", "true",
                           "-f", "-", "-x", "--", "-y", "/temp", "-e", "-F",
@@ -49,12 +49,12 @@ BOOST_AUTO_TEST_CASE( test_get_option )
     bool        t;
     log_level   ll;
 
-    BOOST_CHECK(get_opt(argc, argv, &a, "-a"));
-    BOOST_CHECK_EQUAL(10, a);
-    BOOST_CHECK(get_opt(argc, argv, &out, "", "--out"));
-    BOOST_CHECK_EQUAL("file", out);
-    BOOST_CHECK(get_opt(argc, argv, &t, "-t"));
-    BOOST_CHECK(t);
+    CHECK(get_opt(argc, argv, &a, "-a"));
+    CHECK_EQUAL(10, a);
+    CHECK(get_opt(argc, argv, &out, "", "--out"));
+    CHECK_EQUAL("file", out);
+    CHECK(get_opt(argc, argv, &t, "-t"));
+    CHECK(t);
 
     bool e_found = false, f_found = false;
 
@@ -62,18 +62,18 @@ BOOST_AUTO_TEST_CASE( test_get_option )
 
     while (opts.next()) {
         if (opts.match("-a", "", &a)) {
-            BOOST_CHECK_EQUAL(10, a);
-            BOOST_CHECK_EQUAL("-a", opts.option());
+            CHECK_EQUAL(10, a);
+            CHECK_EQUAL("-a", opts.option());
             continue;
         }
         if (opts.match({"-A", "--abc"}, &a)) {
-            BOOST_CHECK_EQUAL(20, a);
-            BOOST_CHECK_EQUAL("--abc", opts.option());
+            CHECK_EQUAL(20, a);
+            CHECK_EQUAL("--abc", opts.option());
             continue;
         }
         if (opts.match("-e")) {
             e_found = true;
-            BOOST_CHECK_EQUAL("-e", opts.option());
+            CHECK_EQUAL("-e", opts.option());
             continue;
         }
         if (opts.match({"-F", "-FF"})) {
@@ -81,15 +81,15 @@ BOOST_AUTO_TEST_CASE( test_get_option )
             continue;
         }
         if (opts.match("", "--out", &out)) {
-            BOOST_CHECK_EQUAL("file", out);
+            CHECK_EQUAL("file", out);
             continue;
         }
         if (opts.match({"-t"}, &t)) {
-            BOOST_CHECK(t); continue;
+            CHECK(t); continue;
         }
         if (opts.match("-f", "", &out)) {
-            BOOST_CHECK_EQUAL("-", out);
-            BOOST_CHECK_EQUAL("-f", opts.option());
+            CHECK_EQUAL("-", out);
+            CHECK_EQUAL("-f", opts.option());
             continue;
         }
         if (opts.match("-x", ""))
@@ -97,31 +97,31 @@ BOOST_AUTO_TEST_CASE( test_get_option )
         if (opts() == std::string("--"))
             continue;
         if (opts.match("-y","", &out)) {
-            BOOST_CHECK_EQUAL("/temp", out);
+            CHECK_EQUAL("/temp", out);
             continue;
         }
         if (opts.match("-l","",logger::parse_log_level, &ll)) {
-            BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
-            BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
+            CHECK(ll == log_level::LEVEL_DEBUG);
+            CHECK(ll == log_level::LEVEL_DEBUG);
             continue;
         }
         if (opts.match({"-L","--log"},logger::parse_log_level, &ll)) {
-            BOOST_CHECK(ll == log_level::LEVEL_DEBUG);
-            BOOST_CHECK_EQUAL("--log", opts.option());
-            BOOST_CHECK(opts.is_option({"--log"}));
+            CHECK(ll == log_level::LEVEL_DEBUG);
+            CHECK_EQUAL("--log", opts.option());
+            CHECK(opts.is_option({"--log"}));
             continue;
         }
-        BOOST_CHECK(false);
+        CHECK(false);
     }
 
-    BOOST_CHECK(e_found);
-    BOOST_CHECK(f_found);
-    BOOST_CHECK(opts.find("-a"));
-    BOOST_CHECK(opts.find({"-a"}));
-    BOOST_CHECK(opts.find("-a", "", &a));
-    BOOST_CHECK_EQUAL(10, a);
-    BOOST_CHECK(opts.find({"-a"}, &a));
-    BOOST_CHECK_EQUAL(10, a);
-    BOOST_CHECK(opts.find({"-a", "--ABC"}, &a));
-    BOOST_CHECK_EQUAL(10, a);
+    CHECK(e_found);
+    CHECK(f_found);
+    CHECK(opts.find("-a"));
+    CHECK(opts.find({"-a"}));
+    CHECK(opts.find("-a", "", &a));
+    CHECK_EQUAL(10, a);
+    CHECK(opts.find({"-a"}, &a));
+    CHECK_EQUAL(10, a);
+    CHECK(opts.find({"-a", "--ABC"}, &a));
+    CHECK_EQUAL(10, a);
 }

@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #ifndef _UTXX_CONCURRENT_STACK_HPP_
 #define _UTXX_CONCURRENT_STACK_HPP_
 
-#include <boost/type_traits.hpp>
+#include <type_traits>
 #include <utxx/meta.hpp>
 #include <utxx/atomic.hpp>
 #include <utxx/synch.hpp>

@@ -30,18 +30,18 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <utxx/test_helper.hpp>
+#include <filesystem>
 #include <utxx/io/stream64.hpp>
 
-BOOST_AUTO_TEST_CASE( test_stream64 ) {
+TEST_CASE( test_stream64 ) {
     static const std::string file =
-        (boost::filesystem::temp_directory_path() / "test_stream64").c_str();
+        (std::filesystem::temp_directory_path() / "test_stream64").c_str();
 
     {
         std::ofstream64 out(file.c_str());
 
-        //BOOST_REQUIRE(out.is_open());
+        //REQUIRE(out.is_open());
 
         for (int i = 0; i < 1000; i++)
             out << "This is a test " << i << std::endl;
@@ -50,16 +50,16 @@ BOOST_AUTO_TEST_CASE( test_stream64 ) {
     {
         std::ifstream64 in(file.c_str());
 
-        //BOOST_REQUIRE(in.is_open());
+        //REQUIRE(in.is_open());
 
         for (int i = 0; i < 1000; i++) {
             std::string s;
             std::getline(in, s, '\n');
             std::stringstream b;
             b << "This is a test " << i;
-            BOOST_REQUIRE_EQUAL(b.str(), s);
+            REQUIRE_EQUAL(b.str(), s);
         }
     }
 
-    boost::filesystem::remove(file);
+    std::filesystem::remove(file);
 }

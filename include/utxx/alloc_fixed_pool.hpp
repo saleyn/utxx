@@ -33,9 +33,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/type_traits.hpp>
-#include <boost/type_traits/is_same.hpp>
+#include <utxx/config.h>
+#include <type_traits>
+#include <cassert>
+#ifdef UTXX_HAVE_BOOST
 #include <boost/interprocess/offset_ptr.hpp>
+#endif
 
 #include <utxx/math.hpp>
 #include <utxx/meta.hpp>
@@ -49,7 +52,9 @@ namespace utxx   {
 namespace memory {
 namespace detail {
 
+#ifdef UTXX_HAVE_BOOST
 using namespace boost::interprocess;
+#endif
 
 /// Template arguments:
 ///    PointerType - must be either offset_ptr<char> or char*
@@ -127,7 +132,7 @@ public:
     /// @return storage size needed to hold <count> objects of size <object_size>.
     template <size_t object_size, size_t count>
     struct storage_size {
-        enum { 
+        enum {
             obj_size = object_size + sizeof(object_t),
             value    = obj_size * (sizeof(fixed_size_object_pool)/obj_size + 1)
                      + count * obj_size
@@ -167,8 +172,10 @@ public:
 typedef detail::fixed_size_object_pool<char*> heap_fixed_size_object_pool;
 
 /// Use the <heap_fixed_size_object_pool> for pooling objects in shared memory
-typedef detail::fixed_size_object_pool< 
+#ifdef UTXX_HAVE_BOOST
+typedef detail::fixed_size_object_pool<
     boost::interprocess::offset_ptr<char> >   shmem_fixed_size_object_pool;
+#endif
 
 //-----------------------------------------------------------------------------
 // IMPLEMENTATION
@@ -189,13 +196,12 @@ fixed_size_object_pool<PointerType>
     , m_free_list(0)
     , m_available(0)
 {
-    BOOST_STATIC_ASSERT((
-           boost::is_same<PointerType, char*>::value
-        || boost::is_same<PointerType, offset_ptr<char> >::value));
+    static_assert(std::is_same<PointerType, char*>::value
+               || std::is_same<PointerType, offset_ptr<char>>::value);
 
-    BOOST_ASSERT(bytes > m_object_size + sizeof(fixed_size_object_pool)); // Too little storage
-    BOOST_ASSERT(m_begin + m_object_size*m_object_count <= m_end); // Wrong object size!
-    BOOST_ASSERT(m_begin + m_object_size*m_object_count >  m_end - m_object_size); // Wrong object count
+    assert(bytes > m_object_size + sizeof(fixed_size_object_pool)); // Too little storage
+    assert(m_begin + m_object_size*m_object_count <= m_end); // Wrong object size!
+    assert(m_begin + m_object_size*m_object_count >  m_end - m_object_size); // Wrong object count
 
     if (m_begin+m_object_size >= m_end)
         throw badarg_error("Pool size too small!");
@@ -220,9 +226,9 @@ fixed_size_object_pool<PointerType>
 
 template <class PointerType>
 void* fixed_size_object_pool<PointerType>
-::allocate() 
+::allocate()
 {
-    BOOST_ASSERT(m_magic == s_magic);
+    assert(m_magic == s_magic);
 
     while(1) {
         size_t old_head = m_free_list;
@@ -236,15 +242,15 @@ void* fixed_size_object_pool<PointerType>
         #ifndef NDEBUG
         pointer_type pt = reinterpret_cast<char*>(p);
         #endif
-        BOOST_ASSERT(m_begin <= pt && pt < m_end);
-            //   "Invalid free list head (old_head=" << 
-            //   (old_head & s_index_mask) << ", ptr_idx=" << 
+        assert(m_begin <= pt && pt < m_end);
+            //   "Invalid free list head (old_head=" <<
+            //   (old_head & s_index_mask) << ", ptr_idx=" <<
             //   object_idx(pt) << ")!");
 
         size_t new_head = p->next ? object_to_head(old_head, p->next)
                                   : new_head_version(old_head);
 
-        BOOST_ASSERT((new_head & s_index_mask) >= 0 &&
+        assert((new_head & s_index_mask) >= 0 &&
                (new_head & s_index_mask) <= m_object_count);
             // "Invalid new list head index " << (new_head & s_index_mask) <<
             // " (old_head=" << (old_head & s_index_mask) <<
@@ -272,8 +278,8 @@ void fixed_size_object_pool<PointerType>
     object_t* obj = static_cast<object_t*>(object) - 1;
     const pointer_type p = reinterpret_cast<char*>(obj);
 
-    BOOST_ASSERT(m_begin <= p && p < m_end); // "Invalid object pointer " << obj
-    BOOST_ASSERT(((p - m_begin) % m_object_size) == 0); // "Invalid object alignment!"
+    assert(m_begin <= p && p < m_end); // "Invalid object pointer " << obj
+    assert(((p - m_begin) % m_object_size) == 0); // "Invalid object alignment!"
 
     #ifdef USE_PID_RECOVERY
     obj->freed = 1;
@@ -283,15 +289,15 @@ void fixed_size_object_pool<PointerType>
 
     do {
         old_head  = m_free_list;
-        obj->next = (old_head & s_index_mask) == 0 
+        obj->next = (old_head & s_index_mask) == 0
                   ? NULL
                   : reinterpret_cast<char*>(head_to_object(old_head));
         new_head = object_to_head(old_head, p);
 
-        BOOST_ASSERT((new_head & s_index_mask) >= 0 && 
+        assert((new_head & s_index_mask) >= 0 &&
                (new_head & s_index_mask) <= m_object_count);
             // "Invalid old head of free list: " << (old_head & s_index_mask) <<
-            // " (new_head=" << (new_head & s_index_mask) << 
+            // " (new_head=" << (new_head & s_index_mask) <<
             // ", avail=" << m_available << ')');
     } while (!atomic::cas(&m_free_list, old_head, new_head));
 
@@ -302,7 +308,7 @@ void fixed_size_object_pool<PointerType>
 
 template <class PointerType>
 void fixed_size_object_pool<PointerType>
-::reclaim_objects(pid_t died_pid) 
+::reclaim_objects(pid_t died_pid)
 {
     #ifdef USE_PID_RECOVERY
     // Walk through all objects and move objects owned by died_pid
@@ -334,17 +340,17 @@ void fixed_size_object_pool<PointerType>
     if ((m_free_list & s_index_mask) == 0)
         out << "NULL" << std::endl;
     else
-        out << (m_free_list & s_index_mask) << " (version: " 
+        out << (m_free_list & s_index_mask) << " (version: "
             << (m_free_list >> 16) << ")" << std::endl;
 
     for(pointer_type p=m_begin; p < m_end; p += m_object_size) {
         object_t& o = reinterpret_cast<object_t&>(*p);
         size_t i  = object_idx(p);
-        if (o.next == NULL) 
-            out << "  [" << std::setw(6) << i << "] -> NULL" << std::endl; 
+        if (o.next == NULL)
+            out << "  [" << std::setw(6) << i << "] -> NULL" << std::endl;
         else {
             size_t in = object_idx(o.next);
-            out << "  [" << std::setw(6) << i << "] -> [" << std::setw(6) << in << "]" << std::endl; 
+            out << "  [" << std::setw(6) << i << "] -> [" << std::setw(6) << in << "]" << std::endl;
         }
     }
 }

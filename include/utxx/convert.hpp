@@ -35,9 +35,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <limits>
 #include <string.h>
 #include <stdio.h>
-#include <boost/type_traits/make_signed.hpp>
-#include <boost/type_traits/make_unsigned.hpp>
-#include <boost/assert.hpp>
+#include <cassert>
+#include <type_traits>
 #include <string>
 #include <stdexcept>
 #include <cmath>
@@ -93,7 +92,7 @@ namespace detail {
         }
 
         static uint64_t load_atoi(const Char*& bytes, uint64_t acc) {
-            typename boost::make_unsigned<Char>::type i=*bytes-'0';
+            typename std::make_unsigned<Char>::type i=*bytes-'0';
             return i > 9u ? 0 : i + 10 * next::load_atoi(--bytes, acc);
         }
     };
@@ -134,7 +133,7 @@ namespace detail {
         }
 
         static uint64_t load_atoi(const Char*& bytes, uint64_t acc) {
-            typename boost::make_unsigned<Char>::type i=*bytes-'0';
+            typename std::make_unsigned<Char>::type i=*bytes-'0';
             return (i > 9u) ? acc : next::load_atoi(++bytes, i + 10*acc);
         }
     };
@@ -150,12 +149,12 @@ namespace detail {
         static void pad_left(Char* bytes, Char ch) { *bytes = ch; }
 
         inline static void save_itoa(Char*& bytes, long n, Char a_pad) {
-            BOOST_ASSERT(n / 10 == 0);
+            assert(n / 10 == 0);
             *bytes-- = int_to_char(n % 11);
         }
 
         static uint64_t load_atoi(const Char*& bytes, uint64_t acc) {
-            typename boost::make_unsigned<Char>::type i=*bytes-'0';
+            typename std::make_unsigned<Char>::type i=*bytes-'0';
             if (i > 9u) return 0;
             --bytes;
             return i;
@@ -174,12 +173,12 @@ namespace detail {
         static void reverse(Char* p, Char* q) {}
 
         static void save_itoa(Char*& bytes, long n, Char a_pad) {
-            BOOST_ASSERT(n / 10 == 0);
+            assert(n / 10 == 0);
             *bytes++ = int_to_char(n % 10);
         }
 
         static uint64_t load_atoi(const Char*& bytes, uint64_t acc) {
-            typename boost::make_unsigned<Char>::type i=*bytes-'0';
+            typename std::make_unsigned<Char>::type i=*bytes-'0';
             if (i > 9u) return acc;
             ++bytes;
             return i + 10*acc;
@@ -638,7 +637,7 @@ inline const char* atoi_right(const Char (&bytes)[N], T& value, Char skip = '\0'
 //--------------------------------------------------------------------------------
 template <typename T, typename Char>
 inline Char* itoa_right(Char* a_data, size_t a_size, T a_value, Char a_pad = '\0') {
-    BOOST_ASSERT(a_size > 0);
+    assert(a_size > 0);
     Char* p = a_data + a_size - 1;
     while (p >= a_data) {
         T n = a_value / 10;
@@ -695,7 +694,7 @@ inline const char* fast_atoi(const char* a_str, const char* a_end, T& res) {
 /// end:
 template <typename T>
 char* itoa(T value, char*& result, int base = 10) {
-    BOOST_ASSERT(base >= 2 || base <= 36);
+    assert(base >= 2 || base <= 36);
 
     char* p = result, *q = p;
     T     tmp;
@@ -1055,7 +1054,7 @@ inline typename std::enable_if<std::is_same<T,double>::value ||
                                std::is_same<T,float >::value, const char*>::
 type atof(const char* p, const char* end, T& result)
 {
-    BOOST_ASSERT(p != nullptr && end != nullptr);
+    assert(p != nullptr && end != nullptr);
 
     // Skip leading white space, if any.
     while (p < end && (*p == ' ' || *p == '0'))

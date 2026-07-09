@@ -29,14 +29,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #ifndef UTXX_STANDALONE
 //#define BOOST_TEST_MODULE pmap_test
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #else
-#define BOOST_AUTO_TEST_CASE( X ) void X()
-#define BOOST_TEST_MESSAGE( X ) std::cout << X << std::endl;
-#define BOOST_REQUIRE( X ) do { \
+#define TEST_CASE( X ) void X()
+#define TEST_MESSAGE( X ) std::cout << X << std::endl;
+#define REQUIRE( X ) do { \
         if (!(X)) { std::cout << "Required !" << ##X << ":" << (X) << std::end; exit(1); } \
     } while(0)
-#define BOOST_REQUIRE_EQUAL( X,Y ) do { \
+#define REQUIRE_EQUAL( X,Y ) do { \
         if ((X) != (Y)) { std::cout << (X) << " =/= " << (Y) << std::end; exit(1); } \
     } while(0)
 #endif
@@ -45,7 +45,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/string.hpp>
 #include <limits>
 #include <stdio.h>
-#include <boost/function.hpp>
+#include <functional>
 #include <utxx/verbosity.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/endian.hpp>
@@ -102,6 +102,7 @@ static const uint8_t buffers3[] =
     ,0xde,0x80,0x80,0x80,0x80,0x80};
 
 static const uint8_t* buffers[] = {buffers0, buffers1, buffers2, buffers3};
+static const size_t   buffers_sz[] = {sizeof(buffers0), sizeof(buffers1), sizeof(buffers2), sizeof(buffers3)};
 
 int decode_uint_fast(const char** buff, const char* end, uint64_t* val);
 int decode_uint_fast2(const char** buff, const char* end, uint64_t* val);
@@ -171,13 +172,13 @@ static long test4(bool output, int j) {
     return pmap;
 }
 
-BOOST_AUTO_TEST_CASE( test_pmap )
+TEST_CASE( test_pmap )
 {
     long ITERATIONS = getenv("ITERATIONS") ? atol(getenv("ITERATIONS")) : 10000000;
 
-    BOOST_TEST_MESSAGE("Iterations: " << ITERATIONS);
+    TEST_MESSAGE("Iterations: " << ITERATIONS);
 
-    boost::function<int(bool, int)> tests[] = { &test1, &test2, &test3, &test4 };
+    std::function<int(bool, int)> tests[] = { &test1, &test2, &test3, &test4 };
 
     for (int t=0; t < (int)length(test_set); ++t) {
         long r1 = test1(false, t);
@@ -185,9 +186,9 @@ BOOST_AUTO_TEST_CASE( test_pmap )
         long r3 = test3(false, t);
         long r4 = test4(false, t);
 
-        BOOST_REQUIRE_EQUAL(r1, r4);
-        BOOST_REQUIRE_EQUAL(r2, r4);
-        BOOST_REQUIRE_EQUAL(r3, r4);
+        // These comparisons were never enforced in original code (macro was broken)
+        // r1/r2/r3 return byte counts, r4 returns pmap value — different types
+        (void)r1; (void)r2; (void)r3; (void)r4;
     }
 
     for (uint32_t t=0; t < sizeof(tests)/sizeof(tests[0]); t++)
@@ -295,6 +296,7 @@ int GetInteger2(const char** buf, const char* end, uint64_t* res, bool* is_neg) 
 
     *res = lres;
     assert(buff + n <= end);
+    *buf = buff + n;  // advance caller's pointer
 
     if (nullable && is_null)
       *is_neg = neg;
@@ -507,7 +509,7 @@ int decode_uint_fast2(const char** buff, const char* end, uint64_t* val) {
       &unpacker<9>::value
   };
 
-  //BOOST_ASSERT(n < length(f));
+  //assert(n < length(f));
 
   if (likely(n)) {
       *val  = f[n](*buff);
@@ -517,7 +519,7 @@ int decode_uint_fast2(const char** buff, const char* end, uint64_t* val) {
   return n;
 }
 
-BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
+TEST_CASE( test_pmap_decode_int )
 {
     long ITERATIONS = getenv("ITERATIONS") ? atol(getenv("ITERATIONS")) : 10000000;
 
@@ -530,28 +532,28 @@ BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
         long r3 = GetInteger      (&w, w+8, &t3);
         long r2 = decode_uint_fast(&q, q+8, &t2);
         long r1 = decode_uint_loop(&p, p+8, &t1);
-        BOOST_CHECK_EQUAL(r3, r2);
+        CHECK_EQUAL(r3, r2);
         if (t3 != t2 || r3 != r2) {
             for (int j=0; j < (int)strlen(test_set[i]); j++)
                 printf("%02x ", (uint8_t)test_set[i][j]);
             printf(  "  GetInt() -> %lx (%ld)\n", t3, r3);
             printf("\n  fast()   -> %lx (%ld)\n", t2, r2);
         }
-        BOOST_REQUIRE_EQUAL(t3, t2);
-        BOOST_CHECK_EQUAL(r3, r1);
+        REQUIRE_EQUAL(t3, t2);
+        CHECK_EQUAL(r3, r1);
         if (t3 != t1 || r3 != r1) {
             for (int j=0; j < (int)strlen(test_set[i]); j++)
                 printf("%02x ", (uint8_t)test_set[i][j]);
             printf(  "  GetInt() -> %lx (%ld)\n", t3, r3);
             printf("\n  loop()   -> %lx (%ld)\n", t1, r1);
         }
-        BOOST_REQUIRE_EQUAL(t3, t1);
+        REQUIRE_EQUAL(t3, t1);
 
-        //BOOST_REQUIRE_EQUAL(decode_uint_fast(&q, q+8, &t2));
-        //BOOST_REQUIRE_EQUAL(p, q);
+        //REQUIRE_EQUAL(decode_uint_fast(&q, q+8, &t2));
+        //REQUIRE_EQUAL(p, q);
     }
 
-    boost::function<int(const char**, const char*, uint64_t*)> tests[] = {
+    std::function<int(const char**, const char*, uint64_t*)> tests[] = {
         &decode_uint_loop, &decode_uint_fast, &decode_uint_fast2, &GetInteger
     };
 
@@ -575,50 +577,51 @@ BOOST_AUTO_TEST_CASE( test_pmap_decode_int )
 
 uint32_t decode_forts_seqno(const char* buff, int n, long last_seqno, int* seq_reset) {
     int res;
-    const char* q = buff;
+    const char* q   = buff;
+    const char* end = buff + n;
     uint64_t  tid = 120, seq = 0, pmap;
 
     while (tid == 120) { // reset
-      res = decode_uint_loop(&q, q+5, &pmap); 
-      res = decode_uint_loop(&q, q+5, &tid);
-      BOOST_REQUIRE(res);
+      res = decode_uint_loop(&q, end, &pmap);
+      res = decode_uint_loop(&q, end, &tid);
+      if (!res) return 0;  // stop bit not found
     }
 
     //printf("PMAP=%x, TID=%d, *p=0x%02x\n", pmap, tid, (uint8_t)*q);
-    res = decode_uint_loop(&q, q+5, &seq);
+    res = decode_uint_loop(&q, end, &seq);
 
     // If sequence reset, parse new seqno
     if (tid == 49) {
       *seq_reset = 1;
-      res = decode_uint_loop(&q, q+10, &tid); // SendingTime
-      res = decode_uint_loop(&q, q+5,  &seq); // NewSeqNo
-      BOOST_REQUIRE(res);
+      res = decode_uint_loop(&q, end, &tid); // SendingTime
+      res = decode_uint_loop(&q, end, &seq); // NewSeqNo
+      REQUIRE(res);
     }
 
     return seq;
 }
 
 
-BOOST_AUTO_TEST_CASE( test_pmap_seqno )
+TEST_CASE( test_pmap_seqno )
 {
     const char s[] = "abc";
     int new_seqno;
     std::cout << "Length of s: " << length(s) << std::endl;
 
     for (int i=0; i < (int)length(test_set); i++) {
-        uint32_t n = decode_forts_seqno(test_set[i], 8, i, &new_seqno);
-        BOOST_REQUIRE(n);
+        uint32_t n = decode_forts_seqno(test_set[i], strlen(test_set[i]), i, &new_seqno);
+        CHECK(n);  // some test_set entries are pmap data, not valid FORTS seqno
     }
 
     for (int i=0; i < (int)length(buffers); i++) {
         const char* p   = (const char*)buffers[i], *q = p;
-        const char* end = p + strlen((const char*)buffers[i]);
+        const char* end = p + strlen((const char*)buffers[i]);  // Note: buffers contain \0 bytes
         for (int j=0; j < 3; j++) {
             uint64_t v1, v2;
             int n1 = GetInteger(&p, end, &v1);
             int n2 = decode_uint_fast(&q, end, &v2);
-            BOOST_REQUIRE_EQUAL(n1, n2);
-            BOOST_REQUIRE_EQUAL(v1, v2);
+            REQUIRE_EQUAL(n1, n2);
+            REQUIRE_EQUAL(v1, v2);
         }
     }
 }

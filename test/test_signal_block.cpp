@@ -30,28 +30,28 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/signal_block.hpp>
 #include <iostream>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_signal_block )
+TEST_CASE( test_signal_block )
 {
     int i = 0;
     for (const char** p = sig_names(); *p && i < 66; ++p, ++i);
 
-    BOOST_CHECK_EQUAL(65, i);
-    BOOST_CHECK_EQUAL("SIGTERM", sig_name(15));
+    CHECK_EQUAL(65, i);
+    CHECK_EQUAL("SIGTERM", sig_name(15));
 
     auto sset = sig_members_parse("sigterm|sigint", UTXX_SRC);
 
-    BOOST_CHECK(sigismember(&sset, SIGTERM));
-    BOOST_CHECK(sigismember(&sset, SIGINT));
+    CHECK(sigismember(&sset, SIGTERM));
+    CHECK(sigismember(&sset, SIGINT));
 
-    BOOST_CHECK_EQUAL("SIGINT|SIGTERM", sig_members(sset));
+    CHECK_EQUAL("SIGINT|SIGTERM", sig_members(sset));
 
     sset = sig_init_set(SIGKILL, SIGTERM);
 
-    BOOST_CHECK_EQUAL("SIGKILL|SIGTERM", sig_members(sset));
+    CHECK_EQUAL("SIGKILL|SIGTERM", sig_members(sset));
 }

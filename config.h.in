@@ -1,3 +1,6 @@
+// Define to 1 if Boost libraries are available
+#cmakedefine UTXX_HAVE_BOOST
+
 // Level1 cacheline size
 #cmakedefine UTXX_CL_SIZE @UTXX_CL_SIZE@
 
@@ -22,4 +25,7 @@
 
 // Define to 1 if struct tcphdr has th_flags
 #cmakedefine UTXX_HAVE_TCPHDR_TH_FLAGS_H
+
+// Define to 1 to enable Folly-based atomic_hash_map/atomic_hash_array (needs resync)
+#cmakedefine UTXX_HAVE_ATOMIC_HASH_MAP
 

@@ -30,28 +30,28 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/unordered_map_with_ttl.hpp>
 #include <utxx/string.hpp>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_unordered_map_with_ttl )
+TEST_CASE( test_unordered_map_with_ttl )
 {
     unordered_map_with_ttl<int, int> map(1000);
 
-    BOOST_REQUIRE(map.try_add(1, 123, 10000));
-    BOOST_REQUIRE(map.try_add(2, 234, 10000));
-    BOOST_REQUIRE_EQUAL(2, map.size());
+    REQUIRE(map.try_add(1, 123, 10000));
+    REQUIRE(map.try_add(2, 234, 10000));
+    REQUIRE_EQUAL(2, map.size());
 
-    BOOST_CHECK( map.try_add(1, 123, 11000));
-    BOOST_REQUIRE_EQUAL(1, map.size());
-    BOOST_CHECK(!map.try_add(1, 123, 11500));
-    BOOST_REQUIRE_EQUAL(1, map.size());
-    BOOST_REQUIRE_EQUAL(1, map.refresh(12000));
-    BOOST_REQUIRE_EQUAL(0, map.size());
-    BOOST_CHECK( map.try_add(1, 123, 12000));
-    BOOST_REQUIRE_EQUAL(1, map.size());
+    CHECK( map.try_add(1, 123, 11000));
+    REQUIRE_EQUAL(1, map.size());
+    CHECK(!map.try_add(1, 123, 11500));
+    REQUIRE_EQUAL(1, map.size());
+    REQUIRE_EQUAL(1, map.refresh(12000));
+    REQUIRE_EQUAL(0, map.size());
+    CHECK( map.try_add(1, 123, 12000));
+    REQUIRE_EQUAL(1, map.size());
 }
 
 

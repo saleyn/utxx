@@ -33,9 +33,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/cstdint.hpp>
-#include <boost/assert.hpp>
-#include <boost/static_assert.hpp>
+#include <cassert>
+#include <cstdint>
 #include <utxx/error.hpp>
 #include <functional>
 
@@ -101,12 +100,12 @@ namespace utxx {
         static const size_t s_len_mask   = ~0llu << s_len_shift;
         static const size_t s_val_mask   = ~s_len_mask;
         static const size_t s_char_mask  = (1 << s_bits_per_c) - 1;
-        BOOST_STATIC_ASSERT(s_size <= s_max_size);
-        BOOST_STATIC_ASSERT(s_size <  11);
-        BOOST_STATIC_ASSERT(sizeof(s_fwd_name_lookup_table) == 256);
-        BOOST_STATIC_ASSERT(sizeof(s_rev_name_lookup_table) == 256);
-        BOOST_STATIC_ASSERT(s_len_mask == 0xF000000000000000);
-        BOOST_STATIC_ASSERT(s_val_mask == 0x0FFFFFFFFFFFFFFF);
+        static_assert(s_size <= s_max_size);
+        static_assert(s_size <  11);
+        static_assert(sizeof(s_fwd_name_lookup_table) == 256);
+        static_assert(sizeof(s_rev_name_lookup_table) == 256);
+        static_assert(s_len_mask == 0xF000000000000000);
+        static_assert(s_val_mask == 0x0FFFFFFFFFFFFFFF);
 
         uint64_t m_value;
 
@@ -155,7 +154,7 @@ namespace utxx {
 
         template <int N>
         void set(const char (&a_buf)[N], bool a_no_case = false) {
-            BOOST_STATIC_ASSERT(N <= Size);
+            static_assert(N <= Size);
             set_and_check(a_buf, N, a_no_case);
         }
 
@@ -165,7 +164,7 @@ namespace utxx {
 
         template <int N>
         void set(const char (&a_buf)[N], int& a_err, bool a_no_case = false) {
-            BOOST_STATIC_ASSERT(N <= Size);
+            static_assert(N <= Size);
             a_err = set(a_buf, N, a_no_case);
         }
 
@@ -217,7 +216,7 @@ namespace utxx {
 
         /// Write decoded name to a given character buffer
         int write(char* a_buf, size_t a_size) const {
-            BOOST_ASSERT(a_size == Size || a_size > length());
+            assert(a_size == Size || a_size > length());
             size_t n = unsafe_write(a_buf);
             if (n < a_size) a_buf[n] = '\0';
             return n;
@@ -226,7 +225,7 @@ namespace utxx {
         /// Write decoded name to a given character buffer.
         template <int N>
         int write(char (&a_buf)[N]) const {
-            BOOST_ASSERT(length() < N);
+            assert(length() < N);
             return write(a_buf, N);
         }
 
@@ -263,7 +262,7 @@ namespace utxx {
     public:
         name_t() { m_value = 0u; }
         explicit name_t(uint64_t a_symbol) {
-            BOOST_ASSERT(((a_symbol & s_len_mask) >> s_len_shift) <= s_size);
+            assert(((a_symbol & s_len_mask) >> s_len_shift) <= s_size);
             m_value = a_symbol;
         }
         explicit name_t(const std::string& a, bool a_no_case = false) {

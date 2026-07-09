@@ -45,7 +45,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/path.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/buffer.hpp>
-#include <boost/concept_check.hpp>
 
 using namespace std;
 

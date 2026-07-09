@@ -35,10 +35,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/config.h>
 
+#ifdef UTXX_HAVE_BOOST
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
-#include <boost/scope_exit.hpp>
-#include <boost/assert.hpp>
+#include <cassert>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -91,7 +91,7 @@ private:
 
     } __attribute__((aligned(UTXX_CL_SIZE)));
 
-    BOOST_STATIC_ASSERT(sizeof(blob_t) % atomic::cacheline::size == 0);
+    static_assert(sizeof(blob_t) % atomic::cacheline::size == 0);
 
     blob_t*             m_blob;
     bip::file_mapping   m_file;
@@ -137,9 +137,9 @@ public:
     Lock& get_lock() { return m_lock; }
 
     // Use the following get/set functions for non-concurrent "dirty" access
-    T&       dirty_get()                { BOOST_ASSERT(m_blob); return m_blob->data; }
-    const T& dirty_get() const          { BOOST_ASSERT(m_blob); return m_blob->data; }
-    void     dirty_set(const T& src)    { BOOST_ASSERT(m_blob); m_blob->data = src;  }
+    T&       dirty_get()                { assert(m_blob); return m_blob->data; }
+    const T& dirty_get() const          { assert(m_blob); return m_blob->data; }
+    void     dirty_set(const T& src)    { assert(m_blob); m_blob->data = src;  }
 
     T*       operator->()               { return &dirty_get(); }
     const T* operator->()       const   { return &dirty_get(); }
@@ -150,7 +150,7 @@ template<typename T, typename L>
 bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
                              bool a_read_only, int a_mode)
 {
-    BOOST_ASSERT(a_file);
+    assert(a_file);
 
     close();
 
@@ -163,9 +163,7 @@ bool persist_blob<T,L>::init(const char* a_file, const T* a_init_val,
             throw io_error(errno, "Cannot open file ", a_file, " for ",
                 a_read_only ? "reading" : "writing");
 
-        BOOST_SCOPE_EXIT_TPL( (&l_fd) ) {
-            ::close(l_fd);
-        } BOOST_SCOPE_EXIT_END;
+        struct fd_closer { int& fd; ~fd_closer() { if (fd >= 0) { ::close(fd); fd = -1; } } } _guard{l_fd};
 
         struct stat buf;
         if (::fstat(l_fd, &buf) < 0)
@@ -238,7 +236,7 @@ void persist_blob<T,L>::close() {
 
 template<typename T, typename L>
 T persist_blob<T,L>::get() {
-    BOOST_ASSERT(m_blob);
+    assert(m_blob);
 
     scoped_lock g(m_lock);
     return m_blob->data;
@@ -246,14 +244,14 @@ T persist_blob<T,L>::get() {
 
 template<typename T, typename L>
 void persist_blob<T,L>::set(const T& src) {
-    BOOST_ASSERT(m_blob);
+    assert(m_blob);
     scoped_lock g(m_lock);
     m_blob->data = src;
 }
 
 template<typename T, typename L>
 void persist_blob<T,L>::reset() {
-    BOOST_ASSERT(m_blob);
+    assert(m_blob);
     scoped_lock g(m_lock);
     bzero(m_blob->data, sizeof(T));
 }
@@ -263,3 +261,5 @@ template<typename T, typename L>
 const uint32_t persist_blob<T,L>::blob_t::s_version;
 
 } // namespace utxx
+
+#endif // UTXX_HAVE_BOOST

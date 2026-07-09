@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #if __cplusplus >= 201103L
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/futex.hpp>
 #include <utxx/timestamp.hpp>
 #include <utxx/verbosity.hpp>
@@ -101,7 +101,7 @@ void consumer(futex& fut, int id )
     print(false, id, 0, fut, 0, res, 0);
 }
 
-BOOST_AUTO_TEST_CASE( test_futex )
+TEST_CASE( test_futex )
 {
     futex fut;
 
@@ -122,7 +122,7 @@ BOOST_AUTO_TEST_CASE( test_futex )
     std::cout << "Futex wait_spin     count = " << fut.wait_spin_count()     << std::endl;
 #endif
 
-    BOOST_REQUIRE(true);
+    REQUIRE(true);
 }
 
 #endif

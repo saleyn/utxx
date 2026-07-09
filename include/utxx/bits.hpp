@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------
-/// \file   bits.cpp
+/// \file   bits.hpp
 /// \author Serge Aleynikov
 //----------------------------------------------------------------------------
 /// \brief Functions for manipulating bits.
@@ -36,13 +36,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <cstdint>
 #include <utxx/detail/bit_count.hpp>
 
-#if __GNUC__ < 4 || (__GNUC__ == 4 && __GNUC_MINOR__ < 1)
-#   define UTXX_ADDR__(x) "=m" (*(volatile long *) (x))
-#else
-#   define UTXX_ADDR__(x) "+m" (*(volatile long *) (x))
-#endif
-#define UTXX_CONST_MASK_ADDR(n, addr) UTXX_ADDR__((char*)(addr) + ((n)>>3))
-
 #define FOREACH_SET_BIT(bit, addr) \
     for (unsigned int (bit) = utxx::bits::bit_scan_forward((addr)); \
          (bit) < 8*sizeof(addr); \
@@ -52,51 +45,45 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 namespace utxx {
 namespace bits {
 
-namespace detail {
-    inline int is_immediate(long n) { return __builtin_constant_p(n); }
-    inline long const_mask(long n)  { return (1 << ((n) & 7)); }
-} // namespace detail
-
 /// Set a given bit in a location pointed to by \a addr
 static inline void set_bit(int n, volatile unsigned long* addr) {
-    asm volatile("bts %1,%0" : UTXX_ADDR__(addr) : "Ir" (n) : "memory");
+    __atomic_fetch_or(addr, 1UL << n, __ATOMIC_SEQ_CST);
 }
 
 static inline void clear_bit(int n, volatile unsigned long* addr) {
-    asm volatile("btr %1,%0" : UTXX_ADDR__(addr) : "Ir" (n));
+    __atomic_fetch_and(addr, ~(1UL << n), __ATOMIC_SEQ_CST);
 }
 
 /// Toggle a bit in memory
 static inline void change_bit(int n, volatile unsigned long* addr) {
-    asm volatile("btc %1,%0" : UTXX_ADDR__(addr) : "Ir" (n));
+    __atomic_fetch_xor(addr, 1UL << n, __ATOMIC_SEQ_CST);
 }
 
 /// Set a bit and return its old value
-static inline int test_and_set_bit(int n, volatile unsigned long *addr) {
-    int oldbit;
-    asm("bts %2,%1\n\t" "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n));
-    return oldbit;
+static inline int test_and_set_bit(int n, volatile unsigned long* addr) {
+    unsigned long mask = 1UL << n;
+    unsigned long old  = __atomic_fetch_or(addr, mask, __ATOMIC_SEQ_CST);
+    return (old & mask) != 0;
 }
 
 /// Clear a bit and return its old value
-static inline int test_and_clear_bit(int n, volatile unsigned long *addr) {
-    int oldbit;
-    asm volatile("btr %2,%1\n\t" "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n));
-    return oldbit;
+static inline int test_and_clear_bit(int n, volatile unsigned long* addr) {
+    unsigned long mask = 1UL << n;
+    unsigned long old  = __atomic_fetch_and(addr, ~mask, __ATOMIC_SEQ_CST);
+    return (old & mask) != 0;
 }
 
 /// Change a bit and return its old value
-static inline int test_and_change_bit(int n, volatile unsigned long *addr) {
-    int oldbit;
-    asm volatile("btc %2,%1\n\t" "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
-    return oldbit;
+static inline int test_and_change_bit(int n, volatile unsigned long* addr) {
+    unsigned long mask = 1UL << n;
+    unsigned long old  = __atomic_fetch_xor(addr, mask, __ATOMIC_SEQ_CST);
+    return (old & mask) != 0;
 }
 
-/// Find first set bit in word.
+/// Find first set bit in word (index of least significant set bit).
 /// Undefined if no set bit exists, so code should check against 0 first.
 static inline unsigned long bit_scan_forward(unsigned long v) {
-    asm("bsf %1,%0" : "=r" (v) : "rm" (v));
-    return v;
+    return __builtin_ctzl(v);
 }
 
 /// Find next set bit in word counting from n'th bit.
@@ -107,18 +94,16 @@ static inline unsigned long bit_scan_next(unsigned long v, unsigned int n) {
     return val && n < s_end ? bit_scan_forward(val)+n : s_end;
 }
 
-/// Find last set bit in word.
+/// Find last set bit in word (index of most significant set bit).
 /// Undefined if no set bit exists, so code should check against 0 first.
 static inline unsigned long bit_scan_reverse(unsigned long v) {
-    asm("bsr %1,%0" : "=r" (v) : "rm" (v));
-    return v;
+    return 8*sizeof(long) - 1 - __builtin_clzl(v);
 }
 
 /// Find first zero bit in word.
 /// Undefined if no zero bit exists, so code should check against ~0UL first.
 static inline unsigned long find_first_zero(unsigned long v) {
-    asm ("bsf %1,%0" : "=r" (v) : "r" (~v));
-    return v;
+    return __builtin_ctzl(~v);
 }
 
 } // namespace bits

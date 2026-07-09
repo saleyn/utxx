@@ -40,7 +40,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <fcntl.h>
-#include <boost/format.hpp>
 #include <utxx/url.hpp>
 
 #include <thrift/Thrift.h>

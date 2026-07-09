@@ -132,7 +132,7 @@ template <class T>
 using remove_cvr_t = typename remove_cvref<T>::type;
 
 template <typename T, typename U>
-static constexpr const bool is_same()
+static constexpr bool is_same()
 { return std::is_same<typename remove_cvref<T>::type, typename remove_cvref<U>::type>::value; }
 
 } // namespace utxx

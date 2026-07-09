@@ -37,7 +37,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define DEBUG_ASYNC_LOGGER
 //#define USE_BOOST_POOL_ALLOC
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #if defined(USE_BOOST_POOL_ALLOC) || defined(USE_BOOST_FAST_POOL_ALLOC)
 #include <boost/pool/pool_alloc.hpp>
 #elif defined(USE_NO_ALLOC) || defined(USE_CACHED_ALLOC)
@@ -55,7 +57,6 @@ static const char s_str1[]      = "This is a const char* string line:%d\n";
 static const char s_str2[]      = "This is an stl std::string line:";
 static const char s_str3[]      = "This is another const char* string without line\n";
 
-using namespace boost::unit_test;
 using namespace utxx;
 
 namespace {
@@ -126,11 +127,11 @@ auto worker = [](int id, int iterations, boost::barrier* barrier,
         if (!no_histogram) histogram->start();
         logger->write(files[0], std::string(), p, sizeof(s_str1));
         if (!no_histogram) histogram->stop();
-        //BOOST_REQUIRE_EQUAL(0, n);
+        //REQUIRE_EQUAL(0, n);
         if (!no_histogram) histogram->start();
         logger->write(files[1], std::string(), q, sizeof(s_str3));
         if (!no_histogram) histogram->stop();
-        //BOOST_REQUIRE_EQUAL(0, m);
+        //REQUIRE_EQUAL(0, m);
     }
 
     *elapsed = tm.elapsed();
@@ -143,11 +144,11 @@ auto worker = [](int id, int iterations, boost::barrier* barrier,
                 "total logged: %lu\n",
                 id, int(double(iterations) / *elapsed), lat,
                 logger->total_msgs_processed());
-        BOOST_TEST_MESSAGE(buf);
+        TEST_MESSAGE(buf);
     }
 };
 
-BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
+TEST_CASE( test_multi_file_logger_perf )
 {
     static const int ITERATIONS =
         getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 250000u;
@@ -162,13 +163,13 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 
     for (size_t i = 0; i < s_file_num; i++) {
         l_fds[i] = logger.open_file(s_filename[i], false);
-        BOOST_REQUIRE(l_fds[i].fd() >= 0);
+        REQUIRE(l_fds[i].fd() >= 0);
         //logger.set_batch_size(l_fds[i], 25);
     }
 
     int ok = logger.start();
 
-    BOOST_REQUIRE_EQUAL(0, ok);
+    REQUIRE_EQUAL(0, ok);
 
     std::vector<std::shared_ptr<std::thread>>   threads(THREADS);
     boost::barrier                              barrier(THREADS+1);
@@ -195,7 +196,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         sum_time += elapsed[i];
     }
 
-    BOOST_TEST_MESSAGE("All threads finished!");
+    TEST_MESSAGE("All threads finished!");
 
     if (verbosity::level() >= utxx::VERBOSE_DEBUG) {
         sum_time /= THREADS;
@@ -203,17 +204,17 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
         sprintf(buf, "Avg speed = %8d it/s, latency = %.3f us\n",
                (int)((double)ITERATIONS / sum_time),
                sum_time * 1000000 / ITERATIONS);
-        BOOST_TEST_MESSAGE(buf);
+        TEST_MESSAGE(buf);
         if (!getenv("NOHISTOGRAM")) {
             std::stringstream s;
             totals.dump(s);
-            BOOST_TEST_MESSAGE(s.str());
+            TEST_MESSAGE(s.str());
         }
     }
 
     std::stringstream s;
     s << "Max queue size = " << logger.max_queue_size();
-    BOOST_TEST_MESSAGE(s.str());
+    TEST_MESSAGE(s.str());
 
 
 #ifdef PERF_STATS
@@ -232,14 +233,14 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_perf )
 
     logger.stop();
 
-    BOOST_CHECK_EQUAL(0, logger.open_files_count());
+    CHECK_EQUAL(0, logger.open_files_count());
 
 #ifndef DONT_DELETE_FILE
     unlink();
 #endif
 }
 
-BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
+TEST_CASE( test_multi_file_logger_close_file )
 {
     static const int32_t ITERATIONS =
         getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 50;
@@ -250,17 +251,17 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
         logger_t l_logger;
 
         logger_t::file_id l_fd;
-        BOOST_REQUIRE(!l_fd);
+        REQUIRE(!l_fd);
         int ec = l_logger.close_file(l_fd);
-        BOOST_REQUIRE_EQUAL(0, ec);
+        REQUIRE_EQUAL(0, ec);
 
         l_fd = l_logger.open_file(s_filename[0], false);
-        BOOST_REQUIRE(l_fd.fd() >= 0);
-        BOOST_REQUIRE(l_fd);
+        REQUIRE(l_fd.fd() >= 0);
+        REQUIRE(l_fd);
 
         int ok = l_logger.start();
 
-        BOOST_REQUIRE_EQUAL(0, ok);
+        REQUIRE_EQUAL(0, ok);
 
         for (int i = 0; i < ITERATIONS; i++) {
             char buf[128];
@@ -268,18 +269,18 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_close_file )
             char* p = l_logger.allocate(n);
             strncpy(p, buf, n);
             n = l_logger.write(l_fd, std::string(), p, n);
-            BOOST_REQUIRE_EQUAL(0, n);
+            REQUIRE_EQUAL(0, n);
         }
 
         ec = l_logger.last_error(l_fd);
-        BOOST_REQUIRE_EQUAL(0, ec);
+        REQUIRE_EQUAL(0, ec);
 
         l_logger.close_file(l_fd, false);
 
         ec = l_logger.open_files_count();
-        BOOST_REQUIRE_EQUAL(0,  ec);
+        REQUIRE_EQUAL(0,  ec);
         ec = l_logger.last_error(l_fd);
-        BOOST_REQUIRE_EQUAL(-1, ec);
+        REQUIRE_EQUAL(-1, ec);
 
         l_logger.stop();
     }
@@ -322,7 +323,7 @@ namespace {
     };
 }
 
-BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
+TEST_CASE( test_multi_file_logger_formatter )
 {
     static const int32_t ITERATIONS = 3;
 
@@ -332,28 +333,28 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
 
     logger_t::file_id l_fd =
         l_logger.open_file(s_filename[0], false);
-    BOOST_REQUIRE(l_fd.fd() >= 0);
+    REQUIRE(l_fd.fd() >= 0);
 
     formatter l_formatter(l_logger);
     l_logger.set_formatter(l_fd, l_formatter);
 
     int ok = l_logger.start();
 
-    BOOST_REQUIRE_EQUAL(0, ok);
+    REQUIRE_EQUAL(0, ok);
 
     std::string s = std::string(s_str2) + '\n';
 
     for (int i = 0; i < ITERATIONS; i++) {
         int n = l_logger.write(l_fd, "abc", s);
-        BOOST_REQUIRE_EQUAL(0, n);
+        REQUIRE_EQUAL(0, n);
     }
 
-    BOOST_REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
+    REQUIRE_EQUAL(0, l_logger.last_error(l_fd));
 
     l_logger.close_file(l_fd, false);
 
-    BOOST_REQUIRE_EQUAL(0,  l_logger.open_files_count());
-    BOOST_REQUIRE_EQUAL(-1, l_logger.last_error(l_fd));
+    REQUIRE_EQUAL(0,  l_logger.open_files_count());
+    REQUIRE_EQUAL(-1, l_logger.last_error(l_fd));
 
     l_logger.stop();
 
@@ -364,13 +365,13 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
         for (int i = 0; i < ITERATIONS; i++) {
             std::string sg;
             std::getline(file, sg);
-            BOOST_REQUIRE( !file.fail() );
-            BOOST_REQUIRE_EQUAL( st, sg );
+            REQUIRE( !file.fail() );
+            REQUIRE_EQUAL( st, sg );
         }
 
         std::getline(file, st);
-        BOOST_REQUIRE(file.fail());
-        BOOST_REQUIRE(file.eof());
+        REQUIRE(file.fail());
+        REQUIRE(file.eof());
         file.close();
 
         ::unlink(s_filename[0]);
@@ -379,7 +380,7 @@ BOOST_AUTO_TEST_CASE( test_multi_file_logger_formatter )
 
 //-----------------------------------------------------------------------------
 /*
-BOOST_AUTO_TEST_CASE( 
+TEST_CASE(
     test_multi_file_logger_append )
 {
     enum { ITERATIONS = 10 };
@@ -392,10 +393,10 @@ BOOST_AUTO_TEST_CASE(
         for (int k=0; k < 2; k++) {
 
             int ok = l_logger.start(s_filename);
-            BOOST_REQUIRE ( ok == 0 );
+            REQUIRE( ok == 0 );
 
             for (int i = 0; i < ITERATIONS; i++)
-                BOOST_REQUIRE( 0 == l_logger.fwrite(s_str1, i) );
+                REQUIRE( 0 == l_logger.fwrite(s_str1, i) );
 
             l_logger.stop();
         }
@@ -405,19 +406,19 @@ BOOST_AUTO_TEST_CASE(
             for (int i = 0; i < ITERATIONS; i++) {
                 std::string s;
                 std::getline(file, s);
-                BOOST_REQUIRE( ! file.fail() );
+                REQUIRE( ! file.fail() );
 
                 char buf[256];
                 sprintf(buf, s_str1, i);
                 s += '\n';
-                BOOST_REQUIRE_EQUAL( s, buf );
+                REQUIRE_EQUAL( s, buf );
             }
 
         {
             std::string s;
             std::getline(file, s);
-            BOOST_REQUIRE(file.fail());
-            BOOST_REQUIRE(file.eof());
+            REQUIRE(file.fail());
+            REQUIRE(file.eof());
             file.close();
         }
         ::unlink(s_filename);
@@ -429,7 +430,7 @@ class producer {
     int m_iterations;
     text_file_logger<>& m_logger;
 public:
-    producer(text_file_logger<>& a_logger, int n, int iter) 
+    producer(text_file_logger<>& a_logger, int n, int iter)
         : m_instance(n), m_iterations(iter), m_logger(a_logger)
     {}
 
@@ -451,7 +452,7 @@ public:
 };
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( 
+TEST_CASE(
     test_multi_file_logger_concurrent )
 {
     const int threads = ::getenv("THREAD") ? atoi(::getenv("THREAD")) : 2;
@@ -461,7 +462,7 @@ BOOST_AUTO_TEST_CASE(
     text_file_logger<> l_logger;
 
     int ok = l_logger.start(s_filename);
-    BOOST_REQUIRE ( ok == 0 );
+    REQUIRE( ok == 0 );
 
     {
         boost::shared_ptr<boost::thread> l_threads[threads];
@@ -484,20 +485,20 @@ BOOST_AUTO_TEST_CASE(
     for (int i = 0; i < ITERATIONS*MAX; i++) {
         std::string s;
         std::getline(file, s);
-        BOOST_REQUIRE( ! file.fail() );
+        REQUIRE( ! file.fail() );
 
         size_t n1 = s.find_first_of('|');
-        BOOST_REQUIRE( n1 != std::string::npos );
+        REQUIRE( n1 != std::string::npos );
 
         std::string num = s.substr(0, n1);
         int thread_num = atoi(num.c_str());
-        BOOST_REQUIRE( thread_num >= 1 && thread_num <= MAX );
+        REQUIRE( thread_num >= 1 && thread_num <= MAX );
 
         size_t n2 = s.find_first_of(':');
-        BOOST_REQUIRE( n2 != std::string::npos );
+        REQUIRE( n2 != std::string::npos );
         num = s.substr(n2+1);
         int count = atoi(num.c_str());
-        BOOST_REQUIRE_EQUAL( count, cur_count[thread_num-1] );
+        REQUIRE_EQUAL( count, cur_count[thread_num-1] );
 
         std::stringstream str;
         str << thread_num << "| " << s_str1;
@@ -506,7 +507,7 @@ BOOST_AUTO_TEST_CASE(
         sprintf(buf, str.str().c_str(), cur_count[thread_num-1]);
         s += '\n';
 
-        BOOST_REQUIRE_EQUAL( s, buf );
+        REQUIRE_EQUAL( s, buf );
 
         cur_count[thread_num-1]++;
     }
@@ -515,14 +516,16 @@ BOOST_AUTO_TEST_CASE(
         std::string s;
         std::getline(file, s);
     }
-    BOOST_REQUIRE( file.fail() );
-    BOOST_REQUIRE( file.eof() );
+    REQUIRE( file.fail() );
+    REQUIRE( file.eof() );
     file.close();
 
     for (int i=0; i < MAX; i++)
-        BOOST_REQUIRE(cur_count[i] == ITERATIONS);
+        REQUIRE(cur_count[i] == ITERATIONS);
 
     ::unlink(s_filename);
 }
 
 */
+
+#endif // UTXX_HAVE_BOOST

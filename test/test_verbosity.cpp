@@ -31,13 +31,13 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 //#define BOOST_TEST_MODULE bitmap_test 
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/scope_exit.hpp>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_verbosity )
+TEST_CASE( test_verbosity )
 {
     verbose_type old = verbosity::level();
     {
@@ -46,33 +46,33 @@ BOOST_AUTO_TEST_CASE( test_verbosity )
 
         verbosity::level(VERBOSE_DEBUG);
 
-        BOOST_REQUIRE_EQUAL(VERBOSE_DEBUG, verbosity::level());
-        BOOST_REQUIRE_EQUAL("debug", verbosity::c_str());
+        REQUIRE_EQUAL(VERBOSE_DEBUG, verbosity::level());
+        REQUIRE_EQUAL("debug", verbosity::c_str());
 
-        BOOST_REQUIRE( verbosity::enabled(VERBOSE_DEBUG));
-        BOOST_REQUIRE( verbosity::enabled(VERBOSE_TEST));
-        BOOST_REQUIRE(!verbosity::enabled(VERBOSE_INFO));
+        REQUIRE( verbosity::enabled(VERBOSE_DEBUG));
+        REQUIRE( verbosity::enabled(VERBOSE_TEST));
+        REQUIRE(!verbosity::enabled(VERBOSE_INFO));
 
         {
             int n = 0;
             verbosity::if_enabled(VERBOSE_INFO,  [&n]() { n = 1; });
-            BOOST_REQUIRE(!n);
+            REQUIRE(!n);
             verbosity::if_enabled(VERBOSE_DEBUG, [&n]() { n = 1; });
-            BOOST_REQUIRE(n);
+            REQUIRE(n);
         }
 
     }
-    BOOST_REQUIRE_EQUAL(old, verbosity::level());
+    REQUIRE_EQUAL(old, verbosity::level());
 
-    BOOST_REQUIRE_EQUAL(VERBOSE_TEST,    verbosity::parse("test"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_DEBUG,   verbosity::parse("debug"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_DEBUG,   verbosity::parse("DEBUG"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_INFO,    verbosity::parse("info"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_MESSAGE, verbosity::parse("message"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_WIRE,    verbosity::parse("wire"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_TRACE,   verbosity::parse("trace"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_NONE,    verbosity::parse("other"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_INVALID, verbosity::parse("other", NULL, true));
-    BOOST_REQUIRE_EQUAL(VERBOSE_WIRE,    verbosity::parse(NULL, "wire"));
-    BOOST_REQUIRE_EQUAL(VERBOSE_WIRE,    verbosity::parse("",   "wire"));
+    REQUIRE_EQUAL(VERBOSE_TEST,    verbosity::parse("test"));
+    REQUIRE_EQUAL(VERBOSE_DEBUG,   verbosity::parse("debug"));
+    REQUIRE_EQUAL(VERBOSE_DEBUG,   verbosity::parse("DEBUG"));
+    REQUIRE_EQUAL(VERBOSE_INFO,    verbosity::parse("info"));
+    REQUIRE_EQUAL(VERBOSE_MESSAGE, verbosity::parse("message"));
+    REQUIRE_EQUAL(VERBOSE_WIRE,    verbosity::parse("wire"));
+    REQUIRE_EQUAL(VERBOSE_TRACE,   verbosity::parse("trace"));
+    REQUIRE_EQUAL(VERBOSE_NONE,    verbosity::parse("other"));
+    REQUIRE_EQUAL(VERBOSE_INVALID, verbosity::parse("other", NULL, true));
+    REQUIRE_EQUAL(VERBOSE_WIRE,    verbosity::parse(NULL, "wire"));
+    REQUIRE_EQUAL(VERBOSE_WIRE,    verbosity::parse("",   "wire"));
 } 

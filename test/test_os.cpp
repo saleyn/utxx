@@ -30,17 +30,17 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/os.hpp>
 #include <iostream>
 
 using namespace std;
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_os )
+TEST_CASE( test_os )
 {
     auto user     = os::getenv("USER", "");
     auto username = os::username();
 
-    BOOST_REQUIRE_EQUAL(user, username);
+    REQUIRE_EQUAL(user, username);
 }

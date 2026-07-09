@@ -32,6 +32,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
 #include <boost/preprocessor/control/iif.hpp>
 #include <boost/preprocessor/punctuation/is_begin_parens.hpp>
 #include <boost/preprocessor/comparison/greater.hpp>
@@ -113,6 +116,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
         BOOST_PP_GREATER(BOOST_PP_TUPLE_SIZE(val), 1),                         \
         = BOOST_PP_TUPLE_ELEM(1, val),                                         \
         BOOST_PP_EMPTY())
+
+#endif // UTXX_HAVE_BOOST
 
 // Optionally enables support of BOOST serialization in enums
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION

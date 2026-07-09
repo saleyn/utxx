@@ -247,7 +247,7 @@ inline long FdInfo::HandleFile(uint32_t a_events)
   if (m_read_at_least) {
     auto p    = m_rd_buff->rd_ptr();
     auto need = m_read_at_least(p, got);
-    if (need > (int)got) {
+    if ((size_t)need > got) {
       if (UNLIKELY(need > 100 * 1024 * 1024)) {
         auto e = utxx::to_string("suspicious read size = ", need);
         return ReportError(IOType::Read, EMSGSIZE, e, REACTOR_SRCX);

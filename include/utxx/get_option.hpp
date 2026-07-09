@@ -33,10 +33,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <stdlib.h>
 #include <string.h>
+#include <functional>
 #include <type_traits>
+#include <charconv>
+#include <stdexcept>
 #include <utxx/typeinfo.hpp>
 #include <utxx/error.hpp>
-#include <boost/lexical_cast.hpp>
 
 namespace utxx {
 
@@ -47,15 +49,19 @@ inline long env(const char* a_var, long a_default) {
 
 namespace {
     template <typename T>
-    std::enable_if_t<!std::is_same_v<T, bool> && !std::is_same_v<T, std::nullptr_t>, T>
+    std::enable_if_t<std::is_arithmetic_v<T> && !std::is_same_v<T, bool>, T>
     convert(const char* a) {
-        try {
-            return boost::lexical_cast<T>(a);
-        } catch (...) {
+        T val{};
+        auto [ptr, ec] = std::from_chars(a, a + strlen(a), val);
+        if (ec != std::errc{})
             UTXX_THROW_RUNTIME_ERROR("Cannot convert value '", a, "' to type: ",
                                      type_to_string<T>());
-        }
+        return val;
     }
+
+    template <typename T>
+    std::enable_if_t<std::is_same_v<T, std::string>, T>
+    convert(const char* a) { return std::string(a); }
 
     template <typename T>
     std::enable_if_t<std::is_same_v<T, bool>, T>

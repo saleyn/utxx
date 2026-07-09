@@ -15,10 +15,13 @@
  */
 
 #include <utxx/test_helper.hpp>
+
+#ifdef UTXX_HAVE_ATOMIC_HASH_MAP
+
 #include <utxx/atomic_hash_map.hpp>
 #include <utxx/string.hpp>
 #include <utxx/cpu.hpp>
-#include <boost/lexical_cast.hpp>
+
 
 #include <sys/time.h>
 #include <thread>
@@ -34,7 +37,7 @@ using utxx::atomic_hash_array;
 template <typename T>
 inline T get_opt(const char* a, T a_default) {
     std::string value;
-    return utxx::get_test_argv(a, value) ? boost::lexical_cast<T>(value) : a_default;
+    return utxx::get_test_argv(a, value) ? static_cast<T>(std::stoll(value)) : a_default;
 }
 
 // Max before growth
@@ -48,45 +51,45 @@ static int64_t nowInUsec() {
     return int64_t(tv.tv_sec) * 1000 * 1000 + tv.tv_usec;
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_BasicStrings) {
+TEST_CASE( test_atomic_hash_map_BasicStrings) {
     using AHM = atomic_hash_map<int64_t,string,
                                 std::hash<int64_t>, std::equal_to<int64_t>,
                                 std::allocator<char>>;
     AHM myMap(1024);
-    BOOST_CHECK(myMap.begin() == myMap.end());
+    CHECK(myMap.begin() == myMap.end());
 
     for (int i = 0; i < 100; ++i)
         myMap.insert(std::make_pair(i, std::to_string(i)));
     for (int i = 0; i < 100; ++i)
-        BOOST_CHECK_EQUAL(myMap.find(i)->second, std::to_string(i));
+        CHECK_EQUAL(myMap.find(i)->second, std::to_string(i));
 
     myMap.insert(std::make_pair(999, "A"));
     myMap.insert(std::make_pair(999, "B"));
-    BOOST_CHECK_EQUAL(myMap.find(999)->second, "A"); // shouldn't have overwritten
+    CHECK_EQUAL(myMap.find(999)->second, "A"); // shouldn't have overwritten
     myMap.find(999)->second = "B";
     myMap.find(999)->second = "C";
-    BOOST_CHECK_EQUAL(myMap.find(999)->second, "C");
-    BOOST_CHECK_EQUAL(myMap.find(999)->first, 999);
+    CHECK_EQUAL(myMap.find(999)->second, "C");
+    CHECK_EQUAL(myMap.find(999)->first, 999);
 }
 
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_basic_noncopyable) {
+TEST_CASE( test_atomic_hash_map_basic_noncopyable) {
     using hash_map = atomic_hash_map<int64_t,std::unique_ptr<int>,
                                      std::hash<int64_t>, std::equal_to<int64_t>,
                                      std::allocator<char>>;
     hash_map myMap(1024);
-    BOOST_CHECK(myMap.begin() == myMap.end());
+    CHECK(myMap.begin() == myMap.end());
 
     for (int i =  0; i <  50; ++i)
         myMap.insert(make_pair(i, std::unique_ptr<int>(new int(i))));
     for (int i = 50; i < 100; ++i)
         myMap.insert(i, std::unique_ptr<int>(new int (i)));
     for (int i =  0; i < 100; ++i)
-        BOOST_CHECK_EQUAL(*(myMap.find(i)->second), i);
+        CHECK_EQUAL(*(myMap.find(i)->second), i);
     for (int i =  0; i < 100; i+=4)
         myMap.erase(i);
     for (int i =  0; i < 100; i+=4)
-        BOOST_CHECK(myMap.find(i) == myMap.end());
+        CHECK(myMap.find(i) == myMap.end());
 }
 
 using KeyT     = int32_t;
@@ -105,8 +108,8 @@ static std::unique_ptr<AHMapT>                  globalAHM;
 // Generate a deterministic value based on an input key
 static int genVal(int key) { return key / 3; }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_grow ) {
-    BOOST_TEST_MESSAGE("Overhead: " << sizeof(AHArrayT) << " (array) " <<
+TEST_CASE( test_atomic_hash_map_grow ) {
+    TEST_MESSAGE("Overhead: " << sizeof(AHArrayT) << " (array) " <<
         sizeof(AHMapT) + sizeof(AHArrayT) << " (map/set) Bytes.");
     uint64_t numEntries = 1000;
     float sizeFactor = 0.46;
@@ -129,15 +132,15 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_grow ) {
         success &= (ret.first->second == genVal(i)); // return the previous value
         success &= (m->find_at(ret.first.index())->second == genVal(i));
     }
-    BOOST_CHECK(success);
+    CHECK(success);
 
     // check correctness
-    BOOST_CHECK(m->num_submaps() > 1);  // make sure we grew
+    CHECK(m->num_submaps() > 1);  // make sure we grew
     success = true;
-    BOOST_CHECK_EQUAL(m->size(), numEntries);
+    CHECK_EQUAL(m->size(), numEntries);
     for (size_t i = 0; i < numEntries; i++)
         success &= (m->find(i)->second == genVal(i));
-    BOOST_CHECK(success);
+    CHECK(success);
 
     // Check findAt
     success = true;
@@ -150,22 +153,22 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_grow ) {
         // variables of the same type.
         success &= (retIt->first == i);
     }
-    BOOST_CHECK(success);
+    CHECK(success);
 
     // Try modifying value
     m->find(8)->second = 5309;
-    BOOST_CHECK_EQUAL(m->find(8)->second, 5309);
+    CHECK_EQUAL(m->find(8)->second, 5309);
 
     // check clear()
     m->clear();
     success = true;
     for (uint64_t i = 0; i < numEntries / 2; i++)
         success &= m->insert(RecordT(i, genVal(i))).second;
-    BOOST_CHECK(success);
-    BOOST_CHECK_EQUAL(m->size(), numEntries / 2);
+    CHECK(success);
+    CHECK_EQUAL(m->size(), numEntries / 2);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_iterator) {
+TEST_CASE( test_atomic_hash_map_iterator) {
     int   numEntries = 10000;
     float sizeFactor = .46;
     std::unique_ptr<AHMapT> m(new AHMapT(int(numEntries * sizeFactor), config));
@@ -181,8 +184,8 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_iterator) {
         success &= (it.second == genVal(it.first));
         ++count;
     }
-    BOOST_CHECK(success);
-    BOOST_CHECK_EQUAL(count, numEntries);
+    CHECK(success);
+    CHECK_EQUAL(count, numEntries);
 }
 
 class Counters {
@@ -221,7 +224,7 @@ public:
 
 // If you get an error "terminate called without an active exception", there
 // might be too many threads getting created - decrease numKeys and/or mult.
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_counter) {
+TEST_CASE( test_atomic_hash_map_counter) {
     const int numKeys = 10;
     const int mult = 10;
     Counters c(numKeys);
@@ -240,8 +243,8 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_counter) {
     string str = c.toString();
     for (auto key : keys) {
         int val = key * mult;
-        BOOST_CHECK_EQUAL(val, c.getValue(key));
-        BOOST_CHECK(string::npos != str.find(utxx::to_string("[",key,":",val,"]")));
+        CHECK_EQUAL(val, c.getValue(key));
+        CHECK(string::npos != str.find(utxx::to_string("[",key,":",val,"]")));
     }
 }
 
@@ -278,7 +281,7 @@ namespace std {
     };
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_map_exception_safety) {
+TEST_CASE( test_atomic_hash_map_map_exception_safety) {
     using MyMapT = atomic_hash_map<KeyT,Integer>;
 
     int   numEntries = 10000;
@@ -296,11 +299,11 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_map_exception_safety) {
             success &= !m->exists(i);
         }
     }
-    BOOST_CHECK_EQUAL(count, int(m->size()));
-    BOOST_CHECK(success);
+    CHECK_EQUAL(count, int(m->size()));
+    CHECK(success);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_basic_erase) {
+TEST_CASE( test_atomic_hash_map_basic_erase) {
     size_t numEntries = 1000;
 
     std::unique_ptr<AHMapT> s(new AHMapT(numEntries, config));
@@ -315,8 +318,8 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_basic_erase) {
             success &=  s->exists(i);
             success &=  ret.second;
         }
-        BOOST_CHECK(success);
-        BOOST_CHECK_EQUAL(s->size(), numEntries);
+        CHECK(success);
+        CHECK_EQUAL(s->size(), numEntries);
 
         // Delete every key in the map and verify that the key is gone and the the
         // size is correct.
@@ -327,9 +330,9 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_basic_erase) {
             success &= !(s->exists(i));
             success &= !(s->erase(i));
         }
-        BOOST_CHECK(success);
+        CHECK(success);
     }
-    BOOST_TEST_MESSAGE("Final number of subMaps = " << s->num_submaps());
+    TEST_MESSAGE("Final number of subMaps = " << s->num_submaps());
 }
 
 namespace {
@@ -352,7 +355,7 @@ void runThreads(void *(*thread)(void*), int numThreads, void **statuses) {
     for (int64_t j = 0; j < numThreads; j++) {
         pthread_t tid;
         if (pthread_create(&tid, nullptr, thread, (void*) j) != 0)
-            BOOST_TEST_MESSAGE("Could not start thread");
+            TEST_MESSAGE("Could not start thread");
         else
             threadIds.push_back(tid);
     }
@@ -368,7 +371,7 @@ void runThreads(void *(*thread)(void*)) {
 
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
+TEST_CASE( test_atomic_hash_map_collision_test) {
     const int numInserts = 100000 / 4;
 
     // Doing the same number on each thread so we collide.
@@ -376,14 +379,14 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
 
     float sizeFactor = 0.46;
     int entrySize = sizeof(KeyT) + sizeof(ValueT);
-    BOOST_TEST_MESSAGE("Testing " << numInserts << " unique " << entrySize <<
+    TEST_MESSAGE("Testing " << numInserts << " unique " << entrySize <<
         " Byte entries replicated in " << numThreads <<
         " threads with " << maxLoadFactor * 100.0 << "% max load factor.");
 
     globalAHM.reset(new AHMapT(int(numInserts * sizeFactor), config));
 
     size_t sizeInit = globalAHM->capacity();
-    BOOST_TEST_MESSAGE("  Initial capacity: " << sizeInit);
+    TEST_MESSAGE("  Initial capacity: " << sizeInit);
 
     double start = nowInUsec();
     runThreads([](void*) -> void* { // collisionInsertThread
@@ -397,21 +400,21 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
 
     size_t finalCap = globalAHM->capacity();
     size_t sizeAHM = globalAHM->size();
-    BOOST_TEST_MESSAGE(elapsed/sizeAHM << " usec per " << numThreads <<
+    TEST_MESSAGE(elapsed/sizeAHM << " usec per " << numThreads <<
         " duplicate inserts (atomic).");
-    BOOST_TEST_MESSAGE("  Final capacity: " << finalCap << " in " <<
+    TEST_MESSAGE("  Final capacity: " << finalCap << " in " <<
         globalAHM->num_submaps() << " sub maps (" <<
         sizeAHM * 100 / finalCap << "% load factor, " <<
         (finalCap - sizeInit) * 100 / sizeInit << "% growth).");
 
     // check correctness
-    BOOST_CHECK_EQUAL(int(sizeAHM), numInserts);
+    CHECK_EQUAL(int(sizeAHM), numInserts);
     bool success = true;
     for (int i = 0; i < numInserts; ++i) {
         KeyT key = randomizeKey(i);
         success &= (globalAHM->find(key)->second == genVal(key));
     }
-    BOOST_CHECK(success);
+    CHECK(success);
 
     // check colliding finds
     start = nowInUsec();
@@ -425,7 +428,7 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_collision_test) {
 
     elapsed = nowInUsec() - start;
 
-    BOOST_TEST_MESSAGE((elapsed/sizeAHM) << " usec per " << numThreads <<
+    TEST_MESSAGE((elapsed/sizeAHM) << " usec per " << numThreads <<
         " duplicate finds (atomic).");
 }
 
@@ -442,8 +445,8 @@ void* raceIterateThread(void* jj) {
     for (; it != end; ++it) {
         ++count;
         if (count > raceFinalSizeEstimate) {
-            BOOST_CHECK(false);
-            BOOST_TEST_MESSAGE("Infinite loop in iterator.");
+            CHECK(false);
+            TEST_MESSAGE("Infinite loop in iterator.");
             return nullptr;
         }
     }
@@ -462,12 +465,12 @@ void* raceInsertRandomThread(void* jj) {
 
 // Test for race conditions when inserting and iterating at the same time and
 // creating multiple submaps.
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_race_insert_iterate_thread_test) {
+TEST_CASE( test_atomic_hash_map_race_insert_iterate_thread_test) {
     const int kInsertThreads  = 20;
     const int kIterateThreads = 20;
     raceFinalSizeEstimate = kInsertThreads * kInsertPerThread;
 
-    BOOST_TEST_MESSAGE("Testing iteration and insertion with " << kInsertThreads
+    TEST_MESSAGE("Testing iteration and insertion with " << kInsertThreads
         << " threads inserting and " << kIterateThreads << " threads iterating.");
 
     globalAHM.reset(new AHMapT(raceFinalSizeEstimate / 9, config));
@@ -478,16 +481,16 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_race_insert_iterate_thread_test) {
         void *(*thread)(void*) =
             (j < kInsertThreads ? raceInsertRandomThread : raceIterateThread);
         if (pthread_create(&tid, nullptr, thread, (void*) j) != 0) {
-            BOOST_CHECK(false);
-            BOOST_TEST_MESSAGE("Could not start thread");
+            CHECK(false);
+            TEST_MESSAGE("Could not start thread");
         } else
             threadIds.push_back(tid);
     }
     for (size_t i = 0; i < threadIds.size(); ++i) {
         pthread_join(threadIds[i], nullptr);
     }
-    BOOST_TEST_MESSAGE("Ended up with "     << globalAHM->num_submaps() << " submaps");
-    BOOST_TEST_MESSAGE("Final size of map " << globalAHM->size());
+    TEST_MESSAGE("Ended up with "     << globalAHM->num_submaps() << " submaps");
+    TEST_MESSAGE("Final size of map " << globalAHM->size());
 }
 
 namespace {
@@ -537,11 +540,11 @@ void* testEraseEraseThread(void*) {
 
 // Here we have a single thread inserting some values, and several threads
 // racing to delete the values in the order they were inserted.
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_thread_erase_insert_race) {
+TEST_CASE( test_atomic_hash_map_thread_erase_insert_race) {
     const int kInsertThreads = 1;
     const int kEraseThreads = utxx::detail::cpu_count()-1;
 
-    BOOST_TEST_MESSAGE("Testing insertion and erase with " << kInsertThreads
+    TEST_MESSAGE("Testing insertion and erase with " << kInsertThreads
         << " thread inserting and " << kEraseThreads << " threads erasing.");
 
     globalAHM.reset(new AHMapT(kTestEraseInsertions / 4, config));
@@ -554,17 +557,17 @@ BOOST_AUTO_TEST_CASE( test_atomic_hash_map_thread_erase_insert_race) {
         if (pthread_create(&tid, nullptr, thread, (void*) j) == 0)
             threadIds.push_back(tid);
         else {
-            BOOST_TEST_MESSAGE("Could not start thread");
-            BOOST_REQUIRE(false);
+            TEST_MESSAGE("Could not start thread");
+            REQUIRE(false);
         }
     }
     for (size_t i = 0; i < threadIds.size(); i++)
         pthread_join(threadIds[i], nullptr);
 
-    BOOST_CHECK(globalAHM->empty());
-    BOOST_CHECK_EQUAL(globalAHM->size(), 0u);
+    CHECK(globalAHM->empty());
+    CHECK_EQUAL(globalAHM->size(), 0u);
 
-    BOOST_TEST_MESSAGE("Ended up with " << globalAHM->num_submaps() << " submaps");
+    TEST_MESSAGE("Ended up with " << globalAHM->num_submaps() << " submaps");
 }
 
 // Repro for T#483734: Duplicate AHM inserts due to incorrect AHA return value.
@@ -581,15 +584,17 @@ void* atomicHashArrayInsertRaceThread(void* j) {
     pthread_exit((void *) numInserted);
 }
 
-BOOST_AUTO_TEST_CASE( test_atomic_hash_map_atomic_hash_array_insert_race) {
+TEST_CASE( test_atomic_hash_map_atomic_hash_array_insert_race) {
     AHA*  arr        = atomicHashArrayInsertRaceArray.get();
     int   iterations = 50000, threads = utxx::detail::cpu_count();
     void* statuses[threads];
     for (int i = 0; i < iterations; i++) {
         arr->clear();
         runThreads(atomicHashArrayInsertRaceThread, threads, statuses);
-        BOOST_CHECK(arr->size() > 1);
+        CHECK(arr->size() > 1);
         for (int j = 0; j < threads; j++)
-            BOOST_CHECK_EQUAL(arr->size(), uintptr_t(statuses[j]));
+            CHECK_EQUAL(arr->size(), uintptr_t(statuses[j]));
     }
 }
+
+#endif // UTXX_HAVE_ATOMIC_HASH_MAP

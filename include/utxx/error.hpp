@@ -45,7 +45,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <signal.h>
 #include <assert.h>
 #include <sys/socket.h>
-#include <boost/current_function.hpp>
 #include <utxx/compiler_hints.hpp>
 #include <utxx/typeinfo.hpp>
 
@@ -81,10 +80,10 @@ namespace utxx {
 #define UTXX_PRETTY_FUNCTION(...) \
     static const std::string __utxx_pretty_function__ = \
         utxx::src_info::pretty_function \
-            (BOOST_CURRENT_FUNCTION, utxx::src_info_defaults(__VA_ARGS__).scopes())
+            (__PRETTY_FUNCTION__, utxx::src_info_defaults(__VA_ARGS__).scopes())
 
 /// Alias for source location information
-#define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, BOOST_CURRENT_FUNCTION)
+#define UTXX_SRC utxx::src_info(UTXX_FILE_SRC_LOCATION, __PRETTY_FUNCTION__)
 
 /// Alias for source location information using cached pretty function name
 ///

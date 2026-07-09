@@ -88,15 +88,18 @@
  */
 
 #pragma once
+
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_ATOMIC_HASH_MAP
+
 #define _UTXX_ATOMICHASHMAP_HPP_
 
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-
+#include <iterator>
 #include <stdexcept>
 #include <functional>
 #include <atomic>
+#include <type_traits>
+#include <utxx/noncopyable.hpp>
 
 #include <utxx/atomic_hash_array.hpp>
 
@@ -165,7 +168,7 @@ template<class KeyT, class ValueT,
          class Allocator = std::allocator<char>,
          class SubMap    = atomic_hash_array<KeyT,ValueT,HashFcn,EqualFcn>,
          class PSubMap   = SubMap*>
-class atomic_hash_map : boost::noncopyable {
+class atomic_hash_map : utxx::noncopyable {
 public:
     using char_alloc      = typename std::allocator_traits<Allocator>
                             ::template rebind_alloc<char>;
@@ -398,3 +401,5 @@ private:
 } // namespace utxx
 
 #include <utxx/atomic_hash_map.hxx>
+
+#endif // UTXX_HAVE_ATOMIC_HASH_MAP

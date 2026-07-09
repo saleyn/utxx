@@ -30,16 +30,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/xxhash.hpp>
 
-BOOST_AUTO_TEST_CASE( test_xxhash )
+TEST_CASE( test_xxhash )
 {
     auto seed = 1u;
     std::string input("Test data for hashing");
 
-    BOOST_REQUIRE_EQUAL(xxh::xxhash<32>(input.data(), input.size(), seed), utxx::xxhash<32>(input, seed));
-    BOOST_REQUIRE_EQUAL(xxh::xxhash<64>(input.data(), input.size(), seed), utxx::xxhash<64>(input, seed));
-    BOOST_REQUIRE_EQUAL(95760214,            utxx::xxhash<32>(input, seed));
-    BOOST_REQUIRE_EQUAL(4377185585067041146, utxx::xxhash<64>(input, seed));
+    REQUIRE_EQUAL(xxh::xxhash<32>(input.data(), input.size(), seed), utxx::xxhash<32>(input, seed));
+    REQUIRE_EQUAL(xxh::xxhash<64>(input.data(), input.size(), seed), utxx::xxhash<64>(input, seed));
+    REQUIRE_EQUAL(95760214,            utxx::xxhash<32>(input, seed));
+    REQUIRE_EQUAL(4377185585067041146, utxx::xxhash<64>(input, seed));
 }

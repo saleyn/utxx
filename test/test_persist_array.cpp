@@ -30,6 +30,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
+#include <utxx/config.h>
+
+#ifdef UTXX_HAVE_BOOST
+
 #include <iostream>
 #include <iomanip>
 #include <unistd.h>
@@ -40,10 +44,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/verbosity.hpp>
 #include <utxx/lock.hpp>
 
-#include <boost/test/unit_test.hpp>
 #include <utxx/test_helper.hpp>
 
-using namespace boost::unit_test;
 using namespace utxx;
 
 static const char* s_filename = "/tmp/persist_array.bin";
@@ -81,28 +83,28 @@ void run_test(const char* a_test_name, Init1 a_init_fun1, Init2 a_init_fun2,
         blob orig(1, 2);
 
         bool l_created;
-        BOOST_REQUIRE_NO_THROW(l_created = a_init_fun1(a));
-        BOOST_REQUIRE(l_created);
-        BOOST_REQUIRE_EQUAL(0u,         a.count());
-        BOOST_REQUIRE_EQUAL(a_capacity, a.capacity());
+        REQUIRE_NO_THROW(l_created = a_init_fun1(a));
+        REQUIRE(l_created);
+        REQUIRE_EQUAL(0u,         a.count());
+        REQUIRE_EQUAL(a_capacity, a.capacity());
 
         size_t n;
-        BOOST_REQUIRE_NO_THROW(n = a.allocate_rec());
-        BOOST_REQUIRE_EQUAL(0u, n);
+        REQUIRE_NO_THROW(n = a.allocate_rec());
+        REQUIRE_EQUAL(0u, n);
         for (size_t i=1; i < a_capacity; i++)
             a.allocate_rec();
-        BOOST_REQUIRE_THROW(a.allocate_rec(), utxx::runtime_error);
+        REQUIRE_THROW(a.allocate_rec(), utxx::runtime_error);
 
         blob* b = a.get(n);
-        BOOST_REQUIRE(b);
+        REQUIRE(b);
 
         {
             persist_type::scoped_lock g(a.get_lock(n));
             b->i1 = 10;
             b->i2 = 20;
         }
-        BOOST_REQUIRE_EQUAL(10, a[n].i1);
-        BOOST_REQUIRE_EQUAL(20, a[n].i2);
+        REQUIRE_EQUAL(10, a[n].i1);
+        REQUIRE_EQUAL(20, a[n].i2);
     }
 
     {
@@ -110,19 +112,19 @@ void run_test(const char* a_test_name, Init1 a_init_fun1, Init2 a_init_fun2,
         blob orig(1, 2);
 
         bool l_created = true;
-        BOOST_REQUIRE_NO_THROW(l_created = a_init_fun1(a));
-        BOOST_REQUIRE(!l_created);
+        REQUIRE_NO_THROW(l_created = a_init_fun1(a));
+        REQUIRE(!l_created);
 
         persist_type a2(std::move(a));
 
-        BOOST_REQUIRE_EQUAL(a_capacity, a2.count());
-        BOOST_REQUIRE_EQUAL(a_capacity, a2.capacity());
+        REQUIRE_EQUAL(a_capacity, a2.count());
+        REQUIRE_EQUAL(a_capacity, a2.capacity());
 
         blob* b = a2.get(0);
-        BOOST_REQUIRE(b);
+        REQUIRE(b);
 
-        BOOST_REQUIRE_EQUAL(10, a2[0].i1);
-        BOOST_REQUIRE_EQUAL(20, a2[0].i2);
+        REQUIRE_EQUAL(10, a2[0].i1);
+        REQUIRE_EQUAL(20, a2[0].i2);
     }
 
     {
@@ -130,13 +132,13 @@ void run_test(const char* a_test_name, Init1 a_init_fun1, Init2 a_init_fun2,
         blob orig(1, 2);
 
         // persist_nolock_type has a different offset to records than persist_type
-        BOOST_REQUIRE_THROW(a_init_fun2(a), utxx::runtime_error);
+        REQUIRE_THROW(a_init_fun2(a), utxx::runtime_error);
     }
 }
 
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
+TEST_CASE( test_persist_array_get_set )
 {
     struct file_deleter {
         file_deleter()  { ::unlink(s_filename); }
@@ -151,7 +153,7 @@ BOOST_AUTO_TEST_CASE( test_persist_array_get_set )
 }
 
 //-----------------------------------------------------------------------------
-BOOST_AUTO_TEST_CASE( test_persist_array_shared_mem )
+TEST_CASE( test_persist_array_shared_mem )
 {
     static const char s_shm_name[] = "utxx-test-persist-array";
 
@@ -196,7 +198,7 @@ namespace {
                 try {
                     m_storage.add(o);
                 } catch (std::runtime_error& e) {
-                    BOOST_REQUIRE_EQUAL("Out of storage capacity!", e.what());
+                    REQUIRE_EQUAL("Out of storage capacity!", e.what());
                     break;
                 }
             }
@@ -207,7 +209,7 @@ namespace {
 
 }
 
-BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
+TEST_CASE( test_persist_array_concurrent )
 {
     const long ITERATIONS = getenv("ITERATIONS") ? atoi(getenv("ITERATIONS")) : 10000;
 
@@ -216,8 +218,8 @@ BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
         persist_type l_storage;
         bool l_created;
 
-        BOOST_REQUIRE_NO_THROW(l_created = l_storage.init(s_filename, ITERATIONS, false));
-        BOOST_REQUIRE(l_created);
+        REQUIRE_NO_THROW(l_created = l_storage.init(s_filename, ITERATIONS, false));
+        REQUIRE(l_created);
 
         int n = getenv("PROD_THREADS") ? atoi(getenv("PROD_THREADS")) : 1;
 
@@ -238,11 +240,13 @@ BOOST_AUTO_TEST_CASE( test_persist_array_concurrent )
 
         for (size_t i=0; i < l_storage.count(); i++) {
             blob& b = l_storage[i];
-            BOOST_REQUIRE_EQUAL(l_stats[b.i1-1], b.i2-1);
+            REQUIRE_EQUAL(l_stats[b.i1-1], b.i2-1);
             l_stats[b.i1-1] = b.i2;
         }
 
-        BOOST_REQUIRE_EQUAL((size_t)ITERATIONS, l_storage.count());
+        REQUIRE_EQUAL((size_t)ITERATIONS, l_storage.count());
     }
     ::unlink(s_filename);
 }
+
+#endif // UTXX_HAVE_BOOST

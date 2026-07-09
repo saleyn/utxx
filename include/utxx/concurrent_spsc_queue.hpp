@@ -41,7 +41,7 @@
 #include <utxx/math.hpp>
 #include <utxx/error.hpp>
 #include <utxx/compiler_hints.hpp>
-#include <boost/noncopyable.hpp>
+#include <utxx/noncopyable.hpp>
 #include <atomic>
 #include <cassert>
 #include <cstdlib>
@@ -60,7 +60,7 @@ namespace utxx {
 // without locks.                                                            //
 //===========================================================================//
 template<class T, uint32_t StaticCapacity=0>
-class concurrent_spsc_queue : private boost::noncopyable
+class concurrent_spsc_queue : private utxx::noncopyable
 {
 private:
     //=======================================================================//

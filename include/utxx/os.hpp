@@ -31,9 +31,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <unistd.h>
 #include <utxx/compiler_hints.hpp>
 
 namespace utxx {
@@ -53,8 +55,8 @@ inline long getenv(const char* a_name, long a_default) {
 
 /// Return effective username
 inline std::string username() {
-    char buf[L_cuserid];
-    return UNLIKELY(cuserid(buf) == nullptr) ? "" : buf;
+    struct passwd* pw = getpwuid(geteuid());
+    return pw ? pw->pw_name : "";
 }
 
 } // namespace os

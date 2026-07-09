@@ -32,6 +32,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
+#include <utxx/config.h>
+#include <utxx/string.hpp>
+#include <cassert>
+
+#ifdef UTXX_HAVE_BOOST
 #include <boost/preprocessor/seq/enum.hpp>
 #include <boost/preprocessor/seq/size.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -40,12 +45,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/tuple/enum.hpp>
 #include <boost/preprocessor/tuple/push_back.hpp>
-#include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/variadic/to_seq.hpp>
 #include <boost/preprocessor/variadic/size.hpp>
 #include <utxx/detail/enum_helper.hpp>
-#include <utxx/string.hpp>
-#include <cassert>
 #include <map>
 
 #ifdef UTXX_ENUM_SUPPORT_SERIALIZATION
@@ -291,3 +293,5 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #define UTXX_INTERNAL_ENUMU_CASE__(x, _, i, item)                              \
             case BOOST_PP_TUPLE_ELEM(0, item): return metas()[BOOST_PP_INC(i)];
+
+#endif // UTXX_HAVE_BOOST

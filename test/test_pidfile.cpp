@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/pidfile.hpp>
 #include <utxx/path.hpp>
 #include <utxx/verbosity.hpp>
@@ -38,7 +38,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_pid_file )
+TEST_CASE( test_pid_file )
 {
     std::string filename("/tmp/test_pidfile.pid");
     {
@@ -50,6 +50,6 @@ BOOST_AUTO_TEST_CASE( test_pid_file )
         std::ifstream fs(filename.c_str());
         fs >> got_pid;
 
-        BOOST_REQUIRE_EQUAL(expected_pid, got_pid);
+        REQUIRE_EQUAL(expected_pid, got_pid);
     }
 }

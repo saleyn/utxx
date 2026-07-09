@@ -36,7 +36,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <iostream>
 #include <fstream>
-#include <boost/noncopyable.hpp>
+#include <utxx/noncopyable.hpp>
 #include <utxx/buffer.hpp>
 #include <utxx/path.hpp>
 
@@ -48,7 +48,7 @@ namespace detail {
  * \brief Basic file reader with pre-allocated buffer.
  */
 template<size_t BufSize = 1024 * 1024>
-class basic_file_reader : private boost::noncopyable {
+class basic_file_reader : private utxx::noncopyable {
     std::string                 m_fname;
     std::ifstream               m_file;
     basic_io_buffer<BufSize>    m_buf;

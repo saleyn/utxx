@@ -1,6 +1,8 @@
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <boost/thread.hpp>
-#include <boost/cstdint.hpp>
+#include <cstdint>
 #include <utxx/container/concurrent_stack.hpp>
 #include <utxx/verbosity.hpp>
 #include <utxx/atomic.hpp>
@@ -23,7 +25,7 @@ public:
     int get(int n, unsigned char* d, size_t sz) const {
         uint16_t ver = 0;
         int      looped = 0;
-        BOOST_ASSERT(sz <= MAX_DATA_SZ);
+        assert(sz <= MAX_DATA_SZ);
         do {
             looped++;
             if (m_data[n].writing) continue;
@@ -35,8 +37,8 @@ public:
         return looped-1;
     }
     void set(int n, unsigned char* d, size_t sz) { 
-        BOOST_ASSERT(sz <= MAX_DATA_SZ);
-        BOOST_ASSERT(n  <  N);
+        assert(sz <= MAX_DATA_SZ);
+        assert(n  <  N);
         m_data[n].writing = true;
         m_data[n].version++;
         atomic::memory_barrier();
@@ -100,7 +102,7 @@ struct consumer_t : public producer_t {
             uint32_t new_sum = array_t::checksum(buf+4, MAX_DATA_SZ-4);
             if (old_sum != new_sum) {
                 fprintf(stderr, "Consumer%d: old_sum[%u] != new_sum[%u]\n", id, old_sum, new_sum);
-                BOOST_REQUIRE_EQUAL(old_sum, new_sum);
+                REQUIRE_EQUAL(old_sum, new_sum);
             }
         } while (count < iterations);
 
@@ -109,7 +111,7 @@ struct consumer_t : public producer_t {
     }
 };
 
-BOOST_AUTO_TEST_CASE( test_concurrent_update )
+TEST_CASE( test_concurrent_update )
 {
     array_t data;
 
@@ -143,3 +145,5 @@ BOOST_AUTO_TEST_CASE( test_concurrent_update )
         thread[i]->join();
 }
 
+
+#endif // UTXX_HAVE_BOOST

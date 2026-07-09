@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <utxx/high_res_timer.hpp>
 #include <utxx/cpu.hpp>
-#include <boost/thread.hpp>
+#include <mutex>
 #include <stdio.h>
 #include <unistd.h>
 
@@ -67,9 +67,9 @@ unsigned int high_res_timer::high_res_timer::get_cpu_frequency() {
 }
 
 size_t high_res_timer::calibrate(uint32_t usec, uint32_t iterations) {
-    static boost::mutex m;
+    static std::mutex m;
 
-    boost::lock_guard<boost::mutex> guard(m);
+    std::lock_guard<std::mutex> guard(m);
 
     const auto sleep_time = time_val(0, usec).microseconds();
     unsigned long long delta_hrtime  = 0;

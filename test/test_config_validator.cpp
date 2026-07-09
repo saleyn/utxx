@@ -30,6 +30,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
 #include <utxx/config_validator.hpp>
 #include <utxx/variant_tree_parser.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -42,21 +44,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include "generated/test_config_validator2.generated.hpp"
 
 #ifndef NO_TEST_FRAMEWORK
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #else
 #include <boost/assert.hpp>
-#define BOOST_AUTO_TEST_CASE(f) void f()
-#define BOOST_REQUIRE(x) BOOST_ASSERT((x))
-void BOOST_REQUIRE_EQUAL(const char* x, const char* y) {
+#define TEST_CASE(f) void f()
+#define REQUIRE(x) assert((x))
+void REQUIRE_EQUAL(const char* x, const char* y) {
     if (strcmp(x, y)) {
         std::cerr << "Left:  '" << (x) << "'\nRight: '" << (y) << "'" << std::endl;
-        BOOST_ASSERT(false);
+        assert(false);
     }
 }
-void BOOST_REQUIRE_EQUAL(const char* x, const std::string& y) {
+void REQUIRE_EQUAL(const char* x, const std::string& y) {
     if (y != x) {
         std::cerr << "Left:  '" << (x) << "'\nRight: '" << (y) << "'" << std::endl;
-        BOOST_ASSERT(false);
+        assert(false);
     }
 }
 
@@ -86,7 +88,7 @@ int main() {
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_config_find )
+TEST_CASE( test_config_find )
 {
     variant_tree cfg;
     std::stringstream ss; ss <<
@@ -100,7 +102,7 @@ BOOST_AUTO_TEST_CASE( test_config_find )
 
     auto oe = cfg.get_child_optional("oe[cme_oe1]");
 
-    BOOST_REQUIRE(oe);
+    REQUIRE(oe);
 
     std::stringstream ss1; ss1 <<
     "interface \"NDA\" {\n"
@@ -112,10 +114,10 @@ BOOST_AUTO_TEST_CASE( test_config_find )
     oe->put_child("interface", cfg1.get_child("interface"));
 
     //std::cout << cfg.to_string() << std::endl;
-    BOOST_REQUIRE(cfg.get_child_optional("oe[cme_oe1].interface.enabled"));
+    REQUIRE(cfg.get_child_optional("oe[cme_oe1].interface.enabled"));
 }
 
-BOOST_AUTO_TEST_CASE( test_config_hash )
+TEST_CASE( test_config_hash )
 {
     variant_tree l_config;
     std::stringstream l_stream; l_stream
@@ -127,18 +129,18 @@ BOOST_AUTO_TEST_CASE( test_config_hash )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE_EQUAL("abc#123", l_config.get("def.k1", ""));
-        BOOST_REQUIRE_EQUAL("abc123#", l_config.get("def.k2", ""));
-        BOOST_REQUIRE_EQUAL("#abc123", l_config.get("def.k3", ""));
+        REQUIRE_EQUAL("abc#123", l_config.get("def.k1", ""));
+        REQUIRE_EQUAL("abc123#", l_config.get("def.k2", ""));
+        REQUIRE_EQUAL("#abc123", l_config.get("def.k3", ""));
     } catch (variant_tree_error& e) {
         std::cerr << e.str() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 
-    BOOST_REQUIRE(true); // Just to avoid a warning that there are no tests
+    REQUIRE(true); // Just to avoid a warning that there are no tests
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator2 )
+TEST_CASE( test_config_validator2 )
 {
     variant_tree l_config;
     std::stringstream l_stream;
@@ -151,13 +153,13 @@ BOOST_AUTO_TEST_CASE( test_config_validator2 )
         test::cfg_validator2::instance()->validate(l_config);
     } catch (variant_tree_error& e) {
         std::cerr << e.str() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 
-    BOOST_REQUIRE(true); // Just to avoid a warning that there are no tests
+    REQUIRE(true); // Just to avoid a warning that there are no tests
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator10 )
+TEST_CASE( test_config_validator10 )
 {
     const test::cfg_validator* l_validator = test::cfg_validator::instance();
 
@@ -216,14 +218,14 @@ BOOST_AUTO_TEST_CASE( test_config_validator10 )
             if (*it1 != *it2)
                 break;
         if (it1 != e1)
-            BOOST_TEST_MESSAGE("Expected[" << i << "]: " << *it1);
+            TEST_MESSAGE("Expected[" << i << "]: " << *it1);
         if (it2 != e2)
-            BOOST_TEST_MESSAGE("Got     [" << i << "]: " << *it2);
+            TEST_MESSAGE("Got     [" << i << "]: " << *it2);
     }
-    BOOST_REQUIRE_EQUAL(expected, got);
+    REQUIRE_EQUAL(expected, got);
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator11 )
+TEST_CASE( test_config_validator11 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream; l_stream
@@ -250,14 +252,14 @@ BOOST_AUTO_TEST_CASE( test_config_validator11 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(true); // Just to avoid a warning that there are no tests
+        REQUIRE(true); // Just to avoid a warning that there are no tests
     } catch (variant_tree_error& e) {
         std::cerr << e.str() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator12 )
+TEST_CASE( test_config_validator12 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream;
@@ -265,16 +267,16 @@ BOOST_AUTO_TEST_CASE( test_config_validator12 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country", e.path());
-        BOOST_REQUIRE_EQUAL(
+        REQUIRE_EQUAL("country", e.path());
+        REQUIRE_EQUAL(
             "Config error [country]: Missing required option with no default!",
             e.what());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator13 )
+TEST_CASE( test_config_validator13 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream;
@@ -282,10 +284,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator13 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country", e.path());
-        BOOST_REQUIRE_EQUAL(
+        REQUIRE_EQUAL("country", e.path());
+        REQUIRE_EQUAL(
             "Config error [country]: Missing required option with no default!",
             e.what());
     }
@@ -299,7 +301,7 @@ BOOST_AUTO_TEST_CASE( test_config_validator13 )
         read_config(l_stream, l_config, FORMAT_SCON);
     } catch (variant_tree_error& e) {
         std::cerr << e.str() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 
     l_config.clear();
@@ -308,16 +310,16 @@ BOOST_AUTO_TEST_CASE( test_config_validator13 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(true); // TODO: throw error because country.US.connection.address is undefined
+        REQUIRE(true); // TODO: throw error because country.US.connection.address is undefined
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country[US]", e.path());
-        BOOST_REQUIRE_EQUAL(
+        REQUIRE_EQUAL("country[US]", e.path());
+        REQUIRE_EQUAL(
             "Config error [country[US]]: Option is missing required child option: connection.address",
             e.what());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator14 )
+TEST_CASE( test_config_validator14 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream;
@@ -325,14 +327,14 @@ BOOST_AUTO_TEST_CASE( test_config_validator14 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("duration[5]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [duration[5]]: Value too small!", e.what());
+        REQUIRE_EQUAL("duration[5]", e.path());
+        REQUIRE_EQUAL("Config error [duration[5]]: Value too small!", e.what());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator15 )
+TEST_CASE( test_config_validator15 )
 {
     variant_tree l_config("root", test::cfg_validator::instance());
 
@@ -341,14 +343,14 @@ BOOST_AUTO_TEST_CASE( test_config_validator15 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("root.duration[61]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [root.duration[61]]: Value too large!", e.what());
+        REQUIRE_EQUAL("root.duration[61]", e.path());
+        REQUIRE_EQUAL("Config error [root.duration[61]]: Value too large!", e.what());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator16 )
+TEST_CASE( test_config_validator16 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream;
@@ -357,16 +359,16 @@ BOOST_AUTO_TEST_CASE( test_config_validator16 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country[ER]", e.path());
-        BOOST_REQUIRE_EQUAL(
+        REQUIRE_EQUAL("country[ER]", e.path());
+        REQUIRE_EQUAL(
             "Config error [country[ER]]: Value is not allowed for option!",
             e.what());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator17 )
+TEST_CASE( test_config_validator17 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream;
@@ -376,10 +378,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator17 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country[US]", e.path());
-        BOOST_REQUIRE_EQUAL(
+        REQUIRE_EQUAL("country[US]", e.path());
+        REQUIRE_EQUAL(
             "Config error [country[US]]: Option is missing required child option: connection.address",
             e.what());
     }
@@ -393,10 +395,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator17 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country[US].connection.ARCA[example].address", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [country[US].connection.ARCA[example].address]: "
+        REQUIRE_EQUAL("country[US].connection.ARCA[example].address", e.path());
+        REQUIRE_EQUAL("Config error [country[US].connection.ARCA[example].address]: "
             "Missing required option with no default!", e.what());
     }
 
@@ -409,10 +411,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator17 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country[ER]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [country[ER]]: Value is not allowed for option!", e.what());
+        REQUIRE_EQUAL("country[ER]", e.path());
+        REQUIRE_EQUAL("Config error [country[ER]]: Value is not allowed for option!", e.what());
     }
 
     l_config.clear();
@@ -424,10 +426,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator17 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("abc", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [abc]: Unsupported config option!", e.what());
+        REQUIRE_EQUAL("abc", e.path());
+        REQUIRE_EQUAL("Config error [abc]: Unsupported config option!", e.what());
     }
 
     l_config.clear();
@@ -437,10 +439,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator17 )
 
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("country[US].connection[example].address", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [country[US].connection[example].address]: "
+        REQUIRE_EQUAL("country[US].connection[example].address", e.path());
+        REQUIRE_EQUAL("Config error [country[US].connection[example].address]: "
             "Missing required option with no default!", e.what());
     }
 
@@ -450,15 +452,15 @@ BOOST_AUTO_TEST_CASE( test_config_validator17 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("address[bcd]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [address[bcd]]: "
+        REQUIRE_EQUAL("address[bcd]", e.path());
+        REQUIRE_EQUAL("Config error [address[bcd]]: "
             "Non-unique config option found!", e.what());
     }
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator18 )
+TEST_CASE( test_config_validator18 )
 {
     variant_tree l_config("", test::cfg_validator::instance());
     std::stringstream l_stream;
@@ -468,10 +470,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("address[10]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [address[10]]: "
+        REQUIRE_EQUAL("address[10]", e.path());
+        REQUIRE_EQUAL("Config error [address[10]]: "
             "Wrong type - expected string!", e.what());
     }
 
@@ -482,10 +484,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("duration[abc]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [duration[abc]]: Wrong type - expected integer!", e.what());
+        REQUIRE_EQUAL("duration[abc]", e.path());
+        REQUIRE_EQUAL("Config error [duration[abc]]: Wrong type - expected integer!", e.what());
     }
 
     l_config.clear();
@@ -496,10 +498,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("enabled[1]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [enabled[1]]: "
+        REQUIRE_EQUAL("enabled[1]", e.path());
+        REQUIRE_EQUAL("Config error [enabled[1]]: "
             "Wrong type - expected boolean true/false!", e.what());
     }
 
@@ -511,10 +513,10 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
              << "section { location 10 }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("cost[1]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
+        REQUIRE_EQUAL("cost[1]", e.path());
+        REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
     }
 
     l_config.clear();
@@ -524,11 +526,11 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
              << "country \"US\" { ARCA connection { address abc } }\n";
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("section", e.path());
+        REQUIRE_EQUAL("section", e.path());
         std::string s = e.what();
-        BOOST_REQUIRE_EQUAL("Config error [section]: "
+        REQUIRE_EQUAL("Config error [section]: "
             "Missing a required child option: location", s);
     }
 
@@ -541,8 +543,8 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
     try {
         read_config(l_stream, l_config, FORMAT_SCON);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("cost[1]", e.path());
-        BOOST_REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
+        REQUIRE_EQUAL("cost[1]", e.path());
+        REQUIRE_EQUAL("Config error [cost[1]]: Wrong type - expected float!", e.what());
     }
 
     l_config.clear();
@@ -555,46 +557,48 @@ BOOST_AUTO_TEST_CASE( test_config_validator18 )
         read_config(l_stream, l_config, FORMAT_SCON);
     } catch (variant_tree_error& e) {
         std::cerr << e.str() << std::endl;
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     }
 
 }
 
-BOOST_AUTO_TEST_CASE( test_config_validator_def )
+TEST_CASE( test_config_validator_def )
 {
     const test::cfg_validator* l_validator = test::cfg_validator::instance();
-    BOOST_REQUIRE_EQUAL("test", l_validator->root().dump());
-    BOOST_REQUIRE_EQUAL(variant("123.124.125.012"), l_validator->def("test.address").data());
-    BOOST_REQUIRE_EQUAL("123.124.125.012", l_validator->def_value<std::string>("test.address"));
-    BOOST_REQUIRE_EQUAL(true, l_validator->def_value<bool>("test.enabled"));
-    BOOST_REQUIRE_EQUAL(1.5,  l_validator->def_value<double>("test.cost"));
-    BOOST_REQUIRE_EQUAL(variant("x"), l_validator->def("test.section2.abc").data());
-    BOOST_REQUIRE_THROW(l_validator->def("a.b.c"), variant_tree_error);
+    REQUIRE_EQUAL("test", l_validator->root().dump());
+    REQUIRE_EQUAL(variant("123.124.125.012"), l_validator->def("test.address").data());
+    REQUIRE_EQUAL("123.124.125.012", l_validator->def_value<std::string>("test.address"));
+    REQUIRE_EQUAL(true, l_validator->def_value<bool>("test.enabled"));
+    REQUIRE_EQUAL(1.5,  l_validator->def_value<double>("test.cost"));
+    REQUIRE_EQUAL(variant("x"), l_validator->def("test.section2.abc").data());
+    REQUIRE_THROW(l_validator->def("a.b.c"), variant_tree_error);
 
     variant_tree l_config("", l_validator);
     bool b = l_config.get<bool>("test.enabled");
-    BOOST_REQUIRE(b);
+    REQUIRE(b);
 
     const config::option* l_opt = l_validator->find("enabled", "test");
-    BOOST_REQUIRE(l_opt);
-    BOOST_REQUIRE_EQUAL("enabled", l_opt->name);
-    BOOST_REQUIRE_EQUAL(true, l_opt->default_value.data().to_bool());
+    REQUIRE(l_opt);
+    REQUIRE_EQUAL("enabled", l_opt->name);
+    REQUIRE_EQUAL(true, l_opt->default_value.data().to_bool());
 
     try {
         l_validator->def("name", "test.country");
-        BOOST_REQUIRE(false);
+        REQUIRE(false);
     } catch (variant_tree_error& e) {
-        BOOST_REQUIRE_EQUAL("test.country.name", e.path());
+        REQUIRE_EQUAL("test.country.name", e.path());
     }
 
     try   { l_validator->def("", "test.country.name"); }
     catch ( variant_tree_error& e )
-          { BOOST_CHECK_EQUAL("", e.path()); }
+          { CHECK_EQUAL("", e.path()); }
 
     try   { l_validator->def("test.country.name"); }
     catch ( variant_tree_error& e )
-          { BOOST_CHECK_EQUAL("test.country.name", e.path()); }
+          { CHECK_EQUAL("test.country.name", e.path()); }
 
     std::string s = l_config.get<std::string>("test.tmp_str");
-    BOOST_REQUIRE(s.find('$') == std::string::npos);
+    REQUIRE(s.find('$') == std::string::npos);
 }
+
+#endif // UTXX_HAVE_BOOST

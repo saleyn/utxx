@@ -31,12 +31,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
 #include <cmath>
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/polynomial.hpp>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_quad_polynomial )
+TEST_CASE( test_quad_polynomial )
 {
     double y[] = {1, 6, 17, 34, 57, 86, 121, 162, 209, 262, 321};
     int n = std::extent<decltype(y)>::value;
@@ -49,6 +49,6 @@ BOOST_AUTO_TEST_CASE( test_quad_polynomial )
     auto calc = [=](double x) { return a + b * x + c * x * x; };
 
     for (int i=0; i < n; ++i)
-        BOOST_REQUIRE(std::fabs(y[i] - calc(x[i])) < 0.000001);
+        REQUIRE(std::fabs(y[i] - calc(x[i])) < 0.000001);
 }
 

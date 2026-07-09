@@ -350,15 +350,16 @@ clear() {
 template <class KeyT, class ValueT, class HashFcn, class EqualFcn>
 template <class ContT, class IterVal>
 struct atomic_hash_array<KeyT, ValueT, HashFcn, EqualFcn>::aha_iterator
-    : boost::iterator_facade<aha_iterator<ContT,IterVal>,
-                             IterVal,
-                             boost::forward_traversal_tag>
 {
+    using iterator_category = std::forward_iterator_tag;
+    using value_type        = IterVal;
+    using difference_type   = std::ptrdiff_t;
+    using pointer           = IterVal*;
+    using reference         = IterVal&;
+
     explicit aha_iterator() : m_aha(0) {}
 
-    // Conversion ctor for interoperability between const_iterator and
-    // iterator.  The enable_if<> magic keeps us well-behaved for
-    // is_convertible<> (v. the iterator_facade documentation).
+    // Conversion ctor for interoperability between const_iterator and iterator.
     template<class OtherContT, class OtherVal>
     aha_iterator(const aha_iterator<OtherContT,OtherVal>& o,
                  typename std::enable_if<
@@ -380,37 +381,37 @@ struct atomic_hash_array<KeyT, ValueT, HashFcn, EqualFcn>::aha_iterator
     // with capacity > 2^32
     uint32_t index() const { return m_offset; }
 
-private:
-    friend class atomic_hash_array;
-    friend class boost::iterator_core_access;
+    IterVal& operator*()  const { return m_aha->m_cells[m_offset]; }
+    IterVal* operator->() const { return &m_aha->m_cells[m_offset]; }
 
-    void increment() {
+    aha_iterator& operator++() {
         ++m_offset;
         advancePastEmpty();
+        return *this;
     }
+    aha_iterator operator++(int) { auto tmp = *this; ++*this; return tmp; }
 
-    bool equal(const aha_iterator& o) const {
+    bool operator==(const aha_iterator& o) const {
         return m_aha == o.m_aha && m_offset == o.m_offset;
     }
+    bool operator!=(const aha_iterator& o) const { return !(*this == o); }
 
-    IterVal& dereference() const {
-        return m_aha->m_cells[m_offset];
-    }
+private:
+    friend class atomic_hash_array;
 
     void advancePastEmpty() {
         while (m_offset < m_aha->m_capacity && !isValid()) {
-        ++m_offset;
+            ++m_offset;
         }
     }
 
     bool isValid() const {
         KeyT key = load_key_acquire(m_aha->m_cells[m_offset]);
         return key != m_aha->m_empty_key  &&
-        key != m_aha->m_locked_key &&
-        key != m_aha->m_erased_key;
+               key != m_aha->m_locked_key &&
+               key != m_aha->m_erased_key;
     }
 
-private:
     ContT* m_aha;
     size_t m_offset;
 }; // aha_iterator

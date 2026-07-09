@@ -31,12 +31,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 ***** END LICENSE BLOCK *****
 */
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/leb128.hpp>
 
 using namespace utxx;
 
-BOOST_AUTO_TEST_CASE( test_leb128_encode_signed )
+TEST_CASE( test_leb128_encode_signed )
 {
     #define EXPECT_SLEB128_EQ(EXPECTED, VALUE) \
         do { \
@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE( test_leb128_encode_signed )
             char Actual[16]; \
             int n = encode_sleb128(VALUE, Actual); \
             Actual[n] = 0; \
-            BOOST_CHECK_EQUAL(Expected, Actual); \
+            CHECK_EQUAL(Expected, Actual); \
         } while (0)
 
     // Encode SLEB128
@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE( test_leb128_encode_signed )
     #undef EXPECT_SLEB128_EQ
 }
 
-BOOST_AUTO_TEST_CASE( test_leb128_encode_unsigned )
+TEST_CASE( test_leb128_encode_unsigned )
 {
     #define EXPECT_ULEB128_EQ(EXPECTED, VALUE, PAD) \
     do { \
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( test_leb128_encode_unsigned )
         char Actual[16]; \
         int n = encode_uleb128<PAD>(VALUE, Actual); \
         Actual[n] = 0; \
-        BOOST_CHECK_EQUAL(Expected, Actual); \
+        CHECK_EQUAL(Expected, Actual); \
     } while (0)
 
     // Encode ULEB128
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE( test_leb128_encode_unsigned )
     #undef EXPECT_ULEB128_EQ
 }
 
-BOOST_AUTO_TEST_CASE( test_leb128_decode_unsigned )
+TEST_CASE( test_leb128_decode_unsigned )
 {
     #define EXPECT_DECODE_ULEB128_EQ(EXPECTED, VALUE) \
     do { \
@@ -103,8 +103,8 @@ BOOST_AUTO_TEST_CASE( test_leb128_decode_unsigned )
         auto begin      = p; \
         auto Actual     = decode_uleb128(p); \
         int  ActualSize = p - begin; \
-        BOOST_CHECK_EQUAL(sizeof(VALUE) - 1, size_t(ActualSize)); \
-        BOOST_CHECK_EQUAL(EXPECTED, Actual); \
+        CHECK_EQUAL(sizeof(VALUE) - 1, size_t(ActualSize)); \
+        CHECK_EQUAL(EXPECTED, Actual); \
     } while (0)
 
     // Decode ULEB128
@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE( test_leb128_decode_unsigned )
     #undef EXPECT_DECODE_ULEB128_EQ
 }
 
-BOOST_AUTO_TEST_CASE( test_leb128_decode_signed )
+TEST_CASE( test_leb128_decode_signed )
 {
     #define EXPECT_DECODE_SLEB128_EQ(EXPECTED, VALUE) \
     do { \
@@ -140,8 +140,8 @@ BOOST_AUTO_TEST_CASE( test_leb128_decode_signed )
         auto begin      = p; \
         auto Actual     = decode_sleb128(p); \
         int  ActualSize = p - begin; \
-        BOOST_CHECK_EQUAL(sizeof(VALUE) - 1, size_t(ActualSize)); \
-        BOOST_CHECK_EQUAL(EXPECTED, Actual); \
+        CHECK_EQUAL(sizeof(VALUE) - 1, size_t(ActualSize)); \
+        CHECK_EQUAL(EXPECTED, Actual); \
     } while (0)
 
     // Decode SLEB128
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE( test_leb128_decode_signed )
     #undef EXPECT_DECODE_SLEB128_EQ
 }
 
-BOOST_AUTO_TEST_CASE( test_leb128_encode_size_signed )
+TEST_CASE( test_leb128_encode_size_signed )
 {
     // Positive Value Testing Plan:
     // (1) 128 ^ n - 1 ........ need (n+1) bytes
@@ -179,62 +179,62 @@ BOOST_AUTO_TEST_CASE( test_leb128_encode_size_signed )
     // (4) 128 ^ n * 64 - 1 ... need (n+1) bytes
     // (5) 128 ^ n * 64 ....... need (n+2) bytes
 
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(0x0LL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(0x1LL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(0x3fLL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(0x3fLL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(0x40LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(0x0LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(0x1LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(0x3fLL));
+    CHECK_EQUAL(1, encoded_sleb128_size(0x3fLL));
+    CHECK_EQUAL(2, encoded_sleb128_size(0x40LL));
 
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(0x7fLL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(0x80LL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(0x1f80LL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(0x1fffLL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(0x2000LL));
+    CHECK_EQUAL(2, encoded_sleb128_size(0x7fLL));
+    CHECK_EQUAL(2, encoded_sleb128_size(0x80LL));
+    CHECK_EQUAL(2, encoded_sleb128_size(0x1f80LL));
+    CHECK_EQUAL(2, encoded_sleb128_size(0x1fffLL));
+    CHECK_EQUAL(3, encoded_sleb128_size(0x2000LL));
 
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(0x3fffLL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(0x4000LL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(0xfc000LL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(0xfffffLL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(0x100000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(0x3fffLL));
+    CHECK_EQUAL(3, encoded_sleb128_size(0x4000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(0xfc000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(0xfffffLL));
+    CHECK_EQUAL(4, encoded_sleb128_size(0x100000LL));
 
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(0x1fffffLL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(0x200000LL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(0x7e00000LL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(0x7ffffffLL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(0x8000000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(0x1fffffLL));
+    CHECK_EQUAL(4, encoded_sleb128_size(0x200000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(0x7e00000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(0x7ffffffLL));
+    CHECK_EQUAL(5, encoded_sleb128_size(0x8000000LL));
 
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(0xfffffffLL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(0x10000000LL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(0x3f0000000LL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(0x3ffffffffLL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(0x400000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(0xfffffffLL));
+    CHECK_EQUAL(5, encoded_sleb128_size(0x10000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(0x3f0000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(0x3ffffffffLL));
+    CHECK_EQUAL(6, encoded_sleb128_size(0x400000000LL));
 
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(0x7ffffffffLL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(0x800000000LL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(0x1f800000000LL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(0x1ffffffffffLL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(0x20000000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(0x7ffffffffLL));
+    CHECK_EQUAL(6, encoded_sleb128_size(0x800000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(0x1f800000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(0x1ffffffffffLL));
+    CHECK_EQUAL(7, encoded_sleb128_size(0x20000000000LL));
 
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(0x3ffffffffffLL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(0x40000000000LL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(0xfc0000000000LL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(0xffffffffffffLL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(0x1000000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(0x3ffffffffffLL));
+    CHECK_EQUAL(7, encoded_sleb128_size(0x40000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(0xfc0000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(0xffffffffffffLL));
+    CHECK_EQUAL(8, encoded_sleb128_size(0x1000000000000LL));
 
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(0x1ffffffffffffLL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(0x2000000000000LL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(0x7e000000000000LL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(0x7fffffffffffffLL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(0x80000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(0x1ffffffffffffLL));
+    CHECK_EQUAL(8, encoded_sleb128_size(0x2000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(0x7e000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(0x7fffffffffffffLL));
+    CHECK_EQUAL(9, encoded_sleb128_size(0x80000000000000LL));
 
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(0xffffffffffffffLL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(0x100000000000000LL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(0x3f00000000000000LL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(0x3fffffffffffffffLL));
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(0x4000000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(0xffffffffffffffLL));
+    CHECK_EQUAL(9, encoded_sleb128_size(0x100000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(0x3f00000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(0x3fffffffffffffffLL));
+    CHECK_EQUAL(10, encoded_sleb128_size(0x4000000000000000LL));
 
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(0x7fffffffffffffffLL));
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(INT64_MAX));
+    CHECK_EQUAL(10, encoded_sleb128_size(0x7fffffffffffffffLL));
+    CHECK_EQUAL(10, encoded_sleb128_size(INT64_MAX));
 
     // Negative Value Testing Plan:
     // (1) - 128 ^ n - 1 ........ need (n+1) bytes
@@ -244,120 +244,120 @@ BOOST_AUTO_TEST_CASE( test_leb128_encode_size_signed )
     // (5) - 128 ^ n * 65 - 1 ... need (n+2) bytes (if n > 0)
     // (6) - 128 ^ n * 65 ....... need (n+2) bytes
 
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(0x0LL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(-0x1LL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(-0x3fLL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(-0x40LL));
-    BOOST_CHECK_EQUAL(1, encoded_sleb128_size(-0x40LL)); // special case
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(-0x41LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(0x0LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(-0x1LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(-0x3fLL));
+    CHECK_EQUAL(1, encoded_sleb128_size(-0x40LL));
+    CHECK_EQUAL(1, encoded_sleb128_size(-0x40LL)); // special case
+    CHECK_EQUAL(2, encoded_sleb128_size(-0x41LL));
 
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(-0x7fLL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(-0x80LL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(-0x1f80LL));
-    BOOST_CHECK_EQUAL(2, encoded_sleb128_size(-0x2000LL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(-0x207fLL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(-0x2080LL));
+    CHECK_EQUAL(2, encoded_sleb128_size(-0x7fLL));
+    CHECK_EQUAL(2, encoded_sleb128_size(-0x80LL));
+    CHECK_EQUAL(2, encoded_sleb128_size(-0x1f80LL));
+    CHECK_EQUAL(2, encoded_sleb128_size(-0x2000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(-0x207fLL));
+    CHECK_EQUAL(3, encoded_sleb128_size(-0x2080LL));
 
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(-0x3fffLL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(-0x4000LL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(-0xfc000LL));
-    BOOST_CHECK_EQUAL(3, encoded_sleb128_size(-0x100000LL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(-0x103fffLL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(-0x104000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(-0x3fffLL));
+    CHECK_EQUAL(3, encoded_sleb128_size(-0x4000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(-0xfc000LL));
+    CHECK_EQUAL(3, encoded_sleb128_size(-0x100000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(-0x103fffLL));
+    CHECK_EQUAL(4, encoded_sleb128_size(-0x104000LL));
 
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(-0x1fffffLL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(-0x200000LL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(-0x7e00000LL));
-    BOOST_CHECK_EQUAL(4, encoded_sleb128_size(-0x8000000LL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(-0x81fffffLL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(-0x8200000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(-0x1fffffLL));
+    CHECK_EQUAL(4, encoded_sleb128_size(-0x200000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(-0x7e00000LL));
+    CHECK_EQUAL(4, encoded_sleb128_size(-0x8000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(-0x81fffffLL));
+    CHECK_EQUAL(5, encoded_sleb128_size(-0x8200000LL));
 
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(-0xfffffffLL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(-0x10000000LL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(-0x3f0000000LL));
-    BOOST_CHECK_EQUAL(5, encoded_sleb128_size(-0x400000000LL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(-0x40fffffffLL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(-0x410000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(-0xfffffffLL));
+    CHECK_EQUAL(5, encoded_sleb128_size(-0x10000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(-0x3f0000000LL));
+    CHECK_EQUAL(5, encoded_sleb128_size(-0x400000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(-0x40fffffffLL));
+    CHECK_EQUAL(6, encoded_sleb128_size(-0x410000000LL));
 
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(-0x7ffffffffLL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(-0x800000000LL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(-0x1f800000000LL));
-    BOOST_CHECK_EQUAL(6, encoded_sleb128_size(-0x20000000000LL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(-0x207ffffffffLL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(-0x20800000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(-0x7ffffffffLL));
+    CHECK_EQUAL(6, encoded_sleb128_size(-0x800000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(-0x1f800000000LL));
+    CHECK_EQUAL(6, encoded_sleb128_size(-0x20000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(-0x207ffffffffLL));
+    CHECK_EQUAL(7, encoded_sleb128_size(-0x20800000000LL));
 
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(-0x3ffffffffffLL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(-0x40000000000LL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(-0xfc0000000000LL));
-    BOOST_CHECK_EQUAL(7, encoded_sleb128_size(-0x1000000000000LL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(-0x103ffffffffffLL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(-0x1040000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(-0x3ffffffffffLL));
+    CHECK_EQUAL(7, encoded_sleb128_size(-0x40000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(-0xfc0000000000LL));
+    CHECK_EQUAL(7, encoded_sleb128_size(-0x1000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(-0x103ffffffffffLL));
+    CHECK_EQUAL(8, encoded_sleb128_size(-0x1040000000000LL));
 
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(-0x1ffffffffffffLL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(-0x2000000000000LL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(-0x7e000000000000LL));
-    BOOST_CHECK_EQUAL(8, encoded_sleb128_size(-0x80000000000000LL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(-0x81ffffffffffffLL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(-0x82000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(-0x1ffffffffffffLL));
+    CHECK_EQUAL(8, encoded_sleb128_size(-0x2000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(-0x7e000000000000LL));
+    CHECK_EQUAL(8, encoded_sleb128_size(-0x80000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(-0x81ffffffffffffLL));
+    CHECK_EQUAL(9, encoded_sleb128_size(-0x82000000000000LL));
 
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(-0xffffffffffffffLL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(-0x100000000000000LL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(-0x3f00000000000000LL));
-    BOOST_CHECK_EQUAL(9, encoded_sleb128_size(-0x4000000000000000LL));
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(-0x40ffffffffffffffLL));
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(-0x4100000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(-0xffffffffffffffLL));
+    CHECK_EQUAL(9, encoded_sleb128_size(-0x100000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(-0x3f00000000000000LL));
+    CHECK_EQUAL(9, encoded_sleb128_size(-0x4000000000000000LL));
+    CHECK_EQUAL(10, encoded_sleb128_size(-0x40ffffffffffffffLL));
+    CHECK_EQUAL(10, encoded_sleb128_size(-0x4100000000000000LL));
 
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(-0x7fffffffffffffffLL));
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(-0x8000000000000000LL));
-    BOOST_CHECK_EQUAL(10, encoded_sleb128_size(INT64_MIN));
+    CHECK_EQUAL(10, encoded_sleb128_size(-0x7fffffffffffffffLL));
+    CHECK_EQUAL(10, encoded_sleb128_size(-0x8000000000000000LL));
+    CHECK_EQUAL(10, encoded_sleb128_size(INT64_MIN));
 }
 
-BOOST_AUTO_TEST_CASE( test_leb128_encode_size_unsigned )
+TEST_CASE( test_leb128_encode_size_unsigned )
 {
     // Testing Plan:
     // (1) 128 ^ n ............ need (n+1) bytes
     // (2) 128 ^ n * 64 ....... need (n+1) bytes
     // (3) 128 ^ (n+1) - 1 .... need (n+1) bytes
 
-    BOOST_CHECK_EQUAL(1, encoded_uleb128_size(0)); // special case
+    CHECK_EQUAL(1, encoded_uleb128_size(0)); // special case
 
-    BOOST_CHECK_EQUAL(1, encoded_uleb128_size(0x1ULL));
-    BOOST_CHECK_EQUAL(1, encoded_uleb128_size(0x40ULL));
-    BOOST_CHECK_EQUAL(1, encoded_uleb128_size(0x7fULL));
+    CHECK_EQUAL(1, encoded_uleb128_size(0x1ULL));
+    CHECK_EQUAL(1, encoded_uleb128_size(0x40ULL));
+    CHECK_EQUAL(1, encoded_uleb128_size(0x7fULL));
 
-    BOOST_CHECK_EQUAL(2, encoded_uleb128_size(0x80ULL));
-    BOOST_CHECK_EQUAL(2, encoded_uleb128_size(0x2000ULL));
-    BOOST_CHECK_EQUAL(2, encoded_uleb128_size(0x3fffULL));
+    CHECK_EQUAL(2, encoded_uleb128_size(0x80ULL));
+    CHECK_EQUAL(2, encoded_uleb128_size(0x2000ULL));
+    CHECK_EQUAL(2, encoded_uleb128_size(0x3fffULL));
 
-    BOOST_CHECK_EQUAL(3, encoded_uleb128_size(0x4000ULL));
-    BOOST_CHECK_EQUAL(3, encoded_uleb128_size(0x100000ULL));
-    BOOST_CHECK_EQUAL(3, encoded_uleb128_size(0x1fffffULL));
+    CHECK_EQUAL(3, encoded_uleb128_size(0x4000ULL));
+    CHECK_EQUAL(3, encoded_uleb128_size(0x100000ULL));
+    CHECK_EQUAL(3, encoded_uleb128_size(0x1fffffULL));
 
-    BOOST_CHECK_EQUAL(4, encoded_uleb128_size(0x200000ULL));
-    BOOST_CHECK_EQUAL(4, encoded_uleb128_size(0x8000000ULL));
-    BOOST_CHECK_EQUAL(4, encoded_uleb128_size(0xfffffffULL));
+    CHECK_EQUAL(4, encoded_uleb128_size(0x200000ULL));
+    CHECK_EQUAL(4, encoded_uleb128_size(0x8000000ULL));
+    CHECK_EQUAL(4, encoded_uleb128_size(0xfffffffULL));
 
-    BOOST_CHECK_EQUAL(5, encoded_uleb128_size(0x10000000ULL));
-    BOOST_CHECK_EQUAL(5, encoded_uleb128_size(0x400000000ULL));
-    BOOST_CHECK_EQUAL(5, encoded_uleb128_size(0x7ffffffffULL));
+    CHECK_EQUAL(5, encoded_uleb128_size(0x10000000ULL));
+    CHECK_EQUAL(5, encoded_uleb128_size(0x400000000ULL));
+    CHECK_EQUAL(5, encoded_uleb128_size(0x7ffffffffULL));
 
-    BOOST_CHECK_EQUAL(6, encoded_uleb128_size(0x800000000ULL));
-    BOOST_CHECK_EQUAL(6, encoded_uleb128_size(0x20000000000ULL));
-    BOOST_CHECK_EQUAL(6, encoded_uleb128_size(0x3ffffffffffULL));
+    CHECK_EQUAL(6, encoded_uleb128_size(0x800000000ULL));
+    CHECK_EQUAL(6, encoded_uleb128_size(0x20000000000ULL));
+    CHECK_EQUAL(6, encoded_uleb128_size(0x3ffffffffffULL));
 
-    BOOST_CHECK_EQUAL(7, encoded_uleb128_size(0x40000000000ULL));
-    BOOST_CHECK_EQUAL(7, encoded_uleb128_size(0x1000000000000ULL));
-    BOOST_CHECK_EQUAL(7, encoded_uleb128_size(0x1ffffffffffffULL));
+    CHECK_EQUAL(7, encoded_uleb128_size(0x40000000000ULL));
+    CHECK_EQUAL(7, encoded_uleb128_size(0x1000000000000ULL));
+    CHECK_EQUAL(7, encoded_uleb128_size(0x1ffffffffffffULL));
 
-    BOOST_CHECK_EQUAL(8, encoded_uleb128_size(0x2000000000000ULL));
-    BOOST_CHECK_EQUAL(8, encoded_uleb128_size(0x80000000000000ULL));
-    BOOST_CHECK_EQUAL(8, encoded_uleb128_size(0xffffffffffffffULL));
+    CHECK_EQUAL(8, encoded_uleb128_size(0x2000000000000ULL));
+    CHECK_EQUAL(8, encoded_uleb128_size(0x80000000000000ULL));
+    CHECK_EQUAL(8, encoded_uleb128_size(0xffffffffffffffULL));
 
-    BOOST_CHECK_EQUAL(9, encoded_uleb128_size(0x100000000000000ULL));
-    BOOST_CHECK_EQUAL(9, encoded_uleb128_size(0x4000000000000000ULL));
-    BOOST_CHECK_EQUAL(9, encoded_uleb128_size(0x7fffffffffffffffULL));
+    CHECK_EQUAL(9, encoded_uleb128_size(0x100000000000000ULL));
+    CHECK_EQUAL(9, encoded_uleb128_size(0x4000000000000000ULL));
+    CHECK_EQUAL(9, encoded_uleb128_size(0x7fffffffffffffffULL));
 
-    BOOST_CHECK_EQUAL(10, encoded_uleb128_size(0x8000000000000000ULL));
+    CHECK_EQUAL(10, encoded_uleb128_size(0x8000000000000000ULL));
 
-    BOOST_CHECK_EQUAL(10, encoded_uleb128_size(UINT64_MAX));
+    CHECK_EQUAL(10, encoded_uleb128_size(UINT64_MAX));
 }

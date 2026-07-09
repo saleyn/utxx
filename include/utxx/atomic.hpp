@@ -33,8 +33,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/string.hpp>
+#include <type_traits>
 #include <utxx/meta.hpp>
 #include <utxx/bits.hpp>
 
@@ -149,22 +148,19 @@ namespace atomic {
 
 template <typename T, typename I>
 bool cas(volatile T* p, I vold, I vnew) {
-    typedef typename
-        boost::mpl::if_c<sizeof(T) == 4, unsigned int, unsigned long>::type int_t;
+    using int_t = std::conditional_t<sizeof(T) == 4, unsigned int, unsigned long>;
     return detail::cas<sizeof(T), int_t>(p, (int_t)vold, (int_t)vnew);
 }
 
 template <typename T, typename I>
 unsigned long cmpxchg(volatile T* p, I vold, I vnew) {
-    typedef typename
-        boost::mpl::if_c<sizeof(T) == 4, unsigned int, unsigned long>::type int_t;
+    using int_t = std::conditional_t<sizeof(T) == 4, unsigned int, unsigned long>;
     return detail::cmpxchg<sizeof(T), int_t>(p, (int_t)vold, (int_t)vnew);
 }
 
 template <typename T, typename I>
 bool dcas(volatile T* p, I vold, I vnew) {
-    typedef typename
-        boost::mpl::if_c<sizeof(T) == 8, unsigned int, unsigned long>::type int_t;
+    using int_t = std::conditional_t<sizeof(T) == 8, unsigned int, unsigned long>;
     return detail::dcas<sizeof(T), int_t>(p, (int_t*)&vold, (int_t*)&vnew);
 }
 
@@ -236,66 +232,32 @@ static inline void memory_barrier() {
 
 /// Atomically set a given bit in a location pointed to by \a addr
 static inline void set_bit(int n, volatile unsigned long* addr) {
-    if (bits::detail::is_immediate(n)) {
-        asm volatile("lock; orb %1,%0"
-            : UTXX_CONST_MASK_ADDR(n, addr)
-            : "iq" ((uint8_t)bits::detail::const_mask(n))
-            : "memory");
-    } else {
-        asm volatile("lock; bts %1,%0"
-            : UTXX_ADDR__(addr) : "Ir" (n) : "memory");
-    }
+    bits::set_bit(n, addr);
 }
 
 /// Atomically clear a given bit in a location pointed to by \a addr
 static inline void clear_bit(int n, volatile unsigned long* addr) {
-    /*
-    if (bits::detail::is_immediate(n)) {
-        asm volatile("lock; andb %1,%0"
-            : UTXX_CONST_MASK_ADDR(n, addr)
-            : "iq" ((uint8_t)bits::detail::const_mask(n)));
-    } else {
-        asm volatile("lock; btr %1,%0"
-            : UTXX_ADDR__(addr) : "Ir" (n));
-    }
-    */
-    asm volatile("lock; btr %1,%0" : UTXX_ADDR__(addr) : "Ir" (n));
+    bits::clear_bit(n, addr);
 }
 
 /// Atomically toggle a bit in memory
 static inline void change_bit(int n, volatile unsigned long* addr) {
-    if (bits::detail::is_immediate(n)) {
-        asm volatile("lock; xorb %1,%0"
-            : UTXX_CONST_MASK_ADDR(n, addr)
-            : "iq" ((uint8_t)bits::detail::const_mask(n)));
-    } else {
-        asm volatile("lock; btc %1,%0"
-            : UTXX_ADDR__(addr) : "Ir" (n));
-    }
+    bits::change_bit(n, addr);
 }
 
 /// Atomically set a bit and return its old value
 static inline int test_and_set_bit(int n, volatile unsigned long *addr) {
-    int oldbit;
-    asm volatile("lock; bts %2,%1\n\t"
-        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
-    return oldbit;
+    return bits::test_and_set_bit(n, addr);
 }
 
 /// Atomically clear a bit and return its old value
 static inline int test_and_clear_bit(int n, volatile unsigned long *addr) {
-    int oldbit;
-    asm volatile("lock; btr %2,%1\n\t"
-        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
-    return oldbit;
+    return bits::test_and_clear_bit(n, addr);
 }
 
 /// Atomically toggle a bit and return its old value
 static inline int test_and_change_bit(int n, volatile unsigned long *addr) {
-    int oldbit;
-    asm volatile("lock; btc %2,%1\n\t"
-        "sbb %0,%0" : "=r" (oldbit), UTXX_ADDR__(addr) : "Ir" (n) : "memory");
-    return oldbit;
+    return bits::test_and_change_bit(n, addr);
 }
 
 /// Find first set bit in word.

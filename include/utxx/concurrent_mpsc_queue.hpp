@@ -38,8 +38,6 @@
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
-#include <boost/noncopyable.hpp>
-#include <boost/type_traits.hpp>
 #include <utxx/math.hpp>
 
 namespace utxx {

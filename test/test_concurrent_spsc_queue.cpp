@@ -1,4 +1,4 @@
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/concurrent_spsc_queue.hpp>
 
 #include <vector>
@@ -43,7 +43,7 @@ struct PerfTest {
 
         auto duration = duration_cast<milliseconds>(
             system_clock::now() - startTime);
-        BOOST_TEST_MESSAGE("     done: " << duration.count() << "ms");
+        TEST_MESSAGE("     done: " << duration.count() << "ms");
     }
 
     void producer() {
@@ -70,7 +70,7 @@ struct PerfTest {
 };
 
 template<class TestType> void doTest(const char* name) {
-    BOOST_TEST_MESSAGE("  testing: " << name);
+    TEST_MESSAGE("  testing: " << name);
     std::unique_ptr<TestType> const t(new TestType());
     (*t)();
 }
@@ -79,7 +79,7 @@ template<class T, bool Pop = false>
 void perfTestType(const char* type) {
     const size_t size = 0xfffe;
 
-    BOOST_TEST_MESSAGE("Type: " << type);
+    TEST_MESSAGE("Type: " << type);
     doTest<PerfTest<concurrent_spsc_queue<T>,size,Pop>>("ProducerConsumerQueue");
 }
 
@@ -130,11 +130,11 @@ struct CorrectnessTest {
             // there should still be more data sitting in the queue even
             // though the producer thread exited.
             else if (!(data = queue_.peek())) {
-                BOOST_REQUIRE(0 && "Finished too early ...");
+                REQUIRE(0 && "Finished too early ...");
                 return;
             }
 
-            BOOST_REQUIRE_EQUAL(*data, expect);
+            REQUIRE_EQUAL(*data, expect);
         }
     }
 
@@ -150,11 +150,11 @@ struct CorrectnessTest {
                 // there should still be more data sitting in the queue even
                 // though the producer thread exited.
                 if (!queue_.pop(out(data))) {
-                    BOOST_REQUIRE(0 && "Finished too early ...");
+                    REQUIRE(0 && "Finished too early ...");
                     return;
                 }
             }
-            BOOST_REQUIRE_EQUAL(data, expect);
+            REQUIRE_EQUAL(data, expect);
         }
     }
 
@@ -166,7 +166,7 @@ struct CorrectnessTest {
 
 template<class T, size_t Size, bool Pop = false>
 void correctnessTestType(const std::string& type) {
-    BOOST_TEST_MESSAGE("Type: " << type);
+    TEST_MESSAGE("Type: " << type);
     doTest<CorrectnessTest<concurrent_spsc_queue<T>,Size,Pop> >(
         "ProducerConsumerQueue");
 }
@@ -182,82 +182,82 @@ int DtorChecker::numInstances = 0;
 
 //////////////////////////////////////////////////////////////////////
 
-BOOST_AUTO_TEST_CASE( test_concurrent_spsc_empty ) {
+TEST_CASE( test_concurrent_spsc_empty ) {
     concurrent_spsc_queue<int> queue(4);
-    BOOST_REQUIRE(queue.empty());
-    BOOST_REQUIRE(!queue.full());
+    REQUIRE(queue.empty());
+    REQUIRE(!queue.full());
 
-    BOOST_REQUIRE(queue.push(1));
-    BOOST_REQUIRE(!queue.empty());
-    BOOST_REQUIRE(!queue.full());
+    REQUIRE(queue.push(1));
+    REQUIRE(!queue.empty());
+    REQUIRE(!queue.full());
 
-    BOOST_REQUIRE(queue.push(2));
-    BOOST_REQUIRE(!queue.empty());
-    BOOST_REQUIRE(!queue.full());
+    REQUIRE(queue.push(2));
+    REQUIRE(!queue.empty());
+    REQUIRE(!queue.full());
 
-    BOOST_REQUIRE(queue.push(3));
-    BOOST_REQUIRE(!queue.empty());
-    BOOST_REQUIRE(queue.full());  // Tricky: full after 3 writes, not 2.
+    REQUIRE(queue.push(3));
+    REQUIRE(!queue.empty());
+    REQUIRE(queue.full());  // Tricky: full after 3 writes, not 2.
 
-    BOOST_REQUIRE(!queue.push(4));
-    BOOST_REQUIRE_EQUAL(queue.count(), 3u);
+    REQUIRE(!queue.push(4));
+    REQUIRE_EQUAL(queue.count(), 3u);
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_spsc_correctness ) {
+TEST_CASE( test_concurrent_spsc_correctness ) {
     correctnessTestType<std::string,0xfffe,true>("string (front+pop)");
     correctnessTestType<std::string,0xffff>("string");
     correctnessTestType<int, 0xffff>("int");
     correctnessTestType<unsigned long long, 0xfffe>("unsigned long long");
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_spsc_perf ) {
+TEST_CASE( test_concurrent_spsc_perf ) {
     perfTestType<std::string,true>("string (front+pop)");
     perfTestType<std::string>("string");
     perfTestType<int>("int");
     perfTestType<unsigned long long>("unsigned long long");
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_spsc_destructor ) {
+TEST_CASE( test_concurrent_spsc_destructor ) {
     // Test that orphaned elements in a ProducerConsumerQueue are
     // destroyed.
     {
         concurrent_spsc_queue<DtorChecker> queue(1024);
         for (int i = 0; i < 10; ++i)
-            BOOST_REQUIRE(queue.push(DtorChecker()));
+            REQUIRE(queue.push(DtorChecker()));
 
-        BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 10);
+        REQUIRE_EQUAL(DtorChecker::numInstances, 10);
 
         {
             DtorChecker ignore;
-            BOOST_REQUIRE(queue.pop(out(ignore)));
-            BOOST_REQUIRE(queue.pop(out(ignore)));
+            REQUIRE(queue.pop(out(ignore)));
+            REQUIRE(queue.pop(out(ignore)));
         }
 
-        BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 8);
+        REQUIRE_EQUAL(DtorChecker::numInstances, 8);
     }
 
-    BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 0);
+    REQUIRE_EQUAL(DtorChecker::numInstances, 0);
 
     // Test the same thing in the case that the queue write pointer has
     // wrapped, but the read one hasn't.
     {
         concurrent_spsc_queue<DtorChecker> queue(4);
         for (int i = 0; i < 3; ++i)
-            BOOST_REQUIRE(queue.push(DtorChecker()));
+            REQUIRE(queue.push(DtorChecker()));
 
-        BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 3);
+        REQUIRE_EQUAL(DtorChecker::numInstances, 3);
         {
             DtorChecker ignore;
-            BOOST_REQUIRE(queue.pop(out(ignore)));
+            REQUIRE(queue.pop(out(ignore)));
         }
-        BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 2);
-        BOOST_REQUIRE(queue.push(DtorChecker()));
-        BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 3);
+        REQUIRE_EQUAL(DtorChecker::numInstances, 2);
+        REQUIRE(queue.push(DtorChecker()));
+        REQUIRE_EQUAL(DtorChecker::numInstances, 3);
     }
-    BOOST_REQUIRE_EQUAL(DtorChecker::numInstances, 0);
+    REQUIRE_EQUAL(DtorChecker::numInstances, 0);
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_spsc_iterator )
+TEST_CASE( test_concurrent_spsc_iterator )
 {
     size_t       C        = 10;
     const size_t CAPACITY = 8;
@@ -266,45 +266,45 @@ BOOST_AUTO_TEST_CASE( test_concurrent_spsc_iterator )
     srand48(time(NULL));
 
     for (size_t N : sizes) {
-        BOOST_TEST_MESSAGE("Capacity=" << C << ", NItems=" << N);
+        TEST_MESSAGE("Capacity=" << C << ", NItems=" << N);
 
         concurrent_spsc_queue<size_t> q(C);
-        BOOST_REQUIRE_EQUAL(size_t(CAPACITY), q.capacity());
+        REQUIRE_EQUAL(size_t(CAPACITY), q.capacity());
 
         for (size_t i = 0; i < N; ++i) {
             size_t* res = q.push(i);
-            BOOST_REQUIRE((i < (CAPACITY-1)) == (res != NULL));
+            REQUIRE((i < (CAPACITY-1)) == (res != NULL));
         }
 
         size_t n = q.count();
-        BOOST_REQUIRE_EQUAL(n, size_t(std::min(N, CAPACITY-1)));
+        REQUIRE_EQUAL(n, size_t(std::min(N, CAPACITY-1)));
 
         size_t i = 0;
         for (concurrent_spsc_queue<size_t>::iterator it = q.begin();
                 it != q.end(); ++it)
-            BOOST_REQUIRE_EQUAL(i++, *it);
+            REQUIRE_EQUAL(i++, *it);
 
         size_t r = size_t(floor(drand48() * double(n)));
-        BOOST_REQUIRE(0 <= r && r < n);
-        BOOST_TEST_MESSAGE("r =" << r);
+        REQUIRE(0 <= r && r < n);
+        TEST_MESSAGE("r =" << r);
         q.erase(q.begin() + r);
 
-        BOOST_REQUIRE_EQUAL(n-1, q.count());
+        REQUIRE_EQUAL(n-1, q.count());
 
         i = 0;
         for (concurrent_spsc_queue<size_t>::const_iterator cit = q.cbegin();
                 cit != q.cend(); ++cit, ++i)
-            BOOST_REQUIRE_EQUAL(i < r ? i : i+1, *cit);
+            REQUIRE_EQUAL(i < r ? i : i+1, *cit);
 
         i = n-1;
         for (concurrent_spsc_queue<size_t>::reverse_iterator rit = q.rbegin();
                 rit != q.rend(); ++rit, --i)
-            BOOST_REQUIRE_EQUAL(i > r ? i : i-1, *rit);
+            REQUIRE_EQUAL(i > r ? i : i-1, *rit);
 
         i = n-1;
         for (concurrent_spsc_queue<size_t>::const_reverse_iterator crit = q.crbegin();
                 crit != q.crend(); ++crit, --i)
-            BOOST_REQUIRE_EQUAL(i > r ? i : i-1, *crit);
+            REQUIRE_EQUAL(i > r ? i : i-1, *crit);
     }
 }
 

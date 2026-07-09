@@ -37,8 +37,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/type_traits.hpp>
-
+#include <cassert>
 #include <stdexcept>
 #include <utxx/math.hpp>
 #include <utxx/meta.hpp>
@@ -194,7 +193,7 @@ void* cached_allocator<T, AllocT, MinSize, SizeClasses>
 
     node_t* nd = node_t::to_node(p);
 
-    BOOST_ASSERT(nd->valid());
+    assert(nd->valid());
 
     char old_size_class = nd->size_class();
     size_t alloc_sz     = sz + versioned_stack::header_size();
@@ -229,7 +228,7 @@ void* cached_allocator<T, AllocT, MinSize, SizeClasses>
                                 ? NULL : m_freelist[size_class].pop();
     if (nd == NULL) {
         nd = reinterpret_cast<node_t*>(m_alloc.allocate(size));
-        BOOST_ASSERT((reinterpret_cast<unsigned long>(nd) &
+        assert((reinterpret_cast<unsigned long>(nd) &
                     versioned_stack::node_t::s_version_mask) == 0);
         new (nd) node_t(size_class);
         if (unlikely(size_class > max_size_class))
@@ -244,7 +243,7 @@ void cached_allocator<T, AllocT, MinSize, SizeClasses>
 {
     using namespace container;
 
-    BOOST_ASSERT(nd->valid());
+    assert(nd->valid());
 
     char size_class = nd->size_class();
 

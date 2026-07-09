@@ -34,7 +34,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 //#define BOOST_TEST_NO_AUTO_LINK
 
 //#define BOOST_TEST_MODULE logger_test
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 #include <utxx/function.hpp>
 #include <utxx/time_val.hpp>
 #include <utxx/os.hpp>
@@ -163,51 +163,51 @@ void time_function(int seed, const std::string & name)
 }
 
 
-BOOST_AUTO_TEST_CASE( test_function_latency )
+TEST_CASE( test_function_latency )
 {
     time_t seed = time(NULL);
     time_function<std::function <void (float)>>(seed, "std::function");
     time_function<utxx::function<void (float)>>(seed, "utxx::function");
     time_virtual(seed);
 
-    BOOST_REQUIRE(true); // to remove run-time warning
+    REQUIRE(true); // to remove run-time warning
 }
 
 static void call_provided_function(const utxx::function<void ()>&    f) { f();  }
 static void call_provided_function(const utxx::function<void (int)>& f) { f(5); }
 
-BOOST_AUTO_TEST_CASE( test_function )
+TEST_CASE( test_function )
 {
     {
         utxx::function<void ()> f;
-        BOOST_CHECK(!f);
-        BOOST_CHECK_THROW(f(), utxx::bad_function_call);
+        CHECK(!f);
+        CHECK_THROW(f(), utxx::bad_function_call);
     }
     {
         int i = 0;
         call_provided_function([&i]{ i = 3; });
-        BOOST_CHECK_EQUAL(3, i);
+        CHECK_EQUAL(3, i);
         call_provided_function([&i](int a) { i = a; });
-        BOOST_CHECK_EQUAL(5, i);
+        CHECK_EQUAL(5, i);
     }
     {
         int a = 0;
         utxx::function<void ()> increment = [&a]{ ++a; };
         increment();
-        BOOST_CHECK_EQUAL(1, a);
+        CHECK_EQUAL(1, a);
 
         increment = [increment]{ increment(); increment(); };
         increment();
-        BOOST_CHECK_EQUAL(3, a);
+        CHECK_EQUAL(3, a);
 
         increment = [increment]{ increment(); increment(); };
         increment();
-        BOOST_CHECK_EQUAL(7, a);
+        CHECK_EQUAL(7, a);
 
         utxx::function<void ()> move_to = std::move(increment);
-        BOOST_CHECK(!increment);
+        CHECK(!increment);
         move_to();
-        BOOST_CHECK_EQUAL(11, a);
+        CHECK_EQUAL(11, a);
     }
     {
         auto some_lambda = []{};
@@ -220,11 +220,11 @@ BOOST_AUTO_TEST_CASE( test_function )
         allocator_copy2();
 
 #   ifndef FUNC_NO_RTTI
-        BOOST_CHECK(lambdaer.target<decltype(some_lambda)>());
-        BOOST_CHECK(lambda_copy.target<decltype(some_lambda)>());
-        BOOST_CHECK(const_cast<const utxx::function<void ()> &>(allocator_copy).target<utxx::function<void ()>>());
-        BOOST_CHECK(!lambdaer.target<utxx::function<void ()>>());
-        BOOST_CHECK(!const_cast<const utxx::function<void ()> &>(allocator_copy).target<decltype(some_lambda)>());
+        CHECK(lambdaer.target<decltype(some_lambda)>());
+        CHECK(lambda_copy.target<decltype(some_lambda)>());
+        CHECK(const_cast<const utxx::function<void ()> &>(allocator_copy).target<utxx::function<void ()>>());
+        CHECK(!lambdaer.target<utxx::function<void ()>>());
+        CHECK(!const_cast<const utxx::function<void ()> &>(allocator_copy).target<decltype(some_lambda)>());
 #   endif
     }
     {
@@ -240,10 +240,10 @@ BOOST_AUTO_TEST_CASE( test_function )
         static_assert( noexcept(ref_func = reference),   "standard says this is noexcept");
         static_assert(!noexcept(ref_func = some_lambda), "this can not be noexcept because it allocates");
         ref_func();
-        BOOST_CHECK_EQUAL(1, i);
+        CHECK_EQUAL(1, i);
         ref_func.assign(reference, std::allocator<decltype(reference)>());
         ref_func();
-        BOOST_CHECK_EQUAL(2, i);
+        CHECK_EQUAL(2, i);
     }
     {
         struct S
@@ -257,8 +257,8 @@ BOOST_AUTO_TEST_CASE( test_function )
         };
         utxx::function<float (const S &)> mem_fun(&S::foo);
         S s(5);
-        BOOST_CHECK_EQUAL(0.2f, mem_fun(s));
+        CHECK_EQUAL(0.2f, mem_fun(s));
     }
 }
 
-//BOOST_AUTO_TEST_SUITE_END()
+//TEST_SUITE_END()

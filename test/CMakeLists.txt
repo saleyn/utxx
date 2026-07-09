@@ -56,7 +56,6 @@ list(APPEND TEST_SRCS
     test_polynomial.cpp
     test_pidfile.cpp
     test_rate_throttler.cpp
-    test_reactor_file_aio.cpp
     test_registrar.cpp
     test_robust_mutex.cpp
     test_ring_buffer.cpp
@@ -96,37 +95,43 @@ if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   )
 endif()
 
-XML_CFG(TEST_SRCS test_config_validator.xml)
-XML_CFG(TEST_SRCS test_config_validator2.xml)
+if(UTXX_HAVE_BOOST)
+  list(APPEND TEST_SRCS test_reactor_file_aio.cpp)
+  XML_CFG(TEST_SRCS test_config_validator.xml)
+  XML_CFG(TEST_SRCS test_config_validator2.xml)
+endif()
 
 # This must be AFTER link_directories
 add_executable(test_utxx ${TEST_SRCS})
-target_compile_definitions(test_utxx PRIVATE -DBOOST_ALL_DYN_LINK)
 target_include_directories(test_utxx PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_link_libraries(
   test_utxx
   utxx
-  boost_system
-  boost_thread
-  boost_unit_test_framework
-  boost_timer
-  boost_chrono
   rt
 )
+if(UTXX_HAVE_BOOST)
+  target_compile_definitions(test_utxx PRIVATE -DBOOST_ALL_DYN_LINK)
+  target_link_libraries(test_utxx boost_system boost_thread)
+endif()
 
 install(TARGETS test_utxx RUNTIME DESTINATION test)
 
 add_executable(fast_read example_fast_read.cpp)
 
-add_executable(example_repeating_timer example_repeating_timer.cpp)
-target_link_libraries(example_repeating_timer utxx ${Boost_LIBRARIES} boost_timer boost_chrono rt)
+if(UTXX_HAVE_BOOST)
+  add_executable(example_repeating_timer example_repeating_timer.cpp)
+  target_link_libraries(example_repeating_timer utxx ${Boost_LIBRARIES} boost_timer boost_chrono rt)
 
-add_executable(example_delegate example_delegate.cpp)
-target_link_libraries(example_delegate utxx boost_timer boost_chrono boost_system boost_filesystem rt)
+  add_executable(example_delegate example_delegate.cpp)
+  target_link_libraries(example_delegate utxx boost_timer boost_chrono boost_system boost_filesystem rt)
+endif()
 
-install(
-  TARGETS fast_read example_repeating_timer example_delegate
-  RUNTIME DESTINATION test
-)
+install(TARGETS fast_read RUNTIME DESTINATION test)
+if(UTXX_HAVE_BOOST)
+  install(
+    TARGETS example_repeating_timer example_delegate
+    RUNTIME DESTINATION test
+  )
+endif()
 
 add_subdirectory(reactor)

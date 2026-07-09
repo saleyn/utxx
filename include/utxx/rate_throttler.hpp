@@ -125,7 +125,7 @@ public:
     /// Return currently used rate per second.
     double   curr_rate_per_second(time_val a_now=now_utc()) const {
         return UNLIKELY(m_rate==0)
-             ? 0 : double((m_rate-calc_available(a_now))*1'000'000'000/m_window_ns);
+             ? 0 : double(m_rate-calc_available(a_now))*1'000'000'000.0/double(m_window_ns);
     }
 
 private:
@@ -226,8 +226,7 @@ private:
     long    m_sum;
     long    m_interval;
 
-    // must be power of two
-    BOOST_STATIC_ASSERT((s_bucket_count & (s_bucket_count - 1)) == 0);
+    static_assert((s_bucket_count & (s_bucket_count - 1)) == 0, "s_bucket_count must be a power of two");
 };
 
 //------------------------------------------------------------------------------

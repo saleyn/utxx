@@ -30,37 +30,37 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 ***** END LICENSE BLOCK *****
 */
 
-#include <boost/test/unit_test.hpp>
+#include <utxx/test_helper.hpp>
 
 #include <utxx/endian.hpp>
 
 namespace utxx {
 
-BOOST_AUTO_TEST_CASE( test_endian )
+TEST_CASE( test_endian )
 {
     {
         const char test[] = { 1, 2, 3, 4, 5, 6, 7, 8 };
         int64_t    resb  = cast_be<int64_t>(test);
-        BOOST_CHECK_EQUAL(72623859790382856, resb);
+        CHECK_EQUAL(72623859790382856, resb);
         int64_t    resl  = cast_le<int64_t>(test);
-        BOOST_CHECK_EQUAL(578437695752307201, resl);
+        CHECK_EQUAL(578437695752307201, resl);
 
         const char* p = test;
         get_be(p, resb);
-        BOOST_CHECK_EQUAL(72623859790382856, resb);
-        BOOST_CHECK_EQUAL(uint64_t(test+8), uint64_t(p));
+        CHECK_EQUAL(72623859790382856, resb);
+        CHECK_EQUAL(uint64_t(test+8), uint64_t(p));
         p = test;
         get_le(p, resl);
-        BOOST_CHECK_EQUAL(578437695752307201, resl);
-        BOOST_CHECK_EQUAL(uint64_t(test+8), uint64_t(p));
+        CHECK_EQUAL(578437695752307201, resl);
+        CHECK_EQUAL(uint64_t(test+8), uint64_t(p));
     }
     {
         char test[9];
         test[8] = '\0';
         store_be(test, 72623859790382856);
-        BOOST_CHECK_EQUAL("\x1\x2\x3\x4\x5\x6\x7\x8", test);
+        CHECK_EQUAL("\x1\x2\x3\x4\x5\x6\x7\x8", test);
         store_le(test, 578437695752307201);
-        BOOST_CHECK_EQUAL("\x1\x2\x3\x4\x5\x6\x7\x8", test);
+        CHECK_EQUAL("\x1\x2\x3\x4\x5\x6\x7\x8", test);
     }
 }
 

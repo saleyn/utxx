@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #include <iostream>
 #include <fstream>
-#include <boost/noncopyable.hpp>
+#include <utxx/noncopyable.hpp>
 #include <utxx/buffer.hpp>
 
 namespace utxx {
@@ -46,7 +46,7 @@ namespace detail {
  * \brief Basic file writer with pre-allocated buffer.
  */
 template<size_t BufSize = 1024 * 1024>
-class basic_file_writer : private boost::noncopyable {
+class basic_file_writer : private utxx::noncopyable {
     std::string m_fname;
     std::ofstream m_file;
     utxx::basic_io_buffer<BufSize> m_buf;

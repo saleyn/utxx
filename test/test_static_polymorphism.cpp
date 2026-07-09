@@ -1,5 +1,5 @@
-#include <boost/test/unit_test.hpp>
-#include <boost/lexical_cast.hpp>
+#include <utxx/test_helper.hpp>
+
 
 struct Interface {
     std::string to_string(int i) const { throw std::runtime_error("Not implemented!"); }
@@ -24,24 +24,24 @@ struct printer {
 };
 
 struct Implementation : printer<Implementation>, Interface {
-    std::string to_string(int i) const { return boost::lexical_cast<std::string>(i); }
+    std::string to_string(int i) const { return std::to_string(i); }
 };
 
 struct Implementation2 : printer<Implementation> {
-    std::string to_string(int i) const { return boost::lexical_cast<std::string>(i); }
+    std::string to_string(int i) const { return std::to_string(i); }
 };
 
-BOOST_AUTO_TEST_CASE( test_static_polymorphism )
+TEST_CASE( test_static_polymorphism )
 {
     printer<Implementation> p;
     std::string r = p.to_string(1);
 
-    BOOST_REQUIRE_EQUAL("1", r);
+    REQUIRE_EQUAL("1", r);
 
     //Interface* pi = reinterpret_cast<Interface*>(&p);
 
     //std::string s = pi->to_string(2);
-    //BOOST_REQUIRE_EQUAL("2", r);
+    //REQUIRE_EQUAL("2", r);
 
     //printer<Implementation2> p2;
 }

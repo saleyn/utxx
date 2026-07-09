@@ -33,10 +33,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #include <utxx/error.hpp>
 #include <utxx/string.hpp>
 #include <utxx/signal_block.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/constants.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <algorithm>
+#include <cctype>
+#include <sstream>
 #include <string.h>
 #include <vector>
 
@@ -118,8 +117,13 @@ std::string sig_members(const sigset_t& a_set)
 sigset_t sig_members_parse(const string& a_signals, utxx::src_info&& a_si)
 {
     vector<string> signals;
-    auto s = boost::to_lower_copy(a_signals);
-    boost::split(signals, s, boost::is_any_of(":;,| "), boost::token_compress_on);
+    auto s = a_signals;
+    std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c){ return std::tolower(c); });
+    for (const char *p = s.c_str(), *e; *p; p = *e ? e+1 : e) {
+        while (*p && strchr(":;,| ", *p)) ++p;
+        e = p; while (*e && !strchr(":;,| ", *e)) ++e;
+        if (e > p) signals.emplace_back(p, e);
+    }
     sigset_t res;
     sigemptyset(&res);
 

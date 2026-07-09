@@ -31,7 +31,9 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 #pragma once
 
-#include <boost/property_tree/ptree.hpp>
+#include <utxx/config.h>
+
+#include <utxx/ptree.hpp>
 #include <utxx/variant_tree_path.hpp>
 
 namespace utxx {
@@ -131,7 +133,7 @@ namespace utxx {
 
     template <class Ch>
     using basic_variant_tree_base =
-        boost::property_tree::basic_ptree<
+        utxx::ptree::basic_ptree<
             std::basic_string<Ch>,
             basic_variant_tree_data<Ch>,
             std::less<std::basic_string<Ch>>

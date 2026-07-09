@@ -1,7 +1,6 @@
 #ifndef _UTXX_VARIANT_TREE_PATH_IPP_
 #define _UTXX_VARIANT_TREE_PATH_IPP_
 
-#include <boost/assert.hpp>
 #include <algorithm>
 #include <utxx/variant_tree_path.hpp> // To keep code analysers happy
 

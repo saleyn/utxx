@@ -23,10 +23,10 @@ at http://www.boost.org/LICENSE_1_0.txt)
 #ifndef _UTXX_IO_IOVECTOR_HPP_
 #define _UTXX_IO_IOVECTOR_HPP_
 
+#include <cassert>
 #include <sys/uio.h>
 #include <string.h>
 #include <vector>
-#include <boost/assert.hpp>
 #include <utxx/compiler_hints.hpp>
 
 namespace utxx {
@@ -37,7 +37,7 @@ namespace utxx {
     }
 
     inline static iovec make_iovec(const char* a_bytes) {
-        BOOST_ASSERT(a_bytes != NULL);
+        assert(a_bytes != NULL);
         iovec v = { (void*) a_bytes, strlen(a_bytes) };
         return v;
     }
@@ -88,7 +88,7 @@ public:
     }
 
     const iovec & operator[](size_t i) const {
-        BOOST_ASSERT(i < size());
+        assert(i < size());
         return *(base::begin() + m_offset + i);
     }
 
@@ -153,12 +153,12 @@ public:
         for (const_iterator it = begin(), e = end(); it != e; a_buf
                 += it->iov_len, ++it)
             memcpy(a_buf, it->iov_base, it->iov_len);
-        BOOST_ASSERT((size_t)(a_buf - l_begin) == m_length);
+        assert((size_t)(a_buf - l_begin) == m_length);
         return m_length;
     }
 
     void add(const iovec *a_data, size_t a_len) {
-        BOOST_ASSERT(a_len > 0 && a_data != NULL);
+        assert(a_len > 0 && a_data != NULL);
         base::resize(base::size() + a_len);
         iterator it = end() - a_len;
         for (const iovec *p = a_data, *e = a_data + a_len; p != e;
@@ -175,7 +175,7 @@ public:
                 a_size -= it->iov_len, ++it)
             m_offset++;
         if (a_size) {
-            BOOST_ASSERT(it < end());
+            assert(it < end());
             it->iov_len -= a_size;
             it->iov_base = static_cast<char*> (it->iov_base) + a_size;
         }

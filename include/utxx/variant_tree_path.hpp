@@ -32,14 +32,16 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 #pragma once
 
-#include <boost/property_tree/string_path.hpp>
+#include <utxx/config.h>
+
+#include <utxx/ptree.hpp>
 
 namespace utxx {
 
 template <class Ch>
-using basic_tree_path = boost::property_tree::string_path<
+using basic_tree_path = utxx::ptree::string_path<
         std::basic_string<Ch>,
-        boost::property_tree::id_translator<std::basic_string<Ch>>
+        utxx::ptree::id_translator<std::basic_string<Ch>>
       >;
 
 typedef basic_tree_path<char> tree_path;

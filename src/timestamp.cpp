@@ -40,7 +40,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 namespace utxx {
 
-boost::mutex            timestamp::s_mutex;
+std::mutex              timestamp::s_mutex;
 thread_local long       timestamp::s_next_local_midnight_nseconds = 0;
 thread_local long       timestamp::s_next_utc_midnight_nseconds   = 0;
 thread_local time_t     timestamp::s_utc_nsec_offset              = 0;
@@ -147,7 +147,7 @@ size_t timestamp::format_size(stamp_type a_tp)
 int timestamp::format(stamp_type a_tp, time_val tv, char* a_buf, size_t a_sz,
                       bool a_utc, bool a_day_chk, bool a_use_cached_date)
 {
-    BOOST_ASSERT(a_sz >= format_size(a_tp));
+    assert(a_sz >= format_size(a_tp));
 
     if (unlikely(a_tp == NO_TIMESTAMP)) {
         a_buf[0] = '\0';

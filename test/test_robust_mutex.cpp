@@ -12,15 +12,12 @@
 #include <sys/mman.h>
 #include <sys/wait.h>
 
-#include <boost/test/unit_test.hpp>
-#include <boost/bind/bind.hpp>
+#include <utxx/test_helper.hpp>
 #ifdef HAVE_BOOST_TIMER_TIMER_HPP
 #include <boost/timer/timer.hpp>
 #endif
 #include <utxx/robust_mutex.hpp>
 #include <utxx/verbosity.hpp>
-
-using namespace boost::placeholders;
 
 namespace {
     template <int N>
@@ -91,7 +88,7 @@ namespace {
         if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
             fprintf(stderr, "%s %d: wait on mutex2\n", name, getpid());
 
-        m2.on_make_consistent = boost::bind(&on_owner_dead, name, &m2);
+        m2.on_make_consistent = [name](utxx::robust_mutex&) { return on_owner_dead(name, &m2); };
 
         try { m2.lock(); } catch (std::exception& e) {
             if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
@@ -109,7 +106,7 @@ namespace {
 
 } // namespace
 
-BOOST_AUTO_TEST_CASE( test_robust_mutex )
+TEST_CASE( test_robust_mutex )
 {
     buffer_t* buffer;
 
@@ -150,12 +147,12 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex )
     if (utxx::verbosity::level() > utxx::VERBOSE_NONE)
         fprintf(stderr, "Main process exited (b=%d)\n", result);
 
-    BOOST_REQUIRE_EQUAL(3, result);
+    REQUIRE_EQUAL(3, result);
 }
 
 #ifdef HAVE_BOOST_TIMER_TIMER_HPP
 
-BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
+TEST_CASE( test_robust_mutex_perf )
 {
     using boost::timer::cpu_timer;
     using boost::timer::cpu_times;
@@ -195,11 +192,11 @@ BOOST_AUTO_TEST_CASE( test_robust_mutex_perf )
     }
 
     if (k > 25000) {
-        BOOST_REQUIRE(t1);
-        BOOST_REQUIRE(t2);
-        BOOST_REQUIRE(t1 > t2);
+        REQUIRE(t1);
+        REQUIRE(t2);
+        REQUIRE(t1 > t2);
     } else {
-        BOOST_REQUIRE(true);
+        REQUIRE(true);
     }
 }
 

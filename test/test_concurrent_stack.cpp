@@ -1,4 +1,6 @@
-#include <boost/test/unit_test.hpp>
+#include <utxx/config.h>
+#ifdef UTXX_HAVE_BOOST
+#include <utxx/test_helper.hpp>
 #include <boost/thread/barrier.hpp>
 #include <utxx/container/concurrent_stack.hpp>
 #include <utxx/verbosity.hpp>
@@ -21,7 +23,7 @@ public:
     int_t() : m_data(0), m_id(0) {}
 };
 
-BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned )
+TEST_CASE( test_concurrent_stack_versioned )
 {
     versioned_stack stack;
 
@@ -33,13 +35,13 @@ BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned )
 
     for(int i=10; i > 0; i--) {
         int_t* n = static_cast<int_t*>(stack.pop());
-        BOOST_REQUIRE_EQUAL(i, n->data());
+        REQUIRE_EQUAL(i, n->data());
     }
 
-    BOOST_REQUIRE(stack.empty());
+    REQUIRE(stack.empty());
 }
 
-BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned_reset )
+TEST_CASE( test_concurrent_stack_versioned_reset )
 {
     versioned_stack stack;
 
@@ -50,15 +52,15 @@ BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned_reset )
     }
 
     int_t* p = static_cast<int_t*>(stack.reset());
-    BOOST_REQUIRE(stack.empty());
+    REQUIRE(stack.empty());
 
     int i;
 
     for(i=10; p; p = static_cast<int_t*>(p->next), i--) {
-        BOOST_REQUIRE_EQUAL(i, p->data());
+        REQUIRE_EQUAL(i, p->data());
     }
 
-    BOOST_REQUIRE_EQUAL(0, i);
+    REQUIRE_EQUAL(0, i);
 
     // Test list reversal
     for(i=0; i < 10; i++) {
@@ -66,13 +68,13 @@ BOOST_AUTO_TEST_CASE( test_concurrent_stack_versioned_reset )
     }
 
     p = static_cast<int_t*>(stack.reset(true));
-    BOOST_REQUIRE(stack.empty());
+    REQUIRE(stack.empty());
 
     for(i=1; p; p = static_cast<int_t*>(p->next), i++) {
-        BOOST_REQUIRE_EQUAL(i, p->data());
+        REQUIRE_EQUAL(i, p->data());
     }
 
-    BOOST_REQUIRE_EQUAL(11, i);
+    REQUIRE_EQUAL(11, i);
 }
 
 struct sproducer {
@@ -92,8 +94,8 @@ struct sproducer {
         for (int i=0; i < iterations; i++) {
             atomic::inc(&count);
             int_t* p = new int_t(i+1, id);
-            BOOST_ASSERT(p); // , "Out of memory id=" << id << " i=" << i);
-            BOOST_ASSERT(((unsigned long)p & int_t::s_version_mask) == 0); // "Invalid alignment " << p);
+            assert(p); // , "Out of memory id=" << id << " i=" << i);
+            assert(((unsigned long)p & int_t::s_version_mask) == 0); // "Invalid alignment " << p);
             if (verbosity::level() >= utxx::VERBOSE_TRACE)
                 fprintf(stderr, "  %d - Allocated %p (%d,%d) prod_cnt=%ld\n", id, p, id, i+1, count);
             stack.push(p);
@@ -122,7 +124,7 @@ struct sconsumer : public sproducer {
             int_t* p = static_cast<int_t*>(stack.reset(&ts, true));
             while (p) {
                 int_t* next = static_cast<int_t*>(p->next);
-                BOOST_ASSERT(((unsigned long)p & int_t::s_version_mask) == 0); //, "Invalid alignment " << p);
+                assert(((unsigned long)p & int_t::s_version_mask) == 0); //, "Invalid alignment " << p);
                 sum += p->data();
                 atomic::add(&count, 1);
                 if (verbosity::level() >= utxx::VERBOSE_TRACE)
@@ -138,7 +140,7 @@ struct sconsumer : public sproducer {
     }
 };
 
-BOOST_AUTO_TEST_CASE( test_concurrent_stack )
+TEST_CASE( test_concurrent_stack )
 {
     blocking_versioned_stack<> stack;
     const long iterations       = ::getenv("ITERATIONS")  ? atoi(::getenv("ITERATIONS"))  : 100000;
@@ -175,8 +177,10 @@ BOOST_AUTO_TEST_CASE( test_concurrent_stack )
     for (int i=0; i < consumer_threads; ++i)
         real_sum += sums[i];
 
-    BOOST_REQUIRE_EQUAL(exp_sum, real_sum);
-    BOOST_REQUIRE_EQUAL(producer_threads*iterations, prod_count);
-    BOOST_REQUIRE_EQUAL(producer_threads*iterations, cons_count);
+    REQUIRE_EQUAL(exp_sum, real_sum);
+    REQUIRE_EQUAL(producer_threads*iterations, prod_count);
+    REQUIRE_EQUAL(producer_threads*iterations, cons_count);
 }
 
+
+#endif // UTXX_HAVE_BOOST
