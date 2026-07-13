@@ -386,15 +386,6 @@ class basic_buffered_print : public Alloc
         memcpy(m_pos, a, n);
         m_pos += n;
     }
-    /*Don't move strings or else it may lead to incidental "stealing" of
-      string objects from the owner
-    void do_print(std::string&& a) {
-        size_t n = a.size();
-        reserve(n);
-        memcpy(m_pos, a.c_str(), n);
-        m_pos += n;
-    }
-    */
     void do_print(const std::string& a) {
         size_t n = a.size();
         reserve(n);
@@ -446,7 +437,8 @@ class basic_buffered_print : public Alloc
         print(s.str());
     }
     template <class T>
-    void do_print(T& a) {
+    typename std::enable_if<!std::is_same<typename std::decay<T>::type, std::string>::value>::type
+    do_print(T& a) {
         std::stringstream s; s << a;
         print(s.str());
     }

@@ -206,6 +206,19 @@ BOOST_AUTO_TEST_CASE( test_print )
     { std::string s = print(width<7, RIGHT,const std::string&>(str)); BOOST_CHECK_EQUAL("    xxx", s); }
     { std::string s = print(width<7, LEFT, const std::string&>(str)); BOOST_CHECK_EQUAL("xxx    ", s); }
     { std::string s = print(make_width<7, LEFT>(str)); BOOST_CHECK_EQUAL("xxx    ", s); }
+
+    // Non-const std::string& must use the string overload, not the fallback template
+    {
+        std::string nonconst_str("hello");
+        buffered_print b;
+        b.print(nonconst_str);
+        BOOST_CHECK_EQUAL("hello", b.to_string());
+    }
+    {
+        std::string nonconst_str("world");
+        std::string s = print(nonconst_str);
+        BOOST_CHECK_EQUAL("world", s);
+    }
 }
 
 
