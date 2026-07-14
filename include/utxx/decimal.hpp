@@ -125,6 +125,31 @@ public:
              ? std::pow(10.0, a_exp) : s_pow10[a_exp + 63];
     }
 
+    static inline void lpad_zeroes(char* a_str, const int& a_count, int a_charVal) {
+        char* p = a_str + a_count - strlen(a_str);
+
+        strcpy(p, a_str);
+        p--;
+
+        while (p >= a_str) {
+            p[0] = a_charVal; p--;
+        }
+    }
+
+    static inline void rtrim_zeroes(char* a_str) {
+        int idX = strlen(a_str) - 1;
+
+        while (a_str[idX] == '0') {
+            a_str[idX] = '\0';
+            idX--;
+
+            if (idX < 0) {
+                a_str[0] = '0';
+                break;
+            }
+        }
+    }
+
     // Addition / Subtraction: performed on the exponent and mantissa separately
 
     decimal& operator+=(decimal const& a_rhs) {
@@ -215,6 +240,80 @@ public:
             m_exp = a_const_exp;
         }
         return *this;
+    }
+
+    //template <char Delim = '\0'>
+    unsigned to_string(const unsigned& a_precision,
+        char* a_result, const unsigned& a_size, char a_terminator = '\0') {
+        bool isNeg = m_mant < 0 ? true : false;
+        if (m_mant == 0) {
+            snprintf(a_result, a_size, "%s", "0");
+            return strlen(a_result);;
+        }
+
+        long absPrice = std::abs(m_mant);
+        long multiplier = pow10(m_exp);
+
+        long exp = absPrice / multiplier;
+        long tmpexp = exp * multiplier;
+        long mantissa = absPrice - tmpexp;
+
+        char sMantissa[32] = { 0 };
+        snprintf(sMantissa, sizeof(sMantissa), "%ld", mantissa);
+        char b_tmpexp[32] = { 0 };
+        snprintf(b_tmpexp, sizeof(b_tmpexp), "%ld", tmpexp);
+
+        char c1[32] = { 0 };
+        char c2[32] = { 0 };
+
+        int ipad = m_exp - strlen(sMantissa);
+        lpad_zeroes(c1, ipad, '0');
+        snprintf(c2, sizeof(c2), "%ld", exp);
+        snprintf(c1 + ipad, sizeof(c1), "%s", sMantissa);
+
+        rtrimZeroes(c1);
+
+        if (isNeg)
+            snprintf(a_result, a_size, "-%s.%s", c2, c1);
+        else
+            snprintf(a_result, a_size, "%s.%s", c2, c1);
+
+        return strlen(a_result);
+    }
+
+    //template <char Delim = '\0'>
+    void from_string(const char* a_buf, const int& precision,
+        const char a_delim = '\0') {
+        m_exp = precision;
+        m_mant = 0;
+        int numDigits = strlen(a_buf) - 1;
+        int counter(0), idX(0);
+        bool countMantissa(false);
+        bool isNeg = a_buf[0] == '-' ? true : false;
+        idX = isNeg ? 1 : 0;
+
+        for (; idX <= numDigits; idX++) {
+            if (a_buf[idX] != '.') {
+                char val = a_buf[idX] - '0';
+                m_mant = m_mant * 10 + val;
+
+                if (countMantissa)
+                    ++counter;
+            }
+            else
+                countMantissa = true;
+        }
+
+        int zeroPad = m_exp - counter;
+        if (zeroPad >= 0)
+            m_mant = m_mant * pow10(zeroPad);
+        else {
+            zeroPad *= -1;
+            m_mant = m_mant * pow10(zeroPad);
+        }
+
+        if (isNeg)
+            m_mant *= -1;
     }
 };
 
